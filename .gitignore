@@ -1,11 +1,20 @@
-cookies.txt
-cookies*.txt
-venv/
-__pycache__/
+# Backend
+**/cookies*.txt
+**/venv/
+**/__pycache__/
 *.py[cod]
-.env
-temp/
-downloads/
+**/.env
+**/temp/
+**/downloads/
 *.zip
 **/test.py
-postman_collection.json
+**/postman_collection.json
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.next/
+frontend/build/
+frontend/.env*
+.claude/
+.mcp*
