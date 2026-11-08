@@ -14,6 +14,7 @@ class AppSettings(BaseSettings):
     HEADER_TOKEN: str = Field(..., min_length=1)
     REQUEST_TIMEOUT: int = 25
     MAX_DOWNLOAD_SIZE_MB: int = 150
+    MAX_VIDEO_DURATION_SECONDS: int = 3600
 
     model_config = SettingsConfigDict(
         env_file=".env",

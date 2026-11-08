@@ -53,7 +53,9 @@ def _build_example_from_schema(
         result: Dict[str, Any] = {}
         properties = schema.get("properties", {})
         for prop_name, prop_schema in properties.items():
-            if "url" in prop_name.lower() or "shortcode" in prop_name.lower():
+            if "examples" in prop_schema or "example" in prop_schema:
+                result[prop_name] = _build_example_from_schema(prop_schema, openapi_schema)
+            elif "url" in prop_name.lower() or "shortcode" in prop_name.lower():
                 result[prop_name] = "https://www.instagram.com/p/DK47CuHSbjl/"
             else:
                 result[prop_name] = _build_example_from_schema(prop_schema, openapi_schema)

@@ -113,6 +113,16 @@ class FacebookDownloaderService:
 
         return current_url
 
+    @staticmethod
+    def _safety_match_filter(info_dict: Dict[str, Any], *, incomplete: bool = False) -> str | None:
+        """Prevent infinite live-stream downloads and excessively long video DoS."""
+        if info_dict.get("is_live") or info_dict.get("live_status") in {"is_live", "is_upcoming"}:
+            return "Live streams are not supported for downloading."
+        duration = info_dict.get("duration")
+        if duration and duration > app_settings.MAX_VIDEO_DURATION_SECONDS:
+            return f"Video duration exceeds maximum limit of {app_settings.MAX_VIDEO_DURATION_SECONDS} seconds."
+        return None
+
     @classmethod
     def _get_base_ydl_opts(cls) -> Dict[str, Any]:
         opts: Dict[str, Any] = {
@@ -123,8 +133,8 @@ class FacebookDownloaderService:
             "extract_flat": False,
             "noplaylist": True,
             "playlist_items": "1-10",
-
             "allowed_extractors": ["facebook", "facebook:reel", "facebook:ads"],
+            "match_filter": cls._safety_match_filter,
         }
         if settings.COOKIE_FILE_PATH and os.path.exists(settings.COOKIE_FILE_PATH):
             opts["cookiefile"] = str(settings.COOKIE_FILE_PATH)
