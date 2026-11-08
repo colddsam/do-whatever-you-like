@@ -1,0 +1,11 @@
+cookies.txt
+venv/
+__pycache__/
+*.py[cod]
+.env
+temp/
+downloads/
+*.zip
+test.py
+postman_collection.json
+

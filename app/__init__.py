@@ -1,0 +1,2 @@
+"""SocialHub Backend Application Package."""
+
