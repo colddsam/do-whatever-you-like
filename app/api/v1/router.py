@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import health, instagram
+from app.api.v1.endpoints import facebook, health, instagram
 
 api_v1_router = APIRouter()
 
@@ -8,4 +8,4 @@ api_v1_router = APIRouter()
 # only need a new module in `app/api/v1/endpoints/` and one `include_router` line below.
 api_v1_router.include_router(health.router)
 api_v1_router.include_router(instagram.router)
-
+api_v1_router.include_router(facebook.router)
