@@ -1,5 +1,7 @@
 /** Client helpers for the downloader tools. All requests go through /api/tools/*. */
 
+import { filenameFrom, saveBlob } from "./files";
+
 export type Platform = "youtube" | "instagram" | "facebook";
 
 export type MediaItem = {
@@ -107,14 +109,6 @@ export async function extract(platform: Platform, url: string, signal?: AbortSig
   return preview;
 }
 
-function filenameFrom(disposition: string | null, fallback: string) {
-  if (!disposition) return fallback;
-  const star = /filename\*=(?:UTF-8'')?([^;]+)/i.exec(disposition);
-  if (star) return decodeURIComponent(star[1].replace(/"/g, ""));
-  const plain = /filename="?([^";]+)"?/i.exec(disposition);
-  return plain?.[1] ?? fallback;
-}
-
 /**
  * Asks the backend to prepare the file, streams it with progress, then hands it to the browser.
  * `onProgress` receives a 0–1 fraction once bytes start arriving (null when size is unknown).
@@ -144,14 +138,7 @@ export async function download(
     onProgress?.(total ? Math.min(received / total, 1) : null);
   }
 
-  const blobUrl = URL.createObjectURL(new Blob(chunks, { type }));
-  const a = document.createElement("a");
-  a.href = blobUrl;
-  a.download = name;
-  document.body.append(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(blobUrl), 30_000);
+  saveBlob(new Blob(chunks, { type }), name);
   return { name, size: received };
 }
 

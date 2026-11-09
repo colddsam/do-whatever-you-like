@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class FacebookSettings(BaseSettings):
     APP_NAME: str = "Facebook Media Service"
     TEMP_DIR: Path = Path("./temp/facebook")
-    COOKIE_FILE_PATH: Path | None = None
+    COOKIE_FILE_PATH: Path | None = Path("cookies_facebook.txt")
     DEBUG: bool = False
 
     model_config = SettingsConfigDict(

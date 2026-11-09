@@ -6,6 +6,7 @@ from app.core.config import app_settings
 from app.config.instagram import settings as instagram_settings
 from app.config.facebook import settings as facebook_settings
 from app.config.youtube import settings as youtube_settings
+from app.config.video2audio import settings as video2audio_settings
 from app.services.ffmpeg_service import init_ffmpeg
 
 
@@ -17,6 +18,7 @@ async def lifespan(app: FastAPI):
     instagram_settings.TEMP_DIR.mkdir(parents=True, exist_ok=True)
     facebook_settings.TEMP_DIR.mkdir(parents=True, exist_ok=True)
     youtube_settings.TEMP_DIR.mkdir(parents=True, exist_ok=True)
+    video2audio_settings.TEMP_DIR.mkdir(parents=True, exist_ok=True)
     yield
     if instagram_settings.TEMP_DIR.exists():
         shutil.rmtree(instagram_settings.TEMP_DIR, ignore_errors=True)
@@ -24,3 +26,5 @@ async def lifespan(app: FastAPI):
         shutil.rmtree(facebook_settings.TEMP_DIR, ignore_errors=True)
     if youtube_settings.TEMP_DIR.exists():
         shutil.rmtree(youtube_settings.TEMP_DIR, ignore_errors=True)
+    if video2audio_settings.TEMP_DIR.exists():
+        shutil.rmtree(video2audio_settings.TEMP_DIR, ignore_errors=True)

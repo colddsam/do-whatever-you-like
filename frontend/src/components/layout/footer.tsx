@@ -10,6 +10,7 @@ const columns = [
       { label: "YouTube downloader", href: toolHref("youtube") },
       { label: "Instagram downloader", href: toolHref("instagram") },
       { label: "Facebook downloader", href: toolHref("facebook") },
+      { label: "Video to audio", href: toolHref("audio") },
       { label: "All tools", href: "/tools" },
     ],
   },

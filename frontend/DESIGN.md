@@ -129,6 +129,18 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
 - **Live** tools take their workspace from the registry in `components/tools/playground.tsx`,
   looked up by id first, then by kind. To add a tool whose kind already has a workspace, add it to
   `tools.ts` and mark it `live`.
+  - `link` → `DownloaderPlayground`, configured by `downloader`.
+  - `file` → `ConvertPlayground` (one file in, one file out), configured by `converter`
+    (`endpoint`, `input` noun, `extensions`, `maxMB`, `output`, `quality`). It starts with a
+    `FileDrop` (`components/tools/file-drop.tsx`): a dashed `paper` box that is a real file input,
+    turns `ink` while a file is dragged over it, and lists accepted formats in mono. The chosen file
+    shows as a row: a still from the video, name, size and length. Step two's button doubles as the
+    progress bar (upload %, then a slow sheen while the server works). The result is previewed before
+    saving: audio gets `AudioPreview`, an `ink` play button with the real waveform (bars in `ink-3`,
+    played bars in `ink`) as the seek bar. Nothing downloads until the person presses Download.
+  - File uploads go through a route under `app/api/tools/` that streams the body to the backend
+    (never buffered), using the shared helpers in `lib/backend.ts`. Check files in the browser first
+    with the same rules as the backend (`checkFile`).
 - **Not built yet** tools show their kind's workspace switched off (`inert`, 75% opacity), under a
   "Not built yet / Request it" strip. Never grey placeholder bars.
 - Empty states teach rather than apologise. For example, link tools list "Links that work"

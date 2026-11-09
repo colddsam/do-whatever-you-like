@@ -10,6 +10,7 @@ import yt_dlp
 from app.config.facebook import settings
 from app.core.config import app_settings
 from app.exceptions.facebook import FacebookExtractionError, InvalidFacebookURLError
+from app.services.ffmpeg_service import init_ffmpeg
 
 logger = logging.getLogger(__name__)
 
@@ -79,13 +80,28 @@ class FacebookDownloaderService:
         current_url = url
         try:
             with requests.Session() as session:
-                session.headers.update({"User-Agent": cls.USER_AGENT})
+                session.headers.update(
+                    {
+                        "User-Agent": cls.USER_AGENT,
+                        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                        "Accept-Language": "en-US,en;q=0.9",
+                        "Sec-Fetch-Mode": "navigate",
+                    }
+                )
                 for _ in range(cls.MAX_REDIRECT_HOPS):
                     resp = session.head(
                         current_url,
                         allow_redirects=False,
                         timeout=app_settings.REQUEST_TIMEOUT,
                     )
+                    if resp.status_code not in {301, 302, 303, 307, 308}:
+                        with session.get(
+                            current_url,
+                            allow_redirects=False,
+                            stream=True,
+                            timeout=app_settings.REQUEST_TIMEOUT,
+                        ) as get_resp:
+                            resp = get_resp
                     if resp.status_code not in {301, 302, 303, 307, 308}:
                         break
 
@@ -206,6 +222,7 @@ class FacebookDownloaderService:
         }
 
     def download_to_disk(self, url: str, target_dir: Path) -> List[Path]:
+        init_ffmpeg()
         valid_url = self.validate_url(url)
         target_dir.mkdir(parents=True, exist_ok=True)
         output_template = str(target_dir / "fb_%(id)s.%(ext)s")
