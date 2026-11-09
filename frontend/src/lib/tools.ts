@@ -11,6 +11,24 @@ import {
 
 export type ToolStatus = "live" | "soon";
 
+/**
+ * How a tool is used. The playground picks its workspace from this, so a new
+ * integration only needs a kind (and, once it's built, an entry in the playground registry).
+ * - link:     paste a URL, preview what it points to, save the result
+ * - file:     drop in files, choose options, download the result
+ * - text:     paste text, pick an action, copy the result
+ * - generate: fill in a few details, see it update live, download it
+ */
+export type ToolKind = "link" | "file" | "text" | "generate";
+
+/** The three steps shown across the top of every workspace. */
+export const defaultSteps: Record<ToolKind, [string, string, string]> = {
+  link: ["Paste a link", "Check the preview", "Save the file"],
+  file: ["Add your files", "Choose options", "Download"],
+  text: ["Paste your text", "Pick an action", "Copy the result"],
+  generate: ["Enter details", "Adjust the look", "Download"],
+};
+
 export type Tool = {
   id: string;
   name: string;
@@ -18,19 +36,53 @@ export type Tool = {
   description: string;
   status: ToolStatus;
   icon: LucideIcon;
+  kind: ToolKind;
+  /** The spec sheet: what goes in, what comes out, and any limit worth knowing. */
+  takes: string;
+  gives: string;
+  limit?: string;
+  /** Overrides the kind's default step titles. */
+  steps?: [string, string, string];
+  /** The choices offered in step two (formats, modes, actions). */
+  options?: string[];
+  /** File tools: what the drop zone accepts. */
+  accept?: { label: string; types: string };
   /** Extra words the command palette matches against. */
   keywords: string[];
+  /** What the tool page promises, shown as a checklist. */
+  features: string[];
+  /** Live downloaders only: how the playground talks to the backend. */
+  downloader?: {
+    platform: "youtube" | "instagram" | "facebook";
+    placeholder: string;
+    /** Hostnames we accept, checked in the browser before calling the API. */
+    hosts: string[];
+    /** Instagram also accepts a bare shortcode. */
+    allowShortcode?: boolean;
+    /** Link shapes shown in the empty workspace, so people know what will work. */
+    examples: string[];
+  };
 };
+
+export const toolHref = (id: string) => `/tools/${id}`;
+export const getTool = (id: string) => tools.find((t) => t.id === id);
+export const stepsFor = (tool: Tool) => tool.steps ?? defaultSteps[tool.kind];
 
 export const tools: Tool[] = [
   {
     id: "youtube",
     name: "YouTube downloader",
     category: "Downloads",
-    description: "Save videos and Shorts in the quality you pick.",
+    description: "Save videos and Shorts in the best quality available.",
     status: "live",
     icon: Download,
+    kind: "link",
+    takes: "A public YouTube link",
+    gives: "MP4 video",
+    limit: "Up to 1 hour",
     keywords: ["video", "shorts", "save", "yt", "download"],
+    features: ["Videos and Shorts up to 1 hour", "Best available quality, merged to MP4", "Title, channel and length preview before you save"],
+    downloader: { platform: "youtube", placeholder: "https://www.youtube.com/watch?v=…", hosts: ["youtube.com", "youtu.be"], examples: ["youtube.com/watch?v=…", "youtube.com/shorts/…", "youtu.be/…"] },
   },
   {
     id: "instagram",
@@ -39,7 +91,13 @@ export const tools: Tool[] = [
     description: "Reels, posts and carousels, straight from a link.",
     status: "live",
     icon: Download,
+    kind: "link",
+    takes: "A post link or shortcode",
+    gives: "MP4, JPG or ZIP",
+    limit: "Public posts only",
     keywords: ["reel", "reels", "post", "carousel", "ig", "insta", "download"],
+    features: ["Reels, single posts and carousels", "Carousels arrive as one ZIP", "Paste a link or just the shortcode"],
+    downloader: { platform: "instagram", placeholder: "https://www.instagram.com/reel/…", hosts: ["instagram.com", "instagr.am"], allowShortcode: true, examples: ["instagram.com/reel/…", "instagram.com/p/…", "A bare shortcode"] },
   },
   {
     id: "facebook",
@@ -48,7 +106,13 @@ export const tools: Tool[] = [
     description: "Grab public videos and reels without the hassle.",
     status: "live",
     icon: Download,
+    kind: "link",
+    takes: "A public video or reel link",
+    gives: "MP4 video",
+    limit: "Public videos only",
     keywords: ["fb", "video", "reel", "download", "save"],
+    features: ["Public videos and reels", "Share links are resolved for you", "Saved as MP4"],
+    downloader: { platform: "facebook", placeholder: "https://www.facebook.com/reel/…", hosts: ["facebook.com", "fb.watch", "fb.com"], examples: ["facebook.com/reel/…", "facebook.com/watch?v=…", "fb.watch/…"] },
   },
   {
     id: "audio",
@@ -57,7 +121,14 @@ export const tools: Tool[] = [
     description: "Pull a clean MP3 out of any video file.",
     status: "soon",
     icon: AudioLines,
+    kind: "file",
+    options: ["MP3", "M4A"],
+    takes: "A video file",
+    gives: "MP3 or M4A",
+    steps: ["Add a video", "Trim and pick a format", "Download audio"],
+    accept: { label: "MP4, MOV or WebM", types: "video/*" },
     keywords: ["mp3", "music", "extract", "convert", "sound"],
+    features: ["Drop in any common video format", "MP3 or M4A output", "Trim start and end before converting"],
   },
   {
     id: "pdf",
@@ -66,7 +137,14 @@ export const tools: Tool[] = [
     description: "Merge, split and compress PDFs in seconds.",
     status: "soon",
     icon: FileStack,
+    kind: "file",
+    options: ["Merge", "Split", "Compress"],
+    takes: "One or more PDFs",
+    gives: "PDF",
+    steps: ["Add PDFs", "Merge, split or shrink", "Download"],
+    accept: { label: "PDF files", types: "application/pdf" },
     keywords: ["merge", "split", "compress", "document"],
+    features: ["Merge several PDFs into one", "Split by page range", "Shrink file size for email"],
   },
   {
     id: "image",
@@ -75,7 +153,14 @@ export const tools: Tool[] = [
     description: "Resize, convert and remove backgrounds.",
     status: "soon",
     icon: ImageIcon,
+    kind: "file",
+    options: ["Resize", "Convert", "Remove background"],
+    takes: "PNG, JPG or WebP",
+    gives: "PNG, JPG or WebP",
+    steps: ["Add images", "Resize or convert", "Download"],
+    accept: { label: "PNG, JPG or WebP", types: "image/*" },
     keywords: ["resize", "png", "jpg", "webp", "background", "photo"],
+    features: ["Resize to exact dimensions", "Convert between PNG, JPG and WebP", "One-click background removal"],
   },
   {
     id: "writing",
@@ -84,7 +169,13 @@ export const tools: Tool[] = [
     description: "Summarise, rewrite and fix grammar.",
     status: "soon",
     icon: PenLine,
+    kind: "text",
+    options: ["Summarise", "Rewrite", "Fix grammar"],
+    takes: "Any text",
+    gives: "Edited text",
+    steps: ["Paste your text", "Summarise, rewrite or fix", "Copy the result"],
     keywords: ["summary", "summarize", "rewrite", "grammar", "text"],
+    features: ["Summaries in a few bullet points", "Rewrite in a different tone", "Grammar and spelling fixes"],
   },
   {
     id: "dev",
@@ -93,7 +184,13 @@ export const tools: Tool[] = [
     description: "Format JSON, encode Base64, hash strings.",
     status: "soon",
     icon: Braces,
+    kind: "text",
+    options: ["Format JSON", "Base64", "Hash"],
+    takes: "JSON or plain text",
+    gives: "Formatted or encoded text",
+    steps: ["Paste your input", "Pick a utility", "Copy the result"],
     keywords: ["json", "base64", "hash", "format", "encode", "decode"],
+    features: ["Format and validate JSON", "Base64 encode and decode", "SHA-256 and MD5 hashes"],
   },
   {
     id: "qr",
@@ -102,7 +199,13 @@ export const tools: Tool[] = [
     description: "Turn any link or text into a crisp QR code.",
     status: "soon",
     icon: QrCode,
+    kind: "generate",
+    options: ["PNG", "SVG"],
+    takes: "A link, text or Wi-Fi details",
+    gives: "PNG or SVG",
+    steps: ["Enter a link or text", "Adjust size and colour", "Download"],
     keywords: ["qr", "code", "link", "share"],
+    features: ["Links, text, Wi-Fi details", "PNG or SVG download", "High error correction for print"],
   },
 ];
 

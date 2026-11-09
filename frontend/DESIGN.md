@@ -20,7 +20,17 @@ signal-orange mark that says "this is where to act".
 2. **Mono indices** — every section opens with a mono label like `01 — Tools`.
 3. **Serif italic emphasis** — one or two words per headline set in Instrument Serif italic.
 4. **Signal dot** — the orange dot marks "live", "active", and the logo. Nothing else is orange
-   except primary emphasis words and focus rings.
+   except primary emphasis words, focus rings and the one "picked" block of the hero toolbox.
+5. **Graph paper** — every page starts on the same sheet: 60px ruled cells (`line` at 60% opacity,
+   1200 ÷ 20, so rules land on the container hairlines), masked to fade out down the page. One
+   definition lives in `components/ui/paper.tsx` (`graphPaper`). The home hero animates it with
+   parallax (`HeroBackdrop`); every other page wraps its content in `<Page>`, which pulls up under
+   the transparent navbar and draws the still version (`PageBackdrop`). New pages must use `<Page>`
+   rather than a bare `Container`, so no page ever sits on flat paper.
+   **Grain** is site-wide, never per-section: one fixed `body::after` layer of ink specks at 9%
+   opacity (no blend mode), below the navbar and click-through. It sits over cards and the dark
+   band too, so every surface reads as the same paper.
+6. **Figure captions** — illustrations get a mono caption with a leading rule: `—— Fig. 01 — …`.
 
 ## B. Color tokens (`src/app/globals.css`)
 
@@ -57,7 +67,7 @@ h3 20px/600 · body-lg 18px/1.6 · body 15–16px/1.6 · small 13px.
 - Container `max-w-[1200px]`, gutters `px-5 md:px-8`; on `lg` the container carries left/right hairlines.
 - Section spacing `py-20 md:py-28`. Spacing scale = Tailwind 4px base.
 - Grids: 12-col mental model; bento uses `lg:grid-cols-6`.
-- Radius: `sm 6px` (chips, kbd) · `md 10px` (buttons, inputs) · `lg 16px` (cards, palette). Nothing rounder except pills/dots.
+- Radius: `sm 6px` (chips, kbd) · `md 10px` (buttons, inputs) · `lg 16px` (cards, palette). Nothing rounder except pills/dots — the navbar pill, its buttons and the announcement chip are the only fully rounded surfaces.
 - Shadow: `shadow-card` (cards on hover) and `shadow-float` (command palette) only.
 
 ## E. Components
@@ -65,16 +75,92 @@ h3 20px/600 · body-lg 18px/1.6 · body 15–16px/1.6 · small 13px.
 - **Button** — `primary` (ink fill, paper text), `secondary` (surface + line border), `ghost`. Height 40/48. Arrow icon nudges 2px on hover.
 - **Badge** — mono uppercase, line border; `live` variant adds the signal dot.
 - **Card** — surface, line border, radius lg, no shadow at rest; hover lifts border to ink-3 and adds `shadow-card`.
-- **Navigation** — sticky, paper with 80% opacity + blur, bottom hairline appears on scroll.
+- **Navigation** — sticky. At the top it is the full-width ruled bar, transparent over the hero.
+  After 24px of scroll it tucks into a **floating pill** (`max-w 920px`, `surface`/90 + blur,
+  `line` border, `shadow-card`, fully rounded) over 500ms with the standard easing.
+  - Links share one sliding **bubble** (`layoutId` spring, bounce 0.22): `paper-2` on hover,
+    `ink` with paper text on the section you're reading (scroll-spy on the home page).
+  - Nav buttons use the `pill` shape. A 1px `ink` reading-progress rule runs along the pill's
+    straight bottom edge.
+  - Mobile: the menu button becomes an ink circle (48px hit area); the menu is a `surface` card
+    that drops out of the pill over a blurred `ink`/20 scrim; links stagger in.
+- **Announcement chip** (hero) — fully rounded `surface` bubble with an inner `ink` tag bubble
+  (pulsing signal dot + mono tag: New / Live / Next). Messages roll upward every 4.2s and the
+  chip's width springs to fit; hover/focus pauses it; reduced motion shows the first message.
+  Every message must be true and link to its tool.
 - **Inputs** — surface, line border, radius md, accent focus ring.
 - **FAQ** — native `details`, hairline separated, plus icon rotates 45°.
+
+## E2. Tool pages (`/tools/[id]`)
+
+Every tool page has the same layout, whatever the tool does, so people learn it once.
+
+- **Header** is kept compact so the whole workbench sits on the first screen, even on a 1366×768
+  laptop or a 390×844 phone. The status badge sits at the right end of the breadcrumb row. Below it,
+  the icon box sits beside the title (last word in `serif-em`, `clamp(1.875rem, 3.4vw, 2.75rem)`)
+  and a one-line description.
+- **Workbench** (`components/tools/workbench.tsx`): the one `lg` card on the page (`surface`,
+  `shadow-float`). Across the top is a **three-step tracker**. Numbers sit in `sm` boxes; a finished step
+  turns `ink` with a check, the current step gets an `accent` hairline along its top edge. On phones,
+  only the current step shows its name. The tool's UI goes in the body. Small print (rights, limits)
+  goes in the `paper` footer strip, never in the body.
+- **Rail**: "At a glance" **spec sheet** (`dl`, hairline rows: `Takes` / `Gives` / `Limit`
+  (optional) / `Cost`, a few words each), then "What it does" (`features`), both as hairline lists.
+  On phones it falls below the workbench.
+- **Related tools**: a full-width section under the workbench and rail. A "Keep going" label sits over
+  "Related *tools*" (h2, `serif-em` on the last word), with "All tools →" on the right. Below is a
+  4-up hairline card grid (the same `gap-px bg-line` grid as `/tools`; 2-up on tablets, stacked on
+  phones), with the same category first. Each card shows icon, status badge, name, description and
+  a `Gives` spec row pinned to the bottom, so the rows line up.
+
+### Tool kinds: how new integrations fit
+Each tool in `lib/tools.ts` declares a `kind`, which picks its workspace and its default steps:
+
+| kind | workspace | default steps |
+|---|---|---|
+| `link` | URL field → preview → save | Paste a link · Check the preview · Save the file |
+| `file` | dashed drop zone + options | Add your files · Choose options · Download |
+| `text` | input / result panes + action choice | Paste your text · Pick an action · Copy the result |
+| `generate` | details + live preview square | Enter details · Adjust the look · Download |
+
+A tool can rename its steps (`steps`) and list the choices for step two (`options`, which render as the
+same `sm` chips as the hero's "Try" chips: selected = `ink`).
+
+- **Live** tools take their workspace from the registry in `components/tools/playground.tsx`,
+  looked up by id first, then by kind. To add a tool whose kind already has a workspace, add it to
+  `tools.ts` and mark it `live`.
+- **Not built yet** tools show their kind's workspace switched off (`inert`, 75% opacity), under a
+  "Not built yet / Request it" strip. Never grey placeholder bars.
+- Empty states teach rather than apologise. For example, link tools list "Links that work"
+  instead of "Nothing here yet".
 
 ## F. Motion
 
 - Easing `cubic-bezier(0.22, 1, 0.36, 1)`; durations 150ms (hover), 600ms (reveal).
 - Reveal: fade + 12px rise, once, staggered 60ms in lists only.
-- Hero palette: typewriter placeholder cycling through example tasks.
+- Hero headline: each line slides up from behind a mask (900ms, 100ms apart); copy, actions and stats follow with the standard rise.
+- Hero palette: rises in with a 0.985→1 scale; rows stagger in once (50ms); the active-row fill slides between rows (shared layout spring); the list fades at the bottom edge while more rows are below; typewriter placeholder cycles through example tasks.
+- Hero "Try" chips fill the palette query; the stats hairline draws in from the left.
 - Marquee: slow linear loop, paused on hover.
+
+### Hero 3D — "The toolbox" (`hero-object.tsx`)
+- 27 rounded blocks (3×3×3) in `surface` / `paper-2`, one `ink` block and one `accent` block
+  ("the tool you picked"). Matte (roughness ~0.9), soft daylight, a faint contact shadow (`ink` at 9%).
+  Colors are read from the CSS tokens at runtime — never hard-code new ones.
+- Intro: blocks fly in from a fixed scatter and lock into the cube (1.25s, staggered by layer).
+- Idle: slow sway + 0.08 bob; leans toward the pointer (lerped). Every 5s the orange block slides
+  out along its diagonal and back.
+- Scroll: blocks spread apart as the hero leaves (eased, never jumps).
+- `lg+` only; three.js is imported on demand; the render loop sleeps off-screen and in hidden tabs;
+  no WebGL → the hero simply has no object.
+
+### Scroll, parallax, smooth motion
+- Smooth wheel scrolling with Lenis (`lerp 0.1`, `allowNestedScroll` so the palette list scrolls
+  first). Touch stays native. Anchor links glide and stop 72px below the top (clears the navbar).
+  The mobile menu pauses it.
+- Hero parallax depth, far → near, over the hero's own height: grid rules +240px, lamp wash +140px,
+  toolbox +160px, headline +70px (and fades to 15%), content at page speed.
+- Reduced motion: no Lenis, no parallax, no scroll spread, a single still frame of the toolbox.
 - Everything respects `prefers-reduced-motion` (MotionConfig `reducedMotion="user"` + CSS).
 
 ## G. Responsive

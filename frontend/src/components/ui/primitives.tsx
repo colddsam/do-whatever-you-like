@@ -37,7 +37,7 @@ type ButtonVariant = "primary" | "secondary" | "ghost" | "inverse";
 type ButtonSize = "md" | "lg";
 
 const buttonBase =
-  "group inline-flex items-center justify-center gap-2 rounded-md font-medium whitespace-nowrap transition-[background-color,border-color,color,transform] duration-150 ease-out-soft active:translate-y-px";
+  "group inline-flex items-center justify-center gap-2 font-medium whitespace-nowrap transition-[background-color,border-color,color,transform] duration-150 ease-out-soft active:translate-y-px";
 
 const buttonVariants: Record<ButtonVariant, string> = {
   primary: "bg-ink text-paper hover:bg-ink/85",
@@ -56,6 +56,7 @@ export function ButtonLink({
   variant = "primary",
   size = "md",
   arrow = false,
+  pill = false,
   className,
   children,
 }: {
@@ -63,11 +64,13 @@ export function ButtonLink({
   variant?: ButtonVariant;
   size?: ButtonSize;
   arrow?: boolean;
+  /** Fully rounded — used inside the floating navbar pill. */
+  pill?: boolean;
   className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <Link href={href} className={cn(buttonBase, buttonVariants[variant], buttonSizes[size], className)}>
+    <Link href={href} className={cn(buttonBase, pill ? "rounded-full" : "rounded-md", buttonVariants[variant], buttonSizes[size], className)}>
       {children}
       {arrow && (
         <ArrowRight

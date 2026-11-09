@@ -1,32 +1,33 @@
 import Link from "next/link";
 import { Logo } from "@/components/ui/logo";
 import { Container } from "@/components/ui/primitives";
+import { toolHref } from "@/lib/tools";
 
 const columns = [
   {
     title: "Tools",
     links: [
-      { label: "YouTube downloader", href: "#tool-youtube" },
-      { label: "Instagram downloader", href: "#tool-instagram" },
-      { label: "Facebook downloader", href: "#tool-facebook" },
-      { label: "Coming soon", href: "#tools" },
+      { label: "YouTube downloader", href: toolHref("youtube") },
+      { label: "Instagram downloader", href: toolHref("instagram") },
+      { label: "Facebook downloader", href: toolHref("facebook") },
+      { label: "All tools", href: "/tools" },
     ],
   },
   {
     title: "Product",
     links: [
-      { label: "How it works", href: "#how" },
-      { label: "Why us", href: "#why" },
-      { label: "FAQ", href: "#faq" },
-      { label: "Request a tool", href: "#request" },
+      { label: "How it works", href: "/#how" },
+      { label: "Why us", href: "/#why" },
+      { label: "FAQ", href: "/#faq" },
+      { label: "Request a tool", href: "/#request" },
     ],
   },
   {
     title: "Legal",
     links: [
-      { label: "Privacy", href: "#" },
-      { label: "Terms", href: "#" },
-      { label: "Fair use", href: "#" },
+      { label: "Privacy", href: "/privacy" },
+      { label: "Terms", href: "/terms" },
+      { label: "Fair use", href: "/fair-use" },
     ],
   },
 ];

@@ -1,5 +1,6 @@
-import { ArrowUpRight, Link2, Plus } from "lucide-react";
-import { tools, type Tool } from "@/lib/tools";
+import Link from "next/link";
+import { ArrowRight, ArrowUpRight, Link2, Plus } from "lucide-react";
+import { toolHref, tools, type Tool } from "@/lib/tools";
 import { Badge, ButtonLink, Container, SectionHeader, SignalDot } from "@/components/ui/primitives";
 import { Reveal } from "@/components/ui/reveal";
 import { cn } from "@/lib/utils";
@@ -12,19 +13,29 @@ const cell = "relative bg-paper p-6 transition-colors duration-150 hover:bg-surf
 function SoonCell({ tool, className }: { tool: Tool; className?: string }) {
   const Icon = tool.icon;
   return (
-    <article id={`tool-${tool.id}`} className={cn(cell, "flex min-h-[220px] flex-col", className)}>
+    <Link
+      id={`tool-${tool.id}`}
+      href={toolHref(tool.id)}
+      className={cn(cell, "group flex min-h-[220px] flex-col", className)}
+    >
       <div className="flex items-start justify-between">
-        <span className="flex size-10 items-center justify-center rounded-md border border-line bg-surface text-ink">
+        <span className="flex size-10 items-center justify-center rounded-md border border-line bg-surface text-ink transition-colors duration-150 group-hover:border-ink group-hover:bg-ink group-hover:text-paper">
           <Icon aria-hidden className="size-[18px]" />
         </span>
         <Badge>Soon</Badge>
       </div>
       <div className="mt-auto pt-10">
         <p className="label-mono text-ink-3">{tool.category}</p>
-        <h3 className="mt-2 text-xl font-semibold tracking-[-0.02em]">{tool.name}</h3>
+        <h3 className="mt-2 flex items-center gap-1.5 text-xl font-semibold tracking-[-0.02em]">
+          {tool.name}
+          <ArrowUpRight
+            aria-hidden
+            className="size-4 text-ink-3 opacity-0 transition-[opacity,transform] duration-150 ease-out-soft group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:opacity-100"
+          />
+        </h3>
         <p className="mt-1.5 text-[15px] leading-relaxed text-ink-2">{tool.description}</p>
       </div>
-    </article>
+    </Link>
   );
 }
 
@@ -58,28 +69,42 @@ export function ToolsGrid() {
               </h3>
 
               {/* Link input mock */}
-              <div className="mt-8 flex items-center gap-3 rounded-md border border-line bg-surface p-1.5 pl-3.5">
+              <Link
+                href={toolHref("instagram")}
+                aria-label="Open the Instagram downloader"
+                className="group mt-8 flex items-center gap-3 rounded-md border border-line bg-surface p-1.5 pl-3.5 transition-[border-color,box-shadow] duration-150 hover:border-ink-3 hover:shadow-card"
+              >
                 <Link2 aria-hidden className="size-4 shrink-0 text-ink-3" />
                 <span className="flex-1 truncate font-mono text-[13px] text-ink-3">
                   https://www.instagram.com/reel/…
                 </span>
-                <span className="inline-flex h-9 items-center rounded-[8px] bg-ink px-3.5 text-sm font-medium text-paper">
+                <span className="inline-flex h-9 items-center gap-1.5 rounded-[8px] bg-ink px-3.5 text-sm font-medium text-paper">
                   Fetch
+                  <ArrowRight aria-hidden className="size-4 transition-transform duration-150 group-hover:translate-x-0.5" />
                 </span>
-              </div>
+              </Link>
 
               <ul className="mt-6 divide-y divide-line border-y border-line">
                 {live.map((tool) => (
-                  <li key={tool.id} id={`tool-${tool.id}`} className="flex items-center gap-4 py-4">
-                    <span className="w-24 shrink-0 font-medium sm:w-28">{tool.name.replace(" downloader", "")}</span>
-                    <span className="min-w-0 flex-1 truncate text-[15px] text-ink-2">{tool.description}</span>
-                    <span className="label-mono flex shrink-0 items-center gap-1.5 text-ink">
-                      <SignalDot /> Live
-                    </span>
+                  <li key={tool.id} id={`tool-${tool.id}`}>
+                    <Link
+                      href={toolHref(tool.id)}
+                      className="group -mx-2 flex items-center gap-4 rounded-md px-2 py-4 transition-colors duration-150 hover:bg-surface"
+                    >
+                      <span className="w-24 shrink-0 font-medium sm:w-28">{tool.name.replace(" downloader", "")}</span>
+                      <span className="min-w-0 flex-1 truncate text-[15px] text-ink-2">{tool.description}</span>
+                      <span className="label-mono flex shrink-0 items-center gap-1.5 text-ink">
+                        <SignalDot /> Live
+                      </span>
+                      <ArrowRight
+                        aria-hidden
+                        className="hidden size-4 shrink-0 text-ink-3 transition-[color,transform] duration-150 group-hover:translate-x-0.5 group-hover:text-ink sm:block"
+                      />
+                    </Link>
                   </li>
                 ))}
               </ul>
-              <p className="mt-auto pt-6 text-sm text-ink-3">Public posts only. Pick the format and quality before you download.</p>
+              <p className="mt-auto pt-6 text-sm text-ink-3">Public posts only. Preview what you&apos;re saving before it downloads.</p>
             </article>
 
             <SoonCell tool={soon[0]} className="lg:col-span-2" />
