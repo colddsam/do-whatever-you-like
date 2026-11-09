@@ -62,6 +62,20 @@ export type Tool = {
     /** Link shapes shown in the empty workspace, so people know what will work. */
     examples: string[];
   };
+  /** Live single-file converters only: where the file goes and what's allowed. */
+  converter?: {
+    /** Our proxy route (see app/api/tools). It takes `file` as form data and returns the result. */
+    endpoint: string;
+    /** What goes in, in a word: "video", "PDF". Used in the workspace's copy. */
+    input: string;
+    /** Lower-case, with the dot. Mirrors the backend's allow-list. */
+    extensions: string[];
+    maxMB: number;
+    /** Format of the result, e.g. "MP3". */
+    output: string;
+    /** One line on the result's quality, shown under the download button. */
+    quality: string;
+  };
 };
 
 export const toolHref = (id: string) => `/tools/${id}`;
@@ -119,16 +133,30 @@ export const tools: Tool[] = [
     name: "Video to audio",
     category: "Convert",
     description: "Pull a clean MP3 out of any video file.",
-    status: "soon",
+    status: "live",
     icon: AudioLines,
     kind: "file",
-    options: ["MP3", "M4A"],
+    options: ["MP3 · 192 kbps"],
     takes: "A video file",
-    gives: "MP3 or M4A",
-    steps: ["Add a video", "Trim and pick a format", "Download audio"],
-    accept: { label: "MP4, MOV or WebM", types: "video/*" },
-    keywords: ["mp3", "music", "extract", "convert", "sound"],
-    features: ["Drop in any common video format", "MP3 or M4A output", "Trim start and end before converting"],
+    gives: "MP3 audio",
+    limit: "Up to 150 MB",
+    steps: ["Add a video", "Extract the audio", "Save the MP3"],
+    accept: { label: "MP4, MOV, MKV or WebM", types: ".mp4,.mov,.mkv,.webm,.avi,.flv,.m4v,video/*" },
+    keywords: ["mp3", "music", "extract", "convert", "sound", "audio", "video"],
+    features: [
+      "MP4, MOV, MKV, WebM, AVI, FLV and M4V",
+      "192 kbps MP3, ready for any player",
+      "Listen before you save",
+      "Your video is deleted once the MP3 is sent",
+    ],
+    converter: {
+      endpoint: "/api/tools/video2audio/extract",
+      input: "video",
+      extensions: [".mp4", ".mov", ".mkv", ".webm", ".avi", ".flv", ".m4v"],
+      maxMB: 150,
+      output: "MP3",
+      quality: "192 kbps MP3, named after your video.",
+    },
   },
   {
     id: "pdf",

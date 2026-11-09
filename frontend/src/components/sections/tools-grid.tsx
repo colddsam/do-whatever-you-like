@@ -5,12 +5,17 @@ import { Badge, ButtonLink, Container, SectionHeader, SignalDot } from "@/compon
 import { Reveal } from "@/components/ui/reveal";
 import { cn } from "@/lib/utils";
 
-const live = tools.filter((t) => t.status === "live");
-const soon = tools.filter((t) => t.status === "soon");
+/** The featured block: downloaders that work today. */
+const downloads = tools.filter((t) => t.category === "Downloads" && t.status === "live");
+/** Everything else gets a cell, live ones first (six cells fill the grid). */
+const others = tools
+  .filter((t) => !downloads.includes(t))
+  .sort((a, b) => Number(b.status === "live") - Number(a.status === "live"))
+  .slice(0, 6);
 
 const cell = "relative bg-paper p-6 transition-colors duration-150 hover:bg-surface md:p-8";
 
-function SoonCell({ tool, className }: { tool: Tool; className?: string }) {
+function ToolCell({ tool, className }: { tool: Tool; className?: string }) {
   const Icon = tool.icon;
   return (
     <Link
@@ -22,7 +27,7 @@ function SoonCell({ tool, className }: { tool: Tool; className?: string }) {
         <span className="flex size-10 items-center justify-center rounded-md border border-line bg-surface text-ink transition-colors duration-150 group-hover:border-ink group-hover:bg-ink group-hover:text-paper">
           <Icon aria-hidden className="size-[18px]" />
         </span>
-        <Badge>Soon</Badge>
+        {tool.status === "live" ? <Badge variant="live">Live</Badge> : <Badge>Soon</Badge>}
       </div>
       <div className="mt-auto pt-10">
         <p className="label-mono text-ink-3">{tool.category}</p>
@@ -85,7 +90,7 @@ export function ToolsGrid() {
               </Link>
 
               <ul className="mt-6 divide-y divide-line border-y border-line">
-                {live.map((tool) => (
+                {downloads.map((tool) => (
                   <li key={tool.id} id={`tool-${tool.id}`}>
                     <Link
                       href={toolHref(tool.id)}
@@ -107,12 +112,9 @@ export function ToolsGrid() {
               <p className="mt-auto pt-6 text-sm text-ink-3">Public posts only. Preview what you&apos;re saving before it downloads.</p>
             </article>
 
-            <SoonCell tool={soon[0]} className="lg:col-span-2" />
-            <SoonCell tool={soon[1]} className="lg:col-span-2" />
-            <SoonCell tool={soon[2]} className="lg:col-span-2" />
-            <SoonCell tool={soon[3]} className="lg:col-span-2" />
-            <SoonCell tool={soon[4]} className="lg:col-span-2" />
-            <SoonCell tool={soon[5]} className="lg:col-span-2" />
+            {others.map((tool) => (
+              <ToolCell key={tool.id} tool={tool} className="lg:col-span-2" />
+            ))}
 
             {/* Request cell */}
             <article className={cn(cell, "flex flex-col justify-between gap-8 bg-paper-2/60 sm:col-span-2 sm:flex-row sm:items-end lg:col-span-4")}>

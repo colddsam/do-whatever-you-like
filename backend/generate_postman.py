@@ -121,14 +121,12 @@ def generate_postman_collection(
                 }
             ]
 
-            # Build request body if endpoint accepts a JSON payload
+            # Build request body if endpoint accepts a JSON or multipart payload
             body_block: Dict[str, Any] | None = None
             request_body = operation.get("requestBody", {})
-            json_content = (
-                request_body.get("content", {})
-                .get("application/json", {})
-                .get("schema")
-            )
+            content_map = request_body.get("content", {})
+            json_content = content_map.get("application/json", {}).get("schema")
+            multipart_content = content_map.get("multipart/form-data", {}).get("schema")
             if json_content:
                 headers.append(
                     {
@@ -142,6 +140,25 @@ def generate_postman_collection(
                     "mode": "raw",
                     "raw": json.dumps(example_payload, indent=2),
                     "options": {"raw": {"language": "json"}},
+                }
+            elif multipart_content:
+                resolved_mp = (
+                    _resolve_ref(multipart_content["$ref"], openapi_schema)
+                    if "$ref" in multipart_content
+                    else multipart_content
+                )
+                formdata_items = [
+                    {
+                        "key": prop_name,
+                        "type": "file" if prop_schema.get("format") == "binary" else "text",
+                        "src": [],
+                        "description": prop_schema.get("description", ""),
+                    }
+                    for prop_name, prop_schema in resolved_mp.get("properties", {}).items()
+                ]
+                body_block = {
+                    "mode": "formdata",
+                    "formdata": formdata_items,
                 }
 
             request_dict: Dict[str, Any] = {

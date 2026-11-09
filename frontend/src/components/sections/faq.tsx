@@ -17,7 +17,7 @@ const faqs = [
   },
   {
     q: "Which tools are available right now?",
-    a: "Downloaders for YouTube, Instagram and Facebook are live today. Audio extraction, PDF tools, image tools, writing helpers and developer utilities are next.",
+    a: "Downloaders for YouTube, Instagram and Facebook, plus a video-to-MP3 converter, are live today. PDF tools, image tools, writing helpers and developer utilities are next.",
   },
   {
     q: "What happens to my files and links?",
