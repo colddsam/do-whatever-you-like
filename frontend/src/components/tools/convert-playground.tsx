@@ -346,11 +346,11 @@ function ResultPanel({
         </div>
       )}
 
-      <div className="mt-4 flex gap-2">
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <button
           type="button"
           onClick={onSave}
-          className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-md bg-ink px-5 text-[15px] font-medium text-paper transition-[background-color,transform] duration-150 hover:bg-ink/85 active:translate-y-px"
+          className="inline-flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-md bg-ink px-5 text-[15px] font-medium text-paper transition-[background-color,transform] duration-150 hover:bg-ink/85 active:translate-y-px sm:w-auto sm:flex-1"
         >
           {result.saved ? <Check aria-hidden className="size-4" /> : <Download aria-hidden className="size-4" />}
           {result.saved ? "Saved. Download again" : `Download ${output}`}
@@ -359,10 +359,9 @@ function ResultPanel({
         <button
           type="button"
           onClick={onAnother}
-          className="inline-flex h-12 items-center rounded-md border border-line bg-surface px-4 text-sm font-medium text-ink transition-colors hover:border-ink-3"
+          className="inline-flex h-12 items-center justify-center whitespace-nowrap rounded-md border border-line bg-surface px-4 text-sm font-medium text-ink transition-colors hover:border-ink-3"
         >
-          <span className="hidden sm:inline">Convert another</span>
-          <span className="sm:hidden">New</span>
+          Convert another
         </button>
       </div>
       <p className="mt-2.5 text-xs text-ink-3">{quality}</p>

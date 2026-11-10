@@ -50,13 +50,13 @@ export function Principles() {
                 as="li"
                 key={p.title}
                 delay={i * 0.06}
-                className="border-b border-line py-8 sm:px-6 sm:[&:nth-child(odd)]:border-r lg:border-r lg:px-6 lg:first:pl-0 lg:last:border-r-0 lg:last:pr-0"
+                className="border-b border-line py-6 sm:px-6 sm:py-8 sm:[&:nth-child(odd)]:border-r lg:border-r lg:px-6 lg:first:pl-0 lg:last:border-r-0 lg:last:pr-0"
               >
                 <div className="flex items-center justify-between">
                   <Icon aria-hidden className="size-5 text-ink" />
                   <span className="label-mono text-ink-3">0{i + 1}</span>
                 </div>
-                <h3 className="mt-10 text-lg font-semibold tracking-[-0.01em]">{p.title}</h3>
+                <h3 className="mt-5 text-lg sm:mt-10 font-semibold tracking-[-0.01em]">{p.title}</h3>
                 <p className="mt-2 text-[15px] leading-relaxed text-ink-2">{p.body}</p>
               </Reveal>
             );

@@ -123,10 +123,16 @@ export function CommandPalette({
     return () => cancelAnimationFrame(raf);
   }, [query]);
 
+  // Keep the highlighted row in view by scrolling the list only. scrollIntoView would also
+  // scroll the page, which made it jump on load whenever the palette started below the fold.
   useEffect(() => {
-    listRef.current
-      ?.querySelector<HTMLElement>(`[data-index="${active}"]`)
-      ?.scrollIntoView({ block: "nearest" });
+    const list = listRef.current;
+    const row = list?.querySelector<HTMLElement>(`[data-index="${active}"]`);
+    if (!list || !row) return;
+    const l = list.getBoundingClientRect();
+    const r = row.getBoundingClientRect();
+    if (r.top < l.top) list.scrollTop -= l.top - r.top;
+    else if (r.bottom > l.bottom) list.scrollTop += r.bottom - l.bottom;
   }, [active]);
 
   const router = useRouter();

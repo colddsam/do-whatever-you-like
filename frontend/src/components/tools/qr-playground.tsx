@@ -1151,10 +1151,16 @@ function ColorField({
 }) {
   const custom = value !== "transparent" && !swatches.includes(value.toUpperCase());
   const swatch =
-    "relative size-8 shrink-0 rounded-sm border border-ink/15 transition-[box-shadow,transform] duration-150 hover:-translate-y-px aria-checked:ring-2 aria-checked:ring-ink aria-checked:ring-offset-2 aria-checked:ring-offset-surface";
+    "relative aspect-square w-full min-w-0 rounded-sm border border-ink/15 transition-[box-shadow,transform] duration-150 hover:-translate-y-px aria-checked:ring-2 aria-checked:ring-ink aria-checked:ring-offset-2 aria-checked:ring-offset-surface";
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <div role="radiogroup" aria-label={label} className="flex flex-wrap items-center gap-2">
+      {/* One row on every screen: cells are 32px, and shrink together on narrow phones. */}
+      <div
+        role="radiogroup"
+        aria-label={label}
+        className="grid w-full items-center gap-1.5 sm:w-auto sm:gap-2"
+        style={{ gridTemplateColumns: `repeat(${swatches.length + (allowTransparent ? 2 : 1)}, minmax(0, 2rem))` }}
+      >
         {swatches.map((c) => (
           <button
             key={c}

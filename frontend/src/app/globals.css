@@ -65,6 +65,13 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    /*
+     * Responsive safety nets: nothing may push the page sideways on any device, and long
+     * unbroken strings (URLs, file names) wrap instead of overflowing. `clip` (not `hidden`)
+     * keeps the sticky navbar working.
+     */
+    overflow-x: clip;
+    overflow-wrap: break-word;
   }
   /*
    * Paper grain on every page: one fixed layer of fine ink specks over the whole site (below

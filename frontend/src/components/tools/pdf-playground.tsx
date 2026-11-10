@@ -645,7 +645,7 @@ function ModeSwitch({ mode, disabled, onChange }: { mode: PdfMode; disabled: boo
               onClick={() => onChange(k)}
               onKeyDown={(e) => onKey(e, i)}
               className={cn(
-                "group relative flex h-12 items-center justify-center gap-2 rounded-md px-2 text-sm transition-colors duration-150 sm:justify-start sm:px-3",
+                "group relative flex h-14 flex-col items-center justify-center gap-1 rounded-md px-1 text-[13px] transition-colors duration-150 sm:h-12 sm:flex-row sm:justify-start sm:gap-2 sm:px-3 sm:text-sm",
                 "disabled:cursor-not-allowed disabled:opacity-50",
                 active ? "text-paper" : "text-ink-2 hover:bg-paper-2 hover:text-ink",
               )}
@@ -659,7 +659,7 @@ function ModeSwitch({ mode, disabled, onChange }: { mode: PdfMode; disabled: boo
                 />
               )}
               <m.icon aria-hidden className="relative size-4 shrink-0" />
-              <span className="relative flex min-w-0 flex-col items-start leading-tight">
+              <span className="relative flex min-w-0 flex-col items-center leading-tight sm:items-start">
                 <span className="font-medium">{m.label}</span>
                 <span className={cn("label-mono hidden text-[10px] sm:block", active ? "text-paper-dim" : "text-ink-3")}>
                   {m.hint}
@@ -724,7 +724,7 @@ function IconButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "inline-flex size-9 items-center justify-center rounded-[8px] text-ink-3 transition-colors hover:bg-paper-2 hover:text-ink disabled:pointer-events-none disabled:opacity-30",
+        "inline-flex size-8 items-center justify-center rounded-[8px] text-ink-3 sm:size-9 transition-colors hover:bg-paper-2 hover:text-ink disabled:pointer-events-none disabled:opacity-30",
         className,
       )}
     >
@@ -752,8 +752,8 @@ function UploadMeta({ doc, onRetry }: { doc: Doc; onRetry: () => void }) {
     );
   }
   return (
-    <p className="mt-0.5 flex min-w-0 items-center gap-2 text-sm text-danger">
-      <span className="truncate" title={u.message}>
+    <p className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 text-sm text-danger">
+      <span className="line-clamp-2 min-w-0" title={u.message}>
         {u.message}
       </span>
       <button
@@ -1440,11 +1440,11 @@ function ResultPanel({ result, onSave, onBack }: { result: Result; onSave: () =>
         </div>
       )}
 
-      <div className="mt-4 flex gap-2">
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <button
           type="button"
           onClick={onSave}
-          className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-md bg-ink px-5 text-[15px] font-medium text-paper transition-[background-color,transform] duration-150 hover:bg-ink/85 active:translate-y-px"
+          className="inline-flex h-12 w-full items-center justify-center gap-2 whitespace-nowrap rounded-md bg-ink px-5 text-[15px] font-medium text-paper transition-[background-color,transform] duration-150 hover:bg-ink/85 active:translate-y-px sm:w-auto sm:flex-1"
         >
           {result.saved ? <Check aria-hidden className="size-4" /> : <Download aria-hidden className="size-4" />}
           {result.saved ? "Saved. Download again" : `Download ${format}`}
@@ -1453,7 +1453,7 @@ function ResultPanel({ result, onSave, onBack }: { result: Result; onSave: () =>
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex h-12 items-center rounded-md border border-line bg-surface px-4 text-sm font-medium text-ink transition-colors hover:border-ink-3"
+          className="inline-flex h-12 items-center justify-center whitespace-nowrap rounded-md border border-line bg-surface px-4 text-sm font-medium text-ink transition-colors hover:border-ink-3"
         >
           {back}
         </button>

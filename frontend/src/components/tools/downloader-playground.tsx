@@ -281,24 +281,24 @@ export function DownloaderPlayground({ toolId }: { toolId: string }) {
           {phase.kind === "fetching" && <Skeleton key="fetching" />}
 
           {phase.kind === "error" && (
-            <motion.div key="error" {...swap} className="flex flex-col items-center justify-center rounded-md border border-danger/25 bg-danger/[0.03] px-6 py-10 text-center">
+            <motion.div key="error" {...swap} className="flex flex-col items-center justify-center rounded-md border border-danger/25 bg-danger/[0.03] px-4 py-10 text-center sm:px-6">
               <span className="flex size-12 items-center justify-center rounded-md border border-danger/30 bg-danger/5 text-danger">
                 <AlertCircle aria-hidden className="size-5" />
               </span>
               <p className="mt-5 text-[15px] font-medium text-ink">We couldn&apos;t fetch that</p>
               <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-ink-2">{phase.message}</p>
-              <div className="mt-6 flex gap-2">
+              <div className="mt-6 flex flex-wrap justify-center gap-2">
                 <button
                   type="button"
                   onClick={() => run(submitted)}
-                  className="inline-flex h-10 items-center gap-2 rounded-md bg-ink px-4 text-sm font-medium text-paper transition-colors hover:bg-ink/85"
+                  className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-md bg-ink px-4 text-sm font-medium text-paper transition-colors hover:bg-ink/85"
                 >
                   <RotateCcw aria-hidden className="size-4" /> Try again
                 </button>
                 <button
                   type="button"
                   onClick={reset}
-                  className="inline-flex h-10 items-center rounded-md border border-line bg-surface px-4 text-sm font-medium text-ink transition-colors hover:border-ink-3"
+                  className="inline-flex h-10 items-center whitespace-nowrap rounded-md border border-line bg-surface px-4 text-sm font-medium text-ink transition-colors hover:border-ink-3"
                 >
                   Use another link
                 </button>

@@ -118,7 +118,7 @@ export function Navbar() {
                     onMouseEnter={() => setHovered(l.id)}
                     onFocus={() => setHovered(l.id)}
                     onBlur={() => setHovered(null)}
-                    className="relative block rounded-full px-3.5 py-2 text-sm outline-offset-0"
+                    className="relative block whitespace-nowrap rounded-full px-2.5 py-2 text-sm outline-offset-0 lg:px-3.5"
                   >
                     {has && (
                       <motion.span
@@ -145,8 +145,8 @@ export function Navbar() {
           </ul>
         </nav>
 
-        <div className="hidden items-center gap-1 md:flex">
-          <ButtonLink href="/#request" variant="ghost" pill className="hidden lg:inline-flex">
+        <div className="hidden shrink-0 items-center gap-1 md:flex">
+          <ButtonLink href="/#request" variant="ghost" pill className="max-lg:hidden">
             Request a tool
           </ButtonLink>
           <ButtonLink href="/tools" arrow pill>
@@ -195,11 +195,12 @@ export function Navbar() {
         {open && (
           <motion.div
             id="mobile-menu"
+            data-lenis-prevent
             initial={{ opacity: 0, y: -12, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.97 }}
             transition={{ duration: 0.35, ease: EASE }}
-            className="absolute inset-x-3 top-[64px] origin-top rounded-lg border border-line bg-surface p-2 shadow-float md:hidden"
+            className="absolute inset-x-3 top-[64px] max-h-[calc(100dvh-76px)] origin-top overflow-y-auto overscroll-contain rounded-lg border border-line bg-surface p-2 shadow-float md:hidden"
           >
             <ul>
               {links.map((l, i) => (

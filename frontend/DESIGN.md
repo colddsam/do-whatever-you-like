@@ -208,8 +208,17 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
 - Idle: slow sway + 0.08 bob; leans toward the pointer (lerped). Every 5s the orange block slides
   out along its diagonal and back.
 - Scroll: blocks spread apart as the hero leaves (eased, never jumps).
-- `lg+` only; three.js is imported on demand; the render loop sleeps off-screen and in hidden tabs;
-  no WebGL → the hero simply has no object.
+- **Interaction:** drag the cube (mouse, pen, or a sideways swipe) to turn it, with a little momentum; the tilt
+  drifts back to level. Hovering a block lifts it and shows a grab cursor; clicking or tapping one slides it out
+  and back. Only the cube itself is grabbable; vertical swipes still scroll the page (`touch-action: pan-y`).
+  The mouse lean ignores touch. Reduced motion: still frames, but dragging still turns it.
+- **Placement:** headline (`md:col-span-8`) and figure (`md:col-span-4`) share one row of the same 12-column grid
+  as the copy/palette row, so the cube sits centred over the palette's right-hand columns. The caption sits level with
+  the announcement chip, right-aligned to the content edge; the canvas starts under it and stops just above the
+  palette, bleeding right into the gutter. Phones: the figure follows the headline (260/300px tall), caption below.
+- The camera fits the cube to whatever box it gets (against the narrower field of view), so it is never cropped.
+- Every screen size; three.js is imported on demand; the render loop sleeps off-screen and in hidden tabs;
+  parallax only on `lg+`; no WebGL → the figure is removed and the hero closes up.
 
 ### Scroll, parallax, smooth motion
 - Smooth wheel scrolling with Lenis (`lerp 0.1`, `allowNestedScroll` so the palette list scrolls
@@ -224,3 +233,18 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
 
 - Mobile: nav collapses to a sheet; bento becomes a single column; palette list shows 4 rows; principle row becomes 2×2.
 - Touch targets ≥ 44px; no horizontal overflow (marquee is clipped).
+- Verified widths: 320 · 360 · 375 · 390 · 414 · 540 · 768 · 820 · 1024 · 1180 · 1280 · 1440 · 1920, plus phone landscape (740×360).
+  Every route must pass at all of them with no element past the viewport edge.
+- Safety nets (`globals.css`): `body` has `overflow-x: clip` (never `hidden`, which breaks the sticky navbar) and
+  `overflow-wrap: break-word`. They are a backstop, not a layout tool: fix the overflowing element first.
+  Decorative pieces that bleed past the container (the hero toolbox) clip on their own section with `overflow-x-clip`.
+- **Tablet (md–lg)** is its own layout, not a stretched phone or a squeezed desktop: nav links tighten and "Request a tool"
+  hides below `lg`; "How it works" stacks until `lg` (three columns only fit from 1024).
+- **Single-column cards drop their desktop min-heights** (tool cells, step visuals, principles), so there are no empty gaps on phones.
+- **Rows that can't fit stack, they don't truncate to nothing:** download rows put the description under the name;
+  result actions (Download + secondary) stack full-width below `sm`; segmented switches (PDF modes, QR types) put the icon
+  over the label on phones; swatch rows are a grid whose cells shrink together so they stay on one line.
+- In a stacked `flex-col`, never give a fixed-height control `flex-1` (its height collapses to 0); use `w-full sm:flex-1`.
+- `cn()` only joins classes and does not resolve conflicts, so to hide a component with base `inline-flex`, use a variant
+  (`max-lg:hidden`), not `hidden lg:inline-flex`.
+- The mobile menu caps at the viewport height and scrolls inside itself (landscape phones).

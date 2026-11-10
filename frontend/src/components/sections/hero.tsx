@@ -34,6 +34,19 @@ const stats = [
   ["1", "search box"],
 ] as const;
 
+/** True once the viewport is at least `px` wide (false during SSR and on smaller screens). */
+function useMinWidth(px: number) {
+  const [match, setMatch] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(`(min-width: ${px}px)`);
+    const sync = () => setMatch(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, [px]);
+  return match;
+}
+
 function MaskLine({ i, children }: { i: number; children: React.ReactNode }) {
   return (
     // Padding/negative margin keeps descenders and the italic overhang from being clipped.
@@ -47,6 +60,8 @@ function MaskLine({ i, children }: { i: number; children: React.ReactNode }) {
 
 export function Hero() {
   const [query, setQuery] = useState("");
+  const [has3d, setHas3d] = useState(true);
+  const lg = useMinWidth(1024);
   const ref = useRef<HTMLElement>(null);
   const reduce = useReducedMotion();
 
@@ -71,42 +86,60 @@ export function Hero() {
 
   return (
     // Pulled up under the (transparent) navbar so the backdrop runs to the top edge.
-    <section ref={ref} aria-labelledby="hero-title" className="relative isolate -mt-16 pt-16">
+    <section ref={ref} aria-labelledby="hero-title" className="relative isolate -mt-16 overflow-x-clip pt-16">
       <HeroBackdrop progress={scrollYProgress} />
 
       <Container className="relative pb-20 pt-14 md:pb-28 md:pt-20">
-        {/* The toolbox — top-right quadrant on large screens, behind the headline. */}
-        <motion.div
-          style={{ y: objectY }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="pointer-events-none absolute -right-4 top-0 hidden h-[380px] w-[40%] lg:block xl:-right-8 xl:h-[470px] xl:w-[46%]"
-        >
-          <HeroObject progress={scrollYProgress} className="absolute inset-x-0 top-10 -bottom-6 xl:top-6 xl:-bottom-10" />
-          <motion.p
-            style={{ opacity: captionOpacity }}
-            className="label-mono absolute right-12 top-[88px] flex items-center xl:right-16 xl:top-[94px] gap-2 text-ink-3"
-          >
-            <span className="h-px w-6 bg-ink-3" />
-            Fig. 01 — One box, every tool
-          </motion.p>
-        </motion.div>
+        {/*
+          Headline and toolbox share one row of the same 12-column grid as the content below, so the
+          cube sits over the palette's right-hand columns. Phones: the cube follows the headline.
+        */}
+        <div className="relative grid grid-cols-1 md:grid-cols-12 md:gap-8 lg:gap-10">
+          <motion.div style={{ y: headY, opacity: headOpacity }} className="relative z-10 min-w-0 md:col-span-8">
+            <motion.div {...rise(0, 10)} className="-mt-1.5">
+              <Announcement />
+            </motion.div>
 
-        <motion.div style={{ y: headY, opacity: headOpacity }} className="relative">
-          <motion.div {...rise(0, 10)} className="-mt-1.5">
-            <Announcement />
+            <motion.h1 id="hero-title" initial="hidden" animate="show" className="text-display mt-7">
+              <MaskLine i={0}>One place to do</MaskLine>
+              <MaskLine i={1}>
+                <span className="serif-em text-accent">whatever</span> you need.
+              </MaskLine>
+            </motion.h1>
           </motion.div>
 
-          <motion.h1 id="hero-title" initial="hidden" animate="show" className="text-display mt-7">
-            <MaskLine i={0}>One place to do</MaskLine>
-            <MaskLine i={1}>
-              <span className="serif-em text-accent">whatever</span> you need.
-            </MaskLine>
-          </motion.h1>
-        </motion.div>
+          {has3d && (
+            <motion.figure
+              data-hero-figure
+              style={{ y: lg ? objectY : 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="relative mt-6 h-[260px] sm:h-[300px] md:col-span-4 md:mt-0 md:h-auto"
+            >
+              {/*
+                The canvas starts under the caption (which sits level with the announcement chip) and runs
+                down to just above the palette, bleeding right into the gutter. Nothing overlaps it.
+              */}
+              <HeroObject
+                progress={scrollYProgress}
+                onUnavailable={() => setHas3d(false)}
+                className="absolute inset-x-0 top-0 bottom-7 md:-bottom-14 md:-right-8 md:top-8"
+              />
+              <motion.figcaption
+                style={{ opacity: captionOpacity }}
+                className="label-mono pointer-events-none absolute bottom-0 left-0 flex items-center gap-2 whitespace-nowrap text-ink-3 md:bottom-auto md:left-auto md:right-0 md:top-0 md:h-9 md:-translate-y-1.5"
+              >
+                <span aria-hidden className="h-px w-6 bg-ink-3" />
+                <span>
+                  Fig. 01 — <span className="max-xl:hidden">One box, every tool. </span>Drag to turn
+                </span>
+              </motion.figcaption>
+            </motion.figure>
+          )}
+        </div>
 
-        <div className="relative mt-12 grid grid-cols-1 gap-12 md:mt-16 lg:grid-cols-12 lg:gap-10 [&>*]:min-w-0">
+        <div className="relative mt-10 grid grid-cols-1 gap-12 md:mt-16 lg:grid-cols-12 lg:gap-10 [&>*]:min-w-0">
           {/* Left rail — copy, actions, suggestions, stats. Stretches to the palette's height. */}
           <div className="flex flex-col lg:col-span-5">
             {/* -mt offsets the text's half-leading so the first line sits on the palette's top edge. */}

@@ -25,7 +25,7 @@ export function Cta() {
             <p className="label-mono flex items-center gap-2 text-ink-2">
               <SignalDot pulse /> Request a tool
             </p>
-            <h2 id="cta-title" className="text-display mt-6 max-w-[14ch] text-balance">
+            <h2 id="cta-title" className="text-display mt-6 max-w-[14ch] text-balance max-sm:text-[2.5rem]">
               Got something to get <span className="serif-em text-accent">done?</span>
             </h2>
             <p className="mt-6 max-w-lg text-lg leading-relaxed text-ink-2">
@@ -44,7 +44,7 @@ export function Cta() {
                   onChange={(e) => setValue(e.target.value)}
                   disabled={sent}
                   placeholder="e.g. Convert HEIC photos to JPG in bulk"
-                  className="h-12 flex-1 rounded-md border border-line bg-paper px-4 text-[15px] text-ink outline-none transition-[border-color,box-shadow] placeholder:text-ink-3 focus:border-ink focus:ring-4 focus:ring-accent/15 disabled:opacity-60"
+                  className="h-12 w-full min-w-0 rounded-md sm:flex-1 border border-line bg-paper px-4 text-[15px] text-ink outline-none transition-[border-color,box-shadow] placeholder:text-ink-3 focus:border-ink focus:ring-4 focus:ring-accent/15 disabled:opacity-60"
                 />
                 <button
                   type="submit"

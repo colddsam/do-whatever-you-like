@@ -21,7 +21,7 @@ function ToolCell({ tool, className }: { tool: Tool; className?: string }) {
     <Link
       id={`tool-${tool.id}`}
       href={toolHref(tool.id)}
-      className={cn(cell, "group flex min-h-[220px] flex-col", className)}
+      className={cn(cell, "group flex flex-col sm:min-h-[220px]", className)}
     >
       <div className="flex items-start justify-between">
         <span className="flex size-10 items-center justify-center rounded-md border border-line bg-surface text-ink transition-colors duration-150 group-hover:border-ink group-hover:bg-ink group-hover:text-paper">
@@ -29,7 +29,7 @@ function ToolCell({ tool, className }: { tool: Tool; className?: string }) {
         </span>
         {tool.status === "live" ? <Badge variant="live">Live</Badge> : <Badge>Soon</Badge>}
       </div>
-      <div className="mt-auto pt-10">
+      <div className="mt-auto pt-6 sm:pt-10">
         <p className="label-mono text-ink-3">{tool.category}</p>
         <h3 className="mt-2 flex items-center gap-1.5 text-xl font-semibold tracking-[-0.02em]">
           {tool.name}
@@ -69,7 +69,7 @@ export function ToolsGrid() {
                 <Badge variant="live">Live now</Badge>
                 <span className="label-mono text-ink-3">Downloads</span>
               </div>
-              <h3 className="mt-6 max-w-md text-[28px] font-semibold leading-tight tracking-[-0.03em] md:text-[32px]">
+              <h3 className="mt-6 max-w-md text-[26px] sm:text-[28px] font-semibold leading-tight tracking-[-0.03em] md:text-[32px]">
                 Save media from the platforms you use every day.
               </h3>
 
@@ -94,10 +94,12 @@ export function ToolsGrid() {
                   <li key={tool.id} id={`tool-${tool.id}`}>
                     <Link
                       href={toolHref(tool.id)}
-                      className="group -mx-2 flex items-center gap-4 rounded-md px-2 py-4 transition-colors duration-150 hover:bg-surface"
+                      className="group -mx-2 flex items-center gap-4 rounded-md px-2 py-3.5 sm:py-4 transition-colors duration-150 hover:bg-surface"
                     >
-                      <span className="w-24 shrink-0 font-medium sm:w-28">{tool.name.replace(" downloader", "")}</span>
-                      <span className="min-w-0 flex-1 truncate text-[15px] text-ink-2">{tool.description}</span>
+                      <span className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-4">
+                        <span className="font-medium sm:w-28 sm:shrink-0">{tool.name.replace(" downloader", "")}</span>
+                        <span className="min-w-0 flex-1 truncate text-sm text-ink-2 sm:text-[15px]">{tool.description}</span>
+                      </span>
                       <span className="label-mono flex shrink-0 items-center gap-1.5 text-ink">
                         <SignalDot /> Live
                       </span>
@@ -122,7 +124,7 @@ export function ToolsGrid() {
                 <span className="flex size-10 items-center justify-center rounded-md border border-dashed border-ink-3 text-ink-2">
                   <Plus aria-hidden className="size-[18px]" />
                 </span>
-                <h3 className="mt-10 text-xl font-semibold tracking-[-0.02em]">Don&apos;t see your task?</h3>
+                <h3 className="mt-6 text-xl font-semibold tracking-[-0.02em] sm:mt-10">Don&apos;t see your task?</h3>
                 <p className="mt-1.5 max-w-sm text-[15px] leading-relaxed text-ink-2">
                   Tell us what you need done. The most-requested tools get built first.
                 </p>

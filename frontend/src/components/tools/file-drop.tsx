@@ -100,7 +100,7 @@ export function FileDrop({
         {compact ? (
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-medium text-ink">{over ? "Let go to add them" : title}</span>
-            <span id={`${id}-formats`} className="label-mono mt-0.5 block truncate text-ink-3">
+            <span id={`${id}-formats`} className="label-mono mt-0.5 block text-pretty text-ink-3">
               {formats}
             </span>
           </span>
@@ -110,7 +110,7 @@ export function FileDrop({
             <p className="mt-1 text-sm text-ink-2">
               or <span className="underline decoration-line underline-offset-4 group-hover:decoration-ink-2">choose from your device</span>
             </p>
-            <p id={`${id}-formats`} className="label-mono mt-5 text-ink-3">
+            <p id={`${id}-formats`} className="label-mono mt-5 text-balance text-ink-3">
               {formats}
             </p>
           </>
