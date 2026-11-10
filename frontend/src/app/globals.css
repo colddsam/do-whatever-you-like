@@ -48,6 +48,17 @@
     scroll-behavior: smooth;
     scroll-padding-top: 5rem;
   }
+  /*
+   * No visible scrollbars anywhere (the page and any inner scroll area). Only the bar is
+   * hidden: wheel, trackpad, touch, keyboard and smooth scrolling all keep working.
+   */
+  * {
+    scrollbar-width: none; /* Firefox, and Chrome/Edge 121+ */
+    -ms-overflow-style: none; /* legacy Edge */
+  }
+  *::-webkit-scrollbar {
+    display: none; /* Safari and older Chromium */
+  }
   body {
     background: var(--color-paper);
     color: var(--color-ink);
