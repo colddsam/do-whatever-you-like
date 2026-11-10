@@ -5,6 +5,7 @@ import { getTool, type ToolKind } from "@/lib/tools";
 import { ConvertPlayground } from "./convert-playground";
 import { DownloaderPlayground } from "./downloader-playground";
 import { PdfPlayground } from "./pdf-playground";
+import { QrPlayground } from "./qr-playground";
 import { SoonWorkspace } from "./soon-workspace";
 
 type Workspace = ComponentType<{ toolId: string }>;
@@ -21,6 +22,7 @@ type Workspace = ComponentType<{ toolId: string }>;
  * - link → DownloaderPlayground (`downloader`)
  * - file → ConvertPlayground (`converter`: one file in, one file out)
  * - pdf (by id) → PdfPlayground (merge, split and compress behind one mode switch)
+ * - qr (by id) → QrPlayground (nine kinds of content, live preview, styling and a centre logo)
  *
  * Anything not registered shows its kind's preview in SoonWorkspace.
  */
@@ -30,6 +32,7 @@ const byKind: Partial<Record<ToolKind, Workspace>> = {
 };
 const byId: Record<string, Workspace> = {
   pdf: PdfPlayground,
+  qr: QrPlayground,
 };
 
 export function Playground({ toolId }: { toolId: string }) {

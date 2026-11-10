@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class InstagramSettings(BaseSettings):
     APP_NAME: str = "Instagram Media Service"
     TEMP_DIR: Path = Path("./temp/instagram")
-    COOKIE_FILE_PATH: Path = Path("cookies_instagram.txt")
+    COOKIE_FILE_PATH: Path | None = Path("cookies_instagram.txt")
     DEBUG: bool = False
 
     model_config = SettingsConfigDict(

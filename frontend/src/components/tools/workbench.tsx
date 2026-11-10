@@ -30,7 +30,9 @@ export function Workbench({
   className?: string;
 }) {
   return (
-    <div className={cn("overflow-hidden rounded-lg border border-line bg-surface shadow-float", className)}>
+    // overflow-clip (not hidden) keeps the rounded corners without becoming a scroll
+    // container, so sticky panels inside a tool (the QR preview) still stick to the page.
+    <div className={cn("overflow-clip rounded-lg border border-line bg-surface shadow-float", className)}>
       <ol aria-label="Steps" className="flex border-b border-line">
         {steps.map((title, i) => {
           const state = i < current ? "done" : i === current ? "active" : "todo";

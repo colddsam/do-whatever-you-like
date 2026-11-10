@@ -234,16 +234,23 @@ export const tools: Tool[] = [
     id: "qr",
     name: "QR generator",
     category: "Utilities",
-    description: "Turn any link or text into a crisp QR code.",
-    status: "soon",
+    description: "Turn links, Wi-Fi, contacts and more into a crisp QR code.",
+    status: "live",
     icon: QrCode,
     kind: "generate",
-    options: ["PNG", "SVG"],
-    takes: "A link, text or Wi-Fi details",
-    gives: "PNG or SVG",
-    steps: ["Enter a link or text", "Adjust size and colour", "Download"],
-    keywords: ["qr", "code", "link", "share"],
-    features: ["Links, text, Wi-Fi details", "PNG or SVG download", "High error correction for print"],
+    options: ["PNG", "SVG", "WebP", "JPEG", "PDF"],
+    takes: "A link, text, Wi-Fi, contact…",
+    gives: "PNG, SVG, WebP, JPEG or PDF",
+    limit: "Logo up to 10 MB",
+    steps: ["Enter the details", "Adjust the look", "Download"],
+    keywords: ["qr", "code", "link", "share", "wifi", "wi-fi", "vcard", "contact", "barcode", "scan", "logo", "event", "sms"],
+    features: [
+      "Links, text, Wi-Fi, contacts, email, SMS, calls, places and events",
+      "Live preview as you type, exactly what you'll download",
+      "Dot and eye shapes, colours, gradients and a centre logo",
+      "PNG, SVG, WebP, JPEG or print-ready PDF",
+      "Warns you before a code gets hard to scan",
+    ],
   },
 ];
 
@@ -254,6 +261,7 @@ export const exampleTasks = [
   "merge two pdfs",
   "remove an image background",
   "format some json",
+  "make a qr code for my wifi",
 ];
 
 export function searchTools(query: string): Tool[] {

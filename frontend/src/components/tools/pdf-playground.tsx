@@ -42,6 +42,7 @@ import {
 import { cn } from "@/lib/utils";
 import { FileDrop } from "./file-drop";
 import { isBusy, ProgressButton, type Job } from "./progress-button";
+import { useDebouncedTask } from "./use-debounced-task";
 import { Workbench } from "./workbench";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -79,25 +80,6 @@ const isZip = (r: Converted) => r.type.includes("zip") || r.name.toLowerCase().e
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 let uid = 0;
 const nextId = () => `f${++uid}`;
-
-/** Debounced async work keyed on `key`; the previous run is cancelled when the key changes. */
-function useDebouncedTask(key: string | null, run: (signal: AbortSignal) => Promise<void>, delay: number) {
-  const runRef = useRef(run);
-  useEffect(() => {
-    runRef.current = run;
-  });
-  useEffect(() => {
-    if (!key) return;
-    const ctrl = new AbortController();
-    const t = setTimeout(() => {
-      runRef.current(ctrl.signal).catch(() => {});
-    }, delay);
-    return () => {
-      clearTimeout(t);
-      ctrl.abort();
-    };
-  }, [key, delay]);
-}
 
 /**
  * The PDF toolkit: merge, split and compress in one workbench.

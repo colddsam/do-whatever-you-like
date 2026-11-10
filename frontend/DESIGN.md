@@ -152,6 +152,27 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
       the real image DPI and JPEG quality the backend will use (`lib/pdf.ts` mirrors its formula).
     - Results: PDFs can be previewed inline; ZIPs list their parts (read from the archive);
       compression shows before/after bars. The secondary button goes back with inputs kept.
+  - `qr` (by id) → `QrPlayground` (`kind: generate`): the template for every generate tool.
+    - A **type switch** sits in the ruled `paper` band under the step tracker, the PDF mode switch widened
+      to nine segments (icon over label, same `layoutId` ink thumb). On phones it scrolls sideways inside
+      its band; arrow keys move between types. `?type=wifi` deep-links to a type. What was typed is
+      kept when switching.
+    - Body is two columns from `md`: the form (top) and the dashed **Look** panel (below) on the left,
+      and a **sticky preview** on the right. On phones the preview sits between form and Look.
+    - The preview is a **proof plate**: a `paper` square with crop marks at the corners (a checkerboard
+      of `paper-2`/`surface` when the background is transparent) and a `Fig. 01 — 29 × 29 modules · EC M`
+      caption. It is the real file, redrawn 350ms after any change; the previous code stays at 35%
+      opacity with a mono "drawing" tag rather than flashing empty. Empty states say what's missing.
+    - Look rows are hairline-separated, mono label over the controls: shape chips carry tiny SVG
+      glyphs of the shape; colours are swatches + a native picker + a mono hex field (accepts `1ba`).
+      Swatch colours are the user's content, not site tokens. Rare settings live in "More settings".
+    - Format chips sit under the plate. Combinations the backend refuses are disabled with the reason
+      as the title, and a change that would make one (a logo while on SVG) switches to PNG and says so.
+    - The Download button carries the exact size; the line under it gives pixels, print size (PDF at
+      300 dpi) or "vector". Scan risks (low contrast, inverted, transparent) show as `warning` notes.
+      "Scanner reads" shows the exact encoded string (Wi-Fi passwords masked).
+    - `lib/qrcode.ts` mirrors the backend schema and `build_payload`, so checks happen before sending.
+  - The Workbench card uses `overflow-clip`, not `overflow-hidden`, so sticky panels inside it work.
   - **Sizes, before and after.** Every tool shows how big the result will be before anything is
     made or downloaded, and the exact size on the Download button once it is. Sizes are mono;
     predictions carry a `≈` (`formatSize` in `lib/media.ts`) and exact ones don't. Sources:
