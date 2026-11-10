@@ -13,7 +13,10 @@ export function FileDrop({
   title,
   formats,
   error,
+  multiple = false,
+  compact = false,
   onFile,
+  onFiles,
 }: {
   /** The input's `accept` attribute. */
   accept: string;
@@ -22,9 +25,20 @@ export function FileDrop({
   /** The small mono line listing what works. */
   formats: string;
   error?: string | null;
-  onFile: (file: File) => void;
+  /** Lets people pick or drop several files at once; they arrive through `onFiles`. */
+  multiple?: boolean;
+  /** A shorter box, for adding more files under a list that's already there. */
+  compact?: boolean;
+  onFile?: (file: File) => void;
+  onFiles?: (files: File[]) => void;
 }) {
   const id = useId();
+  const take = (list: FileList | null) => {
+    const files = Array.from(list ?? []);
+    if (!files.length) return;
+    if (onFiles) onFiles(multiple ? files : files.slice(0, 1));
+    else onFile?.(files[0]);
+  };
   const [over, setOver] = useState(false);
   const depth = useRef(0); // dragenter/leave fire for children too; count them.
 
@@ -46,11 +60,11 @@ export function FileDrop({
           e.preventDefault();
           depth.current = 0;
           setOver(false);
-          const file = e.dataTransfer.files[0];
-          if (file) onFile(file);
+          take(e.dataTransfer.files);
         }}
         className={cn(
-          "group relative flex cursor-pointer flex-col items-center rounded-md border border-dashed px-6 py-8 text-center transition-[border-color,background-color,box-shadow] duration-150 sm:py-10",
+          "group relative flex cursor-pointer rounded-md border border-dashed text-center transition-[border-color,background-color,box-shadow] duration-150",
+          compact ? "items-center gap-3 px-4 py-3 text-left" : "flex-col items-center px-6 py-8 sm:py-10",
           "has-[:focus-visible]:border-ink has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-accent/15",
           over
             ? "border-ink bg-surface"
@@ -63,32 +77,44 @@ export function FileDrop({
           id={id}
           type="file"
           accept={accept}
+          multiple={multiple}
           className="sr-only"
           aria-describedby={error ? `${id}-error` : `${id}-formats`}
           aria-invalid={Boolean(error)}
           onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) onFile(file);
+            take(e.target.files);
             e.target.value = ""; // so picking the same file again still fires
           }}
         />
         <span
           className={cn(
-            "flex size-11 items-center justify-center rounded-md border transition-[color,background-color,border-color,transform] duration-150 ease-out-soft",
+            "flex shrink-0 items-center justify-center rounded-md border transition-[color,background-color,border-color,transform] duration-150 ease-out-soft",
+            compact ? "size-9" : "size-11",
             over
               ? "-translate-y-1 border-ink bg-ink text-paper"
               : "border-line bg-surface text-ink-2 group-hover:border-ink-3 group-hover:text-ink",
           )}
         >
-          <FileUp aria-hidden className="size-5" />
+          <FileUp aria-hidden className={compact ? "size-4" : "size-5"} />
         </span>
-        <p className="mt-4 text-[15px] font-medium text-ink">{over ? "Let go to add it" : title}</p>
-        <p className="mt-1 text-sm text-ink-2">
-          or <span className="underline decoration-line underline-offset-4 group-hover:decoration-ink-2">choose from your device</span>
-        </p>
-        <p id={`${id}-formats`} className="label-mono mt-5 text-ink-3">
-          {formats}
-        </p>
+        {compact ? (
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-medium text-ink">{over ? "Let go to add them" : title}</span>
+            <span id={`${id}-formats`} className="label-mono mt-0.5 block truncate text-ink-3">
+              {formats}
+            </span>
+          </span>
+        ) : (
+          <>
+            <p className="mt-4 text-[15px] font-medium text-ink">{over ? `Let go to add ${multiple ? "them" : "it"}` : title}</p>
+            <p className="mt-1 text-sm text-ink-2">
+              or <span className="underline decoration-line underline-offset-4 group-hover:decoration-ink-2">choose from your device</span>
+            </p>
+            <p id={`${id}-formats`} className="label-mono mt-5 text-ink-3">
+              {formats}
+            </p>
+          </>
+        )}
       </label>
       {error && (
         <p id={`${id}-error`} role="alert" className="px-1 pt-2 text-sm text-danger">

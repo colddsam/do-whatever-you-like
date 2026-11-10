@@ -2,14 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, Check, Download, FileVideo, Loader2, RotateCcw, X } from "lucide-react";
+import { Check, Download, FileVideo, X } from "lucide-react";
 import { getTool, stepsFor } from "@/lib/tools";
-import { formatBytes, formatDuration } from "@/lib/media";
+import { formatBytes, formatDuration, formatSize } from "@/lib/media";
 import { checkFile, convertFile, FileToolError, saveBlob, type Converted } from "@/lib/files";
 import { FileDrop } from "./file-drop";
 import { AudioPreview } from "./audio-preview";
 import { Workbench } from "./workbench";
-import { cn } from "@/lib/utils";
+import { ProgressButton, isBusy, type Job } from "./progress-button";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 const swap = {
@@ -17,12 +17,6 @@ const swap = {
   animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: EASE } },
   exit: { opacity: 0, y: -4, transition: { duration: 0.15 } },
 };
-
-type Job =
-  | { kind: "ready" }
-  | { kind: "uploading"; progress: number }
-  | { kind: "processing" }
-  | { kind: "failed"; message: string };
 
 type Result = Converted & { url: string; saved: boolean };
 
@@ -43,6 +37,9 @@ export function ConvertPlayground({ toolId }: { toolId: string }) {
   const [rejected, setRejected] = useState<string | null>(null);
   const [job, setJob] = useState<Job>({ kind: "ready" });
   const [result, setResult] = useState<Result | null>(null);
+  // Read from the file in the browser; with a constant bitrate it predicts the result's size.
+  const [length, setLength] = useState<number | null>(null);
+  const estimate = length && cfg.bytesPerSecond ? Math.round(length * cfg.bytesPerSecond) : null;
   const abortRef = useRef<AbortController | null>(null);
 
   // Stop the upload and free the result's memory when leaving the page.
@@ -55,6 +52,7 @@ export function ConvertPlayground({ toolId }: { toolId: string }) {
     if (problem) return;
     abortRef.current?.abort();
     setFile(f);
+    setLength(null);
     setResult(null);
     setJob({ kind: "ready" });
   };
@@ -84,6 +82,7 @@ export function ConvertPlayground({ toolId }: { toolId: string }) {
   const clear = () => {
     abortRef.current?.abort();
     setFile(null);
+    setLength(null);
     setResult(null);
     setRejected(null);
     setJob({ kind: "ready" });
@@ -95,7 +94,7 @@ export function ConvertPlayground({ toolId }: { toolId: string }) {
     setResult({ ...result, saved: true });
   };
 
-  const busy = job.kind === "uploading" || job.kind === "processing";
+  const busy = isBusy(job);
   // add → convert → save
   const step = !file ? 0 : !result ? 1 : result.saved ? 3 : 2;
 
@@ -119,7 +118,15 @@ export function ConvertPlayground({ toolId }: { toolId: string }) {
             </motion.div>
           ) : (
             <motion.div key="file" {...swap} className="space-y-3">
-              <SourceFile file={file} noun={cfg.input} locked={busy} onClear={clear} onReplace={pick} accept={tool.accept?.types ?? ""} />
+              <SourceFile
+                file={file}
+                noun={cfg.input}
+                locked={busy}
+                onClear={clear}
+                onReplace={pick}
+                onLength={setLength}
+                accept={tool.accept?.types ?? ""}
+              />
               {rejected && (
                 <p role="alert" className="px-1 text-sm text-danger">
                   {rejected}
@@ -135,6 +142,7 @@ export function ConvertPlayground({ toolId }: { toolId: string }) {
                   <motion.div key="convert" {...swap}>
                     <ConvertAction
                       job={job}
+                      estimate={estimate}
                       output={cfg.output}
                       options={tool.options}
                       onStart={start}
@@ -161,6 +169,7 @@ function SourceFile({
   accept,
   onClear,
   onReplace,
+  onLength,
 }: {
   file: File;
   noun: string;
@@ -168,6 +177,7 @@ function SourceFile({
   accept: string;
   onClear: () => void;
   onReplace: (f: File) => void;
+  onLength?: (seconds: number | null) => void;
 }) {
   const [url, setUrl] = useState<string | null>(null);
   const [length, setLength] = useState<number | null>(null);
@@ -198,7 +208,11 @@ function SourceFile({
             muted
             playsInline
             preload="metadata"
-            onLoadedMetadata={(e) => setLength(e.currentTarget.duration || null)}
+            onLoadedMetadata={(e) => {
+              const d = Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : null;
+              setLength(d);
+              onLength?.(d);
+            }}
             onError={() => setStill(false)}
             className="absolute inset-0 size-full object-cover"
           />
@@ -257,23 +271,23 @@ function SourceFile({
   );
 }
 
-/** Step two: what comes out, and the button that makes it (which becomes the progress bar). */
+/** Step two: what comes out, and the button that makes it. */
 function ConvertAction({
   job,
+  estimate,
   output,
   options,
   onStart,
   onCancel,
 }: {
   job: Job;
+  /** Predicted size of the result in bytes, when it can be worked out. */
+  estimate: number | null;
   output: string;
   options?: string[];
   onStart: () => void;
   onCancel: () => void;
 }) {
-  const busy = job.kind === "uploading" || job.kind === "processing";
-  const fill = job.kind === "uploading" ? job.progress : job.kind === "processing" ? 1 : 0;
-
   return (
     <div className="rounded-md border border-dashed border-line px-3 py-3 sm:px-4 sm:py-4">
       {options?.length ? (
@@ -284,68 +298,17 @@ function ConvertAction({
               {o}
             </span>
           ))}
+          {estimate ? <span className="font-mono text-sm text-ink-2">{formatSize(estimate, false)}</span> : null}
         </div>
       ) : null}
-
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={onStart}
-          disabled={busy}
-          className="group relative inline-flex h-12 flex-1 items-center justify-center overflow-hidden rounded-md bg-ink px-5 text-[15px] font-medium text-paper transition-[background-color,transform] duration-150 hover:bg-ink/85 active:translate-y-px disabled:cursor-progress disabled:hover:bg-ink"
-        >
-          {busy && (
-            <motion.span
-              aria-hidden
-              className="absolute inset-y-0 left-0 bg-paper/15"
-              animate={{ width: `${fill * 100}%` }}
-              transition={{ ease: "linear", duration: 0.2 }}
-            />
-          )}
-          {job.kind === "processing" && (
-            // Server-side work has no progress to report, so a slow sheen says "still going".
-            <motion.span
-              aria-hidden
-              className="absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-paper/15 to-transparent"
-              initial={{ left: "-33%" }}
-              animate={{ left: "100%" }}
-              transition={{ duration: 1.4, ease: "easeInOut", repeat: Infinity }}
-            />
-          )}
-          <span className="relative inline-flex items-center gap-2">
-            {busy ? <Loader2 aria-hidden className="size-4 animate-spin" /> : null}
-            {job.kind === "uploading"
-              ? `Uploading ${Math.round(job.progress * 100)}%`
-              : job.kind === "processing"
-                ? `Making your ${output}…`
-                : job.kind === "failed"
-                  ? "Try again"
-                  : `Convert to ${output}`}
-            {job.kind === "ready" && (
-              <ArrowRight aria-hidden className="size-4 transition-transform duration-150 group-hover:translate-x-0.5" />
-            )}
-            {job.kind === "failed" && <RotateCcw aria-hidden className="size-4" />}
-          </span>
-        </button>
-        {busy && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="inline-flex h-12 items-center rounded-md border border-line bg-surface px-4 text-sm font-medium text-ink transition-colors hover:border-ink-3"
-          >
-            Cancel
-          </button>
-        )}
-      </div>
-      <p className={cn("mt-2.5 text-xs", job.kind === "failed" ? "text-danger" : "text-ink-3")}>
-        {job.kind === "failed"
-          ? job.message
-          : job.kind === "uploading"
-            ? "Uploading is the slow part. Keep this tab open."
-            : job.kind === "processing"
-              ? "Almost there. This usually takes a few seconds."
-              : `You can check the ${output} here before you save it.`}
-      </p>
+      <ProgressButton
+        job={job}
+        label={`Convert to ${output}`}
+        working={`Making your ${output}…`}
+        hint={`You can check the ${output} here before you save it.`}
+        onStart={onStart}
+        onCancel={onCancel}
+      />
     </div>
   );
 }
@@ -391,6 +354,7 @@ function ResultPanel({
         >
           {result.saved ? <Check aria-hidden className="size-4" /> : <Download aria-hidden className="size-4" />}
           {result.saved ? "Saved. Download again" : `Download ${output}`}
+          <span className="font-mono text-[13px] font-normal text-paper/60">{formatBytes(result.size)}</span>
         </button>
         <button
           type="button"

@@ -138,8 +138,32 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
     progress bar (upload %, then a slow sheen while the server works). The result is previewed before
     saving: audio gets `AudioPreview`, an `ink` play button with the real waveform (bars in `ink-3`,
     played bars in `ink`) as the seek bar. Nothing downloads until the person presses Download.
+  - `pdf` (by id) → `PdfPlayground`: merge, split and compress in one workbench. A **mode switch**
+    sits in a ruled `paper` band under the step tracker: three equal segments (icon, name, mono
+    hint), with an `ink` thumb that slides between them on the navbar's `layoutId` spring. Arrow keys
+    move between modes; it locks while a job runs. Each mode renames the three steps.
+    - PDFs show as a **sheet**: a small `surface` page with a folded corner and a mono `PDF` tag
+      (with its merge position, `01`, `02`, when it's in a list). Use it for documents everywhere.
+    - Merge keeps an ordered list. Rows reorder by dragging the grip, or with the up/down buttons
+      (announced to screen readers). A compact `FileDrop` under the list adds more.
+    - Split offers "Every page" / "Chosen pages" chips; ranges are typed in mono and parsed as you
+      type into numbered part chips, so people see what they'll get before uploading.
+    - Compress offers Light / Balanced / Strong chips plus a slider, and a hairline spec row with
+      the real image DPI and JPEG quality the backend will use (`lib/pdf.ts` mirrors its formula).
+    - Results: PDFs can be previewed inline; ZIPs list their parts (read from the archive);
+      compression shows before/after bars. The secondary button goes back with inputs kept.
+  - **Sizes, before and after.** Every tool shows how big the result will be before anything is
+    made or downloaded, and the exact size on the Download button once it is. Sizes are mono;
+    predictions carry a `≈` (`formatSize` in `lib/media.ts`) and exact ones don't. Sources:
+    downloaders get `estimated_size` from the backend preview (the same format the download picks);
+    converters with a constant bitrate use `converter.bytesPerSecond` × the video's length; PDF
+    tools run the real operation on the server (`/pdf/*/estimate`) against the copy uploaded once
+    via `/pdf/upload`, so merge, split and compress sizes are exact. While a size is being worked out,
+    show the mono "measuring" spinner rather than a guess.
+  - The step-two button is `ProgressButton` (`components/tools/progress-button.tsx`), shared by
+    every file tool.
   - File uploads go through a route under `app/api/tools/` that streams the body to the backend
-    (never buffered), using the shared helpers in `lib/backend.ts`. Check files in the browser first
+    (never buffered) with `proxyUpload` from `lib/backend.ts`. Check files in the browser first
     with the same rules as the backend (`checkFile`).
 - **Not built yet** tools show their kind's workspace switched off (`inert`, 75% opacity), under a
   "Not built yet / Request it" strip. Never grey placeholder bars.

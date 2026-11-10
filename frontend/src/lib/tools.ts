@@ -75,6 +75,8 @@ export type Tool = {
     output: string;
     /** One line on the result's quality, shown under the download button. */
     quality: string;
+    /** Constant-bitrate outputs: bytes per second of input, to predict the result's size. */
+    bytesPerSecond?: number;
   };
 };
 
@@ -156,6 +158,7 @@ export const tools: Tool[] = [
       maxMB: 150,
       output: "MP3",
       quality: "192 kbps MP3, named after your video.",
+      bytesPerSecond: 192_000 / 8,
     },
   },
   {
@@ -163,16 +166,23 @@ export const tools: Tool[] = [
     name: "PDF toolkit",
     category: "Documents",
     description: "Merge, split and compress PDFs in seconds.",
-    status: "soon",
+    status: "live",
     icon: FileStack,
     kind: "file",
     options: ["Merge", "Split", "Compress"],
     takes: "One or more PDFs",
-    gives: "PDF",
+    gives: "PDF, or a ZIP of parts",
+    limit: "Up to 150 MB",
     steps: ["Add PDFs", "Merge, split or shrink", "Download"],
-    accept: { label: "PDF files", types: "application/pdf" },
-    keywords: ["merge", "split", "compress", "document"],
-    features: ["Merge several PDFs into one", "Split by page range", "Shrink file size for email"],
+    accept: { label: "PDF files", types: ".pdf,application/pdf" },
+    keywords: ["pdf", "merge", "combine", "join", "split", "extract", "pages", "compress", "shrink", "reduce", "smaller", "document"],
+    features: [
+      "Merge up to 20 PDFs, in the order you set",
+      "Split into single pages or your own ranges",
+      "Compress with a strength you choose",
+      "Preview the result before you save it",
+      "Your files are deleted once the result is sent",
+    ],
   },
   {
     id: "image",

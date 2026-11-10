@@ -32,5 +32,9 @@ class YoutubeMediaResponse(BaseModel):
     view_count: Optional[int] = None
     thumbnail: Optional[str] = None
     is_short: bool = False
+    estimated_size: Optional[int] = Field(
+        default=None, description="Predicted size in bytes of what the download endpoint returns"
+    )
+    size_is_exact: bool = Field(default=False, description="False when any part of the size is approximated")
     items: List[YoutubeMediaItem]
 

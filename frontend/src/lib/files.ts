@@ -1,6 +1,14 @@
 /** Client helpers for file tools: validate, upload with progress, and hand results back. */
 
-export class FileToolError extends Error {}
+export class FileToolError extends Error {
+  constructor(
+    message: string,
+    /** HTTP status, when the server answered. */
+    readonly status?: number,
+  ) {
+    super(message);
+  }
+}
 
 export function filenameFrom(disposition: string | null, fallback: string) {
   if (!disposition) return fallback;
@@ -41,19 +49,22 @@ export function checkFile(file: File, extensions: string[], maxMB: number): stri
 
 export type Converted = { blob: Blob; name: string; size: number; type: string };
 
+type UploadOptions = {
+  signal?: AbortSignal;
+  /** Used when the server doesn't name the file. */
+  fallbackName: string;
+  onUpload?: (p: number) => void;
+  onProcessing?: () => void;
+};
+
 /**
- * Uploads one file as `file` form data and returns the converted file.
+ * Posts form data and returns the file the server sends back.
  * Uses XHR rather than fetch because only XHR reports upload progress.
  */
-export function convertFile(
+export function uploadForm(
   endpoint: string,
-  file: File,
-  {
-    signal,
-    fallbackName,
-    onUpload,
-    onProcessing,
-  }: { signal?: AbortSignal; fallbackName: string; onUpload?: (p: number) => void; onProcessing?: () => void },
+  form: FormData,
+  { signal, fallbackName, onUpload, onProcessing }: UploadOptions,
 ): Promise<Converted> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -72,7 +83,7 @@ export function convertFile(
           .then((t) => JSON.parse(t) as { detail?: unknown })
           .catch(() => null);
         const detail = typeof body?.detail === "string" ? body.detail : `Request failed (${xhr.status}).`;
-        return reject(new FileToolError(detail));
+        return reject(new FileToolError(detail, xhr.status));
       }
       resolve({
         blob,
@@ -86,8 +97,27 @@ export function convertFile(
       if (signal.aborted) return reject(new DOMException("Aborted", "AbortError"));
       signal.addEventListener("abort", () => xhr.abort(), { once: true });
     }
-    const form = new FormData();
-    form.append("file", file);
     xhr.send(form);
   });
+}
+
+/** Uploads one file as `file` form data and returns the converted file. */
+export function convertFile(endpoint: string, file: File, options: UploadOptions): Promise<Converted> {
+  const form = new FormData();
+  form.append("file", file);
+  return uploadForm(endpoint, form, options);
+}
+
+/** Posts form data (with upload progress) and reads a JSON answer. */
+export async function postFormJson<T>(
+  endpoint: string,
+  form: FormData,
+  options: Omit<UploadOptions, "fallbackName"> = {},
+): Promise<T> {
+  const out = await uploadForm(endpoint, form, { ...options, fallbackName: "response.json" });
+  try {
+    return JSON.parse(await out.blob.text()) as T;
+  } catch {
+    throw new FileToolError("The server sent something unexpected. Try again.");
+  }
 }

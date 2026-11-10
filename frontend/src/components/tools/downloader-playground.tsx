@@ -25,6 +25,7 @@ import {
   formatBytes,
   formatCount,
   formatDuration,
+  formatSize,
   ToolError,
   type MediaPreview,
 } from "@/lib/media";
@@ -48,7 +49,7 @@ type Phase =
 type Saving =
   | { kind: "none" }
   | { kind: "preparing" }
-  | { kind: "receiving"; progress: number | null }
+  | { kind: "receiving"; progress: number | null; received: number; total: number | null }
   | { kind: "saved"; name: string; size: number }
   | { kind: "failed"; message: string };
 
@@ -113,8 +114,9 @@ export function DownloaderPlayground({ toolId }: { toolId: string }) {
     try {
       const file = await download(cfg.platform, submitted, {
         signal: ctrl.signal,
-        onStart: () => setSaving({ kind: "receiving", progress: null }),
-        onProgress: (progress) => setSaving({ kind: "receiving", progress }),
+        onStart: (total) => setSaving({ kind: "receiving", progress: null, received: 0, total }),
+        onProgress: (progress, received) =>
+          setSaving((s) => ({ kind: "receiving", progress, received, total: s.kind === "receiving" ? s.total : null })),
       });
       setSaving({ kind: "saved", ...file });
     } catch (e) {
@@ -412,6 +414,7 @@ function Result({
                 <ImageIcon aria-hidden className="size-4 shrink-0 text-ink-3" />
               )}
               <span className="min-w-0 flex-1 truncate text-sm text-ink">{item.label}</span>
+              {item.size ? <span className="shrink-0 font-mono text-xs text-ink-3">{formatBytes(item.size)}</span> : null}
               <a
                 href={item.url}
                 target="_blank"
@@ -445,6 +448,15 @@ function Result({
               </motion.div>
             ) : (
               <motion.div key="actions" {...swap}>
+                <dl className="mb-3 flex items-baseline justify-between gap-4 border-y border-line py-2.5">
+                  <dt className="label-mono text-ink-3">You&apos;ll save</dt>
+                  <dd className="truncate text-right text-sm text-ink">
+                    {preview.output === "File" ? "Original file" : preview.output}
+                    {preview.size ? (
+                      <span className="font-mono text-ink-2"> · {formatSize(preview.size, preview.sizeExact)}</span>
+                    ) : null}
+                  </dd>
+                </dl>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -469,6 +481,11 @@ function Result({
                             ? `Downloading ${Math.round(saving.progress * 100)}%`
                             : "Downloading…"
                           : `Download ${preview.output}`}
+                      {saving.kind !== "preparing" && saving.kind !== "receiving" && preview.size ? (
+                        <span className="font-mono text-[13px] font-normal text-paper/60">
+                          {formatSize(preview.size, preview.sizeExact)}
+                        </span>
+                      ) : null}
                     </span>
                   </button>
                   {inFlight && (
@@ -484,6 +501,10 @@ function Result({
                 <p className={cn("mt-2.5 text-xs", saving.kind === "failed" ? "text-danger" : "text-ink-3")}>
                   {saving.kind === "failed"
                     ? saving.message
+                    : saving.kind === "receiving"
+                      ? saving.total
+                        ? `${formatBytes(saving.received)} of ${formatBytes(saving.total)}`
+                        : `${formatBytes(saving.received)} so far`
                     : saving.kind === "preparing"
                       ? "We fetch and package the file first, which can take a moment for longer videos."
                       : `Best available quality, saved as ${preview.output === "File" ? "the original file" : preview.output}.`}

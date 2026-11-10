@@ -28,5 +28,9 @@ class FacebookMediaResponse(BaseModel):
     uploader: Optional[str] = None
     duration: Optional[float] = None
     thumbnail: Optional[str] = None
+    estimated_size: Optional[int] = Field(
+        default=None, description="Predicted size in bytes of what the download endpoint returns"
+    )
+    size_is_exact: bool = Field(default=False, description="False when any part of the size is approximated")
     items: List[FacebookMediaItem]
 
