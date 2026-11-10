@@ -9,6 +9,7 @@ import yt_dlp
 
 from app.config.facebook import settings
 from app.core.config import app_settings
+from app.core.media_size import estimate_ydl_entry_size, sum_estimates
 from app.exceptions.facebook import FacebookExtractionError, InvalidFacebookURLError
 from app.services.ffmpeg_service import init_ffmpeg
 
@@ -16,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class FacebookDownloaderService:
+    DOWNLOAD_FORMAT = "bestvideo+bestaudio/best"
     USER_AGENT = (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -193,6 +195,10 @@ class FacebookDownloaderService:
         try:
             with yt_dlp.YoutubeDL(opts) as ydl:
                 info = ydl.extract_info(valid_url, download=False)
+                entries_for_size = [e for e in (info or {}).get("entries") or [] if e] or [info or {}]
+                estimated_size, size_exact = sum_estimates(
+                    estimate_ydl_entry_size(ydl, e, self.DOWNLOAD_FORMAT) for e in entries_for_size
+                )
         except Exception as exc:
             logger.error("Failed to extract Facebook metadata for %s: %s", valid_url, exc)
             raise FacebookExtractionError(
@@ -218,6 +224,8 @@ class FacebookDownloaderService:
             "uploader": info.get("uploader"),
             "duration": info.get("duration"),
             "thumbnail": info.get("thumbnail"),
+            "estimated_size": estimated_size,
+            "size_is_exact": size_exact,
             "items": items,
         }
 
@@ -230,7 +238,7 @@ class FacebookDownloaderService:
         opts = {
             **self._get_base_ydl_opts(),
             "outtmpl": output_template,
-            "format": "bestvideo+bestaudio/best",
+            "format": self.DOWNLOAD_FORMAT,
             "merge_output_format": "mp4",
             "max_filesize": app_settings.MAX_DOWNLOAD_SIZE_MB * 1024 * 1024,
         }

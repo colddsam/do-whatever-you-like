@@ -12,7 +12,8 @@ const ROTATE_MS = 4200;
 
 /** Short, true headlines. Each one links to the tool it's about. */
 const news = [
-  { tag: "New", text: "Turn any video into an MP3", tool: "audio" },
+  { tag: "New", text: "Merge, split and compress PDFs", tool: "pdf" },
+  { tag: "Live", text: "Turn any video into an MP3", tool: "audio" },
   { tag: "Live", text: "Instagram carousels in one ZIP", tool: "instagram" },
   { tag: "Live", text: "YouTube Shorts, best quality", tool: "youtube" },
   { tag: "Live", text: "Facebook reels from a link", tool: "facebook" },

@@ -36,6 +36,56 @@ export async function upstreamError(upstream: Response, fallback: string) {
   return apiError(upstream.status, readDetail(body) ?? fallback);
 }
 
+/**
+ * Streams a multipart upload straight to a FastAPI endpoint (never buffering it here) and
+ * streams the resulting file back. Used by every file tool's route under app/api/tools.
+ */
+export async function proxyUpload(
+  req: Request,
+  path: string,
+  {
+    maxMB,
+    timeoutMs = 10 * 60_000,
+    messages,
+  }: {
+    /** Whole-request cap; a little headroom is added for the multipart boundaries. */
+    maxMB: number;
+    timeoutMs?: number;
+    messages: { badBody: string; tooBig: string; timeout: string; unreachable: string; failed: string };
+  },
+) {
+  const backend = backendConfig();
+  if (!backend) return notConfigured();
+
+  const type = req.headers.get("content-type") ?? "";
+  if (!type.startsWith("multipart/form-data") || !req.body) return apiError(400, messages.badBody);
+
+  const length = Number(req.headers.get("content-length")) || 0;
+  if (length > (maxMB + 1) * 1024 * 1024) return apiError(413, messages.tooBig);
+
+  const headers: Record<string, string> = { Authorization: `Bearer ${backend.token}`, "Content-Type": type };
+  if (length) headers["Content-Length"] = String(length);
+
+  let upstream: Response;
+  try {
+    upstream = await fetch(backend.endpoint(path), {
+      method: "POST",
+      headers,
+      body: req.body,
+      // Required by Node's fetch to send a streamed body.
+      duplex: "half",
+      cache: "no-store",
+      signal: AbortSignal.any([req.signal, AbortSignal.timeout(timeoutMs)]),
+    } as RequestInit & { duplex: "half" });
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "TimeoutError") return apiError(504, messages.timeout);
+    return apiError(502, messages.unreachable);
+  }
+
+  if (!upstream.ok) return upstreamError(upstream, messages.failed);
+  return passFile(upstream);
+}
+
 /** Streams a file response straight through, keeping the headers the browser needs. */
 export function passFile(upstream: Response) {
   const headers = new Headers({ "Cache-Control": "no-store" });

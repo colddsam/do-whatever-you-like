@@ -97,7 +97,7 @@ export default function ToolsPage() {
                     href: "#soon",
                     icon: ArrowDown,
                     title: `${soon.length} more on the way`,
-                    text: "PDFs, images, writing and developer tools are next.",
+                    text: "Images, writing and developer tools are next.",
                     cta: "See what's next",
                   }
                 : {

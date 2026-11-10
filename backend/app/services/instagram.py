@@ -9,6 +9,7 @@ import instaloader
 
 from app.config.instagram import settings
 from app.core.config import app_settings
+from app.core.media_size import remote_sizes
 from app.exceptions.instagram import InvalidInstagramURLError, MediaExtractionError
 
 logger = logging.getLogger(__name__)
@@ -171,6 +172,16 @@ class InstagramDownloaderService:
         caption_text = caption_dict.get("text") or ""
         user_dict = product_info.get("user") or {}
         owner_username = user_dict.get("username") or ""
+        trusted = [i["url"] for i in media_items if i.get("url") and self._is_trusted_cdn_url(i["url"])]
+        with requests.Session() as probe:
+            probe.headers.update(
+                {"User-Agent": self.USER_AGENT, "Accept": "*/*", "Referer": "https://www.instagram.com/"}
+            )
+            sizes = dict(zip(trusted, remote_sizes(probe, trusted)))
+        for item in media_items:
+            item["size"] = sizes.get(item.get("url") or "")
+        known = [i["size"] for i in media_items]
+        estimated_size = sum(known) if known and all(s is not None for s in known) else None
 
         return {
             "shortcode": shortcode,
@@ -178,6 +189,8 @@ class InstagramDownloaderService:
             "owner_username": owner_username,
             "is_carousel": is_carousel,
             "media_count": len(media_items),
+            "estimated_size": estimated_size,
+            "size_is_exact": estimated_size is not None,
             "items": media_items,
         }
 

@@ -8,6 +8,8 @@ export type MediaItem = {
   type: "video" | "image";
   url: string;
   label: string;
+  /** Bytes, when the server could tell. */
+  size?: number;
 };
 
 /** One shape for all three platforms, so the UI stays the same everywhere. */
@@ -21,6 +23,9 @@ export type MediaPreview = {
   items: MediaItem[];
   /** What the download button will hand back. */
   output: "MP4" | "ZIP" | "File";
+  /** Predicted size of that file in bytes, and whether it's exact or approximate. */
+  size?: number;
+  sizeExact: boolean;
 };
 
 export class ToolError extends Error {}
@@ -28,7 +33,8 @@ export class ToolError extends Error {}
 /* ---------- Backend response shapes (see backend/app/schemas) ---------- */
 
 type VideoItem = { url: string; type?: string; resolution?: string | null; width?: number | null; height?: number | null };
-type YoutubeRes = {
+type SizeFields = { estimated_size?: number | null; size_is_exact?: boolean };
+type YoutubeRes = SizeFields & {
   title?: string | null;
   uploader?: string | null;
   duration?: number | null;
@@ -38,12 +44,12 @@ type YoutubeRes = {
   items: VideoItem[];
 };
 type FacebookRes = Omit<YoutubeRes, "view_count" | "is_short">;
-type InstagramRes = {
+type InstagramRes = SizeFields & {
   title?: string | null;
   owner_username: string;
   is_carousel: boolean;
   media_count: number;
-  items: { type: string; url: string; width?: number | null; height?: number | null }[];
+  items: { type: string; url: string; width?: number | null; height?: number | null; size?: number | null }[];
 };
 
 const dims = (w?: number | null, h?: number | null) => (w && h ? `${w}×${h}` : undefined);
@@ -65,8 +71,12 @@ function normalize(platform: Platform, raw: unknown): MediaPreview {
         label: [`${i.type === "video" ? "Video" : "Image"} ${r.items.length > 1 ? n + 1 : ""}`.trim(), dims(i.width, i.height)]
           .filter(Boolean)
           .join(" · "),
+        size: i.size ?? undefined,
       })),
       output: r.items.length > 1 ? "ZIP" : "File",
+      size: r.estimated_size ?? undefined,
+      // A ZIP adds a little packaging around the files, so its size is close but not exact.
+      sizeExact: Boolean(r.size_is_exact) && r.items.length === 1,
     };
   }
 
@@ -85,6 +95,9 @@ function normalize(platform: Platform, raw: unknown): MediaPreview {
       label: ["Video", i.resolution || dims(i.width, i.height)].filter(Boolean).join(" · "),
     })),
     output: r.items.length > 1 ? "ZIP" : "MP4",
+    size: r.estimated_size ?? undefined,
+    // Video and audio are merged into one MP4 after downloading, which shifts the size slightly.
+    sizeExact: false,
   };
 }
 
@@ -116,13 +129,21 @@ export async function extract(platform: Platform, url: string, signal?: AbortSig
 export async function download(
   platform: Platform,
   url: string,
-  { signal, onStart, onProgress }: { signal?: AbortSignal; onStart?: () => void; onProgress?: (p: number | null) => void },
+  {
+    signal,
+    onStart,
+    onProgress,
+  }: {
+    signal?: AbortSignal;
+    onStart?: (total: number | null) => void;
+    /** 0–1 once bytes arrive (null when the size is unknown), plus bytes received so far. */
+    onProgress?: (p: number | null, received: number) => void;
+  },
 ) {
   const res = await post(platform, "download", url, signal);
   if (!res.ok) await readError(res);
-  onStart?.();
-
   const total = Number(res.headers.get("x-file-size") ?? res.headers.get("content-length")) || 0;
+  onStart?.(total || null);
   const name = filenameFrom(res.headers.get("content-disposition"), `${platform}-download`);
   const type = res.headers.get("content-type") ?? "application/octet-stream";
 
@@ -135,7 +156,7 @@ export async function download(
     if (done) break;
     chunks.push(value);
     received += value.byteLength;
-    onProgress?.(total ? Math.min(received / total, 1) : null);
+    onProgress?.(total ? Math.min(received / total, 1) : null, received);
   }
 
   saveBlob(new Blob(chunks, { type }), name);
@@ -156,8 +177,12 @@ export const formatCount = (n: number) => new Intl.NumberFormat("en", { notation
 
 export function formatBytes(n: number) {
   if (n < 1024 * 1024) return `${Math.max(1, Math.round(n / 1024))} KB`;
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+  if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
+
+/** A size that may be a prediction: "24.3 MB" when exact, "≈ 24.3 MB" when estimated. */
+export const formatSize = (n: number, exact: boolean) => `${exact ? "" : "≈ "}${formatBytes(n)}`;
 
 /** Cheap browser-side check so obvious mistakes don't cost a round trip. */
 export function checkLink(input: string, hosts: string[], allowShortcode = false): string | null {

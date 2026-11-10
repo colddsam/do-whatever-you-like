@@ -16,6 +16,7 @@ class MediaItem(BaseModel):
     url: str
     width: Optional[int] = None
     height: Optional[int] = None
+    size: Optional[int] = None
 
 
 class MediaResponse(BaseModel):
@@ -24,4 +25,8 @@ class MediaResponse(BaseModel):
     owner_username: str
     is_carousel: bool
     media_count: int
+    estimated_size: Optional[int] = Field(
+        default=None, description="Predicted size in bytes of what the download endpoint returns"
+    )
+    size_is_exact: bool = Field(default=False, description="False when any part of the size is approximated")
     items: List[MediaItem]
