@@ -1,0 +1,25 @@
+# Render Blueprint for the backend (Dashboard -> New -> Blueprint -> pick this repo).
+# The frontend deploys separately on Vercel (root directory: frontend).
+services:
+  - type: web
+    name: do-whatever-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    autoDeploy: true
+    envVars:
+      # Same value as BACKEND_TOKEN on Vercel. Render can generate one; copy it across.
+      - key: HEADER_TOKEN
+        generateValue: true
+      # Your Vercel address as a JSON list, e.g. ["https://do-whatever.vercel.app"].
+      # Browsers send files straight here, so only your site may call it.
+      - key: ALLOWED_ORIGINS
+        sync: false
+      # The free instance has 0.1 CPU: cap the slowest jobs so they finish in minutes, not hours.
+      - key: PDF_OCR_MAX_PAGES
+        value: "30"
+      - key: PDF_COMPARE_MAX_PAGES
+        value: "100"
+      - key: CONVERT_EXCEL_MAX_PAGES
+        value: "100"

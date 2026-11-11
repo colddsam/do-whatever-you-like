@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { apiError, backendConfig, notConfigured, passFile, upstreamError } from "@/lib/backend";
+import { apiError, backendConfig, directTarget, notConfigured, passFile, upstreamError, wantsDirect } from "@/lib/backend";
 
 /**
  * Backend-for-frontend proxy for the downloader tools.
@@ -39,6 +39,12 @@ export async function POST(req: NextRequest, ctx: RouteContext<"/api/tools/[plat
 
   // Instagram's schema names the field differently from the other two.
   const payload = platform === "instagram" ? { url_or_shortcode: url.trim() } : { url: url.trim() };
+
+  // Downloads can outlast a hosted route's time limit, so the browser may fetch them directly.
+  if (action === "download" && wantsDirect(req)) {
+    const direct = directTarget(`${platform}/${action}`, 64 * 1024);
+    return Response.json(direct ? { ...direct, body: payload } : { direct: false }, { headers: { "Cache-Control": "no-store" } });
+  }
 
   let upstream: Response;
   try {

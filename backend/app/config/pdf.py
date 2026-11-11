@@ -12,7 +12,17 @@ class PDFSettings(BaseSettings):
     # spec like '1-999+1-999+…' can't balloon one job.
     MAX_OUTPUT_PAGES: int = 5000
     THUMBNAIL_MIN_WIDTH: int = 64
-    THUMBNAIL_MAX_WIDTH: int = 480
+    THUMBNAIL_MAX_WIDTH: int = 1000
+    # PDF tools (app/services/pdf_tools.py)
+    OCR_MAX_PAGES: int = 300
+    OCR_DPI: int = 300
+    TESSDATA_DIR: Path | None = None  # Found automatically when unset (TESSDATA_PREFIX or the usual install paths).
+    GHOSTSCRIPT_PATH: Path | None = None  # Found automatically when unset (PATH or Program Files).
+    IMAGES_MAX_FILES: int = 100
+    COMPARE_MAX_PAGES: int = 300
+    COMPARE_MAX_CHANGES: int = 500
+    EDIT_MAX_OPS: int = 500
+    SUBPROCESS_TIMEOUT_SECONDS: int = 300
     DEBUG: bool = False
 
     model_config = SettingsConfigDict(

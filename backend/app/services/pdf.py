@@ -439,6 +439,9 @@ class PDFService:
         try:
             doc = self._open_valid_pdf(pdf_path, display_name)
             page_count = doc.page_count
+            # Each page's size as seen (rotation applied), in points: tools that place things on
+            # pages draw them to scale on the thumbnails. Capped so huge files stay a small answer.
+            page_sizes = [[round(p.rect.width, 1), round(p.rect.height, 1)] for p in doc.pages(0, min(page_count, 3000))]
             doc.close()
         except Exception:
             pdf_path.unlink(missing_ok=True)
@@ -448,6 +451,7 @@ class PDFService:
             "filename": display_name,
             "size": pdf_path.stat().st_size,
             "page_count": page_count,
+            "page_sizes": page_sizes,
         }
         (self.cache_dir / f"{token}.json").write_text(json.dumps(meta), encoding="utf-8")
         return meta

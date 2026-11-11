@@ -7,9 +7,9 @@ import { cn } from "@/lib/utils";
 
 /** The featured block: downloaders that work today. */
 const downloads = tools.filter((t) => t.category === "Downloads" && t.status === "live");
-/** Everything else gets a cell, live ones first (six cells fill the grid). */
+/** Everything else gets a cell, live ones first (six cells fill the grid). Families show their hub only. */
 const others = tools
-  .filter((t) => !downloads.includes(t))
+  .filter((t) => !downloads.includes(t) && !t.family)
   .sort((a, b) => Number(b.status === "live") - Number(a.status === "live"))
   .slice(0, 6);
 

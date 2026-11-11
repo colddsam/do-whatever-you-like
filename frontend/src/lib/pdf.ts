@@ -165,7 +165,14 @@ export function describePart(name: string) {
 /* ---------- Server answers (see backend/app/api/v1/endpoints/pdf.py) ---------- */
 
 /** /pdf/upload: the PDF is kept on the server for a while and referred to by token. */
-export type PdfUpload = { token: string; filename: string; size: number; page_count: number };
+export type PdfUpload = {
+  token: string;
+  filename: string;
+  size: number;
+  page_count: number;
+  /** [width, height] in points of each page as seen (rotation applied). */
+  page_sizes?: [number, number][];
+};
 
 export type SplitEstimate = {
   output: "pdf" | "zip";
