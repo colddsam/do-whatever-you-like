@@ -3,7 +3,7 @@ import shutil
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
-from fastapi import APIRouter, BackgroundTasks, File, Form, Request, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, File, Form, Query, Request, UploadFile, status
 from fastapi.responses import FileResponse
 from starlette.concurrency import run_in_threadpool
 
@@ -142,7 +142,8 @@ async def split_pdf(
     token: Optional[str] = Form(default=None, description="Or: a token from /pdf/upload"),
     page_ranges: Optional[str] = Form(
         default=None,
-        description="Optional comma-separated page ranges (e.g. '1-3, 5'). Leave empty to split all pages into a ZIP.",
+        description="Optional comma-separated parts; '+' joins ranges into one part (e.g. '1-3, 5' or "
+        "'1-3+5, 4'). Leave empty to split all pages into a ZIP.",
     ),
 ):
     request_id = uuid.uuid4().hex
@@ -200,6 +201,81 @@ async def estimate_split(
     path, meta = await run_in_threadpool(pdf_service.resolve_token, token)
     work_dir = settings.TEMP_DIR / f"pdf_estimate_{uuid.uuid4().hex}"
     return await run_pdf("estimate_split", path, page_ranges, meta["filename"], work_dir, request=request)
+
+
+@router.post(
+    "/organize",
+    response_class=FileResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Reorder, rotate and remove pages (e.g. '3, 1:90, 2')",
+)
+async def organize_pdf(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    file: Optional[UploadFile] = File(default=None, description="PDF file to rearrange"),
+    token: Optional[str] = Form(default=None, description="Or: a token from /pdf/upload"),
+    page_order: str = Form(
+        ...,
+        max_length=60_000,
+        description="Pages in their new order, comma-separated; ':90', ':180' or ':270' turns one "
+        "clockwise. Pages left out are removed. Example: '3, 1:90, 2'.",
+    ),
+):
+    request_id = uuid.uuid4().hex
+    job_dir = settings.TEMP_DIR / f"pdf_organize_{request_id}"
+
+    try:
+        job_dir.mkdir(parents=True, exist_ok=True)
+        input_path, display_name = await _resolve_single(file, token, job_dir, request_id)
+        output_path = job_dir / f"{_stem(display_name)}_organized.pdf"
+        await run_pdf("organize_pdf", input_path, output_path, page_order, display_name, request=request)
+
+        background_tasks.add_task(cleanup_folder, job_dir)
+        return FileResponse(path=output_path, filename=output_path.name, media_type="application/pdf")
+    except Exception:
+        cleanup_folder(job_dir)
+        raise
+    finally:
+        if file is not None:
+            await file.close()
+
+
+@router.post(
+    "/organize/estimate",
+    status_code=status.HTTP_200_OK,
+    summary="Size of the rearranged PDF, without returning it",
+)
+async def estimate_organize(
+    request: Request,
+    token: str = Form(..., description="A token from /pdf/upload"),
+    page_order: str = Form(..., max_length=60_000, description="Same as /pdf/organize"),
+) -> Dict[str, Any]:
+    path, meta = await run_in_threadpool(pdf_service.resolve_token, token)
+    work_dir = settings.TEMP_DIR / f"pdf_estimate_{uuid.uuid4().hex}"
+    size = await run_pdf("estimate_organize", path, page_order, meta["filename"], work_dir, request=request)
+    return {"output": "pdf", "total_size": size}
+
+
+@router.get(
+    "/thumbnail",
+    response_class=FileResponse,
+    status_code=status.HTTP_200_OK,
+    summary="One page of an uploaded PDF as a PNG thumbnail",
+)
+async def page_thumbnail(
+    request: Request,
+    token: str = Query(..., description="A token from /pdf/upload"),
+    page: int = Query(..., ge=1, description="1-based page number"),
+    width: int = Query(default=160, ge=1, le=2000, description="Width in pixels (snapped to 64-480)"),
+):
+    path, _ = await run_in_threadpool(pdf_service.resolve_token, token)
+    width = pdf_service.clamp_thumbnail_width(width)
+    thumb = pdf_service.thumbnail_path(token, page, width)
+    if not await run_in_threadpool(thumb.is_file):
+        await run_pdf("render_thumbnail", path, page, width, thumb, request=request)
+    # Rendered once per (token, page, width) and kept beside the upload; the Next proxy decides
+    # how long the browser may cache it (the API itself always answers no-store).
+    return FileResponse(path=thumb, media_type="image/png")
 
 
 @router.post(

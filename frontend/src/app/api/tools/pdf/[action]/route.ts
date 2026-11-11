@@ -1,23 +1,26 @@
 import type { NextRequest } from "next/server";
-import { apiError, proxyUpload } from "@/lib/backend";
+import { apiError, backendConfig, notConfigured, proxyUpload, upstreamError } from "@/lib/backend";
 
 /**
  * PDF toolkit. The workspace uploads each PDF once (`upload` → a token), then every estimate
- * and action sends tokens instead of the file. Merge/split/compress still accept files too.
+ * and action sends tokens instead of the file. Merge/split/compress/organize still accept files too.
  * Bodies are streamed to FastAPI untouched; the backend validates fields and files.
  */
 
 const MAX_MB = 150; // Matches MAX_DOWNLOAD_SIZE_MB in backend/app/core/config.py.
 const SMALL_MB = 1; // Token-only requests are a few bytes of form data.
+const THUMB_CACHE_SECONDS = 30 * 60; // Matches PDF_CACHE_TTL_SECONDS: a token's pages never change.
 
 const ACTIONS = {
   upload: { path: "pdf/upload", maxMB: MAX_MB, failed: "We couldn't read that PDF." },
   merge: { path: "pdf/merge", maxMB: MAX_MB, failed: "We couldn't merge those PDFs." },
   split: { path: "pdf/split", maxMB: MAX_MB, failed: "We couldn't split that PDF." },
   compress: { path: "pdf/compress", maxMB: MAX_MB, failed: "We couldn't compress that PDF." },
+  organize: { path: "pdf/organize", maxMB: MAX_MB, failed: "We couldn't rearrange that PDF." },
   "merge-estimate": { path: "pdf/merge/estimate", maxMB: SMALL_MB, failed: "We couldn't work out the merged size." },
   "split-estimate": { path: "pdf/split/estimate", maxMB: SMALL_MB, failed: "We couldn't work out the split." },
   "compress-estimate": { path: "pdf/compress/estimate", maxMB: SMALL_MB, failed: "We couldn't work out the compressed size." },
+  "organize-estimate": { path: "pdf/organize/estimate", maxMB: SMALL_MB, failed: "We couldn't work out the new size." },
 } as const;
 
 type Action = keyof typeof ACTIONS;
@@ -40,6 +43,43 @@ export async function POST(req: NextRequest, ctx: RouteContext<"/api/tools/pdf/[
       timeout: "That took too long. Try a smaller PDF.",
       unreachable: "Couldn't reach the PDF service. Is the backend running?",
       failed: cfg.failed,
+    },
+  });
+}
+
+/** GET /api/tools/pdf/thumbnail?token=…&page=…&width=… → one page of an uploaded PDF as PNG. */
+export async function GET(req: NextRequest, ctx: RouteContext<"/api/tools/pdf/[action]">) {
+  const { action } = await ctx.params;
+  if (action !== "thumbnail") return apiError(404, "Unknown PDF tool.");
+  const backend = backendConfig();
+  if (!backend) return notConfigured();
+
+  const q = req.nextUrl.searchParams;
+  const token = q.get("token") ?? "";
+  const page = q.get("page") ?? "";
+  const width = q.get("width") ?? "160";
+  if (!/^[a-f0-9]{32}$/.test(token) || !/^\d{1,5}$/.test(page) || !/^\d{1,4}$/.test(width)) {
+    return apiError(400, "Ask for a page like ?token=…&page=1.");
+  }
+
+  let upstream: Response;
+  try {
+    upstream = await fetch(backend.endpoint(`pdf/thumbnail?${new URLSearchParams({ token, page, width })}`), {
+      headers: { Authorization: `Bearer ${backend.token}` },
+      cache: "no-store",
+      signal: AbortSignal.any([req.signal, AbortSignal.timeout(60_000)]),
+    });
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "TimeoutError") return apiError(504, "That page took too long to draw.");
+    return apiError(502, "Couldn't reach the PDF service. Is the backend running?");
+  }
+  if (!upstream.ok) return upstreamError(upstream, "We couldn't draw that page.");
+
+  return new Response(upstream.body, {
+    status: 200,
+    headers: {
+      "Content-Type": "image/png",
+      "Cache-Control": `private, max-age=${THUMB_CACHE_SECONDS}, immutable`,
     },
   });
 }

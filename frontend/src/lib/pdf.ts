@@ -1,50 +1,89 @@
 /** Client helpers for the PDF toolkit. The rules here mirror backend/app/services/pdf.py. */
 
-export type PdfMode = "merge" | "split" | "compress";
-export const PDF_MODES: PdfMode[] = ["merge", "split", "compress"];
+export type PdfMode = "merge" | "split" | "organize" | "compress";
+export const PDF_MODES: PdfMode[] = ["merge", "split", "organize", "compress"];
 export const isPdfMode = (v: string | null): v is PdfMode => PDF_MODES.includes(v as PdfMode);
 
 export const PDF_MAX_MB = 150;
 export const MERGE_MAX_FILES = 20;
 
-/* ---------- Split: page ranges ---------- */
+/* ---------- Split: page ranges and parts ---------- */
 
 export type PageRange = { from: number; to: number };
+/** One output PDF: its ranges, in order. "1-3+5" is [{1,3},{5,5}]. */
+export type Part = PageRange[];
 
 /**
- * Parses "1-3, 5" the way the backend does: comma-separated pages or `a-b` ranges, 1-based.
- * The page count is only known on the server, so bounds above page 1 are checked there.
+ * Parses split ranges the way the backend does (PDFService.parse_page_groups): commas separate
+ * the PDFs you get, "+" joins ranges into the same PDF. "1-3, 5" → two PDFs; "1-3+5, 4" → pages
+ * 1, 2, 3 and 5 together, then page 4 on its own. The page count is checked separately.
  */
-export function parseRanges(input: string): { ranges: PageRange[]; error: string | null } {
-  const parts = input
+export function parseRanges(input: string): { parts: Part[]; error: string | null } {
+  const chunks = input
     .split(",")
     .map((p) => p.trim())
     .filter(Boolean);
-  if (!parts.length) return { ranges: [], error: "Type a page or a range, like 1-3, 5." };
+  if (!chunks.length) return { parts: [], error: "Type a page or a range, like 1-3, 5." };
 
-  const ranges: PageRange[] = [];
-  for (const part of parts) {
-    let from: number;
-    let to: number;
-    const dash = part.indexOf("-");
-    if (dash >= 0) {
-      const a = part.slice(0, dash).trim();
-      const b = part.slice(dash + 1).trim();
-      if (!/^\d+$/.test(a) || !/^\d+$/.test(b)) return { ranges, error: `“${part}” isn't a range. Write it like 1-3.` };
-      from = Number(a);
-      to = Number(b);
-    } else {
-      if (!/^\d+$/.test(part)) return { ranges, error: `“${part}” isn't a page number.` };
-      from = to = Number(part);
+  const parts: Part[] = [];
+  for (const chunk of chunks) {
+    const pieces = chunk.split("+").map((p) => p.trim());
+    if (pieces.some((p) => !p)) return { parts, error: `“${chunk}” has a loose +. Join ranges like 1-3+5.` };
+    const part: Part = [];
+    for (const piece of pieces) {
+      let from: number;
+      let to: number;
+      const dash = piece.indexOf("-");
+      if (dash >= 0) {
+        const a = piece.slice(0, dash).trim();
+        const b = piece.slice(dash + 1).trim();
+        if (!/^\d+$/.test(a) || !/^\d+$/.test(b)) return { parts, error: `“${piece}” isn't a range. Write it like 1-3.` };
+        from = Number(a);
+        to = Number(b);
+      } else {
+        if (!/^\d+$/.test(piece)) return { parts, error: `“${piece}” isn't a page number.` };
+        from = to = Number(piece);
+      }
+      if (from < 1) return { parts, error: "Pages start at 1." };
+      if (from > to) return { parts, error: `“${piece}” runs backwards. Try ${to}-${from}.` };
+      part.push({ from, to });
     }
-    if (from < 1) return { ranges, error: "Pages start at 1." };
-    if (from > to) return { ranges, error: `“${part}” runs backwards. Try ${to}-${from}.` };
-    ranges.push({ from, to });
+    parts.push(part);
   }
-  return { ranges, error: null };
+  return { parts, error: null };
 }
 
+/** Every page in a part, in order (1-based). */
+export const partPages = (part: Part) => part.flatMap(({ from, to }) => Array.from({ length: to - from + 1 }, (_, i) => from + i));
+
+/** Pages → the shortest runs: [1,2,3,5] → "1-3+5". */
+function runsOf(pages: number[]) {
+  const runs: PageRange[] = [];
+  for (const p of pages) {
+    const last = runs[runs.length - 1];
+    if (last && p === last.to + 1) last.to = p;
+    else runs.push({ from: p, to: p });
+  }
+  return runs;
+}
+
+/** The text form of parts picked on the page grid: [[1,2,3,5],[4]] → "1-3+5, 4". Empty parts are dropped. */
+export const serializeParts = (groups: number[][]) =>
+  groups
+    .filter((g) => g.length)
+    .map((g) => runsOf(g).map((r) => (r.from === r.to ? `${r.from}` : `${r.from}-${r.to}`)).join("+"))
+    .join(", ");
+
+/** [1,2,3,5] → "Pages 1–3, 5", [4] → "Page 4". */
+export const pagesLabel = (pages: number[]) => partLabel(runsOf(pages));
+
 export const rangeLabel = ({ from, to }: PageRange) => (from === to ? `Page ${from}` : `Pages ${from}–${to}`);
+
+/** "Page 4", "Pages 1–3", "Pages 1–3, 5". */
+export function partLabel(part: Part) {
+  if (part.length === 1) return rangeLabel(part[0]);
+  return `Pages ${part.map((r) => (r.from === r.to ? `${r.from}` : `${r.from}–${r.to}`)).join(", ")}`;
+}
 
 /* ---------- Compress: what a strength actually does ---------- */
 
@@ -108,15 +147,19 @@ export async function listZip(blob: Blob): Promise<ZipEntry[] | null> {
   }
 }
 
-const firstPage = (name: string) => Number(/pages?_(\d+)(?:-\d+)?\.pdf$/i.exec(name)?.[1] ?? Infinity);
+// Part names from PDFService._part_name: page_5.pdf · part_1_pages_1-3.pdf · part_2_pages_1-3_5.pdf
+const PART_NAME = /pages?_(\d+(?:-\d+)?(?:_\d+(?:-\d+)?)*)\.pdf$/i;
+const firstPage = (name: string) => Number(PART_NAME.exec(name)?.[1].match(/^\d+/)?.[0] ?? Infinity);
 
-/** "part_1_pages_1-3.pdf" → "Pages 1–3", "page_5.pdf" → "Page 5". Falls back to the file name. */
+/** "part_1_pages_1-3.pdf" → "Pages 1–3", "part_2_pages_1-3_5.pdf" → "Pages 1–3, 5". Falls back to the name. */
 export function describePart(name: string) {
-  const range = /pages_(\d+)-(\d+)\.pdf$/i.exec(name);
-  if (range) return `Pages ${range[1]}–${range[2]}`;
-  const page = /page_(\d+)\.pdf$/i.exec(name);
-  if (page) return `Page ${page[1]}`;
-  return name;
+  const m = PART_NAME.exec(name);
+  if (!m) return name;
+  const runs = m[1].split("_").map((r) => {
+    const [a, b] = r.split("-");
+    return { from: Number(a), to: Number(b ?? a) };
+  });
+  return partLabel(runs);
 }
 
 /* ---------- Server answers (see backend/app/api/v1/endpoints/pdf.py) ---------- */
@@ -127,15 +170,15 @@ export type PdfUpload = { token: string; filename: string; size: number; page_co
 export type SplitEstimate = {
   output: "pdf" | "zip";
   total_size: number;
-  parts: { name: string; first_page: number | null; last_page: number | null; size: number }[];
+  parts: { name: string; first_page: number | null; last_page: number | null; pages?: number[]; size: number }[];
 };
 
 export type CompressSample = { percentage: number; size: number };
 export type CompressEstimate = { original_size: number; exact: boolean; samples: CompressSample[] };
 
 /** Pages past the end, checked in the browser once the page count is known. */
-export function outOfBounds(ranges: PageRange[], pageCount: number): string | null {
-  const bad = ranges.find((r) => r.to > pageCount);
+export function outOfBounds(parts: Part[], pageCount: number): string | null {
+  const bad = parts.flat().find((r) => r.to > pageCount);
   if (!bad) return null;
   return `This PDF has ${pageCount} ${pageCount === 1 ? "page" : "pages"}, so ${rangeLabel(bad).toLowerCase()} doesn't exist.`;
 }
@@ -159,3 +202,33 @@ export function sizeAt(samples: CompressSample[], pct: number): { size: number; 
   const t = (pct - a.percentage) / (b.percentage - a.percentage);
   return { size: Math.round(a.size + (b.size - a.size) * t), exact: false };
 }
+
+/* ---------- Organize: pages in their new order ---------- */
+
+export type Rotation = 0 | 90 | 180 | 270;
+/** One page of the arranged document. `key` stays with the page as it moves. */
+export type ArrangedPage = {
+  key: string;
+  page: number;
+  rot: Rotation;
+  /** Total degrees turned, only for the animation (so 270° → 0° turns forward). */
+  spin?: number;
+};
+
+export const arrangeFresh = (pageCount: number): ArrangedPage[] =>
+  Array.from({ length: pageCount }, (_, i) => ({ key: `p${i + 1}`, page: i + 1, rot: 0 }));
+
+export const turn = (rot: Rotation, by: 90 | -90): Rotation => (((rot + by + 360) % 360) as Rotation);
+
+/** What /pdf/organize expects: "3, 1:90, 2". Pages left out are removed. */
+export const orderSpec = (pages: ArrangedPage[]) => pages.map((p) => (p.rot ? `${p.page}:${p.rot}` : `${p.page}`)).join(",");
+
+/** True when the arrangement is the original document, untouched. */
+export const isUnchanged = (pages: ArrangedPage[], pageCount: number) =>
+  pages.length === pageCount && pages.every((p, i) => p.page === i + 1 && p.rot === 0);
+
+/* ---------- Page thumbnails ---------- */
+
+/** A page of an uploaded PDF as a PNG (rendered and cached on the server, then by the browser). */
+export const thumbUrl = (token: string, page: number, width = 160) =>
+  `/api/tools/pdf/thumbnail?${new URLSearchParams({ token, page: String(page), width: String(width) })}`;

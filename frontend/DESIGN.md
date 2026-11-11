@@ -138,10 +138,27 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
     progress bar (upload %, then a slow sheen while the server works). The result is previewed before
     saving: audio gets `AudioPreview`, an `ink` play button with the real waveform (bars in `ink-3`,
     played bars in `ink`) as the seek bar. Nothing downloads until the person presses Download.
-  - `pdf` (by id) → `PdfPlayground`: merge, split and compress in one workbench. A **mode switch**
-    sits in a ruled `paper` band under the step tracker: three equal segments (icon, name, mono
+  - `pdf` (by id) → `PdfPlayground`: merge, split, organize and compress in one workbench. A **mode
+    switch** sits in a ruled `paper` band under the step tracker: four equal segments (icon, name, mono
     hint), with an `ink` thumb that slides between them on the navbar's `layoutId` spring. Arrow keys
     move between modes; it locks while a job runs. Each mode renames the three steps.
+    - **Pages** are shown as real thumbnails (`PageImage`, `components/tools/pdf-pages.tsx`): a 3:4
+      `paper-2` frame with the page drawn by `/pdf/thumbnail`, lazy-loaded, its number shown while
+      loading. A quarter turn scales it to 75% so it stays inside the frame. Page grids use
+      `auto-fill` columns (≈3 on phones, 6–7 on laptops) in a hairline `paper` box that scrolls
+      inside itself. On every tile, the mono `01` badge top-left is the page's place in the result and
+      `p. 3` underneath is the page in the original. The badge turns `ink` on pages that are picked or in
+      the active part.
+    - Organize (`OrganizeBoard`): click or Space picks pages (Shift for a run); a toolbar of `sm`
+      buttons (44px, icon-only on phones) turns, moves (earlier/later) or removes them. Pages also
+      drag: anywhere with a mouse, by the grip on touch, and the others slide aside (layout spring).
+      Keys: arrows move focus, Alt + arrows move the page, R turns, Delete removes. Removed pages
+      wait in a dashed tray and go back where they came from. The button stays off until something
+      has changed.
+    - Split's "Chosen pages" shows the page grid under the range field (`SplitPicker`). A tray of
+      part chips (the active one `ink`, "New part" dashed) picks which part clicks go into; pages in no
+      part fade to 45% with an `out` tag. The field and the grid are one model: `+` joins ranges into a
+      part (`1-3+5, 4`), and clicks rewrite the field.
     - PDFs show as a **sheet**: a small `surface` page with a folded corner and a mono `PDF` tag
       (with its merge position, `01`, `02`, when it's in a list). Use it for documents everywhere.
     - Merge keeps an ordered list. Rows reorder by dragging the grip, or with the up/down buttons
@@ -179,7 +196,7 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
     downloaders get `estimated_size` from the backend preview (the same format the download picks);
     converters with a constant bitrate use `converter.bytesPerSecond` × the video's length; PDF
     tools run the real operation on the server (`/pdf/*/estimate`) against the copy uploaded once
-    via `/pdf/upload`, so merge, split and compress sizes are exact. While a size is being worked out,
+    via `/pdf/upload`, so merge, split, organize and compress sizes are exact. While a size is being worked out,
     show the mono "measuring" spinner rather than a guess.
   - The step-two button is `ProgressButton` (`components/tools/progress-button.tsx`), shared by
     every file tool.

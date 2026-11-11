@@ -8,6 +8,11 @@ class PDFSettings(BaseSettings):
     CACHE_TTL_SECONDS: int = 30 * 60
     PROCESS_WORKERS: int = 1
     ESTIMATE_EXACT_PIXELS: int = 4_000_000
+    # Cap on pages a split/organize request may produce (duplicates count), so a crafted
+    # spec like '1-999+1-999+…' can't balloon one job.
+    MAX_OUTPUT_PAGES: int = 5000
+    THUMBNAIL_MIN_WIDTH: int = 64
+    THUMBNAIL_MAX_WIDTH: int = 480
     DEBUG: bool = False
 
     model_config = SettingsConfigDict(
