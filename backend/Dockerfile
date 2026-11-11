@@ -7,6 +7,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_ROOT_USER_ACTION=ignore \
     PLAYWRIGHT_BROWSERS_PATH=/opt/playwright \
     # glibc gives each thread its own malloc arena; capping them keeps a small instance's memory flat.
     MALLOC_ARENA_MAX=2 \
@@ -20,6 +21,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # so converted documents keep their line breaks.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
+        libatomic1 \
         libreoffice-writer-nogui libreoffice-calc-nogui libreoffice-impress-nogui libreoffice-draw-nogui \
         tesseract-ocr tesseract-ocr-eng tesseract-ocr-spa tesseract-ocr-fra tesseract-ocr-deu \
         tesseract-ocr-ita tesseract-ocr-por tesseract-ocr-rus tesseract-ocr-ara tesseract-ocr-hin \
