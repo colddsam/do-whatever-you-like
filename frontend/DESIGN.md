@@ -169,6 +169,37 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
       the real image DPI and JPEG quality the backend will use (`lib/pdf.ts` mirrors its formula).
     - Results: PDFs can be previewed inline; ZIPs list their parts (read from the archive);
       compression shows before/after bars. The secondary button goes back with inputs kept.
+  - **The PDF family** (`family: "pdf"` in `lib/tools.ts`, workspaces in `components/tools/pdf/`): one page
+    per PDF job (Merge PDF, PDF to Word, Sign PDF…), grouped as Organize / Optimize / Convert to PDF /
+    Convert from PDF / Edit / Security. `/tools` lists them in their own section (`02 — PDF tools`) as
+    compact hairline cells under group labels; the home grid shows only the `pdf` hub, never the family.
+    - Merge, Split, Organize, Compress, Rotate, Remove pages and Extract pages reuse `PdfPlayground` on a
+      fixed `mode` (no mode switch); Extract opens on "Chosen pages".
+    - Everything else runs in **`PdfTask`** (`pdf/task.tsx`): one input (an uploaded PDF by token, a raw
+      PDF for locked/damaged files, or an Office/HTML file), the tool's options, one `ProgressButton`, and
+      the shared `ResultPanel` (preview for PDFs and images, ZIP contents, the exact size on Download, an
+      optional info line from the server's `x-pdf-info`). A new tool supplies only its options and fields.
+    - Options sit in a dashed `Panel` of hairline `Row`s (`pdf/kit.tsx`): `Chips` (selected = `ink`),
+      `Toggle` (ink track), `Slider`, `Swatches`, `PositionGrid` (a small sheet with 6 or 9 dots),
+      `PagesField`, `PasswordField`, `Notice`. Colours in swatches are the user's content, not site tokens.
+    - **The page stage** (`pdf/page-stage.tsx`): the real page drawn by the server (`/pdf/thumbnail`, up to
+      1000px), with an overlay in page fractions as seen (rotation applied, 0 at top-left), the same
+      coordinates the backend takes. `PageView` hands its children the scale (px per PDF point) so text and
+      strokes preview at their real size; `EditableBox` moves (drag, arrows), resizes (handles, Alt+arrows)
+      and keeps ratio for images; `PageNav` is "‹ Page 3 of 12 ›" with a dot on pages that have marks.
+    - Previews show the real result: page numbers and watermarks are drawn to scale on the page beside
+      the options (sticky from `md`); crop dims everything outside the box and shows the size in mm;
+      redactions are `ink`/80 boxes; compare marks removed text red and added text green on both versions.
+    - Editors (Edit PDF, Sign PDF): an icon toolbar (`sm` buttons, 44px on phones, labels from `sm`), the
+      stage, and a properties `Panel` for what's selected (or "Style for new things"). Delete removes,
+      Escape lets go, Ctrl+Z undoes. Signatures are drawn, typed (Instrument Serif italic) or uploaded,
+      and saved as trimmed transparent PNGs so they sit on the page like ink.
+    - Tools that need a converter the server may lack (LibreOffice, Chromium, Tesseract, Ghostscript)
+      check `/api/tools/convert/capabilities` and show a `warning` Notice with the action switched off,
+      rather than failing after an upload.
+    - Sizes: the four toolkit modes keep predicting sizes before the job (cheap server estimates). The
+      single-purpose tools (conversions, OCR, edits) show the exact size on the result instead, before
+      anything downloads: predicting it would mean running the whole job twice.
   - `qr` (by id) → `QrPlayground` (`kind: generate`): the template for every generate tool.
     - A **type switch** sits in the ruled `paper` band under the step tracker, the PDF mode switch widened
       to nine segments (icon over label, same `layoutId` ink thumb). On phones it scrolls sideways inside
@@ -202,7 +233,8 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
     every file tool.
   - File uploads go through a route under `app/api/tools/` that streams the body to the backend
     (never buffered) with `proxyUpload` from `lib/backend.ts`. Check files in the browser first
-    with the same rules as the backend (`checkFile`).
+    with the same rules as the backend (`checkFile`). PDF tools post to `/api/tools/pdf/<action>`,
+    conversions to `/api/tools/convert/<action>`.
 - **Not built yet** tools show their kind's workspace switched off (`inert`, 75% opacity), under a
   "Not built yet / Request it" strip. Never grey placeholder bars.
 - Empty states teach rather than apologise. For example, link tools list "Links that work"

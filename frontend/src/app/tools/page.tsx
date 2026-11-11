@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowDown, ArrowLeft, ArrowUpRight, Plus } from "lucide-react";
-import { toolHref, tools } from "@/lib/tools";
+import { PDF_GROUPS, toolHref, tools } from "@/lib/tools";
 import { Badge, SectionHeader, SignalDot } from "@/components/ui/primitives";
 import { Page } from "@/components/ui/paper";
 import { Reveal } from "@/components/ui/reveal";
@@ -14,8 +14,10 @@ export const metadata: Metadata = {
 };
 
 export default function ToolsPage() {
-  const live = tools.filter((t) => t.status === "live");
+  const live = tools.filter((t) => t.status === "live" && !t.family);
+  const pdf = tools.filter((t) => t.family === "pdf");
   const soon = tools.filter((t) => t.status === "soon");
+  const liveCount = tools.filter((t) => t.status === "live").length;
 
   return (
     <Page className="pt-8 md:pt-10">
@@ -36,7 +38,7 @@ export default function ToolsPage() {
               Every tool, <span className="serif-em">one place.</span>
             </>
           }
-          description={`${live.length} tools work today and ${soon.length} more are on the way. Search for a task, or pick one below.`}
+          description={`${liveCount} tools work today and ${soon.length} more are on the way. Search for a task, or pick one below.`}
         />
       </Reveal>
 
@@ -49,15 +51,16 @@ export default function ToolsPage() {
 
       {(
         [
-          ["Live now", live],
-          ["In the works", soon],
+          ["Live now", live, "01"],
+          ["In the works", soon, "03"],
         ] as const
-      ).map(([label, list], g) => (
+      ).map(([label, list, index], g) => (
         <section key={label} id={g === 0 ? "live" : "soon"} aria-label={label} className="mt-16 scroll-mt-24 md:mt-20">
-          <Reveal>
+          {g === 1 && <PdfFamily tools={pdf} />}
+          <Reveal className={g === 1 ? "mt-16 block md:mt-20" : undefined}>
             <p className="label-mono flex items-center gap-2 border-b border-line pb-4 text-ink-3">
               {g === 0 && <SignalDot pulse />}
-              0{g + 1} — {label}
+              {index} — {label}
             </p>
           </Reveal>
           <ul className="mt-6 grid gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
@@ -112,6 +115,78 @@ export default function ToolsPage() {
         </section>
       ))}
     </Page>
+  );
+}
+
+/**
+ * Every PDF tool, in the same sections as the family's groups. Compact hairline cells (icon, name,
+ * one line), so thirty tools read as one well-kept index rather than a wall of cards.
+ */
+function PdfFamily({ tools: list }: { tools: typeof tools }) {
+  return (
+    <div id="pdf" className="scroll-mt-24">
+      <Reveal>
+        <p className="label-mono flex items-center gap-2 border-b border-line pb-4 text-ink-3">
+          <SignalDot pulse /> 02 — PDF tools · {list.length}
+        </p>
+      </Reveal>
+      <div className="mt-6 space-y-8">
+        {PDF_GROUPS.map((group) => {
+          const items = list.filter((t) => t.group === group);
+          if (!items.length) return null;
+          return (
+            <div key={group}>
+              <p className="label-mono mb-3 text-ink-2">{group}</p>
+              <ul className="grid gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-2 lg:grid-cols-3">
+                {items.map((tool, i) => {
+                  const Icon = tool.icon;
+                  return (
+                    <Reveal as="li" key={tool.id} delay={i * 0.04} className="bg-paper">
+                      <Link
+                        href={toolHref(tool.id)}
+                        className="group flex h-full items-start gap-3.5 p-4 transition-colors duration-150 hover:bg-surface md:p-5"
+                      >
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-line bg-surface text-ink transition-colors duration-150 group-hover:border-ink group-hover:bg-ink group-hover:text-paper">
+                          <Icon aria-hidden className="size-4" />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="flex items-center gap-1 text-[15px] font-semibold tracking-[-0.01em] text-ink">
+                            {tool.name}
+                            <ArrowUpRight
+                              aria-hidden
+                              className="size-3.5 text-ink-3 opacity-0 transition-[opacity,transform] duration-150 ease-out-soft group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:opacity-100"
+                            />
+                          </span>
+                          <span className="mt-0.5 block text-sm leading-relaxed text-ink-2">{tool.description}</span>
+                        </span>
+                      </Link>
+                    </Reveal>
+                  );
+                })}
+                <GridFill count={items.length} />
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** Closes a short last row of a hairline grid with plain paper, so there's no grey hole. */
+function GridFill({ count }: { count: number }) {
+  const sm = count % 2 ? 1 : 0;
+  const lg = (3 - (count % 3)) % 3;
+  if (!sm && !lg) return null;
+  return (
+    <li
+      aria-hidden
+      className={cn(
+        "bg-paper-2/40 max-sm:hidden",
+        sm ? "sm:col-span-1" : "sm:hidden",
+        lg === 0 ? "lg:hidden" : lg === 1 ? "lg:col-span-1 lg:block" : "lg:col-span-2 lg:block",
+      )}
+    />
   );
 }
 

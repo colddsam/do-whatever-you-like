@@ -1,4 +1,6 @@
 // Server-only: imported by route handlers, never by client components.
+import { createHmac } from "node:crypto";
+
 /**
  * Shared bits for the route handlers that proxy to the FastAPI service.
  * The backend needs a secret bearer token, so the browser only ever talks to /api/tools/*.
@@ -15,6 +17,30 @@ export function backendConfig() {
   if (!baseUrl || !token) return null;
   return { endpoint: (path: string) => `${baseUrl.replace(/\/$/, "")}/api/v1/${path}`, token };
 }
+
+/** How long a direct-upload ticket stays valid. It's checked when the upload starts, not when it ends. */
+const TICKET_SECONDS = 15 * 60;
+
+/**
+ * Direct mode, for hosts that cap what a route handler may receive (Vercel: 4.5 MB per request,
+ * 300 s per call). Instead of forwarding the bytes, the route signs a short-lived ticket for one
+ * backend endpoint and the browser sends the file straight to BACKEND_PUBLIC_URL with it.
+ * The bearer token never leaves the server; backend/app/auth/authorization.py checks the ticket.
+ * Off (null) when BACKEND_PUBLIC_URL isn't set, e.g. in local development.
+ */
+export function directTarget(path: string, maxBytes: number) {
+  const publicUrl = process.env.BACKEND_PUBLIC_URL;
+  const token = process.env.BACKEND_TOKEN;
+  if (!publicUrl || !token) return null;
+  const url = `${publicUrl.replace(/\/$/, "")}/api/v1/${path}`;
+  const expires = Math.floor(Date.now() / 1000) + TICKET_SECONDS;
+  const claims = Buffer.from(JSON.stringify({ p: new URL(url).pathname, e: expires, m: maxBytes })).toString("base64url");
+  const ticket = `${claims}.${createHmac("sha256", token).update(claims).digest("hex")}`;
+  return { url, ticket, expires };
+}
+
+/** `POST …?direct=1` asks a file route where to send the file instead of sending it. */
+export const wantsDirect = (req: Request) => new URL(req.url).searchParams.get("direct") === "1";
 
 export const notConfigured = () =>
   apiError(503, "This tool's service isn't configured yet. Set BACKEND_URL and BACKEND_TOKEN.");
@@ -56,6 +82,11 @@ export async function proxyUpload(
 ) {
   const backend = backendConfig();
   if (!backend) return notConfigured();
+  if (wantsDirect(req)) {
+    return Response.json(directTarget(path, (maxMB + 1) * 1024 * 1024) ?? { direct: false }, {
+      headers: { "Cache-Control": "no-store" },
+    });
+  }
 
   const type = req.headers.get("content-type") ?? "";
   if (!type.startsWith("multipart/form-data") || !req.body) return apiError(400, messages.badBody);
@@ -89,7 +120,8 @@ export async function proxyUpload(
 /** Streams a file response straight through, keeping the headers the browser needs. */
 export function passFile(upstream: Response) {
   const headers = new Headers({ "Cache-Control": "no-store" });
-  for (const h of ["content-type", "content-length", "content-disposition"]) {
+  // x-pdf-info: PDF tools that report what they did (pages repaired, pages read by OCR).
+  for (const h of ["content-type", "content-length", "content-disposition", "x-pdf-info"]) {
     const v = upstream.headers.get(h);
     if (v) headers.set(h, v);
   }
@@ -97,4 +129,25 @@ export function passFile(upstream: Response) {
   const size = upstream.headers.get("content-length");
   if (size) headers.set("x-file-size", size);
   return new Response(upstream.body, { status: 200, headers });
+}
+
+/** GETs a small JSON answer from the backend (capabilities, language lists). Cached for a minute. */
+export async function getJson(path: string, failed: string) {
+  const backend = backendConfig();
+  if (!backend) return notConfigured();
+  let upstream: Response;
+  try {
+    upstream = await fetch(backend.endpoint(path), {
+      headers: { Authorization: `Bearer ${backend.token}` },
+      cache: "no-store",
+      signal: AbortSignal.timeout(30_000),
+    });
+  } catch {
+    return apiError(502, "Couldn't reach the tool service. Is the backend running?");
+  }
+  if (!upstream.ok) return upstreamError(upstream, failed);
+  return new Response(upstream.body, {
+    status: 200,
+    headers: { "Content-Type": "application/json", "Cache-Control": "private, max-age=60" },
+  });
 }

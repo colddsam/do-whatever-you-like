@@ -1,6 +1,6 @@
 /** Client helpers for the downloader tools. All requests go through /api/tools/*. */
 
-import { filenameFrom, saveBlob } from "./files";
+import { filenameFrom, saveBlob, type DirectTarget } from "./files";
 
 export type Platform = "youtube" | "instagram" | "facebook";
 
@@ -114,6 +114,32 @@ const post = (platform: Platform, action: "extract" | "download", url: string, s
     signal,
   });
 
+/**
+ * Fetches the file straight from the backend when our route hands out a ticket (hosted frontends
+ * stop a route after a few minutes, and a long video can take longer), through the route otherwise.
+ */
+async function startDownload(platform: Platform, url: string, signal?: AbortSignal) {
+  const endpoint = `/api/tools/${platform}/download`;
+  const pre = await fetch(`${endpoint}?direct=1`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+    signal,
+  }).catch((e: unknown) => {
+    if (e instanceof DOMException && e.name === "AbortError") throw e;
+    return null;
+  });
+  if (pre && !pre.ok) return pre; // The link itself was rejected; show why.
+  const direct = (await pre?.json().catch(() => null)) as (DirectTarget & { body: unknown }) | null;
+  if (!direct?.url || !direct.ticket) return post(platform, "download", url, signal);
+  return fetch(direct.url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Upload-Ticket": direct.ticket },
+    body: JSON.stringify(direct.body),
+    signal,
+  });
+}
+
 export async function extract(platform: Platform, url: string, signal?: AbortSignal) {
   const res = await post(platform, "extract", url, signal);
   if (!res.ok) await readError(res);
@@ -140,7 +166,7 @@ export async function download(
     onProgress?: (p: number | null, received: number) => void;
   },
 ) {
-  const res = await post(platform, "download", url, signal);
+  const res = await startDownload(platform, url, signal);
   if (!res.ok) await readError(res);
   const total = Number(res.headers.get("x-file-size") ?? res.headers.get("content-length")) || 0;
   onStart?.(total || null);

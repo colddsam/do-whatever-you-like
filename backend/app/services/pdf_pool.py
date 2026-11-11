@@ -81,19 +81,36 @@ def shutdown_pool() -> None:
         _pool = None
 
 
+def _service(name: str) -> Any:
+    """The singletons that may run in the pool. Imported lazily, inside the child process."""
+    if name == "pdf":
+        from app.services.pdf import pdf_service
+
+        return pdf_service
+    if name == "tools":
+        from app.services.pdf_tools import pdf_tools_service
+
+        return pdf_tools_service
+    if name == "convert":
+        from app.services.convert import convert_service
+
+        return convert_service
+    raise ValueError(f"Unknown pool service '{name}'")
+
+
 def _invoke(method: str, args: tuple) -> tuple:
     """Runs in the child process. App errors travel back as plain data (they don't pickle cleanly)."""
-    from app.services.pdf import pdf_service
-
+    service, _, name = method.rpartition(".")
     try:
-        return ("ok", getattr(pdf_service, method)(*args))
+        return ("ok", getattr(_service(service or "pdf"), name)(*args))
     except AppBaseException as exc:
         return ("error", exc.status_code, exc.detail)
 
 
 async def run_pdf(method: str, *args: Any, request: Optional[Request] = None) -> Any:
     """
-    Calls `pdf_service.<method>(*args)` in the process pool.
+    Calls `pdf_service.<method>(*args)` in the process pool; "tools.<method>" and
+    "convert.<method>" reach the PDF-tools and conversion services the same way.
 
     With `request`, gives up as soon as the client disconnects (a moved slider, a closed tab):
     work that hasn't started yet is cancelled, so abandoned estimates don't queue up.

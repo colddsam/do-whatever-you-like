@@ -25,7 +25,9 @@ def create_app() -> FastAPI:
         allow_origins=app_settings.ALLOWED_ORIGINS,
         allow_credentials=not allow_wildcard,
         allow_methods=["GET", "POST", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type"],
+        allow_headers=["Authorization", "Content-Type", "X-Upload-Ticket"],
+        # Read by the browser when it talks to this service directly (see auth/authorization.py).
+        expose_headers=["Content-Disposition", "Content-Length", "X-Pdf-Info"],
     )
 
     @application.middleware("http")

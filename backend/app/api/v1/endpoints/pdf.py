@@ -266,7 +266,7 @@ async def page_thumbnail(
     request: Request,
     token: str = Query(..., description="A token from /pdf/upload"),
     page: int = Query(..., ge=1, description="1-based page number"),
-    width: int = Query(default=160, ge=1, le=2000, description="Width in pixels (snapped to 64-480)"),
+    width: int = Query(default=160, ge=1, le=2000, description="Width in pixels (snapped to 64-1000)"),
 ):
     path, _ = await run_in_threadpool(pdf_service.resolve_token, token)
     width = pdf_service.clamp_thumbnail_width(width)
