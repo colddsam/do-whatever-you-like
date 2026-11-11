@@ -1,17 +1,14 @@
 import Link from "next/link";
 import { Logo } from "@/components/ui/logo";
 import { Container } from "@/components/ui/primitives";
-import { toolHref } from "@/lib/tools";
+import { CLUSTERS, clusterHref, tools } from "@/lib/tools";
 
 const columns = [
   {
     title: "Tools",
     links: [
-      { label: "YouTube downloader", href: toolHref("youtube") },
-      { label: "Instagram downloader", href: toolHref("instagram") },
-      { label: "Facebook downloader", href: toolHref("facebook") },
-      { label: "Video to audio", href: toolHref("audio") },
-      { label: "All tools", href: "/tools" },
+      ...CLUSTERS.map((c) => ({ label: c.title, href: clusterHref(c.id) })),
+      { label: `All ${tools.length} tools`, href: "/tools" },
     ],
   },
   {

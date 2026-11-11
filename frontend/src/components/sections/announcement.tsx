@@ -12,8 +12,10 @@ const ROTATE_MS = 4200;
 
 /** Short, true headlines. Each one links to the tool it's about. */
 const news = [
+  { tag: "New", text: "13 image tools, all free", tool: "image" },
+  { tag: "New", text: "Speech to text in 99 languages", tool: "audio-to-text" },
+  { tag: "New", text: "PDF to Word, Excel and PowerPoint", tool: "pdf-to-word" },
   { tag: "New", text: "QR codes with your logo on them", tool: "qr" },
-  { tag: "New", text: "Merge, split and compress PDFs", tool: "pdf" },
   { tag: "Live", text: "Turn any video into an MP3", tool: "audio" },
   { tag: "Live", text: "Instagram carousels in one ZIP", tool: "instagram" },
   { tag: "Live", text: "YouTube Shorts, best quality", tool: "youtube" },

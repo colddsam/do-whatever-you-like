@@ -18,14 +18,16 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     # Speech to text without a Groq key runs Whisper here; "base" is the largest that fits 512 MB.
     TRANSCRIBE_MODEL=base \
     TRANSCRIBE_MODEL_DIR=/app/models/whisper \
-    HF_HUB_DISABLE_TELEMETRY=1
+    HF_HUB_DISABLE_TELEMETRY=1 \
+    # Image tools: the cut-out model lives here; Real-ESRGAN and YuNet ship inside app/assets/ml.
+    IMAGE_MODEL_DIR=/app/models/image
 
 # The -nogui LibreOffice packages skip the desktop (~300 MB less). Draw carries the PDF import
 # that PDF -> PowerPoint uses. Carlito/Caladea/Liberation match the metrics of Office's fonts,
 # so converted documents keep their line breaks.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        libatomic1 \
+        libatomic1 libglib2.0-0 \
         libreoffice-writer-nogui libreoffice-calc-nogui libreoffice-impress-nogui libreoffice-draw-nogui \
         tesseract-ocr tesseract-ocr-eng tesseract-ocr-spa tesseract-ocr-fra tesseract-ocr-deu \
         tesseract-ocr-ita tesseract-ocr-por tesseract-ocr-rus tesseract-ocr-ara tesseract-ocr-hin \
@@ -43,7 +45,9 @@ RUN pip install -r requirements.txt \
     # Fetch ffmpeg now, not at every cold start.
     && python -c "import static_ffmpeg; static_ffmpeg.add_paths()" \
     # Bake the Whisper model into the image, so the first transcription doesn't download it.
-    && python -c "from faster_whisper import WhisperModel; WhisperModel('base', device='cpu', compute_type='int8', download_root='/app/models/whisper')"
+    && python -c "from faster_whisper import WhisperModel; WhisperModel('base', device='cpu', compute_type='int8', download_root='/app/models/whisper')" \
+    # And the background-removal model (U2-Net "silueta", 44 MB), checked against its pinned SHA-256.
+    && python -c "import hashlib, os, urllib.request; os.makedirs('/app/models/image', exist_ok=True); d = urllib.request.urlopen('https://github.com/danielgatis/rembg/releases/download/v0.0.0/silueta.onnx', timeout=120).read(); assert hashlib.sha256(d).hexdigest() == '75da6c8d2f8096ec743d071951be73b4a8bc7b3e51d9a6625d63644f90ffeedb'; open('/app/models/image/silueta.onnx', 'wb').write(d)"
 
 COPY app ./app
 

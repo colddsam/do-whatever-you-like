@@ -9,6 +9,7 @@ import { Logo } from "@/components/ui/logo";
 import { ButtonLink } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 import { getLenis } from "@/lib/smooth-scroll";
+import { MobileCollections, ToolsMenu } from "./tools-menu";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 const BUBBLE = { type: "spring", bounce: 0.22, duration: 0.5 } as const;
@@ -110,6 +111,25 @@ export function Navbar() {
             {links.map((l) => {
               const has = bubble === l.id;
               const isActive = active === l.id;
+              if (l.id === "tools") {
+                // Tools opens the menu of every collection instead of jumping down the page.
+                return (
+                  <ToolsMenu
+                    key={l.id}
+                    onHover={(on) => setHovered(on ? "tools" : null)}
+                    labelClass={has && isActive ? "text-paper" : has || isActive ? "text-ink" : "text-ink-2"}
+                    bubble={
+                      has && (
+                        <motion.span
+                          layoutId="nav-bubble"
+                          transition={BUBBLE}
+                          className={cn("absolute inset-0 rounded-full transition-colors duration-200", isActive ? "bg-ink" : "bg-paper-2")}
+                        />
+                      )
+                    }
+                  />
+                );
+              }
               return (
                 <li key={l.id}>
                   <Link
@@ -202,8 +222,9 @@ export function Navbar() {
             transition={{ duration: 0.35, ease: EASE }}
             className="absolute inset-x-3 top-[64px] max-h-[calc(100dvh-76px)] origin-top overflow-y-auto overscroll-contain rounded-lg border border-line bg-surface p-2 shadow-float md:hidden"
           >
-            <ul>
-              {links.map((l, i) => (
+            <MobileCollections onNavigate={() => setOpen(false)} />
+            <ul className="pt-2">
+              {links.filter((l) => l.id !== "tools").map((l, i) => (
                 <motion.li
                   key={l.id}
                   initial={{ opacity: 0, y: 8 }}

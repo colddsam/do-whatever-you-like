@@ -12,7 +12,7 @@ signal-orange mark that says "this is where to act".
 
 - **Personality:** capable, calm, direct, a little witty. Never loud.
 - **Audience:** everyone who just wants a task done — creators, students, office workers, developers.
-- **Primary journey:** land → type / pick a task → open the tool.
+- **Primary journey:** land → type a task, or pick a collection → open the tool.
 - **Density:** generous whitespace, content aligned to a ruled grid; sections separated by hairlines rather than cards floating on gradients.
 
 ### Signature motifs (use consistently, nowhere else)
@@ -82,8 +82,46 @@ h3 20px/600 · body-lg 18px/1.6 · body 15–16px/1.6 · small 13px.
     `ink` with paper text on the section you're reading (scroll-spy on the home page).
   - Nav buttons use the `pill` shape. A 1px `ink` reading-progress rule runs along the pill's
     straight bottom edge.
+  - **Tools menu** (`components/layout/tools-menu.tsx`): "Tools" is a button (chevron turns) that opens a
+    `surface` panel under the pill (`shadow-float`, 940px). Collections run down a `paper` column on the left,
+    numbered `01–05` with counts, an `ink` thumb sliding to the one under the pointer or focus
+    (`tools-menu-thumb`). The right side shows that collection in full: its title and blurb, "All N →", then
+    PDF and Images group by group in three columns (every tool, two moves away), the small collections as
+    icon rows with descriptions, and the hub as a row at the foot. A `paper` strip at the bottom links to
+    the searchable directory. Opens on hover (70ms intent, 180ms grace) or click; ↓ opens it and focuses the
+    first collection; Esc or a click outside closes it and returns focus to the button.
   - Mobile: the menu button becomes an ink circle (48px hit area); the menu is a `surface` card
-    that drops out of the pill over a blurred `ink`/20 scrim; links stagger in.
+    that drops out of the pill over a blurred `ink`/20 scrim. It leads with the five collections (icon,
+    name, blurb, count, linking to their section of `/tools`), then the page links; rows stagger in.
+
+## E1. Collections: how the toolbox is organised
+
+Every tool belongs to exactly one of five **collections** (`CLUSTERS` in `lib/tools.ts`, `clusterOf()`):
+**PDF** (with its six groups), **Images** (five groups), **Downloads**, **Audio & video**, **Text &
+utilities**. Each has a name, a title (last word in `serif-em`), a one-line blurb, an icon, a `noun` for
+counts ("30 PDF tools", "14 image tools"), an optional hub and its `featured` tools. Every surface reads
+from it, so a new tool appears everywhere once it's in the registry:
+
+- **Home** (`01 — Tools`): a hairline bento of the collections, not of single tools. PDF is the big card
+  (group chips with counts, eight featured tools in two columns, "All 30 PDF tools →" and the toolkit);
+  Images beside it; Downloads (with the link field) and Audio & video under them; Text & utilities and the
+  request cell last. Rows are icon + name (+ description) + arrow, "Soon" in mono for tools in the works.
+- **`/tools`** is a directory (`components/sections/tool-directory.tsx`): a filter field (`/` focuses it,
+  Esc clears) that narrows everything as you type, using the same ranking as the palette. Collections are
+  numbered sections (icon box, mono `01 — PDF · 30 tools`, title, blurb, "Open the PDF toolkit →"), each in
+  its groups of compact hairline cells; the hub leads its collection as a full-width "All-in-one" cell.
+  From `lg` a sticky rail lists the collections with counts, an `ink` thumb on the one being read
+  (`directory-rail`, scroll-spy) and its groups as jump links; below `lg` the same is a sticky chip bar
+  under the navbar. Collections with no matches fade to 35% and can't be jumped to; no matches at all
+  offers to request the tool. Anchors: `/tools#pdf`, `/tools#pdf-convert-to-pdf`.
+- **Tool pages**: the breadcrumb is All tools | collection › group, each a link to that part of the
+  directory. Related tools rank the same group first, then the same collection; the link reads "All 30 PDF
+  tools →" and the label "More in PDF".
+- **Search palette**: results come under collection headings (mono name and count); browsing lists the
+  collections in order, searching orders the collections by their best match. Ranking weighs a word in the
+  name over keywords over description.
+- **Footer**: one link per collection, then "All N tools". The marquee, announcement chip, FAQ answer and
+  hero "Try" chips only name tools that work today (the FAQ counts come from the registry).
 - **Announcement chip** (hero) — fully rounded `surface` bubble with an inner `ink` tag bubble
   (pulsing signal dot + mono tag: New / Live / Next). Messages roll upward every 4.2s and the
   chip's width springs to fit; hover/focus pauses it; reduced motion shows the first message.
@@ -171,8 +209,7 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
       compression shows before/after bars. The secondary button goes back with inputs kept.
   - **The PDF family** (`family: "pdf"` in `lib/tools.ts`, workspaces in `components/tools/pdf/`): one page
     per PDF job (Merge PDF, PDF to Word, Sign PDF…), grouped as Organize / Optimize / Convert to PDF /
-    Convert from PDF / Edit / Security. `/tools` lists them in their own section (`02 — PDF tools`) as
-    compact hairline cells under group labels; the home grid shows only the `pdf` hub, never the family.
+    Convert from PDF / Edit / Security, the PDF collection's groups (see E1).
     - Merge, Split, Organize, Compress, Rotate, Remove pages and Extract pages reuse `PdfPlayground` on a
       fixed `mode` (no mode switch); Extract opens on "Chosen pages".
     - Everything else runs in **`PdfTask`** (`pdf/task.tsx`): one input (an uploaded PDF by token, a raw
@@ -246,6 +283,38 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
     - Export: TXT / SRT / VTT / JSON chips (TXT can add start times), one line on what the format is for,
       and the Download button carrying the exact size. Copy text puts plain paragraphs on the clipboard.
     - The footer says honestly where the audio goes: our server, or Groq when the server uses it.
+  - **The image family** (`family: "image"`, workspaces in `components/tools/image/`): iLoveIMG's thirteen jobs,
+    one page each, grouped Optimize / Create / Modify / Convert / Security, the Images collection's groups (see E1). The hub is Image studio:
+    Compress, Resize, Convert and Cut out behind the PDF toolkit's mode switch (`image-mode-thumb`), each mode the
+    full single-purpose tool with its own steps.
+    - Most run in **`ImageTask`** (`image/task.tsx`): drop one image or many (up to 30), shown as a hairline
+      `paper` grid of thumbnails on the transparency checkerboard (`CHECKER`, the QR tool's), each with a mono
+      `01` badge, pixel size and file size. Formats a browser can't draw (HEIC, TIFF, RAW, PSD) get a format
+      tag instead of a picture. A tool can add a line under each thumbnail (resize shows `→ 200 × 133` before
+      anything is sent), a CSS transform (rotate shows the turn), small buttons (rotate's turn/flip, shown on
+      hover from `sm`, always on phones) or earlier/later arrows (animated GIF frame order).
+    - Options sit in the dashed `Panel` of `Row`s from the PDF kit. While a result is on screen the options and
+      thumbnails lock; "Change options" goes back to them, so nothing changes unseen.
+    - Results: one image is previewed on the checkerboard; several come as a ZIP listed file by file with
+      `before → after` sizes and the change in mono (from the backend's `X-Image-Info`). AI results (upscale,
+      cut-out) get **`CompareSlider`**: the original over the result, wiped by an ink rule and a round handle
+      (drag, or arrow keys), with mono Before/After tags.
+    - Crop and blur draw on the picture (`stage`), reusing the PDF page stage's `EditableBox` inside a
+      `data-stage` frame. Crop dims everything outside the box (a 9999px `ink`/55 shadow), shows rule-of-thirds
+      lines and the size in a mono tag, and keeps exact pixel fields in sync. Blur finds faces on its own
+      (YuNet), shows each as a numbered box with a live `backdrop-filter` blur, and lets any face be kept sharp
+      or areas be added by hand.
+    - Watermark previews on the first image with the server's own maths (size relative to width, padding,
+      shadow, turn direction, nine positions, brick-tiled mosaic) and the same fonts: the OFL families the
+      backend bundles are loaded with `next/font` (`image/fonts.ts`, not preloaded). Hindi and Bangla text switch
+      to Noto Devanagari/Bengali on both sides. Anton ("Impact") has one weight, so Bold is off for it.
+    - **Browser-only tools** (meme generator, photo editor) never upload: the canvas is the file, the Download
+      button carries its exact size (made at full resolution once edits pause), and the footer says the picture
+      never leaves the device. The photo editor's tabs (Adjust, Filters, Shape, Text, Stickers, Frame) slide an
+      ink thumb (`photo-tab`); text and stickers are live elements over the canvas, dragged into place, drawn
+      into the file at the same spot.
+    - Grids that hold a canvas use `grid-cols-[minmax(0,1fr)]` on phones: an `auto` track grows to the canvas's
+      natural width and pushes the page sideways.
   - The Workbench card uses `overflow-clip`, not `overflow-hidden`, so sticky panels inside it work.
   - **Sizes, before and after.** Every tool shows how big the result will be before anything is
     made or downloaded, and the exact size on the Download button once it is. Sizes are mono;

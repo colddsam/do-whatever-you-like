@@ -26,7 +26,7 @@ const lineVariants: Variants = {
   }),
 };
 
-const suggestions = ["reels", "mp3", "merge pdf", "json"];
+const suggestions = ["reels", "merge pdf", "heic", "mp3"];
 
 const stats = [
   ["0", "sign-ups"],
@@ -152,7 +152,7 @@ export function Hero() {
             </motion.p>
 
             <motion.div {...rise(0.38)} className="mt-8 flex flex-wrap gap-3">
-              <ButtonLink href="#tools" size="lg" arrow>
+              <ButtonLink href="/tools" size="lg" arrow>
                 Browse tools
               </ButtonLink>
               <ButtonLink href="#how" size="lg" variant="secondary">

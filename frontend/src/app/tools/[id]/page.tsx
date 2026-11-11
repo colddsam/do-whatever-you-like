@@ -2,12 +2,13 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowRight, ArrowUpRight, Check } from "lucide-react";
-import { getTool, toolHref, tools, type Tool } from "@/lib/tools";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Check, ChevronRight } from "lucide-react";
+import { clusterHref, clusterOf, getCluster, getTool, toolHref, tools, toolsIn, type Tool } from "@/lib/tools";
 import { Badge } from "@/components/ui/primitives";
 import { Page } from "@/components/ui/paper";
 import { Reveal } from "@/components/ui/reveal";
 import { Playground } from "@/components/tools/playground";
+import { cn } from "@/lib/utils";
 
 export function generateStaticParams() {
   return tools.map((t) => ({ id: t.id }));
@@ -62,9 +63,22 @@ async function ToolCategory({ params }: Pick<PageProps<"/tools/[id]">, "params">
   const { id } = await params;
   const tool = getTool(id);
   if (!tool) return null;
+  const cluster = getCluster(clusterOf(tool));
+  const crumb = "label-mono text-ink-3 transition-colors hover:text-ink";
   return (
     <>
-      <p className="label-mono text-ink-3">{tool.category}</p>
+      {/* Where this tool lives: its collection, and its group within it. */}
+      <Link href={clusterHref(cluster.id)} className={crumb}>
+        {cluster.name}
+      </Link>
+      {tool.group && (
+        <>
+          <ChevronRight aria-hidden className="size-3.5 shrink-0 text-ink-3" />
+          <Link href={`/tools#${cluster.id}-${tool.group.toLowerCase().replace(/[^a-z]+/g, "-")}`} className={cn(crumb, "max-sm:hidden")}>
+            {tool.group}
+          </Link>
+        </>
+      )}
       {tool.status === "live" ? (
         <Badge variant="live" className="ml-auto">
           Live
@@ -83,15 +97,16 @@ async function ToolDetails({ params }: Pick<PageProps<"/tools/[id]">, "params">)
 
   const Icon = tool.icon;
   const live = tool.status === "live";
-  // Neighbours first (same category), then whatever works today.
+  // Neighbours first: the same group, then the same collection, then whatever works today.
+  const cluster = getCluster(clusterOf(tool));
+  const rank = (t: Tool) => (tool.group && t.group === tool.group ? 3 : 0) + (clusterOf(t) === cluster.id ? 2 : 0) + (t.status === "live" ? 1 : 0);
   const related = tools
     .filter((t) => t.id !== tool.id)
-    .sort(
-      (a, b) =>
-        Number(b.category === tool.category) - Number(a.category === tool.category) ||
-        Number(b.status === "live") - Number(a.status === "live"),
-    )
-    .slice(0, 4);
+    .map((t, i) => ({ t, i, r: rank(t) }))
+    .sort((a, b) => b.r - a.r || a.i - b.i)
+    .slice(0, 4)
+    .map(({ t }) => t);
+  const siblings = toolsIn(cluster.id).length;
   const spec = [
     ["Takes", tool.takes],
     ["Gives", tool.gives],
@@ -160,16 +175,16 @@ async function ToolDetails({ params }: Pick<PageProps<"/tools/[id]">, "params">)
       <section aria-labelledby="more-title" className="mt-20 md:mt-24">
         <div className="flex items-end justify-between gap-6 border-b border-line pb-4">
           <div>
-            <p className="label-mono text-ink-3">Keep going</p>
+            <p className="label-mono text-ink-3">More in {cluster.name}</p>
             <h2 id="more-title" className="mt-2 text-2xl font-semibold tracking-[-0.02em]">
               Related <span className="serif-em">tools</span>
             </h2>
           </div>
           <Link
-            href="/tools"
+            href={siblings > 1 ? clusterHref(cluster.id) : "/tools"}
             className="group inline-flex shrink-0 items-center gap-1 text-sm font-medium text-ink-2 transition-colors hover:text-ink"
           >
-            All tools
+            {siblings > 1 ? `All ${siblings} ${cluster.noun} tools` : "All tools"}
             <ArrowRight aria-hidden className="size-4 transition-transform duration-150 ease-out-soft group-hover:translate-x-0.5" />
           </Link>
         </div>

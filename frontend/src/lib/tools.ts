@@ -3,6 +3,14 @@ import {
   AudioLines,
   Braces,
   Captions,
+  CodeXml,
+  ImageDown,
+  ImagePlay,
+  ImageUpscale,
+  Laugh,
+  Paintbrush,
+  Scaling,
+  ScanFace,
   Crop,
   Download,
   Eraser,
@@ -60,6 +68,10 @@ export const defaultSteps: Record<ToolKind, [string, string, string]> = {
 export const PDF_GROUPS = ["Organize", "Optimize", "Convert to PDF", "Convert from PDF", "Edit", "Security"] as const;
 export type PdfGroup = (typeof PDF_GROUPS)[number];
 
+/** The sections of the image family, in the order /tools shows them (iLoveIMG's grouping). */
+export const IMAGE_GROUPS = ["Optimize", "Create", "Modify", "Convert", "Security"] as const;
+export type ImageGroup = (typeof IMAGE_GROUPS)[number];
+
 export type Tool = {
   id: string;
   name: string;
@@ -84,8 +96,8 @@ export type Tool = {
    * Tools that belong to a family (the single-purpose PDF tools) get their own section on /tools,
    * grouped by `group`, and stay out of the home page grid, which shows the family's hub instead.
    */
-  family?: "pdf";
-  group?: PdfGroup;
+  family?: "pdf" | "image";
+  group?: PdfGroup | ImageGroup;
   /** What the tool page promises, shown as a checklist. */
   features: string[];
   /** Live downloaders only: how the playground talks to the backend. */
@@ -118,6 +130,125 @@ export type Tool = {
 };
 
 const PDF_ACCEPT = { label: "PDF files", types: ".pdf,application/pdf" };
+const IMAGE_ACCEPT = { label: "JPG, PNG, GIF, WebP…", types: "image/*" };
+const imageTool = (t: Omit<Tool, "category" | "status" | "kind" | "family" | "accept"> & Partial<Tool>): Tool => ({
+  category: "Images",
+  status: "live",
+  kind: "file",
+  family: "image",
+  accept: IMAGE_ACCEPT,
+  limit: "Up to 30 images, 150 MB",
+  ...t,
+});
+
+/**
+ * Every image job as its own page (the iLoveIMG set), registered by id in
+ * components/tools/playground.tsx. Meme generator and photo editor run in the browser.
+ */
+const imageTools: Tool[] = [
+  // Optimize
+  imageTool({
+    id: "compress-image", name: "Compress image", group: "Optimize", icon: ImageDown,
+    description: "Make JPG, PNG, GIF, WebP and SVG files smaller.",
+    takes: "JPG, PNG, GIF, WebP or SVG", gives: "Smaller images", steps: ["Add images", "Pick a strength", "Download"],
+    keywords: ["compress", "shrink", "reduce", "optimize", "smaller", "image", "photo", "jpg", "png", "gif", "svg", "webp", "size"],
+    features: ["Light (lossless), Recommended or Strong", "Before and after size for every image", "Animated GIFs stay animated", "Strips camera data unless you keep it"],
+  }),
+  imageTool({
+    id: "upscale-image", name: "Upscale image", group: "Optimize", icon: ImageUpscale,
+    description: "Enlarge a picture 2× or 4× with AI that redraws the detail.",
+    takes: "One image", gives: "A 2× or 4× image", limit: "Up to 16 MP out",
+    steps: ["Add an image", "Pick 2× or 4×", "Download"],
+    keywords: ["upscale", "enlarge", "enhance", "super resolution", "ai", "increase resolution", "hd", "4k", "sharpen", "image"],
+    features: ["Real-ESRGAN, the open AI upscaler", "2× or 4×, with the new size shown first", "Drag to compare before and after", "Runs on our server: no account, no credits"],
+  }),
+  imageTool({
+    id: "remove-background", name: "Remove background", group: "Optimize", icon: Eraser,
+    description: "Cut out the subject: transparent, a colour, or a soft blur behind.",
+    takes: "Up to 10 images", gives: "PNG cut-outs", limit: "Up to 10 images",
+    steps: ["Add images", "Pick a background", "Download"],
+    keywords: ["remove background", "background remover", "cut out", "cutout", "transparent", "no background", "bg", "png", "product photo", "image"],
+    features: ["Finds people, products and pets on its own", "Transparent PNG, a solid colour, or a blurred backdrop", "Drag to compare before and after", "Free, with no watermark"],
+  }),
+  // Create
+  imageTool({
+    id: "meme-generator", name: "Meme generator", group: "Create", icon: Laugh,
+    description: "Captions on a picture, the classic way, in seconds.",
+    takes: "A picture", gives: "JPG or PNG", limit: "Made in your browser",
+    steps: ["Add a picture", "Write the captions", "Download"],
+    keywords: ["meme", "caption", "funny", "impact", "top text", "bottom text", "generator", "image"],
+    features: ["Text on the picture, or in bands above and below", "Impact-style lettering with an outline", "Hindi and Bangla captions work too", "Your picture never leaves your device"],
+  }),
+  imageTool({
+    id: "photo-editor", name: "Photo editor", group: "Create", icon: Paintbrush,
+    description: "Filters, light and colour, text, stickers and frames.",
+    takes: "A photo", gives: "JPG or PNG", limit: "Made in your browser",
+    steps: ["Add a photo", "Edit it", "Download"],
+    keywords: ["photo editor", "edit photo", "filter", "brightness", "contrast", "saturation", "text on photo", "sticker", "frame", "image editor"],
+    features: ["Nine filters, then fine-tune six sliders", "Turn, flip and crop to square or story", "Drag text and stickers into place", "Frames, polaroid and rounded corners"],
+  }),
+  // Modify
+  imageTool({
+    id: "resize-image", name: "Resize image", group: "Modify", icon: Scaling,
+    description: "Set an exact size in pixels, or scale by percentage.",
+    takes: "JPG, PNG, GIF, WebP, SVG, HEIC…", gives: "Resized images", steps: ["Add images", "Set the size", "Download"],
+    keywords: ["resize", "scale", "dimensions", "pixels", "width", "height", "percentage", "smaller", "bigger", "image", "photo"],
+    features: ["By pixels or percentage", "Keep proportions, or set an exact size", "The new size shows on every image first", "Animated GIFs and SVGs resize cleanly"],
+  }),
+  imageTool({
+    id: "crop-image", name: "Crop image", group: "Modify", icon: Crop,
+    description: "Drag a box on the picture, or type exact pixels.",
+    takes: "One image", gives: "A cropped image", steps: ["Add an image", "Draw the crop", "Download"],
+    keywords: ["crop", "cut", "trim", "frame", "aspect ratio", "square", "image", "photo"],
+    features: ["Drag and resize the crop on the picture", "Square, 4:5, 16:9 and more", "Exact pixel fields that stay in sync", "Animated GIFs stay animated"],
+  }),
+  imageTool({
+    id: "rotate-image", name: "Rotate image", group: "Modify", icon: RotateCw,
+    description: "Turn or flip many images at once, or each on its own.",
+    takes: "JPG, PNG, GIF, WebP…", gives: "Rotated images", steps: ["Add images", "Turn them", "Download"],
+    keywords: ["rotate", "turn", "flip", "mirror", "orientation", "sideways", "upside down", "image", "photo"],
+    features: ["Turn all, only portraits, or only landscapes", "Per-image turn and flip buttons", "Pixel-exact quarter turns: no blur", "See every turn before you save"],
+  }),
+  // Convert
+  imageTool({
+    id: "convert-to-jpg", name: "Convert to JPG", group: "Convert", icon: FileImage,
+    description: "HEIC, PNG, WebP, TIFF, PSD, SVG, RAW and more, to JPG.",
+    takes: "HEIC, PNG, WebP, TIFF, PSD, SVG, RAW…", gives: "JPG images", steps: ["Add images", "Pick the quality", "Download"],
+    keywords: ["convert", "to jpg", "jpeg", "heic", "heic to jpg", "png to jpg", "webp to jpg", "tiff", "psd", "svg", "raw", "cr2", "nef", "iphone photo"],
+    features: ["iPhone HEIC photos and camera RAW files", "Highest quality keeps every pixel, free", "Choose the colour behind transparent areas", "Up to 30 images at once"],
+  }),
+  imageTool({
+    id: "jpg-to-image", name: "Convert from JPG", group: "Convert", icon: ImagePlay,
+    description: "JPG to PNG, WebP or GIF, or several into an animated GIF.",
+    takes: "JPG images", gives: "PNG, WebP, GIF or animated GIF", steps: ["Add images", "Pick a format", "Download"],
+    keywords: ["jpg to png", "jpg to gif", "jpg to webp", "animated gif", "gif maker", "convert", "png", "gif", "slideshow"],
+    features: ["PNG and WebP keep every pixel", "Animated GIF from several images, in your order", "Set the seconds per frame and looping", "Up to 30 images at once"],
+  }),
+  imageTool({
+    id: "html-to-image", name: "HTML to image", group: "Convert", icon: CodeXml,
+    description: "Capture a web page, or HTML you paste, as a picture.",
+    takes: "A web address or HTML", gives: "JPG, PNG or WebP", limit: "Public pages only",
+    steps: ["Add the page", "Pick a screen", "Download"],
+    accept: undefined,
+    keywords: ["html to image", "html to jpg", "screenshot", "web page", "website", "capture", "full page screenshot", "url to image"],
+    features: ["The whole page, or one screen", "Phone, tablet, laptop or desktop width", "Blocks ads and hides cookie banners", "Private addresses are never opened"],
+  }),
+  // Security
+  imageTool({
+    id: "watermark-image", name: "Watermark image", group: "Security", icon: Stamp,
+    description: "Stamp text or a logo, placed, faded, turned or tiled.",
+    takes: "JPG, PNG, GIF, WebP…", gives: "Watermarked images", steps: ["Add images", "Design the stamp", "Download"],
+    keywords: ["watermark", "stamp", "logo", "copyright", "protect", "brand", "text on image", "image"],
+    features: ["Text in five fonts, or your logo", "Opacity, rotation and nine positions", "Repeat it across the image (hard to crop)", "Live preview on your own picture"],
+  }),
+  imageTool({
+    id: "blur-face", name: "Blur face", group: "Security", icon: ScanFace,
+    description: "Find faces and hide them, plus anything else you mark.",
+    takes: "One image", gives: "A blurred image", steps: ["Add an image", "Check the areas", "Download"],
+    keywords: ["blur face", "anonymize", "anonymise", "pixelate", "hide face", "privacy", "censor", "license plate", "number plate", "blur"],
+    features: ["Finds faces on its own, even small ones", "Keep any face sharp, or add areas by hand", "Blur or pixelate, oval or rectangle", "Baked in: can't be undone from the file"],
+  }),
+];
 const pdfTool = (t: Omit<Tool, "category" | "status" | "kind" | "family" | "accept"> & Partial<Tool>): Tool => ({
   category: "Documents",
   status: "live",
@@ -487,17 +618,23 @@ export const tools: Tool[] = [
     id: "image",
     name: "Image studio",
     category: "Images",
-    description: "Resize, convert and remove backgrounds.",
-    status: "soon",
+    description: "Compress, resize, convert and cut out images in seconds.",
+    status: "live",
     icon: ImageIcon,
     kind: "file",
-    options: ["Resize", "Convert", "Remove background"],
-    takes: "PNG, JPG or WebP",
-    gives: "PNG, JPG or WebP",
-    steps: ["Add images", "Resize or convert", "Download"],
-    accept: { label: "PNG, JPG or WebP", types: "image/*" },
-    keywords: ["resize", "png", "jpg", "webp", "background", "photo"],
-    features: ["Resize to exact dimensions", "Convert between PNG, JPG and WebP", "One-click background removal"],
+    options: ["Compress", "Resize", "Convert", "Remove background"],
+    takes: "JPG, PNG, WebP, HEIC…",
+    gives: "Images, or a ZIP",
+    limit: "Up to 30 images, 150 MB",
+    steps: ["Add images", "Choose options", "Download"],
+    accept: { label: "Images", types: "image/*" },
+    keywords: ["image", "photo", "picture", "resize", "compress", "convert", "png", "jpg", "webp", "heic", "background", "cut out"],
+    features: [
+      "Compress, resize, convert and remove backgrounds in one place",
+      "Up to 30 images at once",
+      "Exact sizes before you download",
+      "All 13 image tools are on the Tools page",
+    ],
   },
   {
     id: "writing",
@@ -552,6 +689,7 @@ export const tools: Tool[] = [
     ],
   },
   ...pdfTools,
+  ...imageTools,
 ];
 
 export const exampleTasks = [
@@ -563,21 +701,134 @@ export const exampleTasks = [
   "convert a pdf to word",
   "sign a pdf",
   "remove an image background",
+  "convert heic to jpg",
+  "make a meme",
   "format some json",
   "make a qr code for my wifi",
 ];
 
+/* ---------- Collections: how the toolbox is organised everywhere on the site ---------- */
+
+export type ClusterId = "pdf" | "images" | "downloads" | "media" | "utilities";
+
+export type Cluster = {
+  id: ClusterId;
+  /** Short name for chips, menus and breadcrumbs. */
+  name: string;
+  /** Section title; the last word is set in the serif italic. */
+  title: string;
+  /** For counts: "30 PDF tools", "14 image tools". */
+  noun: string;
+  blurb: string;
+  icon: LucideIcon;
+  /** The all-in-one workspace for this collection, if it has one. */
+  hub?: string;
+  /** Sub-sections, in order (the family's groups). */
+  groups?: readonly string[];
+  /** What the navbar menu and the home page show first. */
+  featured: string[];
+};
+
+/** The five collections, in the order the site lists them. Every tool belongs to exactly one. */
+export const CLUSTERS: Cluster[] = [
+  {
+    id: "pdf",
+    name: "PDF",
+    title: "PDF tools",
+    noun: "PDF",
+    blurb: "Merge, split, convert, edit, sign and protect PDFs.",
+    icon: FileStack,
+    hub: "pdf",
+    groups: PDF_GROUPS,
+    featured: ["merge-pdf", "compress-pdf", "pdf-to-word", "word-to-pdf", "edit-pdf", "sign-pdf", "split-pdf", "pdf-to-jpg"],
+  },
+  {
+    id: "images",
+    name: "Images",
+    title: "Image tools",
+    noun: "image",
+    blurb: "Compress, resize, convert, cut out and edit pictures.",
+    icon: ImageIcon,
+    hub: "image",
+    groups: IMAGE_GROUPS,
+    featured: ["compress-image", "resize-image", "remove-background", "convert-to-jpg", "upscale-image", "photo-editor"],
+  },
+  {
+    id: "downloads",
+    name: "Downloads",
+    title: "Media downloads",
+    noun: "download",
+    blurb: "Save public videos and posts from the platforms you use every day.",
+    icon: Download,
+    featured: ["youtube", "instagram", "facebook"],
+  },
+  {
+    id: "media",
+    name: "Audio & video",
+    title: "Audio and video",
+    noun: "audio and video",
+    blurb: "Pull the sound out of a video, or turn speech into text.",
+    icon: AudioLines,
+    featured: ["audio", "audio-to-text"],
+  },
+  {
+    id: "utilities",
+    name: "Text & utilities",
+    title: "Text and utilities",
+    noun: "utility",
+    blurb: "QR codes today. Writing and developer helpers are next.",
+    icon: QrCode,
+    featured: ["qr", "writing", "dev"],
+  },
+];
+
+/** Tools outside the two families, placed by hand. Anything unlisted lands in utilities. */
+const CLUSTER_OF: Record<string, ClusterId> = {
+  pdf: "pdf",
+  image: "images",
+  youtube: "downloads",
+  instagram: "downloads",
+  facebook: "downloads",
+  audio: "media",
+  "audio-to-text": "media",
+};
+
+export const clusterOf = (tool: Tool): ClusterId =>
+  tool.family === "pdf" ? "pdf" : tool.family === "image" ? "images" : (CLUSTER_OF[tool.id] ?? "utilities");
+export const getCluster = (id: ClusterId) => CLUSTERS.find((c) => c.id === id)!;
+export const clusterHref = (id: ClusterId) => `/tools#${id}`;
+
+/** A collection's tools: its hub first, then the rest in registry order, tools in the works last. */
+export function toolsIn(id: ClusterId): Tool[] {
+  const cluster = getCluster(id);
+  return tools
+    .filter((t) => clusterOf(t) === id)
+    .sort((a, b) => Number(b.id === cluster.hub) - Number(a.id === cluster.hub) || Number(b.status === "live") - Number(a.status === "live"));
+}
+
+export const liveCount = tools.filter((t) => t.status === "live").length;
+
+/**
+ * Ranks tools for a query. A word found in the name counts most, then keywords, then the rest,
+ * so "compress" puts Compress PDF and Compress image above tools that merely mention it.
+ */
 export function searchTools(query: string): Tool[] {
   const q = query.trim().toLowerCase();
   if (!q) return tools;
   const terms = q.split(/\s+/);
   return tools
     .map((tool) => {
-      const haystack = [tool.name, tool.category, tool.description, ...tool.keywords]
-        .join(" ")
-        .toLowerCase();
-      const score = terms.reduce((acc, t) => acc + (haystack.includes(t) ? 1 : 0), 0);
-      return { tool, score };
+      const name = tool.name.toLowerCase();
+      const keywords = tool.keywords.join(" ").toLowerCase();
+      const rest = [tool.category, tool.description, getCluster(clusterOf(tool)).name, tool.group ?? ""].join(" ").toLowerCase();
+      let score = 0;
+      let hits = 0;
+      for (const t of terms) {
+        const s = name.includes(t) ? 3 : keywords.includes(t) ? 2 : rest.includes(t) ? 1 : 0;
+        score += s;
+        hits += s ? 1 : 0;
+      }
+      return { tool, score: score + (hits === terms.length ? 2 : 0) };
     })
     .filter((r) => r.score > 0)
     .sort((a, b) => b.score - a.score || Number(b.tool.status === "live") - Number(a.tool.status === "live"))

@@ -1,6 +1,7 @@
 import { Plus } from "lucide-react";
 import { Container } from "@/components/ui/primitives";
 import { Reveal } from "@/components/ui/reveal";
+import { liveCount, toolsIn } from "@/lib/tools";
 
 const faqs = [
   {
@@ -17,7 +18,8 @@ const faqs = [
   },
   {
     q: "Which tools are available right now?",
-    a: "Downloaders for YouTube, Instagram and Facebook, a video-to-MP3 converter, and a PDF toolkit that merges, splits and compresses are live today. Image tools, writing helpers and developer utilities are next.",
+    // Worked out from the registry, so it never goes stale.
+    a: `${liveCount} tools, in five collections: ${toolsIn("pdf").length} PDF tools (merge, split, convert to and from Word, Excel and PowerPoint, edit, sign, protect, OCR…), ${toolsIn("images").length} image tools (compress, resize, convert HEIC, remove backgrounds, upscale, blur faces, memes…), downloaders for YouTube, Instagram and Facebook, video to MP3 and speech to text, and a QR code maker. Writing helpers and developer utilities are next. The Tools page lists them all.`,
   },
   {
     q: "What happens to my files and links?",

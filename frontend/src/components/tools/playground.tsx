@@ -24,6 +24,22 @@ import {
   WatermarkTool,
 } from "./pdf/simple-tools";
 import { QrPlayground } from "./qr-playground";
+import { BlurFaceTool } from "./image/blur-tool";
+import { CropImageTool } from "./image/crop-tool";
+import { HtmlToImageTool } from "./image/html-tool";
+import { MemeGeneratorTool } from "./image/meme-tool";
+import { PhotoEditorTool } from "./image/photo-editor";
+import {
+  CompressImageTool,
+  ConvertFromJpgTool,
+  ConvertToJpgTool,
+  RemoveBackgroundTool,
+  ResizeImageTool,
+  RotateImageTool,
+  UpscaleImageTool,
+} from "./image/simple-tools";
+import { ImageStudio } from "./image/studio";
+import { WatermarkImageTool } from "./image/watermark-tool";
 import { TranscribePlayground } from "./transcribe/transcribe-playground";
 import { SoonWorkspace } from "./soon-workspace";
 
@@ -46,6 +62,9 @@ type Workspace = ComponentType<{ toolId: string }>;
  *   rotate, remove and extract reuse PdfPlayground on a fixed mode
  * - qr (by id) → QrPlayground (nine kinds of content, live preview, styling and a centre logo)
  * - audio-to-text (by id) → TranscribePlayground (upload or record, live transcript, read-along, export)
+ * - the image family (by id) → components/tools/image/: most run in ImageTask (images in, options,
+ *   one action, a result to compare); crop and blur draw on the image; meme and photo editor run
+ *   in the browser; image (the home-page hub) → ImageStudio, four of them behind a mode switch
  *
  * Anything not registered shows its kind's preview in SoonWorkspace.
  */
@@ -92,6 +111,21 @@ const byId: Record<string, Workspace> = {
   "sign-pdf": (p) => <EditTool {...p} sign />,
   "redact-pdf": RedactTool,
   "compare-pdf": CompareTool,
+  // Image family
+  image: ImageStudio,
+  "compress-image": CompressImageTool,
+  "upscale-image": UpscaleImageTool,
+  "remove-background": RemoveBackgroundTool,
+  "meme-generator": MemeGeneratorTool,
+  "photo-editor": PhotoEditorTool,
+  "resize-image": ResizeImageTool,
+  "crop-image": CropImageTool,
+  "rotate-image": RotateImageTool,
+  "convert-to-jpg": ConvertToJpgTool,
+  "jpg-to-image": ConvertFromJpgTool,
+  "html-to-image": HtmlToImageTool,
+  "watermark-image": WatermarkImageTool,
+  "blur-face": BlurFaceTool,
 };
 
 export function Playground({ toolId }: { toolId: string }) {

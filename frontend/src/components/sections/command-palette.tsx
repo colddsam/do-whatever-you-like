@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { ArrowUpRight, CornerDownLeft, Search } from "lucide-react";
-import { exampleTasks, searchTools, toolHref, tools } from "@/lib/tools";
+import { CLUSTERS, clusterOf, exampleTasks, searchTools, toolHref, tools, toolsIn, type Tool } from "@/lib/tools";
 import { Kbd, SignalDot } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 
@@ -88,7 +88,17 @@ export function CommandPalette({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
-  const results = useMemo(() => searchTools(query), [query]);
+  // Results come grouped by collection: in collection order when browsing, best match first when searching.
+  const groups = useMemo(() => {
+    if (!query.trim()) return CLUSTERS.map((c) => ({ cluster: c, list: toolsIn(c.id) }));
+    const byCluster = new Map<string, Tool[]>();
+    for (const t of searchTools(query)) {
+      const id = clusterOf(t);
+      byCluster.set(id, [...(byCluster.get(id) ?? []), t]);
+    }
+    return [...byCluster].map(([id, list]) => ({ cluster: CLUSTERS.find((c) => c.id === id)!, list }));
+  }, [query]);
+  const results = useMemo(() => groups.flatMap((g) => g.list), [groups]);
   const placeholder = useTypewriter(exampleTasks, !focused && query === "");
   const liveCount = tools.filter((t) => t.status === "live").length;
 
@@ -218,7 +228,13 @@ export function CommandPalette({
             </Link>
           </li>
         )}
-        {results.map((tool, i) => {
+        {groups.map(({ cluster, list }) => [
+          <li key={`h-${cluster.id}`} role="presentation" className="label-mono flex items-center justify-between px-2 pb-1 pt-3 text-ink-3 first:pt-1">
+            <span>{cluster.name}</span>
+            <span>{list.length}</span>
+          </li>,
+          ...list.map((tool) => {
+          const i = results.indexOf(tool);
           const Icon = tool.icon;
           const isActive = i === active;
           return (
@@ -272,7 +288,8 @@ export function CommandPalette({
               </span>
             </motion.li>
           );
-        })}
+        }),
+        ])}
       </ul>
 
       {/* Footer */}

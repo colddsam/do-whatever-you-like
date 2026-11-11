@@ -1,14 +1,17 @@
+/** Jobs that work today: every one of these is a live tool. */
 const tasks = [
+  "Merge PDFs",
+  "PDF to Word",
+  "Sign PDFs",
+  "Remove backgrounds",
+  "HEIC to JPG",
+  "Resize images",
   "Download reels",
   "Save YouTube videos",
-  "Extract audio",
-  "Merge PDFs",
-  "Resize images",
-  "Remove backgrounds",
-  "Format JSON",
+  "Transcribe audio",
+  "Extract MP3s",
+  "Blur faces",
   "Make QR codes",
-  "Summarise articles",
-  "Compress files",
 ];
 
 export function Marquee() {

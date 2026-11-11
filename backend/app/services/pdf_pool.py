@@ -91,6 +91,10 @@ def _service(name: str) -> Any:
         from app.services.pdf_tools import pdf_tools_service
 
         return pdf_tools_service
+    if name == "image":
+        from app.services.image import image_service
+
+        return image_service
     if name == "convert":
         from app.services.convert import convert_service
 
