@@ -43,8 +43,8 @@ COPY app ./app
 
 RUN useradd --create-home --uid 10001 app \
     && mkdir -p /app/temp /tmp/dw_lo \
-    && chown -R app:app /app /tmp/dw_lo \
-    && chmod -R a+rX /opt/playwright "$(python -c 'import static_ffmpeg, os; print(os.path.dirname(static_ffmpeg.__file__))')"
+    && chown -R app:app /app /tmp/dw_lo "$(python -c 'import static_ffmpeg, os; print(os.path.dirname(static_ffmpeg.__file__))')" \
+    && chmod -R a+rX /opt/playwright
 USER app
 
 # Render sets PORT (10000 by default). One worker: the free instance has 0.1 CPU and 512 MB.
