@@ -10,6 +10,7 @@ import {
   Eye,
   EyeOff,
   GripVertical,
+  LayoutGrid,
   Layers,
   Loader2,
   Minimize2,
@@ -21,17 +22,23 @@ import { getTool } from "@/lib/tools";
 import { formatBytes, formatSize } from "@/lib/media";
 import { checkFile, FileToolError, postFormJson, saveBlob, uploadForm, type Converted } from "@/lib/files";
 import {
+  arrangeFresh,
   COMPRESS_PRESETS,
   compressionSettings,
   describePart,
   isPdfMode,
+  isUnchanged,
   listZip,
   MERGE_MAX_FILES,
+  orderSpec,
   outOfBounds,
   parseRanges,
+  partLabel,
+  partPages,
   PDF_MAX_MB,
-  rangeLabel,
+  serializeParts,
   sizeAt,
+  type ArrangedPage,
   type CompressEstimate,
   type CompressSample,
   type PdfMode,
@@ -39,8 +46,10 @@ import {
   type SplitEstimate,
   type ZipEntry,
 } from "@/lib/pdf";
+import { getLenis } from "@/lib/smooth-scroll";
 import { cn } from "@/lib/utils";
 import { FileDrop } from "./file-drop";
+import { OrganizeBoard, SplitPicker } from "./pdf-pages";
 import { isBusy, ProgressButton, type Job } from "./progress-button";
 import { useDebouncedTask } from "./use-debounced-task";
 import { Workbench } from "./workbench";
@@ -58,6 +67,12 @@ const api = (action: string) => `/api/tools/pdf/${action}`;
 const MODES: Record<PdfMode, { label: string; hint: string; icon: typeof Layers; steps: [string, string, string] }> = {
   merge: { label: "Merge", hint: "Many → one", icon: Layers, steps: ["Add PDFs", "Set the order", "Download"] },
   split: { label: "Split", hint: "One → parts", icon: Scissors, steps: ["Add a PDF", "Pick the pages", "Download"] },
+  organize: {
+    label: "Organize",
+    hint: "Page by page",
+    icon: LayoutGrid,
+    steps: ["Add a PDF", "Arrange the pages", "Download"],
+  },
   compress: { label: "Compress", hint: "Make it lighter", icon: Minimize2, steps: ["Add a PDF", "Set the strength", "Download"] },
 };
 
@@ -86,8 +101,8 @@ const nextId = () => `f${++uid}`;
  *
  * PDFs upload as soon as they're added (with their own progress), so by the time people pick
  * options the server already has them. That lets every mode show the result's size before it's
- * made: the merged size, each split part, and the compressed size for any strength. Split and
- * compress share one document; merge keeps an ordered list.
+ * made: the merged size, each split part, the rearranged PDF and the compressed size for any
+ * strength. Split, organize and compress share one document; merge keeps an ordered list.
  */
 export function PdfPlayground({ toolId }: { toolId: string }) {
   const tool = getTool(toolId)!;
@@ -100,11 +115,14 @@ export function PdfPlayground({ toolId }: { toolId: string }) {
   // Split
   const [splitAll, setSplitAll] = useState(true);
   const [ranges, setRanges] = useState("");
+  // Organize: the pages in their new order, for the document they were arranged on.
+  const [arrange, setArrange] = useState<{ docId: string; pages: ArrangedPage[] } | null>(null);
   // Compress
   const [strength, setStrength] = useState(50);
   // Size predictions, each tagged with the inputs they were measured for.
   const [mergeSize, setMergeSize] = useState<{ key: string; size?: number; error?: string } | null>(null);
   const [splitEst, setSplitEst] = useState<{ key: string; data?: SplitEstimate; error?: string } | null>(null);
+  const [organizeSize, setOrganizeSize] = useState<{ key: string; size?: number; error?: string } | null>(null);
   const [compressEst, setCompressEst] = useState<{
     token: string;
     exact: boolean;
@@ -265,7 +283,10 @@ export function PdfPlayground({ toolId }: { toolId: string }) {
 
   const parsed = useMemo(() => parseRanges(ranges), [ranges]);
   const pages = isReady(doc) ? doc.upload.pages : null;
-  const rangeError = splitAll ? null : (parsed.error ?? (pages ? outOfBounds(parsed.ranges, pages) : null));
+  const rangeError = splitAll ? null : (parsed.error ?? (pages ? outOfBounds(parsed.parts, pages) : null));
+  // The parts as page lists, for the page picker: none yet while the field is empty, and none
+  // while what's typed can't be read (the picker waits for it to be fixed).
+  const groups = !ranges.trim() ? [] : rangeError ? null : parsed.parts.map(partPages);
 
   // Merge: the real merge runs on the server and only its size comes back.
   const mergeReady = items.length >= 2 && items.every(isReady);
@@ -289,7 +310,7 @@ export function PdfPlayground({ toolId }: { toolId: string }) {
 
   // Split: the parts and their sizes, re-measured as the ranges change.
   const splitKey =
-    mode === "split" && isReady(doc) && !rangeError && (splitAll || parsed.ranges.length)
+    mode === "split" && isReady(doc) && !rangeError && (splitAll || parsed.parts.length)
       ? `${doc.upload.token}|${splitAll ? "*" : ranges.replace(/\s+/g, "")}|${nonce}`
       : null;
   useDebouncedTask(
@@ -309,6 +330,32 @@ export function PdfPlayground({ toolId }: { toolId: string }) {
       }
     },
     400,
+  );
+
+  // Organize: the new order is made on the server and only its size comes back.
+  const arranged =
+    isReady(doc) && arrange?.docId === doc.id ? arrange.pages : isReady(doc) ? arrangeFresh(doc.upload.pages) : [];
+  const unchanged = isReady(doc) ? isUnchanged(arranged, doc.upload.pages) : true;
+  const spec = orderSpec(arranged);
+  const organizeKey =
+    mode === "organize" && isReady(doc) && !unchanged && arranged.length ? `${doc.upload.token}|${spec}|${nonce}` : null;
+  useDebouncedTask(
+    organizeKey,
+    async (signal) => {
+      if (!isReady(doc)) return;
+      const form = new FormData();
+      form.append("token", doc.upload.token);
+      form.append("page_order", spec);
+      try {
+        const res = await postFormJson<{ total_size: number }>(api("organize-estimate"), form, { signal });
+        setOrganizeSize({ key: organizeKey!, size: res.total_size });
+      } catch (e) {
+        if (isAbort(e)) return;
+        if (expired(e)) return reupload([doc]);
+        setOrganizeSize({ key: organizeKey!, error: messageOf(e) });
+      }
+    },
+    500,
   );
 
   // Compress: the strength the slider is on first (so a size shows as soon as possible), then
@@ -382,12 +429,14 @@ export function PdfPlayground({ toolId }: { toolId: string }) {
     if (!targets.length || !targets.every(isReady)) return;
     if (mode === "merge" && targets.length < 2) return;
     if (mode === "split" && rangeError) return;
+    if (mode === "organize" && (unchanged || !arranged.length)) return;
 
     const build = (tokens: string[]) => {
       const form = new FormData();
       if (mode === "merge") tokens.forEach((t) => form.append("tokens", t));
       else form.append("token", tokens[0]);
       if (mode === "split" && !splitAll) form.append("page_ranges", ranges.trim());
+      if (mode === "organize") form.append("page_order", spec);
       if (mode === "compress") form.append("compression_percentage", String(strength));
       return form;
     };
@@ -397,7 +446,9 @@ export function PdfPlayground({ toolId }: { toolId: string }) {
         ? `${stem(first)}_merged.pdf`
         : mode === "split"
           ? `${stem(first)}_split.zip`
-          : `${stem(first)}_compressed.pdf`;
+          : mode === "organize"
+            ? `${stem(first)}_organized.pdf`
+            : `${stem(first)}_compressed.pdf`;
 
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -455,7 +506,11 @@ export function PdfPlayground({ toolId }: { toolId: string }) {
         : `Merge ${items.length} PDFs`
       : mode === "split"
         ? "Split PDF"
-        : `Compress by ${strength}%`;
+        : mode === "organize"
+          ? unchanged
+            ? "Rearrange the pages first"
+            : `Make the PDF · ${plural(arranged.length, "page")}`
+          : `Compress by ${strength}%`;
   const actionHint =
     pendingUploads > 0
       ? `Uploading ${plural(pendingUploads, "PDF")} first. Sizes appear once ${pendingUploads === 1 ? "it's" : "they're"} in.`
@@ -463,7 +518,9 @@ export function PdfPlayground({ toolId }: { toolId: string }) {
         ? "An upload didn't go through. Retry it or remove it."
         : mode === "merge" && items.length < 2
           ? "Merging needs at least two PDFs."
-          : "You can check the result here before you save it.";
+          : mode === "organize" && unchanged && hasInput
+            ? "Move, turn or remove a page. The button wakes up once something has changed."
+            : "You can check the result here before you save it.";
 
   return (
     <Workbench
@@ -511,7 +568,13 @@ export function PdfPlayground({ toolId }: { toolId: string }) {
             ) : !doc ? (
               <FileDrop
                 accept={tool.accept?.types ?? ".pdf"}
-                title={mode === "split" ? "Drop the PDF to split" : "Drop the PDF to compress"}
+                title={
+                  mode === "split"
+                    ? "Drop the PDF to split"
+                    : mode === "organize"
+                      ? "Drop the PDF to rearrange"
+                      : "Drop the PDF to compress"
+                }
                 formats={`PDF · up to ${PDF_MAX_MB} MB`}
                 error={rejected}
                 onFile={pickDoc}
@@ -562,6 +625,12 @@ export function PdfPlayground({ toolId }: { toolId: string }) {
                         parsed={parsed}
                         error={rangeError}
                         pages={pages}
+                        token={isReady(doc) ? doc.upload.token : null}
+                        groups={groups}
+                        onGroups={(g) => {
+                          setRanges(serializeParts(g));
+                          if (job.kind === "failed") setJob({ kind: "ready" });
+                        }}
                         estimate={splitKey && splitEst?.key === splitKey ? splitEst : null}
                         measuring={Boolean(splitKey) && splitEst?.key !== splitKey}
                         onRetry={retryEstimates}
@@ -573,6 +642,30 @@ export function PdfPlayground({ toolId }: { toolId: string }) {
                         }}
                       />
                     )}
+                    {mode === "organize" &&
+                      (isReady(doc) ? (
+                        <>
+                          <OrganizeBoard
+                            token={doc.upload.token}
+                            pageCount={doc.upload.pages}
+                            pages={arranged}
+                            locked={busy}
+                            onChange={(next) => {
+                              reset();
+                              setArrange({ docId: doc.id, pages: next });
+                            }}
+                          />
+                          <OrganizeSummary
+                            pages={arranged.length}
+                            unchanged={unchanged}
+                            size={organizeKey && organizeSize?.key === organizeKey ? organizeSize : null}
+                            measuring={Boolean(organizeKey) && organizeSize?.key !== organizeKey}
+                            onRetry={retryEstimates}
+                          />
+                        </>
+                      ) : (
+                        <p className="text-sm text-ink-3">The pages appear here once the PDF is in.</p>
+                      ))}
                     {mode === "compress" && (
                       <CompressOptions
                         value={strength}
@@ -590,9 +683,21 @@ export function PdfPlayground({ toolId }: { toolId: string }) {
                     <div className="mt-4">
                       <ProgressButton
                         job={job}
-                        disabled={!hasInput || (mode === "split" && Boolean(rangeError))}
+                        disabled={
+                          !hasInput ||
+                          (mode === "split" && Boolean(rangeError)) ||
+                          (mode === "organize" && (unchanged || !arranged.length))
+                        }
                         label={actionLabel}
-                        working={mode === "merge" ? "Merging…" : mode === "split" ? "Splitting…" : "Compressing…"}
+                        working={
+                          mode === "merge"
+                            ? "Merging…"
+                            : mode === "split"
+                              ? "Splitting…"
+                              : mode === "organize"
+                                ? "Rearranging…"
+                                : "Compressing…"
+                        }
                         hint={actionHint}
                         onStart={start}
                         onCancel={() => abortRef.current?.abort()}
@@ -627,7 +732,7 @@ function ModeSwitch({ mode, disabled, onChange }: { mode: PdfMode; disabled: boo
 
   return (
     <div className="border-b border-line bg-paper/60 p-2 sm:px-3">
-      <div role="tablist" aria-label="What to do with your PDFs" className="grid grid-cols-3 gap-1">
+      <div role="tablist" aria-label="What to do with your PDFs" className="grid grid-cols-4 gap-1">
         {keys.map((k, i) => {
           const m = MODES[k];
           const active = k === mode;
@@ -1097,12 +1202,51 @@ function MergeSummary({
   );
 }
 
+function OrganizeSummary({
+  pages,
+  unchanged,
+  size,
+  measuring,
+  onRetry,
+}: {
+  pages: number;
+  unchanged: boolean;
+  size: { size?: number; error?: string } | null;
+  measuring: boolean;
+  onRetry: () => void;
+}) {
+  return (
+    <div className="mt-4 border-t border-line pt-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <p className="label-mono text-ink-3">You&apos;ll get</p>
+        <span className="inline-flex h-8 items-center rounded-sm border border-ink bg-ink px-2.5 text-sm text-paper">
+          1 PDF, {plural(pages, "page")} in this order
+        </span>
+        {unchanged ? null : size?.size !== undefined ? (
+          <span className="font-mono text-sm text-ink">{formatBytes(size.size)}</span>
+        ) : measuring ? (
+          <Measuring />
+        ) : null}
+      </div>
+      {size?.error && (
+        <p className="mt-2 text-xs text-danger">
+          {size.error}
+          <RetryLink onRetry={onRetry} />
+        </p>
+      )}
+    </div>
+  );
+}
+
 function SplitOptions({
   all,
   ranges,
   parsed,
   error,
   pages,
+  token,
+  groups,
+  onGroups,
   estimate,
   measuring,
   onRetry,
@@ -1115,6 +1259,10 @@ function SplitOptions({
   parsed: ReturnType<typeof parseRanges>;
   error: string | null;
   pages: number | null;
+  token: string | null;
+  /** The typed parts as page lists; null while the field can't be read. */
+  groups: number[][] | null;
+  onGroups: (groups: number[][]) => void;
   estimate: { data?: SplitEstimate; error?: string } | null;
   measuring: boolean;
   onRetry: () => void;
@@ -1125,8 +1273,7 @@ function SplitOptions({
   const id = useId();
   const showError = !all && ranges.trim().length > 0 && error;
   const data = estimate?.data;
-  const sizeFor = (from: number, to: number) =>
-    data?.parts.find((p) => p.first_page === from && p.last_page === to)?.size;
+  const sizeFor = (pageList: number[]) => data?.parts.find((p) => p.pages?.join() === pageList.join())?.size;
 
   const outcome = data ? (
     <span className="font-mono text-xs text-ink">
@@ -1175,7 +1322,7 @@ function SplitOptions({
               value={ranges}
               disabled={locked}
               onChange={(e) => onRanges(e.target.value)}
-              placeholder="1-3, 5, 8-10"
+              placeholder="1-3, 5+7, 8-10"
               inputMode="numeric"
               autoComplete="off"
               spellCheck={false}
@@ -1194,17 +1341,20 @@ function SplitOptions({
                   {estimate.error}
                   <RetryLink onRetry={onRetry} />
                 </p>
-              ) : parsed.ranges.length ? (
+              ) : parsed.parts.length && token && pages ? (
+                // The page picker below lists the parts; here, just what they add up to.
+                outcome && <p className="inline-flex items-center gap-1.5 text-xs text-ink-3">→ {outcome}</p>
+              ) : parsed.parts.length ? (
                 <div className="flex flex-wrap items-center gap-1.5">
-                  {parsed.ranges.map((r, i) => {
-                    const size = sizeFor(r.from, r.to);
+                  {parsed.parts.map((part, i) => {
+                    const size = sizeFor(partPages(part));
                     return (
                       <span
-                        key={`${r.from}-${r.to}-${i}`}
+                        key={`${partLabel(part)}-${i}`}
                         className="inline-flex h-7 items-center gap-1.5 rounded-sm border border-line bg-paper px-2 text-xs text-ink-2"
                       >
                         <span className="font-mono text-ink-3">{String(i + 1).padStart(2, "0")}</span>
-                        {rangeLabel(r)}
+                        {partLabel(part)}
                         {size !== undefined && <span className="font-mono text-ink-3">· {formatBytes(size)}</span>}
                       </span>
                     );
@@ -1212,9 +1362,27 @@ function SplitOptions({
                   {outcome && <span className="ml-1 inline-flex items-center gap-1.5 text-xs text-ink-3">→ {outcome}</span>}
                 </div>
               ) : (
-                <p className="text-xs text-ink-3">Commas between parts. Each range becomes its own PDF.</p>
+                <p className="text-xs text-ink-3">
+                  Commas between parts; each becomes its own PDF. Join pages with +, like 1-3+5. Or pick them below.
+                </p>
               )}
             </div>
+            {token && pages ? (
+              groups ? (
+                <SplitPicker
+                  token={token}
+                  pageCount={pages}
+                  groups={groups}
+                  locked={locked}
+                  sizes={groups.map(sizeFor)}
+                  onChange={onGroups}
+                />
+              ) : (
+                <p className="mt-3 rounded-md border border-dashed border-line px-3 py-2.5 text-xs text-ink-3">
+                  Fix the pages above and they&apos;ll show up here to pick from.
+                </p>
+              )
+            ) : null}
           </motion.div>
         )}
       </AnimatePresence>
@@ -1376,13 +1544,29 @@ function SizeBars({
 
 function ResultPanel({ result, onSave, onBack }: { result: Result; onSave: () => void; onBack: () => void }) {
   const [preview, setPreview] = useState(false);
+  const panel = useRef<HTMLDivElement>(null);
+  // A tall input (the page grid) collapsing into this panel can leave it above the viewport.
+  useEffect(() => {
+    const el = panel.current;
+    if (!el || el.getBoundingClientRect().top >= 80) return;
+    const lenis = getLenis();
+    if (lenis) lenis.scrollTo(el, { offset: -96 });
+    else el.scrollIntoView({ block: "start" });
+  }, []);
   const zip = isZip(result);
   const format = zip ? "ZIP" : "PDF";
-  const back = result.mode === "merge" ? "Edit list" : result.mode === "split" ? "Change pages" : "Adjust";
+  const back =
+    result.mode === "merge"
+      ? "Edit list"
+      : result.mode === "split"
+        ? "Change pages"
+        : result.mode === "organize"
+          ? "Keep arranging"
+          : "Adjust";
   const saved = result.from > 0 ? Math.round((1 - result.size / result.from) * 100) : 0;
 
   return (
-    <div className="rounded-md border border-line bg-surface px-3 py-3 sm:px-4 sm:py-4">
+    <div ref={panel} className="scroll-mt-24 rounded-md border border-line bg-surface px-3 py-3 sm:px-4 sm:py-4">
       <div className="flex items-baseline justify-between gap-4">
         <p className="label-mono flex items-center gap-1.5 text-ink-2">
           <Check aria-hidden className="size-3.5 text-success" /> {format} ready
@@ -1465,7 +1649,9 @@ function ResultPanel({ result, onSave, onBack }: { result: Result; onSave: () =>
             ? zip
               ? "Each part is a separate PDF inside the ZIP."
               : "Just the pages you asked for, as one PDF."
-            : "Metadata and embedded thumbnails were removed to save space."}
+            : result.mode === "organize"
+              ? "Links and bookmarks to the pages you kept still work."
+              : "Metadata and embedded thumbnails were removed to save space."}
       </p>
     </div>
   );

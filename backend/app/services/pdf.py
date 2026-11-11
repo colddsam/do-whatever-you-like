@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class PDFService:
     CHUNK_SIZE = 1024 * 64
     TOKEN_PATTERN = re.compile(r"^[a-f0-9]{32}$")
-    PART_PAGES = re.compile(r"pages?_(\d+)(?:-(\d+))?\.pdf$")
+    PART_PAGES = re.compile(r"pages?_(\d+(?:-\d+)?(?:_\d+(?:-\d+)?)*)\.pdf$")
     # Strengths the compress estimate measures; the UI interpolates between them and then asks
     # for the exact strength the slider settles on. Includes the UI's presets (25 / 50 / 80).
     ESTIMATE_STRENGTHS = (1, 25, 50, 80, 95)
@@ -129,32 +129,68 @@ class PDFService:
         return output_path
 
     @classmethod
-    def parse_page_ranges(cls, page_ranges: str, total_pages: int) -> List[Tuple[int, int]]:
-        ranges: List[Tuple[int, int]] = []
+    def _parse_range(cls, text: str, total_pages: int) -> Tuple[int, int]:
+        """'3' or '1-3' (1-based) -> 0-based inclusive bounds."""
+        if "-" in text:
+            a, b = (s.strip() for s in text.split("-", 1))
+            if not a.isdigit() or not b.isdigit():
+                raise InvalidPDFInputError(f"Invalid page range '{text}'. Use format like '1-3'.")
+            start_page, end_page = int(a), int(b)
+        else:
+            if not text.isdigit():
+                raise InvalidPDFInputError(f"Invalid page number '{text}'.")
+            start_page = end_page = int(text)
+
+        if start_page < 1 or end_page > total_pages or start_page > end_page:
+            raise InvalidPDFInputError(
+                f"Page range '{text}' is out of bounds for PDF with {total_pages} page(s)."
+            )
+        return start_page - 1, end_page - 1
+
+    @classmethod
+    def parse_page_groups(cls, page_ranges: str, total_pages: int) -> List[List[int]]:
+        """
+        Commas separate output PDFs; '+' joins ranges into the same PDF, in the order given.
+        '1-3, 5' -> two PDFs (pages 1-3, page 5); '1-3+5, 4' -> pages 1,2,3,5 then page 4.
+        Returns 0-based page lists.
+        """
+        groups: List[List[int]] = []
         parts = [p.strip() for p in page_ranges.split(",") if p.strip()]
         if not parts:
-            raise InvalidPDFInputError("Invalid page_ranges format. Example: '1-3, 5'.")
+            raise InvalidPDFInputError("Invalid page_ranges format. Example: '1-3, 5' or '1-3+5, 4'.")
 
         for part in parts:
-            if "-" in part:
-                bounds = part.split("-", 1)
-                if len(bounds) != 2 or not bounds[0].strip().isdigit() or not bounds[1].strip().isdigit():
-                    raise InvalidPDFInputError(f"Invalid page range '{part}'. Use format like '1-3'.")
-                start_page = int(bounds[0].strip())
-                end_page = int(bounds[1].strip())
+            pieces = [s.strip() for s in part.split("+")]
+            if any(not s for s in pieces):
+                raise InvalidPDFInputError(f"Invalid page group '{part}'. Join ranges like '1-3+5'.")
+            pages: List[int] = []
+            for piece in pieces:
+                start, end = cls._parse_range(piece, total_pages)
+                pages.extend(range(start, end + 1))
+            groups.append(pages)
+
+        if sum(len(g) for g in groups) > settings.MAX_OUTPUT_PAGES:
+            raise InvalidPDFInputError(f"That would make more than {settings.MAX_OUTPUT_PAGES} pages.")
+        return groups
+
+    @staticmethod
+    def _runs(pages: List[int]) -> List[Tuple[int, int]]:
+        """0-based pages -> runs of consecutive ascending pages, as 1-based (first, last)."""
+        runs: List[Tuple[int, int]] = []
+        for p in pages:
+            if runs and p == runs[-1][1]:
+                runs[-1] = (runs[-1][0], p + 1)
             else:
-                if not part.isdigit():
-                    raise InvalidPDFInputError(f"Invalid page number '{part}'.")
-                start_page = int(part)
-                end_page = start_page
+                runs.append((p + 1, p + 1))
+        return runs
 
-            if start_page < 1 or end_page > total_pages or start_page > end_page:
-                raise InvalidPDFInputError(
-                    f"Page range '{part}' is out of bounds for PDF with {total_pages} page(s)."
-                )
-            ranges.append((start_page - 1, end_page - 1))
-
-        return ranges
+    @classmethod
+    def _part_name(cls, idx: int, pages: List[int]) -> str:
+        """page_5.pdf · part_1_pages_1-3.pdf · part_2_pages_1-3_5.pdf (the frontend parses these)."""
+        if len(pages) == 1:
+            return f"page_{pages[0] + 1}.pdf"
+        label = "_".join(f"{a}" if a == b else f"{a}-{b}" for a, b in cls._runs(pages))
+        return f"part_{idx}_pages_{label}.pdf"
 
     def split_pdf(
         self,
@@ -172,18 +208,17 @@ class PDFService:
             clean_ranges = (page_ranges or "").strip()
 
             if clean_ranges:
-                parsed_ranges = self.parse_page_ranges(clean_ranges, total_pages)
+                groups = self.parse_page_groups(clean_ranges, total_pages)
             else:
-                parsed_ranges = [(i, i) for i in range(total_pages)]
+                groups = [[i] for i in range(total_pages)]
 
-            for idx, (start_idx, end_idx) in enumerate(parsed_ranges, start=1):
+            for idx, pages in enumerate(groups, start=1):
                 part_doc = pymupdf.open()
                 try:
-                    part_doc.insert_pdf(src_doc, from_page=start_idx, to_page=end_idx)
-                    if start_idx == end_idx:
-                        out_name = f"page_{start_idx + 1}.pdf"
-                    else:
-                        out_name = f"part_{idx}_pages_{start_idx + 1}-{end_idx + 1}.pdf"
+                    # Contiguous runs go in with one call each (keeps links between them intact).
+                    for first, last in self._runs(pages):
+                        part_doc.insert_pdf(src_doc, from_page=first - 1, to_page=last - 1)
+                    out_name = self._part_name(idx, pages)
                     out_path = target_dir / out_name
                     if out_path.exists():
                         out_path = target_dir / f"part_{idx}_{out_name}"
@@ -203,6 +238,107 @@ class PDFService:
             raise PDFProcessingError("No split PDF files were generated.")
 
         return output_files
+
+    ROTATIONS = (0, 90, 180, 270)
+
+    @classmethod
+    def parse_page_order(cls, spec: str, total_pages: int) -> List[Tuple[int, int]]:
+        """
+        'n' or 'n:deg' entries, comma-separated, in the new order (1-based pages; deg = 90/180/270
+        clockwise on top of the page's own rotation). Pages left out are removed.
+        '3, 1:90, 2' -> page 3, page 1 turned right, page 2. Returns 0-based (page, deg).
+        """
+        entries = [e.strip() for e in (spec or "").split(",") if e.strip()]
+        if not entries:
+            raise InvalidPDFInputError("Keep at least one page. Example: '3, 1:90, 2'.")
+        if len(entries) > settings.MAX_OUTPUT_PAGES:
+            raise InvalidPDFInputError(f"That would make more than {settings.MAX_OUTPUT_PAGES} pages.")
+
+        order: List[Tuple[int, int]] = []
+        for entry in entries:
+            page_text, _, rot_text = entry.partition(":")
+            page_text, rot_text = page_text.strip(), rot_text.strip()
+            if not page_text.isdigit():
+                raise InvalidPDFInputError(f"Invalid page '{entry}'. Use a page number, optionally ':90'.")
+            page = int(page_text)
+            if not 1 <= page <= total_pages:
+                raise InvalidPDFInputError(f"Page {page} is out of bounds for PDF with {total_pages} page(s).")
+            rotation = 0
+            if rot_text:
+                if not rot_text.lstrip("-").isdigit() or int(rot_text) % 90:
+                    raise InvalidPDFInputError(f"Invalid rotation in '{entry}'. Use 90, 180 or 270.")
+                rotation = int(rot_text) % 360
+            order.append((page - 1, rotation))
+        return order
+
+    def organize_pdf(
+        self,
+        pdf_path: Path,
+        output_path: Path,
+        page_order: str,
+        display_name: str | None = None,
+    ) -> Path:
+        """Reorders, rotates and removes pages in one pass."""
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        doc = self._open_valid_pdf(pdf_path, display_name)
+        try:
+            order = self.parse_page_order(page_order, doc.page_count)
+            # select() keeps links, outlines and annotations that still point at kept pages.
+            doc.select([page for page, _ in order])
+            for i, (_, rotation) in enumerate(order):
+                if rotation:
+                    page = doc[i]
+                    page.set_rotation((page.rotation + rotation) % 360)
+            doc.save(str(output_path), garbage=3, deflate=True)
+        except InvalidPDFInputError:
+            raise
+        except Exception as exc:
+            logger.error("Failed to organize PDF %s: %s", pdf_path.name, exc)
+            raise PDFProcessingError("Failed to rearrange the pages of that PDF.")
+        finally:
+            doc.close()
+
+        if not output_path.is_file() or output_path.stat().st_size == 0:
+            raise PDFProcessingError("Rearranged PDF file could not be generated.")
+        return output_path
+
+    def estimate_organize(self, pdf_path: Path, page_order: str, display_name: str, work_dir: Path) -> int:
+        work_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            return self.organize_pdf(pdf_path, work_dir / "organized.pdf", page_order, display_name).stat().st_size
+        finally:
+            shutil.rmtree(work_dir, ignore_errors=True)
+
+    def thumbnail_path(self, token: str, page: int, width: int) -> Path:
+        """Where a rendered page is cached, next to its upload (purge_cache expires it with the PDF)."""
+        return self.cache_dir / f"{token}_p{page}_w{width}.png"
+
+    @classmethod
+    def clamp_thumbnail_width(cls, width: int) -> int:
+        # Snap to steps of 40px so small layout differences reuse the same cached image.
+        width = min(max(width, settings.THUMBNAIL_MIN_WIDTH), settings.THUMBNAIL_MAX_WIDTH)
+        return max(settings.THUMBNAIL_MIN_WIDTH, (width + 39) // 40 * 40)
+
+    def render_thumbnail(self, pdf_path: Path, page: int, width: int, out_path: Path) -> Path:
+        """Renders one page (1-based), `width` px wide, as PNG. Respects the page's own rotation."""
+        doc = self._open_valid_pdf(pdf_path)
+        try:
+            if not 1 <= page <= doc.page_count:
+                raise InvalidPDFInputError(f"Page {page} is out of bounds for PDF with {doc.page_count} page(s).")
+            pg = doc[page - 1]
+            zoom = width / max(1.0, pg.rect.width)
+            pix = pg.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom), alpha=False, annots=True)
+            tmp = out_path.with_suffix(f".{uuid.uuid4().hex[:8]}.tmp")
+            pix.save(str(tmp), output="png")
+            os.replace(tmp, out_path)  # Atomic: a parallel request never reads a half-written file.
+        except InvalidPDFInputError:
+            raise
+        except Exception as exc:
+            logger.error("Failed to render page %s of %s: %s", page, pdf_path.name, exc)
+            raise PDFProcessingError("Couldn't draw that page.")
+        finally:
+            doc.close()
+        return out_path
 
     @staticmethod
     def _compression_params(percentage: int) -> Tuple[int, int]:
@@ -341,6 +477,18 @@ class PDFService:
         return pdf_path, meta
 
 
+    @classmethod
+    def _pages_from_name(cls, name: str) -> List[int]:
+        """The 1-based pages in a part, read back from its file name."""
+        m = cls.PART_PAGES.search(name)
+        if not m:
+            return []
+        pages: List[int] = []
+        for run in m.group(1).split("_"):
+            a, _, b = run.partition("-")
+            pages.extend(range(int(a), int(b or a) + 1))
+        return pages
+
     def estimate_merge(self, pdf_paths: List[Path], display_names: List[str], work_dir: Path) -> int:
         work_dir.mkdir(parents=True, exist_ok=True)
         try:
@@ -358,12 +506,13 @@ class PDFService:
             parts = self.split_pdf(pdf_path, out_dir, page_ranges, display_name)
             items = []
             for part in parts:
-                m = self.PART_PAGES.search(part.name)
+                pages = self._pages_from_name(part.name)
                 items.append(
                     {
                         "name": part.name,
-                        "first_page": int(m.group(1)) if m else None,
-                        "last_page": int(m.group(2) or m.group(1)) if m else None,
+                        "first_page": pages[0] if pages else None,
+                        "last_page": pages[-1] if pages else None,
+                        "pages": pages,
                         "size": part.stat().st_size,
                     }
                 )
