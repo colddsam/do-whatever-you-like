@@ -35,9 +35,23 @@ async function readPeaks(blob: Blob): Promise<number[] | null> {
 /**
  * A small player for the result, so people can check the audio before saving it.
  * The waveform is the real one, and doubles as the seek bar (click, drag or arrow keys).
+ *
+ * A transcript can follow it (`onTime`) and drive it (`seek`: a new object jumps there and plays).
  */
-export function AudioPreview({ src, blob }: { src: string; blob: Blob }) {
+export function AudioPreview({
+  src,
+  blob,
+  onTime,
+  seek,
+}: {
+  src: string;
+  blob: Blob;
+  onTime?: (seconds: number) => void;
+  seek?: { to: number } | null;
+}) {
   const audioRef = useRef<HTMLAudioElement>(null);
+  // Browser recordings (MediaRecorder WebM) don't state their length until read to the end.
+  const findingLength = useRef(false);
   const trackRef = useRef<HTMLDivElement>(null);
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(0);
@@ -51,6 +65,13 @@ export function AudioPreview({ src, blob }: { src: string; blob: Blob }) {
       live = false;
     };
   }, [blob]);
+
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a || !seek) return;
+    a.currentTime = Math.max(0, seek.to);
+    a.play().catch(() => {});
+  }, [seek]);
 
   const progress = duration ? time / duration : 0;
 
@@ -78,8 +99,27 @@ export function AudioPreview({ src, blob }: { src: string; blob: Blob }) {
         ref={audioRef}
         src={src}
         preload="metadata"
-        onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
-        onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)}
+        onLoadedMetadata={(e) => {
+          const a = e.currentTarget;
+          if (Number.isFinite(a.duration)) return setDuration(a.duration || 0);
+          // Jumping far past the end makes the browser scan the file and work out its length.
+          findingLength.current = true;
+          a.currentTime = 1e101;
+        }}
+        onDurationChange={(e) => {
+          const a = e.currentTarget;
+          if (!Number.isFinite(a.duration)) return;
+          setDuration(a.duration);
+          if (findingLength.current) {
+            findingLength.current = false;
+            a.currentTime = 0;
+          }
+        }}
+        onTimeUpdate={(e) => {
+          if (findingLength.current) return;
+          setTime(e.currentTarget.currentTime);
+          onTime?.(e.currentTarget.currentTime);
+        }}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
         onEnded={() => setPlaying(false)}

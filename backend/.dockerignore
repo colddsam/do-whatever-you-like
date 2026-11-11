@@ -9,3 +9,4 @@ test.py
 postman_collection.json
 generate_postman.py
 *.zip
+models/

@@ -23,6 +23,8 @@ export function ProgressButton({
   working,
   hint,
   disabled = false,
+  progress,
+  workingHint,
   onStart,
   onCancel,
 }: {
@@ -34,11 +36,16 @@ export function ProgressButton({
   /** The line under the button when nothing is happening. */
   hint: React.ReactNode;
   disabled?: boolean;
+  /** Long server jobs that can report how far they've got (0–1) fill the button instead of a sheen. */
+  progress?: number | null;
+  /** The line under the button while the server works, when the default doesn't fit. */
+  workingHint?: React.ReactNode;
   onStart: () => void;
   onCancel: () => void;
 }) {
   const busy = isBusy(job);
-  const fill = job.kind === "uploading" ? job.progress : job.kind === "processing" ? 1 : 0;
+  const measured = job.kind === "processing" && progress != null;
+  const fill = job.kind === "uploading" ? job.progress : job.kind === "processing" ? (measured ? progress : 1) : 0;
 
   return (
     <div>
@@ -55,10 +62,10 @@ export function ProgressButton({
               aria-hidden
               className="absolute inset-y-0 left-0 bg-paper/15"
               animate={{ width: `${fill * 100}%` }}
-              transition={{ ease: "linear", duration: 0.2 }}
+              transition={{ ease: "linear", duration: measured ? 0.6 : 0.2 }}
             />
           )}
-          {job.kind === "processing" && (
+          {job.kind === "processing" && !measured && (
             // Server-side work has no progress to report, so a slow sheen says "still going".
             <motion.span
               aria-hidden
@@ -99,7 +106,7 @@ export function ProgressButton({
           : job.kind === "uploading"
             ? "Uploading is the slow part. Keep this tab open."
             : job.kind === "processing"
-              ? "Almost there. This usually takes a few seconds."
+              ? (workingHint ?? "Almost there. This usually takes a few seconds.")
               : hint}
       </p>
     </div>

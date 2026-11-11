@@ -220,6 +220,32 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
       300 dpi) or "vector". Scan risks (low contrast, inverted, transparent) show as `warning` notes.
       "Scanner reads" shows the exact encoded string (Wi-Fi passwords masked).
     - `lib/qrcode.ts` mirrors the backend schema and `build_payload`, so checks happen before sending.
+  - `audio-to-text` (by id) → `TranscribePlayground` (`components/tools/transcribe/`): speech to text.
+    - Step one offers the `FileDrop` (audio or video) and, under an `or` hairline, the **recorder**: an `ink`
+      circle mic button that turns into a live strip (the signal dot pulsing for "live", a mono timer,
+      the voice's level as scrolling `ink` bars, Discard and an `ink` Stop). It records WebM/Opus (MP4 on
+      Safari), up to 2 hours, and explains blocked or missing microphones in words.
+    - The source row is followed by `AudioPreview` (real waveform). It reports its time (`onTime`) and takes
+      `seek` requests, so the transcript and the player stay in step. Recordings without a stated length
+      (MediaRecorder WebM) are measured on load.
+    - Options sit in the dashed `Panel`: **Language** (Detect + six common languages as chips, every other
+      Whisper language in a "More languages…" select that turns `ink` when used) and **Words to expect**
+      (names and jargon, sent to Whisper as context so it spells them right).
+    - While it runs, `ProgressButton` gets a real fill (`progress`, seconds heard ÷ length) and a stage
+      label (waiting / reading / loading the model / writing it down · 42%) with a time-left estimate as
+      `workingHint`. The transcript streams in below as it's recognised (NDJSON from the backend).
+    - **The transcript sheet** (`TranscriptSheet`): a `paper` box ruled like a worksheet: mono start times in
+      the margin, a hairline margin rule, the words beside it. Live, lines fade up and the sheet follows the
+      newest (unless the reader scrolled up). Finished, it **reads along**: the line being heard is filled
+      `paper-2` and set in `ink`, and the sheet keeps it in view while playing. Clicking a time or a line
+      plays from there. "Edit text" turns each line into a borderless text box (`field-sizing: content`)
+      that shows its frame on hover and focus.
+    - The result header gives the facts in mono (language and confidence, length, words, time taken). An
+      unsure language guess (< 70%) gets a `warning` Notice offering to pick the language. No speech gets an
+      info Notice, not an empty sheet.
+    - Export: TXT / SRT / VTT / JSON chips (TXT can add start times), one line on what the format is for,
+      and the Download button carrying the exact size. Copy text puts plain paragraphs on the clipboard.
+    - The footer says honestly where the audio goes: our server, or Groq when the server uses it.
   - The Workbench card uses `overflow-clip`, not `overflow-hidden`, so sticky panels inside it work.
   - **Sizes, before and after.** Every tool shows how big the result will be before anything is
     made or downloaded, and the exact size on the Download button once it is. Sizes are mono;
@@ -234,7 +260,10 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
   - File uploads go through a route under `app/api/tools/` that streams the body to the backend
     (never buffered) with `proxyUpload` from `lib/backend.ts`. Check files in the browser first
     with the same rules as the backend (`checkFile`). PDF tools post to `/api/tools/pdf/<action>`,
-    conversions to `/api/tools/convert/<action>`.
+    conversions to `/api/tools/convert/<action>`, speech to text to `/api/tools/transcribe/run`.
+    In production (`BACKEND_PUBLIC_URL` set) the route hands out a short-lived signed ticket instead and
+    the browser sends the file straight to the backend, because Vercel caps a route at 4.5 MB and 300 s.
+    `uploadForm` (and `streamTranscription`) do this for you; never post files to the backend any other way.
 - **Not built yet** tools show their kind's workspace switched off (`inert`, 75% opacity), under a
   "Not built yet / Request it" strip. Never grey placeholder bars.
 - Empty states teach rather than apologise. For example, link tools list "Links that work"

@@ -23,3 +23,10 @@ services:
         value: "100"
       - key: CONVERT_EXCEL_MAX_PAGES
         value: "100"
+      # Speech to text. With a free Groq key (https://console.groq.com) recordings are transcribed by
+      # Whisper large-v3 in seconds; without one, Whisper "base" runs on the 0.1 CPU here, which is slow.
+      # With a key, audio is sent to Groq, and the page says so.
+      - key: TRANSCRIBE_GROQ_API_KEY
+        sync: false
+      - key: TRANSCRIBE_MAX_DURATION_SECONDS
+        value: "7200"

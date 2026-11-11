@@ -24,6 +24,7 @@ import {
   WatermarkTool,
 } from "./pdf/simple-tools";
 import { QrPlayground } from "./qr-playground";
+import { TranscribePlayground } from "./transcribe/transcribe-playground";
 import { SoonWorkspace } from "./soon-workspace";
 
 type Workspace = ComponentType<{ toolId: string }>;
@@ -44,6 +45,7 @@ type Workspace = ComponentType<{ toolId: string }>;
  *   PdfTask (one input, options, one action, a result to check); merge/split/organize/compress,
  *   rotate, remove and extract reuse PdfPlayground on a fixed mode
  * - qr (by id) → QrPlayground (nine kinds of content, live preview, styling and a centre logo)
+ * - audio-to-text (by id) → TranscribePlayground (upload or record, live transcript, read-along, export)
  *
  * Anything not registered shows its kind's preview in SoonWorkspace.
  */
@@ -54,6 +56,7 @@ const byKind: Partial<Record<ToolKind, Workspace>> = {
 const byId: Record<string, Workspace> = {
   pdf: PdfPlayground,
   qr: QrPlayground,
+  "audio-to-text": TranscribePlayground,
   // PDF family: organize
   "merge-pdf": (p) => <PdfPlayground {...p} mode="merge" />,
   "split-pdf": (p) => <PdfPlayground {...p} mode="split" />,

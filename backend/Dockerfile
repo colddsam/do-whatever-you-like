@@ -14,7 +14,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     # One web worker and one PDF process: what fits in 512 MB alongside LibreOffice or Chromium.
     PDF_PROCESS_WORKERS=1 \
     CONVERT_OFFICE_CONCURRENCY=1 \
-    CONVERT_OFFICE_PROFILE_DIR=/tmp/dw_lo
+    CONVERT_OFFICE_PROFILE_DIR=/tmp/dw_lo \
+    # Speech to text without a Groq key runs Whisper here; "base" is the largest that fits 512 MB.
+    TRANSCRIBE_MODEL=base \
+    TRANSCRIBE_MODEL_DIR=/app/models/whisper \
+    HF_HUB_DISABLE_TELEMETRY=1
 
 # The -nogui LibreOffice packages skip the desktop (~300 MB less). Draw carries the PDF import
 # that PDF -> PowerPoint uses. Carlito/Caladea/Liberation match the metrics of Office's fonts,
@@ -37,7 +41,9 @@ RUN pip install -r requirements.txt \
     && playwright install --with-deps --only-shell chromium \
     && rm -rf /var/lib/apt/lists/* \
     # Fetch ffmpeg now, not at every cold start.
-    && python -c "import static_ffmpeg; static_ffmpeg.add_paths()"
+    && python -c "import static_ffmpeg; static_ffmpeg.add_paths()" \
+    # Bake the Whisper model into the image, so the first transcription doesn't download it.
+    && python -c "from faster_whisper import WhisperModel; WhisperModel('base', device='cpu', compute_type='int8', download_root='/app/models/whisper')"
 
 COPY app ./app
 

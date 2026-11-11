@@ -11,6 +11,7 @@ from app.config.video2audio import settings as video2audio_settings
 from app.config.pdf import settings as pdf_settings
 from app.config.qrcode import settings as qrcode_settings
 from app.config.convert import settings as convert_settings
+from app.config.transcribe import settings as transcribe_settings
 from app.services.pdf import pdf_service
 from app.services.pdf_pool import shutdown_pool, warm_pool
 from app.services.ffmpeg_service import init_ffmpeg
@@ -28,6 +29,7 @@ async def lifespan(app: FastAPI):
     pdf_settings.TEMP_DIR.mkdir(parents=True, exist_ok=True)
     qrcode_settings.TEMP_DIR.mkdir(parents=True, exist_ok=True)
     convert_settings.TEMP_DIR.mkdir(parents=True, exist_ok=True)
+    transcribe_settings.TEMP_DIR.mkdir(parents=True, exist_ok=True)
     pdf_service.purge_stale()
     asyncio.get_running_loop().call_later(5, warm_pool)
     yield
@@ -43,5 +45,7 @@ async def lifespan(app: FastAPI):
         shutil.rmtree(qrcode_settings.TEMP_DIR, ignore_errors=True)
     if convert_settings.TEMP_DIR.exists():
         shutil.rmtree(convert_settings.TEMP_DIR, ignore_errors=True)
+    if transcribe_settings.TEMP_DIR.exists():
+        shutil.rmtree(transcribe_settings.TEMP_DIR, ignore_errors=True)
     pdf_service.purge_stale()
     shutdown_pool()

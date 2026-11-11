@@ -21,3 +21,5 @@ frontend/.env*
 
 .dev-pids
 .agents/
+# Speech models (downloaded on first use)
+**/models/
