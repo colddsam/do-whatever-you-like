@@ -1,3 +1,4 @@
+import { checkUploads, UploadRejected } from "./file-sniff";
 /** Client helpers for file tools: validate, upload with progress, and hand results back. */
 
 export class FileToolError extends Error {
@@ -99,6 +100,7 @@ export const dropDirectTarget = (endpoint: string) => directTargets.delete(endpo
  * route hands out a ticket, through the route otherwise.
  */
 export async function uploadForm(endpoint: string, form: FormData, options: UploadOptions): Promise<Converted> {
+  await precheck(form);
   const direct = await directTarget(endpoint, options.signal);
   try {
     return await sendForm(direct?.url ?? endpoint, form, options, direct?.ticket);
@@ -173,5 +175,18 @@ export async function postFormJson<T>(
     return JSON.parse(await out.blob.text()) as T;
   } catch {
     throw new FileToolError("The server sent something unexpected. Try again.");
+  }
+}
+
+/**
+ * Looks at each file's first bytes before uploading: a renamed or wrong file is refused at once,
+ * instead of after a full upload (the server checks again, for real).
+ */
+export async function precheck(form: FormData) {
+  try {
+    await checkUploads(form);
+  } catch (e) {
+    if (e instanceof UploadRejected) throw new FileToolError(e.message, 415);
+    throw e;
   }
 }

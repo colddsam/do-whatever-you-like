@@ -5,6 +5,7 @@ from app.api.v1.router import api_v1_router
 from app.core.config import app_settings
 from app.core.lifespan import lifespan
 from app.auth.authorization import verify_global_api_key
+from app.core.limits import BodySizeLimitMiddleware
 
 
 def create_app() -> FastAPI:
@@ -18,6 +19,10 @@ def create_app() -> FastAPI:
         openapi_url="/openapi.json" if app_settings.DEBUG else None,
         dependencies=[Depends(verify_global_api_key)],
     )
+
+    # Oversized bodies are refused before they're read. Added before CORS, so CORS wraps it and the
+    # browser can read the 413 when it uploads straight to this service.
+    application.add_middleware(BodySizeLimitMiddleware)
 
     allow_wildcard = "*" in app_settings.ALLOWED_ORIGINS
     application.add_middleware(

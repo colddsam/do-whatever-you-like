@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { Camera, CameraOff, Download, Plus, X } from "lucide-react";
+import { Camera, CameraOff, Download, ExternalLink, Plus, RotateCw, X } from "lucide-react";
+import { motion } from "motion/react";
 import { saveBlob } from "@/lib/files";
 import { formatBytes } from "@/lib/media";
 import { cssToLess, htmlEncode } from "@/lib/utilities/text";
@@ -11,14 +12,33 @@ import { CopyButton, Editor, Output, ValueList, ValueRow } from "../dev/parts";
 import type { EngineProps } from "./text-engines";
 import { postJson } from "./post-json";
 import { RunButton } from "./xml-engines";
+import { DEVICES, DeviceFrame, frameSize, GROUPS, type Device, type FrameKind } from "./device-frames";
 
 /* ================= Network (server) ================= */
 
 type DnsRes = { host: string; records: Record<string, { value: string; ttl: number | null; priority?: number }[]>; ms: number };
-type HttpRes = { url: string; status: number; reason: string; http_version: string; headers: [string, string][]; body: string; size: number; truncated: boolean; ms: number; hops: { url: string; status: number; reason: string; ms: number; ip: string }[] };
+type HttpRes = {
+  url: string;
+  status: number;
+  reason: string;
+  http_version: string;
+  headers: [string, string][];
+  body: string;
+  size: number;
+  truncated: boolean;
+  ms: number;
+  hops: { url: string; status: number; reason: string; ms: number; ip: string }[];
+};
 
 const STATUS_TONE = (s: number) => (s < 300 ? "text-success" : s < 400 ? "text-accent" : "text-danger");
-const SECURITY_HEADERS = ["strict-transport-security", "content-security-policy", "x-content-type-options", "x-frame-options", "referrer-policy", "permissions-policy"];
+const SECURITY_HEADERS = [
+  "strict-transport-security",
+  "content-security-policy",
+  "x-content-type-options",
+  "x-frame-options",
+  "referrer-policy",
+  "permissions-policy",
+];
 
 export function NetworkEngine({ preset }: EngineProps) {
   const kind = preset.kind ?? "dns";
@@ -42,7 +62,23 @@ function useRun<T>() {
   return [s, run] as const;
 }
 
-function HostForm({ label, value, onChange, onRun, busy, placeholder, children }: { label: string; value: string; onChange: (v: string) => void; onRun: () => void; busy: boolean; placeholder: string; children?: React.ReactNode }) {
+function HostForm({
+  label,
+  value,
+  onChange,
+  onRun,
+  busy,
+  placeholder,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  onRun: () => void;
+  busy: boolean;
+  placeholder: string;
+  children?: React.ReactNode;
+}) {
   return (
     <form
       onSubmit={(e) => {
@@ -129,11 +165,22 @@ function ReverseCheck() {
   const [s, run] = useRun<{ ip: string; hostnames: string[]; public: boolean }>();
   return (
     <>
-      <HostForm label="IP address" value={ip} onChange={setIp} onRun={() => run(() => postJson("reverse", { ip }))} busy={s.busy} placeholder="8.8.8.8 or 2606:4700:4700::1111" />
+      <HostForm
+        label="IP address"
+        value={ip}
+        onChange={setIp}
+        onRun={() => run(() => postJson("reverse", { ip }))}
+        busy={s.busy}
+        placeholder="8.8.8.8 or 2606:4700:4700::1111"
+      />
       {s.error && <Notice tone="danger">{s.error}</Notice>}
       {s.res && (
         <ValueList>
-          {s.res.hostnames.length ? s.res.hostnames.map((h) => <ValueRow key={h} label="Hostname" value={h} />) : <ValueRow label="Hostname" value="" note="This address has no reverse DNS (PTR) record." />}
+          {s.res.hostnames.length ? (
+            s.res.hostnames.map((h) => <ValueRow key={h} label="Hostname" value={h} />)
+          ) : (
+            <ValueRow label="Hostname" value="" note="This address has no reverse DNS (PTR) record." />
+          )}
           <ValueRow label="Address" value={s.res.ip} note={s.res.public ? "Public address" : "Private or reserved address"} />
         </ValueList>
       )}
@@ -157,7 +204,15 @@ function PortCheck() {
               <TextField label="Port" value={port} onChange={(v) => setPort(v.replace(/\D/g, "").slice(0, 5))} mono inputMode="numeric" />
             </div>
             {COMMON_PORTS.map((p) => (
-              <button key={p} type="button" onClick={() => setPort(String(p))} className={cn("rounded-[6px] px-2 py-1 font-mono text-[12px]", String(p) === port ? "bg-ink text-paper" : "bg-paper-2 text-ink-2 hover:text-ink")}>
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPort(String(p))}
+                className={cn(
+                  "rounded-[6px] px-2 py-1 font-mono text-[12px]",
+                  String(p) === port ? "bg-ink text-paper" : "bg-paper-2 text-ink-2 hover:text-ink",
+                )}
+              >
                 {p}
               </button>
             ))}
@@ -172,7 +227,11 @@ function PortCheck() {
             {s.res.service ? ` (${s.res.service})` : ""}
           </p>
           <p className="mt-1 text-sm text-ink-2">
-            {s.res.state === "open" ? "Something is listening and accepted our connection." : s.res.state === "closed" ? "The server answered, but nothing is listening on this port." : "No answer: a firewall is probably dropping connections to this port."}
+            {s.res.state === "open"
+              ? "Something is listening and accepted our connection."
+              : s.res.state === "closed"
+                ? "The server answered, but nothing is listening on this port."
+                : "No answer: a firewall is probably dropping connections to this port."}
           </p>
           <p className="mt-3 font-mono text-xs text-ink-3">
             {s.res.host} → {s.res.ip} · {s.res.ms} ms
@@ -241,7 +300,9 @@ function HttpResult({ res, showBody }: { res: HttpRes; showBody: boolean }) {
           ))}
         </ul>
       </div>
-      {showBody && res.body && <Output value={pretty} name="response body" lang={res.truncated ? "First 1 MB" : "Response"} download="response.txt" wrap={false} />}
+      {showBody && res.body && (
+        <Output value={pretty} name="response body" lang={res.truncated ? "First 1 MB" : "Response"} download="response.txt" wrap={false} />
+      )}
     </>
   );
 }
@@ -273,16 +334,25 @@ function ApiTester() {
   const hasBody = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
   const go = () => {
     const hs = headers.filter(([k]) => k.trim());
-    if (hasBody && body.trim() && !hs.some(([k]) => k.toLowerCase() === "content-type")) hs.push(["Content-Type", /^\s*[[{]/.test(body) ? "application/json" : "text/plain"]);
+    if (hasBody && body.trim() && !hs.some(([k]) => k.toLowerCase() === "content-type"))
+      hs.push(["Content-Type", /^\s*[[{]/.test(body) ? "application/json" : "text/plain"]);
     return run(() => postJson<HttpRes>("http", { url, method, headers: hs, body: hasBody ? body : null, follow: true }));
   };
-  const curl = `curl -X ${method} '${url}'${headers.filter(([k]) => k.trim()).map(([k, v]) => ` \\\n  -H '${k}: ${v}'`).join("")}${hasBody && body.trim() ? ` \\\n  --data '${body.replace(/'/g, "'\\''")}'` : ""}`;
+  const curl = `curl -X ${method} '${url}'${headers
+    .filter(([k]) => k.trim())
+    .map(([k, v]) => ` \\\n  -H '${k}: ${v}'`)
+    .join("")}${hasBody && body.trim() ? ` \\\n  --data '${body.replace(/'/g, "'\\''")}'` : ""}`;
   return (
     <>
       <Panel>
         <Row label="Request">
           <div className="flex flex-col gap-2 sm:flex-row">
-            <select value={method} onChange={(e) => setMethod(e.target.value)} aria-label="Method" className="h-11 rounded-md border border-line bg-surface px-3 font-mono text-sm font-semibold text-ink outline-none focus:border-ink">
+            <select
+              value={method}
+              onChange={(e) => setMethod(e.target.value)}
+              aria-label="Method"
+              className="h-11 rounded-md border border-line bg-surface px-3 font-mono text-sm font-semibold text-ink outline-none focus:border-ink"
+            >
               {["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"].map((m) => (
                 <option key={m}>{m}</option>
               ))}
@@ -300,18 +370,39 @@ function ApiTester() {
             {headers.map(([k, v], i) => (
               <li key={i} className="flex items-center gap-2">
                 <div className="w-2/5">
-                  <TextField label={`Header ${i + 1} name`} value={k} onChange={(nk) => setHeaders((h) => h.map((x, j) => (j === i ? [nk, x[1]] : x)))} placeholder="Authorization" mono />
+                  <TextField
+                    label={`Header ${i + 1} name`}
+                    value={k}
+                    onChange={(nk) => setHeaders((h) => h.map((x, j) => (j === i ? [nk, x[1]] : x)))}
+                    placeholder="Authorization"
+                    mono
+                  />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <TextField label={`Header ${i + 1} value`} value={v} onChange={(nv) => setHeaders((h) => h.map((x, j) => (j === i ? [x[0], nv] : x)))} placeholder="Bearer …" mono />
+                  <TextField
+                    label={`Header ${i + 1} value`}
+                    value={v}
+                    onChange={(nv) => setHeaders((h) => h.map((x, j) => (j === i ? [x[0], nv] : x)))}
+                    placeholder="Bearer …"
+                    mono
+                  />
                 </div>
-                <button type="button" onClick={() => setHeaders((h) => h.filter((_, j) => j !== i))} aria-label="Remove header" className="inline-flex size-9 shrink-0 items-center justify-center rounded-[8px] text-ink-3 hover:bg-paper-2 hover:text-ink">
+                <button
+                  type="button"
+                  onClick={() => setHeaders((h) => h.filter((_, j) => j !== i))}
+                  aria-label="Remove header"
+                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-[8px] text-ink-3 hover:bg-paper-2 hover:text-ink"
+                >
                   <X aria-hidden className="size-4" />
                 </button>
               </li>
             ))}
           </ul>
-          <button type="button" onClick={() => setHeaders((h) => [...h, ["", ""]])} className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-[8px] border border-dashed border-ink-3/60 px-3 text-sm text-ink-2 hover:border-ink hover:text-ink">
+          <button
+            type="button"
+            onClick={() => setHeaders((h) => [...h, ["", ""]])}
+            className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-[8px] border border-dashed border-ink-3/60 px-3 text-sm text-ink-2 hover:border-ink hover:text-ink"
+          >
             <Plus aria-hidden className="size-4" /> Add a header
           </button>
         </Row>
@@ -320,7 +411,10 @@ function ApiTester() {
       {s.error && <Notice tone="danger">{s.error}</Notice>}
       {s.res && <HttpResult res={s.res} showBody />}
       <Output value={curl} name="curl" lang="The same request as a curl command" />
-      <Notice>Requests are sent from our server to public addresses only, so there&apos;s no CORS problem. Don&apos;t paste production secrets into any online tool, including this one.</Notice>
+      <Notice>
+        Requests are sent from our server to public addresses only, so there&apos;s no CORS problem. Don&apos;t paste production secrets into any online tool,
+        including this one.
+      </Notice>
     </>
   );
 }
@@ -334,12 +428,18 @@ const subscribeResize = (cb: () => void) => {
 
 export function DeviceEngine({ preset }: EngineProps) {
   switch (preset.kind) {
-    case "window": return <WindowSize />;
-    case "tester": return <ResponsiveTester />;
-    case "webcam": return <WebcamTest />;
-    case "ruler": return <PixelRuler />;
-    case "myip": return <MyIp />;
-    default: return <ScreenInfo />;
+    case "window":
+      return <WindowSize />;
+    case "tester":
+      return <ResponsiveTester />;
+    case "webcam":
+      return <WebcamTest />;
+    case "ruler":
+      return <PixelRuler />;
+    case "myip":
+      return <MyIp />;
+    default:
+      return <ScreenInfo />;
   }
 }
 
@@ -359,7 +459,15 @@ function useSnapshot<T>(read: () => T, fallback: T): T {
 
 function ScreenInfo() {
   const s = useSnapshot(
-    () => ({ w: screen.width, h: screen.height, aw: screen.availWidth, ah: screen.availHeight, dpr: window.devicePixelRatio, depth: screen.colorDepth, orient: screen.orientation?.type ?? "" }),
+    () => ({
+      w: screen.width,
+      h: screen.height,
+      aw: screen.availWidth,
+      ah: screen.availHeight,
+      dpr: window.devicePixelRatio,
+      depth: screen.colorDepth,
+      orient: screen.orientation?.type ?? "",
+    }),
     null,
   );
   if (!s) return null;
@@ -377,7 +485,11 @@ function ScreenInfo() {
       </div>
       <ValueList>
         <ValueRow label="Physical" value={physical} note="What the panel really has (CSS pixels × pixel ratio)." />
-        <ValueRow label="Pixel ratio" value={String(+s.dpr.toFixed(3))} note={s.dpr > 1 ? "A high-density (Retina-class) display." : "A standard-density display."} />
+        <ValueRow
+          label="Pixel ratio"
+          value={String(+s.dpr.toFixed(3))}
+          note={s.dpr > 1 ? "A high-density (Retina-class) display." : "A standard-density display."}
+        />
         <ValueRow label="Aspect" value={`${s.w / d}:${s.h / d}`} />
         <ValueRow label="Available" value={`${s.aw} × ${s.ah}`} note="Minus the taskbar or dock." />
         <ValueRow label="Colour" value={`${s.depth}-bit`} />
@@ -388,9 +500,30 @@ function ScreenInfo() {
 }
 
 function WindowSize() {
-  const s = useSnapshot(() => ({ w: window.innerWidth, h: window.innerHeight, ow: window.outerWidth, oh: window.outerHeight, cw: document.documentElement.clientWidth, ch: document.documentElement.clientHeight }), null);
+  const s = useSnapshot(
+    () => ({
+      w: window.innerWidth,
+      h: window.innerHeight,
+      ow: window.outerWidth,
+      oh: window.outerHeight,
+      cw: document.documentElement.clientWidth,
+      ch: document.documentElement.clientHeight,
+    }),
+    null,
+  );
   if (!s) return null;
-  const bp = s.cw >= 1536 ? "2xl (≥1536)" : s.cw >= 1280 ? "xl (≥1280)" : s.cw >= 1024 ? "lg (≥1024)" : s.cw >= 768 ? "md (≥768)" : s.cw >= 640 ? "sm (≥640)" : "base (<640)";
+  const bp =
+    s.cw >= 1536
+      ? "2xl (≥1536)"
+      : s.cw >= 1280
+        ? "xl (≥1280)"
+        : s.cw >= 1024
+          ? "lg (≥1024)"
+          : s.cw >= 768
+            ? "md (≥768)"
+            : s.cw >= 640
+              ? "sm (≥640)"
+              : "base (<640)";
   return (
     <>
       <div className="rounded-md border border-line bg-surface px-5 py-8 text-center">
@@ -410,21 +543,30 @@ function WindowSize() {
   );
 }
 
-const DEVICES = [
-  { name: "iPhone SE", w: 375, h: 667 },
-  { name: "iPhone 15", w: 393, h: 852 },
-  { name: "Pixel 8", w: 412, h: 915 },
-  { name: "iPad mini", w: 768, h: 1024 },
-  { name: "iPad Pro 11", w: 834, h: 1194 },
-  { name: "Laptop", w: 1366, h: 768 },
-  { name: "Desktop", w: 1920, h: 1080 },
+const ZOOMS = [
+  { value: 0, label: "Fit" },
+  { value: 0.5, label: "50%" },
+  { value: 0.75, label: "75%" },
+  { value: 1, label: "100%" },
+] as const;
+const CUSTOM_FRAMES: { value: FrameKind; label: string }[] = [
+  { value: "none", label: "No frame" },
+  { value: "phone", label: "Phone" },
+  { value: "tablet", label: "Tablet" },
+  { value: "laptop", label: "Laptop" },
+  { value: "monitor", label: "Monitor" },
 ];
+const clampPx = (v: string, d: number) => Math.max(200, Math.min(3840, Math.round(Number(v) || d)));
 
 function ResponsiveTester() {
   const [url, setUrl] = useState("https://example.com");
   const [shown, setShown] = useState("https://example.com");
-  const [device, setDevice] = useState(DEVICES[1]);
-  const [rotate, setRotate] = useState(false);
+  const [group, setGroup] = useState<(typeof GROUPS)[number] | "Custom">("Phones");
+  const [deviceId, setDeviceId] = useState("iphone-15");
+  const [landscape, setLandscape] = useState(false);
+  const [zoom, setZoom] = useState<number>(0);
+  const [custom, setCustom] = useState({ w: "1024", h: "768", frame: "none" as FrameKind });
+  const [reloads, setReloads] = useState(0);
   const box = useRef<HTMLDivElement>(null);
   const [avail, setAvail] = useState(800);
   useEffect(() => {
@@ -434,57 +576,211 @@ function ResponsiveTester() {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const w = rotate ? device.h : device.w;
-  const h = rotate ? device.w : device.h;
-  const scale = Math.min(1, (avail - 24) / w, 640 / h);
+
+  const isCustom = group === "Custom";
+  const preset = DEVICES.find((d) => d.id === deviceId) ?? DEVICES[2];
+  const cw = clampPx(custom.w, 1024);
+  const ch = clampPx(custom.h, 768);
+  const device: Device = isCustom
+    ? {
+        id: "custom",
+        name: "Custom",
+        group: "Phones",
+        w: cw,
+        h: ch,
+        dpr: 1,
+        kind: custom.frame,
+        cutout: custom.frame === "phone" ? "island" : "none",
+        radius: custom.frame === "phone" ? 44 : custom.frame === "tablet" ? 18 : 0,
+      }
+    : preset;
+  const rotatable = device.kind === "phone" || device.kind === "tablet" || device.kind === "none";
+  const turned = rotatable && landscape;
+  const w = turned ? device.h : device.w;
+  const h = turned ? device.w : device.h;
+  const frame = frameSize(device.kind, w, h, turned, device.cutout);
+  const fit = Math.min(1, (avail - 32) / frame.w, 760 / frame.h);
+  const scale = zoom || fit;
   const valid = /^https?:\/\/[^\s]+$/i.test(shown);
+  const inGroup = DEVICES.filter((d) => d.group === group);
+
   return (
     <>
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          setShown(/^https?:\/\//i.test(url) ? url : `https://${url}`);
+          setShown(/^https?:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`);
+          setReloads((r) => r + 1);
         }}
       >
         <Panel>
           <Row label="Website">
             <div className="flex flex-col gap-2 sm:flex-row">
               <div className="min-w-0 flex-1">
-                <TextField label="Website address" value={url} onChange={setUrl} mono />
+                <TextField label="Website address" value={url} onChange={setUrl} mono placeholder="https://your-site.com" />
               </div>
-              <button type="submit" className="inline-flex h-11 items-center justify-center rounded-md bg-ink px-5 text-sm font-medium text-paper hover:opacity-90">
+              <button
+                type="submit"
+                className="inline-flex h-11 items-center justify-center rounded-md bg-ink px-5 text-sm font-medium text-paper transition-[opacity,transform] hover:opacity-90 active:scale-[0.98]"
+              >
                 Load
               </button>
             </div>
           </Row>
-          <Row label="Device">
-            <div className="flex flex-wrap items-center gap-4">
-              <Chips value={device.name} options={DEVICES.map((d) => ({ value: d.name, label: `${d.name} · ${d.w}` }))} onChange={(n) => setDevice(DEVICES.find((d) => d.name === n)!)} label="Device" />
-              <Toggle checked={rotate} onChange={setRotate} label="Landscape" />
+          <Row label="Device type">
+            <Chips
+              value={group}
+              options={[...GROUPS.map((g) => ({ value: g, label: g })), { value: "Custom" as const, label: "Custom size" }]}
+              onChange={(g) => {
+                setGroup(g);
+                const first = DEVICES.find((d) => d.group === g);
+                if (first) setDeviceId(first.id);
+                setLandscape(false);
+              }}
+              label="Device type"
+            />
+          </Row>
+          {isCustom ? (
+            <Row label="Custom size" hint="200 to 3840 CSS pixels">
+              <div className="grid gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-28">
+                    <TextField
+                      label="Width"
+                      value={custom.w}
+                      onChange={(v) => setCustom((c) => ({ ...c, w: v.replace(/\D/g, "").slice(0, 4) }))}
+                      mono
+                      inputMode="numeric"
+                    />
+                  </div>
+                  <span className="text-ink-3">×</span>
+                  <div className="w-28">
+                    <TextField
+                      label="Height"
+                      value={custom.h}
+                      onChange={(v) => setCustom((c) => ({ ...c, h: v.replace(/\D/g, "").slice(0, 4) }))}
+                      mono
+                      inputMode="numeric"
+                    />
+                  </div>
+                  <span className="text-sm text-ink-3">px</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    [320, 568],
+                    [360, 800],
+                    [768, 1024],
+                    [1024, 768],
+                    [1280, 800],
+                    [1440, 900],
+                    [1920, 1080],
+                  ].map(([a, b]) => (
+                    <button
+                      key={`${a}x${b}`}
+                      type="button"
+                      onClick={() => setCustom((c) => ({ ...c, w: String(a), h: String(b) }))}
+                      className="rounded-[6px] bg-paper-2 px-2 py-1 font-mono text-[12px] text-ink-2 hover:text-ink"
+                    >
+                      {a}×{b}
+                    </button>
+                  ))}
+                </div>
+                <Chips value={custom.frame} options={CUSTOM_FRAMES} onChange={(f) => setCustom((c) => ({ ...c, frame: f }))} label="Frame" />
+              </div>
+            </Row>
+          ) : (
+            <Row label={group}>
+              <div className="flex flex-wrap gap-1.5">
+                {inGroup.map((d) => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => setDeviceId(d.id)}
+                    aria-pressed={d.id === deviceId}
+                    className={cn(
+                      "inline-flex h-9 items-center gap-2 rounded-[8px] border px-2.5 text-[13px] transition-colors",
+                      d.id === deviceId ? "border-ink bg-ink text-paper" : "border-line bg-surface text-ink hover:border-ink-3",
+                    )}
+                  >
+                    {d.name}
+                    <span className={cn("font-mono text-[11px]", d.id === deviceId ? "text-paper/60" : "text-ink-3")}>
+                      {d.w}×{d.h}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </Row>
+          )}
+          <Row label="View">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+              {rotatable && <Toggle checked={landscape} onChange={setLandscape} label="Landscape" />}
+              <Chips value={zoom} options={[...ZOOMS]} onChange={setZoom} label="Zoom" />
             </div>
           </Row>
         </Panel>
       </form>
-      <div ref={box} className="overflow-hidden rounded-md border border-line bg-paper-2 p-3">
-        <p className="mb-2 text-center font-mono text-xs text-ink-3">
-          {w} × {h}
-          {scale < 1 ? ` · shown at ${Math.round(scale * 100)}%` : ""}
-        </p>
-        <div className="mx-auto" style={{ width: w * scale, height: h * scale }}>
-          {valid && (
-            <iframe
-              key={shown}
-              title="Responsive preview"
-              src={shown}
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-              referrerPolicy="no-referrer"
-              className="origin-top-left rounded-sm border border-line bg-white"
-              style={{ width: w, height: h, transform: `scale(${scale})` }}
-            />
-          )}
+
+      <div
+        ref={box}
+        className="overflow-hidden rounded-md border border-line bg-[radial-gradient(circle_at_50%_30%,var(--color-surface),var(--color-paper-2))]"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-paper/70 px-3 py-2">
+          <p className="font-mono text-xs text-ink-3">
+            <span className="text-ink">{isCustom ? "Custom" : device.name}</span> · {w} × {h} CSS px
+            {device.dpr > 1 ? ` · ${Math.round(w * device.dpr)} × ${Math.round(h * device.dpr)} physical (${device.dpr}×)` : ""} · {Math.round(scale * 100)}%
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setReloads((r) => r + 1)}
+              disabled={!valid}
+              className="inline-flex h-8 items-center gap-1.5 rounded-[8px] px-2 text-[13px] text-ink-2 hover:bg-paper-2 hover:text-ink disabled:opacity-40"
+            >
+              <RotateCw aria-hidden className="size-3.5" /> Reload
+            </button>
+            {valid && (
+              <a
+                href={shown}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-8 items-center gap-1.5 rounded-[8px] px-2 text-[13px] text-ink-2 hover:bg-paper-2 hover:text-ink"
+              >
+                <ExternalLink aria-hidden className="size-3.5" /> Open
+              </a>
+            )}
+          </div>
+        </div>
+        <div className={cn("overflow-auto px-4 py-8", zoom ? "" : "flex justify-center")} style={{ maxHeight: zoom ? 820 : undefined }} data-lenis-prevent>
+          <div className="mx-auto" style={{ width: frame.w * scale, height: frame.h * scale }}>
+            <motion.div
+              key={`${device.id}-${turned}-${device.kind}`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {/* The scale lives on its own element: motion owns the animated wrapper's transform. */}
+              <div style={{ width: frame.w, height: frame.h, transform: `scale(${scale})`, transformOrigin: "top left" }}>
+                <DeviceFrame device={device} w={w} h={h} landscape={turned}>
+                  {valid && (
+                    <iframe
+                      key={`${shown}-${reloads}`}
+                      title={`${isCustom ? "Custom" : device.name} preview`}
+                      src={shown}
+                      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                      referrerPolicy="no-referrer"
+                      className="absolute inset-0 h-full w-full border-0 bg-white"
+                    />
+                  )}
+                </DeviceFrame>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </div>
-      <Notice>Some sites (Google, banks, social networks) refuse to be shown inside another page; they&apos;ll appear blank here. That&apos;s their security setting, not a fault in your site.</Notice>
+      <Notice>
+        The page is shown at the device&apos;s real width in CSS pixels, so its layout and breakpoints match the device. Some sites (Google, banks, social
+        networks) refuse to be shown inside another page and appear blank here; that&apos;s their security setting, not your layout.
+      </Notice>
     </>
   );
 }
@@ -492,7 +788,12 @@ function ResponsiveTester() {
 function WebcamTest() {
   const video = useRef<HTMLVideoElement>(null);
   const stream = useRef<MediaStream | null>(null);
-  const [state, setState] = useState<{ on: boolean; error: string | null; info: Record<string, string> | null; fps: number }>({ on: false, error: null, info: null, fps: 0 });
+  const [state, setState] = useState<{ on: boolean; error: string | null; info: Record<string, string> | null; fps: number }>({
+    on: false,
+    error: null,
+    info: null,
+    fps: 0,
+  });
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [deviceId, setDeviceId] = useState("");
   const [mirror, setMirror] = useState(true);
@@ -525,17 +826,43 @@ function WebcamTest() {
   const start = async (id?: string) => {
     stop();
     try {
-      const s = await navigator.mediaDevices.getUserMedia({ video: id ? { deviceId: { exact: id }, width: { ideal: 1920 } } : { width: { ideal: 1920 } }, audio: false });
+      const s = await navigator.mediaDevices.getUserMedia({
+        video: id ? { deviceId: { exact: id }, width: { ideal: 1920 } } : { width: { ideal: 1920 } },
+        audio: false,
+      });
       stream.current = s;
       if (video.current) video.current.srcObject = s;
       const track = s.getVideoTracks()[0];
       const st = track.getSettings();
-      setState({ on: true, error: null, fps: 0, info: { Camera: track.label || "Camera", Resolution: `${st.width} × ${st.height}`, "Frame rate": st.frameRate ? `${Math.round(st.frameRate)} fps (reported)` : "—", Facing: st.facingMode ?? "—", Aspect: st.aspectRatio ? st.aspectRatio.toFixed(3) : "—" } });
+      setState({
+        on: true,
+        error: null,
+        fps: 0,
+        info: {
+          Camera: track.label || "Camera",
+          Resolution: `${st.width} × ${st.height}`,
+          "Frame rate": st.frameRate ? `${Math.round(st.frameRate)} fps (reported)` : "—",
+          Facing: st.facingMode ?? "—",
+          Aspect: st.aspectRatio ? st.aspectRatio.toFixed(3) : "—",
+        },
+      });
       setDevices((await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput"));
       if (st.deviceId) setDeviceId(st.deviceId);
     } catch (e) {
       const name = (e as DOMException).name;
-      setState({ on: false, error: name === "NotAllowedError" ? "Camera access was blocked. Allow it in your browser's address bar, then try again." : name === "NotFoundError" ? "No camera was found on this device." : name === "NotReadableError" ? "The camera is busy in another app. Close it and try again." : `The camera couldn't start (${name}).`, info: null, fps: 0 });
+      setState({
+        on: false,
+        error:
+          name === "NotAllowedError"
+            ? "Camera access was blocked. Allow it in your browser's address bar, then try again."
+            : name === "NotFoundError"
+              ? "No camera was found on this device."
+              : name === "NotReadableError"
+                ? "The camera is busy in another app. Close it and try again."
+                : `The camera couldn't start (${name}).`,
+        info: null,
+        fps: 0,
+      });
     }
   };
   const snap = () => {
@@ -562,20 +889,37 @@ function WebcamTest() {
       <div className="flex flex-wrap items-center gap-2">
         {state.on ? (
           <>
-            <button type="button" onClick={stop} className="inline-flex h-10 items-center gap-2 rounded-md bg-ink px-4 text-sm font-medium text-paper hover:opacity-90">
+            <button
+              type="button"
+              onClick={stop}
+              className="inline-flex h-10 items-center gap-2 rounded-md bg-ink px-4 text-sm font-medium text-paper hover:opacity-90"
+            >
               <CameraOff aria-hidden className="size-4" /> Stop
             </button>
-            <button type="button" onClick={snap} className="inline-flex h-10 items-center gap-2 rounded-md border border-line bg-surface px-4 text-sm font-medium text-ink hover:border-ink-3">
+            <button
+              type="button"
+              onClick={snap}
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-line bg-surface px-4 text-sm font-medium text-ink hover:border-ink-3"
+            >
               <Download aria-hidden className="size-4" /> Save a snapshot
             </button>
           </>
         ) : (
-          <button type="button" onClick={() => start(deviceId || undefined)} className="inline-flex h-10 items-center gap-2 rounded-md bg-ink px-4 text-sm font-medium text-paper hover:opacity-90">
+          <button
+            type="button"
+            onClick={() => start(deviceId || undefined)}
+            className="inline-flex h-10 items-center gap-2 rounded-md bg-ink px-4 text-sm font-medium text-paper hover:opacity-90"
+          >
             <Camera aria-hidden className="size-4" /> Start camera
           </button>
         )}
         {devices.length > 1 && (
-          <select value={deviceId} onChange={(e) => (setDeviceId(e.target.value), void start(e.target.value))} aria-label="Camera" className="h-10 rounded-md border border-line bg-surface px-2 text-sm text-ink">
+          <select
+            value={deviceId}
+            onChange={(e) => (setDeviceId(e.target.value), void start(e.target.value))}
+            aria-label="Camera"
+            className="h-10 rounded-md border border-line bg-surface px-2 text-sm text-ink"
+          >
             {devices.map((d, i) => (
               <option key={d.deviceId} value={d.deviceId}>
                 {d.label || `Camera ${i + 1}`}
@@ -627,7 +971,10 @@ function PixelRuler() {
         onPointerMove={(e) => drag && setB(pos(e))}
         onPointerUp={() => setDrag(false)}
         className="relative h-[420px] cursor-crosshair touch-none select-none overflow-hidden rounded-md border border-line bg-surface"
-        style={{ backgroundImage: "linear-gradient(var(--color-line) 1px, transparent 1px), linear-gradient(90deg, var(--color-line) 1px, transparent 1px)", backgroundSize: "50px 50px" }}
+        style={{
+          backgroundImage: "linear-gradient(var(--color-line) 1px, transparent 1px), linear-gradient(90deg, var(--color-line) 1px, transparent 1px)",
+          backgroundSize: "50px 50px",
+        }}
         aria-label="Drag to measure"
       >
         {/* Top ruler with ticks every 10 px. */}
@@ -640,7 +987,15 @@ function PixelRuler() {
         </div>
         {a && b && (
           <svg className="pointer-events-none absolute inset-0 size-full">
-            <rect x={Math.min(a.x, b.x)} y={Math.min(a.y, b.y)} width={dx} height={dy} fill="color-mix(in oklab, var(--color-accent) 10%, transparent)" stroke="var(--color-accent)" strokeDasharray="4 3" />
+            <rect
+              x={Math.min(a.x, b.x)}
+              y={Math.min(a.y, b.y)}
+              width={dx}
+              height={dy}
+              fill="color-mix(in oklab, var(--color-accent) 10%, transparent)"
+              stroke="var(--color-accent)"
+              strokeDasharray="4 3"
+            />
             <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="var(--color-ink)" strokeWidth="1.5" />
             <circle cx={a.x} cy={a.y} r="4" fill="var(--color-accent)" />
             <circle cx={b.x} cy={b.y} r="4" fill="var(--color-accent)" />
@@ -659,13 +1014,26 @@ function PixelRuler() {
           <Slider label="Pixels per inch" value={ppi} min={72} max={600} onChange={setPpi} />
         </Row>
       </Panel>
-      <Notice>This measures inside the box. To measure something in another window, use your system&apos;s screenshot tool: Win + Shift + S on Windows, ⌘ + Shift + 4 on a Mac (it shows the size as you drag).</Notice>
+      <Notice>
+        This measures inside the box. To measure something in another window, use your system&apos;s screenshot tool: Win + Shift + S on Windows, ⌘ + Shift + 4
+        on a Mac (it shows the size as you drag).
+      </Notice>
     </>
   );
 }
 
 function MyIp() {
-  const [s, run] = useRun<{ ip: string | null; local: boolean; version: number; country: string | null; region: string | null; city: string | null; timezone: string | null; userAgent: string | null; language: string | null }>();
+  const [s, run] = useRun<{
+    ip: string | null;
+    local: boolean;
+    version: number;
+    country: string | null;
+    region: string | null;
+    city: string | null;
+    timezone: string | null;
+    userAgent: string | null;
+    language: string | null;
+  }>();
   useEffect(() => {
     void run(async () => {
       const r = await fetch("/api/tools/my-ip", { cache: "no-store" });
@@ -679,7 +1047,9 @@ function MyIp() {
     <>
       <div className="rounded-md border border-line bg-surface px-5 py-8 text-center" aria-live="polite">
         <p className="label-mono text-ink-3">Your public IP address</p>
-        <p className="mt-2 break-all font-mono text-4xl font-semibold tracking-[-0.02em] text-ink sm:text-5xl">{s.busy ? "…" : (s.res?.ip ?? (s.res?.local ? "Local network" : "—"))}</p>
+        <p className="mt-2 break-all font-mono text-4xl font-semibold tracking-[-0.02em] text-ink sm:text-5xl">
+          {s.busy ? "…" : (s.res?.ip ?? (s.res?.local ? "Local network" : "—"))}
+        </p>
         {s.res?.ip && (
           <div className="mt-3 flex justify-center">
             <CopyButton text={s.res.ip} />
@@ -696,7 +1066,12 @@ function MyIp() {
           {s.res.language && <ValueRow label="Language" value={s.res.language} />}
         </ValueList>
       )}
-      {s.res?.local && <Notice>You&apos;re running the site on your own computer, so there&apos;s no public address to show. Once it&apos;s deployed, this shows the visitor&apos;s real address.</Notice>}
+      {s.res?.local && (
+        <Notice>
+          You&apos;re running the site on your own computer, so there&apos;s no public address to show. Once it&apos;s deployed, this shows the visitor&apos;s
+          real address.
+        </Notice>
+      )}
       <Notice>We read your address from this request only; it isn&apos;t stored or logged.</Notice>
     </>
   );
@@ -706,13 +1081,20 @@ function MyIp() {
 
 export function WebGenEngine({ preset }: EngineProps) {
   switch (preset.kind) {
-    case "table": return <TableGen />;
-    case "redirect": return <RedirectGen />;
-    case "share": return <ShareGen />;
-    case "units": return <Units />;
-    case "less": return <LessGen />;
-    case "ascii": return <AsciiTable />;
-    default: return <LinkGen />;
+    case "table":
+      return <TableGen />;
+    case "redirect":
+      return <RedirectGen />;
+    case "share":
+      return <ShareGen />;
+    case "units":
+      return <Units />;
+    case "less":
+      return <LessGen />;
+    case "ascii":
+      return <AsciiTable />;
+    default:
+      return <LinkGen />;
   }
 }
 
@@ -749,7 +1131,13 @@ function LinkGen() {
       </Panel>
       <div className="rounded-md border border-line bg-surface px-4 py-4">
         <p className="label-mono text-ink-3">Preview</p>
-        <a href={href} target="_blank" rel="noopener noreferrer" title={title || undefined} className="mt-1 inline-block text-accent underline underline-offset-4">
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={title || undefined}
+          className="mt-1 inline-block text-accent underline underline-offset-4"
+        >
           {text}
         </a>
       </div>
@@ -761,7 +1149,11 @@ function LinkGen() {
 function TableGen() {
   const [rows, setRows] = useState(3);
   const [cols, setCols] = useState(3);
-  const [cells, setCells] = useState<string[][]>([["Name", "Role", "City"], ["Ada", "Engineer", "London"], ["Linus", "Maintainer", "Portland"]]);
+  const [cells, setCells] = useState<string[][]>([
+    ["Name", "Role", "City"],
+    ["Ada", "Engineer", "London"],
+    ["Linus", "Maintainer", "Portland"],
+  ]);
   const [header, setHeader] = useState(true);
   const [border, setBorder] = useState(true);
   const [caption, setCaption] = useState("");
@@ -785,7 +1177,9 @@ function TableGen() {
       ...body.map((r) => `    <tr>${Array.from({ length: cols }, (_, c) => td("td", get(r, c))).join("")}</tr>`),
       `  </tbody>`,
       `</table>`,
-    ].filter(Boolean).join("\n");
+    ]
+      .filter(Boolean)
+      .join("\n");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows, cols, cells, header, border, caption]);
   return (
@@ -839,12 +1233,14 @@ function RedirectGen() {
   const [delay, setDelay] = useState(0);
   const out = {
     ".htaccess (Apache)": `Redirect ${code} ${from} ${to}`,
-    "Nginx": `location = ${from} {\n    return ${code} ${to};\n}`,
+    Nginx: `location = ${from} {\n    return ${code} ${to};\n}`,
     "Vercel (vercel.json)": JSON.stringify({ redirects: [{ source: from, destination: to, permanent: code === 301 || code === 308 }] }, null, 2),
     "Netlify (_redirects)": `${from}  ${to}  ${code}`,
     "HTML (meta refresh)": `<meta http-equiv="refresh" content="${delay}; url=${htmlEncode(to)}">\n<link rel="canonical" href="${htmlEncode(to)}">`,
-    "JavaScript": delay ? `setTimeout(() => window.location.replace(${JSON.stringify(to)}), ${delay * 1000});` : `window.location.replace(${JSON.stringify(to)});`,
-    "PHP": `<?php\nheader("Location: ${to}", true, ${code});\nexit;`,
+    JavaScript: delay
+      ? `setTimeout(() => window.location.replace(${JSON.stringify(to)}), ${delay * 1000});`
+      : `window.location.replace(${JSON.stringify(to)});`,
+    PHP: `<?php\nheader("Location: ${to}", true, ${code});\nexit;`,
     "Node (Express)": `app.get(${JSON.stringify(from)}, (req, res) => res.redirect(${code}, ${JSON.stringify(to)}));`,
   };
   return (
@@ -857,7 +1253,17 @@ function RedirectGen() {
           <TextField label="New address" value={to} onChange={setTo} mono />
         </Row>
         <Row label="Type">
-          <Chips value={code} options={[{ value: 301, label: "301 permanent" }, { value: 302, label: "302 temporary" }, { value: 307, label: "307 temporary (keep method)" }, { value: 308, label: "308 permanent (keep method)" }]} onChange={setCode} label="Redirect type" />
+          <Chips
+            value={code}
+            options={[
+              { value: 301, label: "301 permanent" },
+              { value: 302, label: "302 temporary" },
+              { value: 307, label: "307 temporary (keep method)" },
+              { value: 308, label: "308 permanent (keep method)" },
+            ]}
+            onChange={setCode}
+            label="Redirect type"
+          />
         </Row>
         <Row label="Delay (HTML/JS only)">
           <Slider label="Delay" value={delay} min={0} max={30} onChange={setDelay} format={(v) => (v ? `${v} s` : "Instant")} />
@@ -911,7 +1317,11 @@ function ShareGen() {
           />
         ))}
       </ValueList>
-      <Output value={links.map(([n, h]) => `<a href="${htmlEncode(h)}" target="_blank" rel="noopener">Share on ${n}</a>`).join("\n")} name="share-links.html" lang="HTML for all of them" />
+      <Output
+        value={links.map(([n, h]) => `<a href="${htmlEncode(h)}" target="_blank" rel="noopener">Share on ${n}</a>`).join("\n")}
+        name="share-links.html"
+        lang="HTML for all of them"
+      />
     </>
   );
 }
@@ -922,10 +1332,25 @@ function Units() {
   const [unit, setUnit] = useState<"px" | "rem" | "em" | "pt" | "%" | "vw">("rem");
   const [vw, setVw] = useState(1440);
   const v = Number(value);
-  const px = !Number.isFinite(v) ? NaN : unit === "px" ? v : unit === "rem" || unit === "em" ? v * base : unit === "pt" ? (v * 96) / 72 : unit === "%" ? (v / 100) * base : (v / 100) * vw;
+  const px = !Number.isFinite(v)
+    ? NaN
+    : unit === "px"
+      ? v
+      : unit === "rem" || unit === "em"
+        ? v * base
+        : unit === "pt"
+          ? (v * 96) / 72
+          : unit === "%"
+            ? (v / 100) * base
+            : (v / 100) * vw;
   const f = (n: number) => (Number.isFinite(n) ? String(+n.toFixed(4)) : "");
   const rows: [string, string][] = [
-    ["px", f(px)], ["rem", f(px / base)], ["em", f(px / base)], ["pt", f((px * 72) / 96)], ["%", f((px / base) * 100)], ["vw", f((px / vw) * 100)],
+    ["px", f(px)],
+    ["rem", f(px / base)],
+    ["em", f(px / base)],
+    ["pt", f((px * 72) / 96)],
+    ["%", f((px / base) * 100)],
+    ["vw", f((px / vw) * 100)],
   ];
   return (
     <>
@@ -933,7 +1358,12 @@ function Units() {
         <Row label="Value">
           <div className="flex items-center gap-2">
             <TextField label="Value" value={value} onChange={setValue} mono inputMode="decimal" />
-            <Chips value={unit} options={["px", "rem", "em", "pt", "%", "vw"].map((u) => ({ value: u as typeof unit, label: u }))} onChange={setUnit} label="Unit" />
+            <Chips
+              value={unit}
+              options={["px", "rem", "em", "pt", "%", "vw"].map((u) => ({ value: u as typeof unit, label: u }))}
+              onChange={setUnit}
+              label="Unit"
+            />
           </div>
         </Row>
         <Row label="Base font size" hint="The root (html) font size; browsers default to 16px.">
@@ -967,7 +1397,9 @@ function Units() {
 }
 
 function LessGen() {
-  const [css, setCss] = useState(".nav { display: flex; }\n.nav a { color: #333; }\n.nav a:hover { color: #000; }\n.nav .logo { height: 32px; }\n.footer p { margin: 0; }\n@media (max-width: 600px) { .nav { flex-direction: column; } }");
+  const [css, setCss] = useState(
+    ".nav { display: flex; }\n.nav a { color: #333; }\n.nav a:hover { color: #000; }\n.nav .logo { height: 32px; }\n.footer p { margin: 0; }\n@media (max-width: 600px) { .nav { flex-direction: column; } }",
+  );
   const out = useMemo(() => cssToLess(css), [css]);
   return (
     <>
@@ -978,12 +1410,48 @@ function LessGen() {
   );
 }
 
-const CONTROL = ["NUL", "SOH", "STX", "ETX", "EOT", "ENQ", "ACK", "BEL", "BS", "TAB", "LF", "VT", "FF", "CR", "SO", "SI", "DLE", "DC1", "DC2", "DC3", "DC4", "NAK", "SYN", "ETB", "CAN", "EM", "SUB", "ESC", "FS", "GS", "RS", "US"];
+const CONTROL = [
+  "NUL",
+  "SOH",
+  "STX",
+  "ETX",
+  "EOT",
+  "ENQ",
+  "ACK",
+  "BEL",
+  "BS",
+  "TAB",
+  "LF",
+  "VT",
+  "FF",
+  "CR",
+  "SO",
+  "SI",
+  "DLE",
+  "DC1",
+  "DC2",
+  "DC3",
+  "DC4",
+  "NAK",
+  "SYN",
+  "ETB",
+  "CAN",
+  "EM",
+  "SUB",
+  "ESC",
+  "FS",
+  "GS",
+  "RS",
+  "US",
+];
 
 function AsciiTable() {
   const [q, setQ] = useState("");
   const [extended, setExtended] = useState(false);
-  const rows = Array.from({ length: extended ? 256 : 128 }, (_, i) => ({ i, ch: i < 32 ? CONTROL[i] : i === 127 ? "DEL" : i === 32 ? "space" : i >= 128 && i < 160 ? "—" : String.fromCharCode(i) }));
+  const rows = Array.from({ length: extended ? 256 : 128 }, (_, i) => ({
+    i,
+    ch: i < 32 ? CONTROL[i] : i === 127 ? "DEL" : i === 32 ? "space" : i >= 128 && i < 160 ? "—" : String.fromCharCode(i),
+  }));
   const t = q.trim().toLowerCase();
   const shown = t ? rows.filter((r) => r.ch.toLowerCase() === t || String(r.i) === t || r.i.toString(16) === t.replace(/^0x/, "")) : rows;
   return (
@@ -1105,27 +1573,57 @@ export function TextImageEngine() {
         <Row label="Colours">
           <div className="flex flex-wrap items-center gap-4">
             <label className="inline-flex items-center gap-2 text-sm text-ink-2">
-              <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="size-9 cursor-pointer rounded-md border border-line bg-transparent" /> Text
+              <input
+                type="color"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                className="size-9 cursor-pointer rounded-md border border-line bg-transparent"
+              />{" "}
+              Text
             </label>
             <label className={cn("inline-flex items-center gap-2 text-sm text-ink-2", transparent && "opacity-40")}>
-              <input type="color" value={bg} disabled={transparent} onChange={(e) => setBg(e.target.value)} className="size-9 cursor-pointer rounded-md border border-line bg-transparent" /> Background
+              <input
+                type="color"
+                value={bg}
+                disabled={transparent}
+                onChange={(e) => setBg(e.target.value)}
+                className="size-9 cursor-pointer rounded-md border border-line bg-transparent"
+              />{" "}
+              Background
             </label>
             <Toggle checked={transparent} onChange={setTransparent} label="Transparent" />
           </div>
         </Row>
         <Row label="Layout">
           <div className="grid gap-3">
-            <Chips value={align} options={[{ value: "left", label: "Left" }, { value: "center", label: "Centre" }, { value: "right", label: "Right" }]} onChange={setAlign} label="Alignment" />
+            <Chips
+              value={align}
+              options={[
+                { value: "left", label: "Left" },
+                { value: "center", label: "Centre" },
+                { value: "right", label: "Right" },
+              ]}
+              onChange={setAlign}
+              label="Alignment"
+            />
             <Slider label="Width" value={width} min={200} max={2400} step={20} onChange={setWidth} format={(v) => `${v}px wide`} />
             <Slider label="Padding" value={pad} min={0} max={200} onChange={setPad} format={(v) => `${v}px padding`} />
           </div>
         </Row>
       </Panel>
-      <div className="overflow-auto rounded-md border border-line p-3" style={{ backgroundImage: "repeating-conic-gradient(var(--color-paper-2) 0 25%, var(--color-surface) 0 50%)", backgroundSize: "16px 16px" }} data-lenis-prevent>
+      <div
+        className="overflow-auto rounded-md border border-line p-3"
+        style={{ backgroundImage: "repeating-conic-gradient(var(--color-paper-2) 0 25%, var(--color-surface) 0 50%)", backgroundSize: "16px 16px" }}
+        data-lenis-prevent
+      >
         <canvas ref={canvas} aria-label="Text image preview" className="mx-auto block h-auto max-w-full shadow-float" style={{ width }} />
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={() => canvas.current?.toBlob((b) => b && saveBlob(b, "text.png"))} className="inline-flex h-10 items-center gap-2 rounded-md bg-ink px-4 text-sm font-medium text-paper hover:opacity-90">
+        <button
+          type="button"
+          onClick={() => canvas.current?.toBlob((b) => b && saveBlob(b, "text.png"))}
+          className="inline-flex h-10 items-center gap-2 rounded-md bg-ink px-4 text-sm font-medium text-paper hover:opacity-90"
+        >
           <Download aria-hidden className="size-4" /> Download PNG
         </button>
         <span className="font-mono text-xs text-ink-3">

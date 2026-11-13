@@ -213,7 +213,13 @@ do-whatever-you-want/
    - Rejects live streams (`is_live` / `is_upcoming`) and videos exceeding `MAX_VIDEO_DURATION_SECONDS` (default 3600 seconds / 1 hour).
    - Caps single-file downloads and uploads to `MAX_DOWNLOAD_SIZE_MB` (default 150 MB) and QR logos to `QRCODE_MAX_LOGO_SIZE_MB` (default 10 MB).
    - Ephemeral per-request job directories (`temp/<service>/<uuid>`) are deleted immediately after streaming completes or on exception.
-6. **Sanitized Error Responses**: Internal stack traces and upstream errors are logged server-side while returning clean, user-safe HTTP status codes (`400`, `410`, `422`, `502`).
+6. **Upload Guard — file type from the bytes, before any processing** ([`file_guard.py`](./backend/app/core/file_guard.py)):
+   - A router-wide dependency checks every file sent to any of the 40 upload endpoints before the endpoint runs: the extension must be one that endpoint accepts (a policy per route, built from each service's own lists), and the content must really be that format: magic numbers for ~60 binary formats, the ZIP's internal layout for Word/Excel/PowerPoint/OpenDocument/EPUB, readable text for text and code formats, `<svg` for SVG. Programs (Windows, Linux, macOS executables) are never accepted under any name.
+   - A file that fails is refused with **415** and a plain reason ("“invoice.pdf” is named PDF, but it's actually a program"), before LibreOffice, ffmpeg, PyMuPDF or Pillow ever open it. A new upload endpoint without a policy refuses files rather than accepting anything.
+   - The browser runs a mirror of this check ([`file-sniff.ts`](./frontend/src/lib/file-sniff.ts)) before uploading, so a renamed file is turned away without spending the upload; the server check is the one that counts.
+   - Tests: `scripts/check_upload_guard.py` (disguised files, wrong types per endpoint, batches, size limits) and `scripts/check_guard_corpus.py` (no false refusals across the real samples and outputs of every format).
+7. **Request Size Limits Before the Body Is Read** ([`limits.py`](./backend/app/core/limits.py)): a declared `Content-Length` over `MAX_DOWNLOAD_SIZE_MB` + 5 MB (multipart) or 6 MB (anything else) is refused with **413** without reading the body; bodies without a length are counted as they stream and cut off at the limit.
+8. **Sanitized Error Responses**: Internal stack traces and upstream errors are logged server-side while returning clean, user-safe HTTP status codes (`400`, `410`, `422`, `502`).
 
 ---
 

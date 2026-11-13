@@ -210,7 +210,7 @@ const dev = (icon: LucideIcon) => d("everyday", "Device & browser", "device", ic
 const EVERYDAY: UtilityDef[] = [
   dev(Monitor)("screen-resolution", "Screen resolution", "Your screen's resolution, pixel ratio and colour depth.", ["screen resolution detection", "what is my screen resolution", "display size", "dpi"], { kind: "screen" }),
   dev(Maximize2)("browser-window-size", "Browser window size", "The browser's viewport size, live as you resize.", ["browser window size checker", "viewport size", "window size"], { kind: "window" }),
-  dev(AppWindow)("screen-resolution-tester", "Responsive tester", "See a website at phone, tablet and desktop sizes.", ["screen resolution tester", "responsive design checker", "mobile view", "viewport tester"], { kind: "tester" }),
+  dev(AppWindow)("screen-resolution-tester", "Responsive tester", "See a website in 30+ real device frames, or at any custom size.", ["screen resolution tester", "responsive design checker", "mobile view", "viewport tester", "device mockup", "iphone preview", "ipad preview", "macbook frame", "mobile simulator", "custom screen size"], { kind: "tester" }),
   dev(Webcam)("webcam-test", "Webcam test", "Check your camera works, and see its resolution and frame rate.", ["webcam test", "camera test", "test webcam online"], { kind: "webcam" }),
   dev(Ruler)("pixel-ruler", "Pixel ruler", "Measure anything on screen in pixels.", ["online pixel ruler", "screen ruler", "measure pixels"], { kind: "ruler" }),
   dev(Network)("my-ip", "What is my IP", "Your public IP address and what it says about your connection.", ["my ip address", "what is my ip", "my ip", "public ip", "ip address"], { kind: "myip" }),

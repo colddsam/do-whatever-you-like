@@ -1,6 +1,6 @@
 /** Client side of speech to text: the streamed request, and the transcript in every export format. */
 
-import { directTarget, dropDirectTarget, FileToolError } from "./files";
+import { directTarget, dropDirectTarget, FileToolError, precheck } from "./files";
 
 export const TRANSCRIBE_ENDPOINT = "/api/tools/transcribe/run";
 export const CAPABILITIES_ENDPOINT = "/api/tools/transcribe/capabilities";
@@ -61,6 +61,7 @@ type StreamOptions = {
  * straight to the backend with a ticket (see lib/files.ts), like every other file tool.
  */
 export async function streamTranscription(form: FormData, options: StreamOptions): Promise<Done> {
+  await precheck(form);
   const direct = await directTarget(TRANSCRIBE_ENDPOINT, options.signal);
   try {
     return await send(direct?.url ?? TRANSCRIBE_ENDPOINT, form, options, direct?.ticket);
