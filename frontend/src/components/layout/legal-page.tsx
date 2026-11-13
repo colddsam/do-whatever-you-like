@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Page } from "@/components/ui/paper";
 import { Reveal } from "@/components/ui/reveal";
+import { JsonLd } from "@/components/seo/json-ld";
+import { legalGraph } from "@/lib/schema";
 import { cn } from "@/lib/utils";
 
 const legalLinks = [
@@ -26,8 +28,10 @@ export function LegalPage({
   updated: string;
   sections: LegalSection[];
 }) {
+  const label = legalLinks.find((l) => l.href === current)?.label ?? "Info";
   return (
     <Page className="pt-8 md:pt-10">
+      <JsonLd data={legalGraph(current, label, intro)} />
       <Link
         href="/"
         className="group -ml-2 inline-flex h-11 items-center gap-1.5 rounded-md px-2 text-sm text-ink-2 transition-colors hover:bg-paper-2 hover:text-ink"

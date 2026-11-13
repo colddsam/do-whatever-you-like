@@ -3,7 +3,7 @@ import { Container } from "@/components/ui/primitives";
 import { Reveal } from "@/components/ui/reveal";
 import { liveCount, toolsIn } from "@/lib/tools";
 
-const faqs = [
+export const faqs = [
   {
     q: "What is Do-Whatever?",
     a: "A single home for small digital jobs that usually send you hunting across a dozen sketchy websites: downloading media, converting files, tidying documents and more. New tools are added over time.",

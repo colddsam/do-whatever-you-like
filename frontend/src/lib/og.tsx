@@ -9,29 +9,125 @@ const INK_2 = "#57544a";
 const LINE = "#dad5c8";
 const ACCENT = "#eb4a10";
 
-/** The card every page shares: the logo, a big headline, a line under it, the site's address. */
+/**
+ * The card every page shares: a centered 566×546 editorial card inside the 1200×630 canvas.
+ * Keeping all key content inside the center 630×630 square ensures nothing is cropped on
+ * platforms that render 1:1 thumbnails (e.g. WhatsApp Web) while still looking balanced as
+ * a full 1.91:1 banner (X/Twitter, Discord, LinkedIn, Slack, Facebook).
+ */
 export function ogCard({ eyebrow, title, subtitle }: { eyebrow: string; title: string; subtitle: string }) {
+  const titleSize = title.length > 36 ? 36 : title.length > 22 ? 44 : 54;
+  const trimmedSubtitle = subtitle.length > 120 ? `${subtitle.slice(0, 117).trimEnd()}...` : subtitle;
+
   return new ImageResponse(
     (
-      <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between", background: PAPER, color: INK, padding: "64px 72px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-          <svg width="56" height="56" viewBox="0 0 32 32">
-            <rect width="32" height="32" rx="8" fill={INK} />
-            <path d="M9 16.5l4.5 4.5L23 11.5" fill="none" stroke={PAPER} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="24.5" cy="24.5" r="3" fill={ACCENT} />
-          </svg>
-          <div style={{ display: "flex", fontSize: 34, fontWeight: 600, letterSpacing: "-0.02em" }}>
-            Do<span style={{ color: INK_2 }}>-</span>Whatever
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: PAPER,
+          color: INK,
+          position: "relative",
+        }}
+      >
+        {/* Subtle horizontal framing rule across the full 1200px banner */}
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: 315,
+            height: 2,
+            background: LINE,
+            display: "flex",
+          }}
+        />
+
+        {/* Center-safe card (fits cleanly inside a 630×630 square crop) */}
+        <div
+          style={{
+            width: 566,
+            height: 546,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            background: "#faf8f3",
+            border: `2px solid ${LINE}`,
+            borderRadius: 24,
+            padding: "40px 44px",
+            position: "relative",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14 }}>
+            <svg width="44" height="44" viewBox="0 0 32 32">
+              <rect width="32" height="32" rx="8" fill={INK} />
+              <path d="M9 16.5l4.5 4.5L23 11.5" fill="none" stroke={PAPER} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="24.5" cy="24.5" r="3" fill={ACCENT} />
+            </svg>
+            <div style={{ display: "flex", fontSize: 28, fontWeight: 600, letterSpacing: "-0.02em" }}>
+              Do<span style={{ color: INK_2 }}>-</span>Whatever
+            </div>
           </div>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", fontSize: 26, color: ACCENT, textTransform: "uppercase", letterSpacing: "0.08em" }}>{eyebrow}</div>
-          <div style={{ display: "flex", marginTop: 16, fontSize: title.length > 28 ? 76 : 96, fontWeight: 600, lineHeight: 1.02, letterSpacing: "-0.04em" }}>{title}</div>
-          <div style={{ display: "flex", marginTop: 24, fontSize: 32, color: INK_2, lineHeight: 1.3, maxWidth: 980 }}>{subtitle}</div>
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", borderTop: `2px solid ${LINE}`, paddingTop: 24, fontSize: 24, color: INK_2 }}>
-          <span>Free · No sign-up · Nothing to install</span>
-          <span>do-whatever-you-like.colddsam.com</span>
+
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                fontSize: 18,
+                fontWeight: 600,
+                color: ACCENT,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+              }}
+            >
+              {eyebrow}
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                marginTop: 14,
+                fontSize: titleSize,
+                fontWeight: 600,
+                lineHeight: 1.08,
+                letterSpacing: "-0.03em",
+              }}
+            >
+              {title}
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                marginTop: 18,
+                fontSize: 21,
+                color: INK_2,
+                lineHeight: 1.35,
+                maxWidth: 470,
+              }}
+            >
+              {trimmedSubtitle}
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              borderTop: `2px solid ${LINE}`,
+              paddingTop: 18,
+              gap: 4,
+              fontSize: 17,
+              color: INK_2,
+            }}
+          >
+            <span>Free · No sign-up · Nothing to install</span>
+            <span style={{ color: INK, fontWeight: 600 }}>do-whatever-you-like.colddsam.com</span>
+          </div>
         </div>
       </div>
     ),

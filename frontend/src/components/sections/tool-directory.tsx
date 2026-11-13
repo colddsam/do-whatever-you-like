@@ -32,6 +32,12 @@ export function ToolDirectory() {
   const [active, setActive] = useState<ClusterId>(CLUSTERS[0].id);
   const input = useRef<HTMLInputElement>(null);
 
+  // Support /tools?q=... links (e.g. WebSite SearchAction) without opting out of static rendering.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (q) setQuery(q);
+  }, []);
+
   // "/" jumps to the filter from anywhere on the page, like most directories.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

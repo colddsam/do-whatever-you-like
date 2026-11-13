@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { CLUSTERS, clusterHref, toolHref, toolsIn, type ClusterId, type Tool } from "@/lib/tools";
 import { HUBS } from "@/lib/hubs";
-import { absUrl, pageMeta } from "@/lib/site";
+import { SITE_URL, absUrl, pageMeta } from "@/lib/site";
 import { JsonLd } from "@/components/seo/json-ld";
 import { Page } from "@/components/ui/paper";
 import { Badge } from "@/components/ui/primitives";
@@ -55,6 +55,7 @@ export default async function CategoryPage({ params }: PageProps<"/tools/categor
               name: copy.title,
               description: copy.description,
               url,
+              isPartOf: { "@id": `${SITE_URL}/#website` },
               mainEntity: {
                 "@type": "ItemList",
                 numberOfItems: live.length,

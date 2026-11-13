@@ -3,10 +3,12 @@ import { Marquee } from "@/components/sections/marquee";
 import { ToolsGrid } from "@/components/sections/tools-grid";
 import { HowItWorks } from "@/components/sections/how-it-works";
 import { Principles } from "@/components/sections/principles";
-import { Faq } from "@/components/sections/faq";
+import { Faq, faqs } from "@/components/sections/faq";
 import { Cta } from "@/components/sections/cta";
+import { JsonLd } from "@/components/seo/json-ld";
 import type { Metadata } from "next";
 import { pageMeta } from "@/lib/site";
+import { homeGraph } from "@/lib/schema";
 import { liveCount } from "@/lib/tools";
 
 export const metadata: Metadata = pageMeta({
@@ -19,6 +21,7 @@ export const metadata: Metadata = pageMeta({
 export default function Home() {
   return (
     <>
+      <JsonLd data={homeGraph(faqs)} />
       <Hero />
       <Marquee />
       <ToolsGrid />

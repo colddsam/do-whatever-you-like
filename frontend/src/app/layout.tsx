@@ -3,7 +3,7 @@ import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { OPERATOR, SITE_NAME, SITE_URL } from "@/lib/site";
 import { siteGraph } from "@/lib/schema";
 import { JsonLd } from "@/components/seo/json-ld";
 import "./globals.css";
@@ -22,6 +22,21 @@ export const metadata: Metadata = {
   // the 404 page and any page without one never claim to be the home page.
   metadataBase: new URL(SITE_URL),
   applicationName: SITE_NAME,
+  authors: [{ name: OPERATOR.name, url: OPERATOR.url }],
+  creator: OPERATOR.name,
+  publisher: SITE_NAME,
+  category: "Utilities",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
   // Search Console / Bing Webmaster ownership tags, only when the codes are set (see .env.example).
   // Not needed if the site is verified by DNS.
   verification: {
@@ -44,6 +59,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
+        <link rel="alternate" type="text/markdown" href="/llms.txt" title="LLM site map" />
         <JsonLd data={siteGraph} />
         <Providers>
           <Navbar />
