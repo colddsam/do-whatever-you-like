@@ -2,18 +2,14 @@ import type { NextRequest } from "next/server";
 import { apiError, getJson, proxyUpload } from "@/lib/backend";
 
 /**
- * Document conversion (backend/app/api/v1/endpoints/convert.py): Office/HTML/web page → PDF and
- * PDF → Word/PowerPoint/Excel. PDF inputs send a token from /api/tools/pdf/upload.
+ * Web page → PDF and the converters' capabilities (backend/app/api/v1/endpoints/convert.py).
+ * Every format-to-format conversion goes through /api/tools/universal.
  */
 
 const MAX_MB = 150; // Matches MAX_DOWNLOAD_SIZE_MB in backend/app/core/config.py.
 
 const ACTIONS = {
-  "office-to-pdf": { path: "convert/office-to-pdf", failed: "We couldn't convert that document." },
   "html-to-pdf": { path: "convert/html-to-pdf", failed: "We couldn't turn that page into a PDF." },
-  "pdf-to-word": { path: "convert/pdf-to-word", failed: "We couldn't turn that PDF into a Word document." },
-  "pdf-to-powerpoint": { path: "convert/pdf-to-powerpoint", failed: "We couldn't turn that PDF into slides." },
-  "pdf-to-excel": { path: "convert/pdf-to-excel", failed: "We couldn't turn that PDF into a spreadsheet." },
 } as const;
 
 type Action = keyof typeof ACTIONS;

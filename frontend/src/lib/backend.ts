@@ -120,8 +120,8 @@ export async function proxyUpload(
 /** Streams a file response straight through, keeping the headers the browser needs. */
 export function passFile(upstream: Response) {
   const headers = new Headers({ "Cache-Control": "no-store" });
-  // x-pdf-info: PDF tools that report what they did (pages repaired, pages read by OCR).
-  for (const h of ["content-type", "content-length", "content-disposition", "x-pdf-info", "x-image-info"]) {
+  // x-pdf-info / x-image-info / x-convert-info: tools that report what they did (pages repaired, the route taken).
+  for (const h of ["content-type", "content-length", "content-disposition", "x-pdf-info", "x-image-info", "x-convert-info"]) {
     const v = upstream.headers.get(h);
     if (v) headers.set(h, v);
   }

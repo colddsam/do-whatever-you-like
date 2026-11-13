@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Link2, Plus } from "lucide-react";
-import { clusterHref, getCluster, getTool, liveCount, toolHref, toolsIn, type ClusterId, type Tool } from "@/lib/tools";
+import { CLUSTERS, clusterHref, getCluster, getTool, liveCount, toolHref, toolsIn, type ClusterId, type Tool } from "@/lib/tools";
+import { STATIC_CATALOGUE } from "@/lib/universal";
 import { Badge, ButtonLink, Container, SectionHeader, SignalDot } from "@/components/ui/primitives";
 import { Reveal } from "@/components/ui/reveal";
 import { cn } from "@/lib/utils";
@@ -86,7 +87,10 @@ function SeeAll({ id, label }: { id: ClusterId; label?: string }) {
 export function ToolsGrid() {
   const pdf = getCluster("pdf");
   const images = getCluster("images");
-  const total = toolsIn("pdf").length + toolsIn("images").length + toolsIn("downloads").length + toolsIn("media").length + toolsIn("utilities").length;
+  const files = getCluster("files");
+  const total = CLUSTERS.reduce((n, c) => n + toolsIn(c.id).length, 0);
+  const formats = Object.keys(STATIC_CATALOGUE.formats).length;
+  const pairs = Object.values(STATIC_CATALOGUE.routes).reduce((n, r) => n + r.length, 0);
 
   return (
     <section id="tools" aria-labelledby="tools-title">
@@ -97,15 +101,36 @@ export function ToolsGrid() {
             label="Tools"
             title={
               <span id="tools-title">
-                Five collections, <span className="serif-em">one flow.</span>
+                Six collections, <span className="serif-em">one flow.</span>
               </span>
             }
-            description={`${liveCount} tools that work today, sorted the way you think about the job: PDFs, images, downloads, audio and video, and handy utilities. Pick a collection, or search for the task.`}
+            description={`${liveCount} tools that work today, sorted the way you think about the job: any file, PDFs, images, downloads, audio and video, and handy utilities. Pick a collection, or search for the task.`}
           />
         </Reveal>
 
         <Reveal delay={0.08} className="mt-14 md:mt-16">
           <div className="grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-2 lg:grid-cols-6 [&>*]:min-w-0">
+            {/* Any file: the converter, compressor and merge/split for every format. */}
+            <article className={cn(cell, "sm:col-span-2 lg:col-span-6")}>
+              <div className="grid gap-x-10 gap-y-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]">
+                <div className="flex flex-col">
+                  <CardHead id="files" big title={<>Any file, into any <span className="serif-em">format.</span></>} />
+                  <p className="mt-3 max-w-md text-[15px] leading-relaxed text-ink-2">{files.blurb}</p>
+                  <p className="mt-5 flex flex-wrap gap-x-5 gap-y-1 font-mono text-[12px] tracking-[0.04em] text-ink-3">
+                    <span>
+                      <span className="text-ink">{formats}</span> formats
+                    </span>
+                    <span>
+                      <span className="text-ink">{pairs.toLocaleString("en")}</span> conversions
+                    </span>
+                    <span>Office · PDF · data · media · fonts</span>
+                  </p>
+                  <SeeAll id="files" label="All file tools" />
+                </div>
+                <ToolRows ids={files.featured} columns />
+              </div>
+            </article>
+
             {/* PDF: the biggest collection. */}
             <article className={cn(cell, "sm:col-span-2 lg:col-span-4 lg:row-span-2")}>
               <CardHead id="pdf" big title={<>Every PDF job, from merge to <span className="serif-em">sign.</span></>} />

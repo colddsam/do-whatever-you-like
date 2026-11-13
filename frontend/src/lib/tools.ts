@@ -1,5 +1,7 @@
 import {
   Archive,
+  AppWindow,
+  ArrowRightLeft,
   AudioLines,
   Braces,
   Captions,
@@ -29,6 +31,7 @@ import {
   ListOrdered,
   Lock,
   LockOpen,
+  Merge,
   Minimize2,
   PencilLine,
   PenLine,
@@ -38,7 +41,9 @@ import {
   ScanLine,
   ScanText,
   Scissors,
+  Shrink,
   Signature,
+  Split,
   Stamp,
   Wrench,
   type LucideIcon,
@@ -65,12 +70,19 @@ export const defaultSteps: Record<ToolKind, [string, string, string]> = {
 };
 
 /** The sections of the PDF family, in the order /tools shows them. */
-export const PDF_GROUPS = ["Organize", "Optimize", "Convert to PDF", "Convert from PDF", "Edit", "Security"] as const;
+export const PDF_GROUPS = ["Organize", "Optimize", "Convert to PDF", "Edit", "Security"] as const;
 export type PdfGroup = (typeof PDF_GROUPS)[number];
 
 /** The sections of the image family, in the order /tools shows them (iLoveIMG's grouping). */
 export const IMAGE_GROUPS = ["Optimize", "Create", "Modify", "Convert", "Security"] as const;
 export type ImageGroup = (typeof IMAGE_GROUPS)[number];
+
+/**
+ * The sections of the file family: the universal converter (and the popular pairs it powers),
+ * compression for any file, and merge/split for every format where they make sense.
+ */
+export const FILE_GROUPS = ["Convert", "Compress", "Merge & split"] as const;
+export type FileGroup = (typeof FILE_GROUPS)[number];
 
 export type Tool = {
   id: string;
@@ -96,8 +108,8 @@ export type Tool = {
    * Tools that belong to a family (the single-purpose PDF tools) get their own section on /tools,
    * grouped by `group`, and stay out of the home page grid, which shows the family's hub instead.
    */
-  family?: "pdf" | "image";
-  group?: PdfGroup | ImageGroup;
+  family?: "pdf" | "image" | "files";
+  group?: PdfGroup | ImageGroup | FileGroup;
   /** What the tool page promises, shown as a checklist. */
   features: string[];
   /** Live downloaders only: how the playground talks to the backend. */
@@ -111,22 +123,11 @@ export type Tool = {
     /** Link shapes shown in the empty workspace, so people know what will work. */
     examples: string[];
   };
-  /** Live single-file converters only: where the file goes and what's allowed. */
-  converter?: {
-    /** Our proxy route (see app/api/tools). It takes `file` as form data and returns the result. */
-    endpoint: string;
-    /** What goes in, in a word: "video", "PDF". Used in the workspace's copy. */
-    input: string;
-    /** Lower-case, with the dot. Mirrors the backend's allow-list. */
-    extensions: string[];
-    maxMB: number;
-    /** Format of the result, e.g. "MP3". */
-    output: string;
-    /** One line on the result's quality, shown under the download button. */
-    quality: string;
-    /** Constant-bitrate outputs: bytes per second of input, to predict the result's size. */
-    bytesPerSecond?: number;
-  };
+  /**
+   * A popular pair (PDF to Word, Video to MP3…) run by the universal converter: one engine, one
+   * workspace, with the source formats it takes and the format it makes fixed.
+   */
+  preset?: { from: string[]; to: string };
 };
 
 const PDF_ACCEPT = { label: "PDF files", types: ".pdf,application/pdf" };
@@ -233,6 +234,23 @@ const imageTools: Tool[] = [
     keywords: ["html to image", "html to jpg", "screenshot", "web page", "website", "capture", "full page screenshot", "url to image"],
     features: ["The whole page, or one screen", "Phone, tablet, laptop or desktop width", "Blocks ads and hides cookie banners", "Private addresses are never opened"],
   }),
+  imageTool({
+    id: "icon-maker", name: "Icon maker", group: "Convert", icon: AppWindow,
+    description: "Favicons and app icons for websites, Windows, macOS, iOS and Android, from one picture.",
+    takes: "A PNG, SVG, JPG…", gives: "ICO, ICNS and PNG sets", limit: "One picture",
+    steps: ["Add a picture", "Pick platforms", "Download"],
+    accept: { label: "PNG, SVG, JPG, WebP, HEIC…", types: "image/*,.svg,.heic,.heif,.psd,.ico" },
+    keywords: [
+      "icon", "ico", "favicon", "icon maker", "icon generator", "favicon generator", "app icon", "png to ico", "svg to ico", "jpg to ico",
+      "icns", "mac icon", "windows icon", "exe icon", "ios icon", "android icon", "pwa", "manifest", "apple touch icon", "launcher icon",
+    ],
+    features: [
+      "Website: favicon.ico, PNGs, Apple touch and PWA icons, plus the HTML",
+      "Windows: one .ico with every size from 16 to 256, and Store tiles",
+      "macOS .icns, an Xcode-ready iOS icon set and Android mipmaps",
+      "Square, rounded or round, with padding and a background colour",
+    ],
+  }),
   // Security
   imageTool({
     id: "watermark-image", name: "Watermark image", group: "Security", icon: Stamp,
@@ -332,6 +350,13 @@ const pdfTools: Tool[] = [
     keywords: ["ocr", "text recognition", "searchable", "scan", "select text", "copy text", "pdf"],
     features: ["Over 100 languages, up to 5 at once", "The pages look exactly as before", "Pages that already have text are left alone"],
   }),
+  pdfTool({
+    id: "pdf-to-pdfa", name: "PDF to PDF/A", group: "Optimize", icon: Archive,
+    description: "An archive-ready PDF for long-term storage.",
+    takes: "One PDF", gives: "PDF/A", steps: ["Add a PDF", "Choose the level", "Download"],
+    keywords: ["pdfa", "pdf/a", "archive", "iso", "long term", "convert", "pdf"],
+    features: ["PDF/A-1b, 2b or 3b", "Fonts embedded, colours fixed to sRGB", "Accepted by courts and archives"],
+  }),
   // Convert to PDF
   pdfTool({
     id: "jpg-to-pdf", name: "JPG to PDF", group: "Convert to PDF", icon: ImagePlus,
@@ -343,72 +368,12 @@ const pdfTools: Tool[] = [
     features: ["JPG, PNG, WebP, GIF, BMP and TIFF", "A4, Letter or the image's own size", "Drag to set the page order"],
   }),
   pdfTool({
-    id: "word-to-pdf", name: "Word to PDF", group: "Convert to PDF", icon: FileText,
-    description: "Turn DOC and DOCX files into PDF.",
-    takes: "DOC, DOCX, ODT, RTF", gives: "PDF", steps: ["Add a document", "Convert it", "Download"],
-    accept: { label: "Word documents", types: ".doc,.docx,.odt,.rtf,.txt" },
-    keywords: ["word", "doc", "docx", "odt", "rtf", "convert", "pdf"],
-    features: ["Keeps fonts, tables, images and layout", "DOC, DOCX, ODT, RTF and TXT", "Preview the PDF before you save it"],
-  }),
-  pdfTool({
-    id: "powerpoint-to-pdf", name: "PowerPoint to PDF", group: "Convert to PDF", icon: Presentation,
-    description: "Turn slides into a PDF, one page per slide.",
-    takes: "PPT, PPTX, ODP", gives: "PDF", steps: ["Add slides", "Convert them", "Download"],
-    accept: { label: "Presentations", types: ".ppt,.pptx,.odp,.pps,.ppsx" },
-    keywords: ["powerpoint", "ppt", "pptx", "slides", "presentation", "convert", "pdf"],
-    features: ["One page per slide", "PPT, PPTX, PPS and ODP", "Preview the PDF before you save it"],
-  }),
-  pdfTool({
-    id: "excel-to-pdf", name: "Excel to PDF", group: "Convert to PDF", icon: FileSpreadsheet,
-    description: "Turn spreadsheets into PDF.",
-    takes: "XLS, XLSX, ODS, CSV", gives: "PDF", steps: ["Add a spreadsheet", "Choose the fit", "Download"],
-    accept: { label: "Spreadsheets", types: ".xls,.xlsx,.xlsm,.ods,.csv" },
-    keywords: ["excel", "xls", "xlsx", "csv", "spreadsheet", "sheet", "convert", "pdf"],
-    features: ["Every sheet included", "Option: each sheet on a single page", "XLS, XLSX, ODS and CSV"],
-  }),
-  pdfTool({
     id: "html-to-pdf", name: "HTML to PDF", group: "Convert to PDF", icon: Globe,
     description: "Save any public web page as a PDF.",
     takes: "A web address or HTML file", gives: "PDF", steps: ["Add a page", "Set up the paper", "Download"],
     accept: { label: "HTML files", types: ".html,.htm,text/html" },
     keywords: ["html", "web page", "website", "url", "link", "save page", "convert", "pdf"],
     features: ["Renders the page in a real browser", "A4, Letter, Legal or A3, portrait or landscape", "Private and internal addresses are blocked"],
-  }),
-  // Convert from PDF
-  pdfTool({
-    id: "pdf-to-jpg", name: "PDF to JPG", group: "Convert from PDF", icon: FileImage,
-    description: "Each page as an image, or the pictures inside.",
-    takes: "One PDF", gives: "JPG or PNG", steps: ["Add a PDF", "Choose the images", "Download"],
-    keywords: ["pdf to jpg", "jpg", "png", "image", "extract images", "convert", "pdf"],
-    features: ["Pages as JPG or PNG, up to 300 dpi", "Or pull out the original pictures", "Several images arrive as one ZIP"],
-  }),
-  pdfTool({
-    id: "pdf-to-word", name: "PDF to Word", group: "Convert from PDF", icon: FileText,
-    description: "An editable Word document from your PDF.",
-    takes: "One PDF", gives: "DOCX", steps: ["Add a PDF", "Convert it", "Download"],
-    keywords: ["pdf to word", "docx", "word", "editable", "convert", "pdf"],
-    features: ["Text, tables and images, editable in Word", "Keeps the layout as closely as it can", "Scans need OCR first"],
-  }),
-  pdfTool({
-    id: "pdf-to-powerpoint", name: "PDF to PowerPoint", group: "Convert from PDF", icon: Presentation,
-    description: "Each PDF page as an editable slide.",
-    takes: "One PDF", gives: "PPTX", steps: ["Add a PDF", "Convert it", "Download"],
-    keywords: ["pdf to powerpoint", "pptx", "slides", "presentation", "convert", "pdf"],
-    features: ["One slide per page", "Text and shapes stay editable", "Opens in PowerPoint, Keynote and Google Slides"],
-  }),
-  pdfTool({
-    id: "pdf-to-excel", name: "PDF to Excel", group: "Convert from PDF", icon: FileSpreadsheet,
-    description: "Tables from your PDF, ready in Excel.",
-    takes: "One PDF", gives: "XLSX", steps: ["Add a PDF", "Choose the sheets", "Download"],
-    keywords: ["pdf to excel", "xlsx", "table", "spreadsheet", "extract table", "convert", "pdf"],
-    features: ["Finds the tables on every page", "Numbers stay numbers", "A sheet per table, or per page"],
-  }),
-  pdfTool({
-    id: "pdf-to-pdfa", name: "PDF to PDF/A", group: "Convert from PDF", icon: Archive,
-    description: "An archive-ready PDF for long-term storage.",
-    takes: "One PDF", gives: "PDF/A", steps: ["Add a PDF", "Choose the level", "Download"],
-    keywords: ["pdfa", "pdf/a", "archive", "iso", "long term", "convert", "pdf"],
-    features: ["PDF/A-1b, 2b or 3b", "Fonts embedded, colours fixed to sRGB", "Accepted by courts and archives"],
   }),
   // Edit
   pdfTool({
@@ -484,6 +449,146 @@ const pdfTools: Tool[] = [
   }),
 ];
 
+const fileTool = (t: Omit<Tool, "category" | "status" | "kind" | "family"> & Partial<Tool>): Tool => ({
+  category: "Files",
+  status: "live",
+  kind: "file",
+  family: "files",
+  limit: "Up to 150 MB",
+  ...t,
+});
+
+const OFFICE_FORMATS = {
+  word: ["docx", "doc", "odt", "rtf", "docm", "dotx"],
+  slides: ["pptx", "ppt", "odp", "pps", "ppsx", "pptm"],
+  sheets: ["xlsx", "xls", "ods", "xlsm", "csv", "tsv"],
+};
+const dotted = (list: string[]) => list.map((e) => "." + e).join(",");
+
+/**
+ * Tools for any file. The popular pairs are presets of the universal converter (same engine and
+ * workspace, the pair fixed), so there's one converter in the codebase, not one per pair.
+ */
+const fileTools: Tool[] = [
+  // Convert: the popular pairs
+  fileTool({
+    id: "pdf-to-word", name: "PDF to Word", group: "Convert", icon: FileText,
+    description: "An editable Word document from your PDF.",
+    takes: "One PDF", gives: "DOCX", steps: ["Add a PDF", "Convert it", "Download"],
+    accept: PDF_ACCEPT, preset: { from: ["pdf"], to: "docx" },
+    keywords: ["pdf to word", "pdf to docx", "docx", "word", "editable", "convert", "pdf"],
+    features: ["Text, tables and images, editable in Word", "Keeps the layout as closely as it can", "Scans need OCR first"],
+  }),
+  fileTool({
+    id: "pdf-to-excel", name: "PDF to Excel", group: "Convert", icon: FileSpreadsheet,
+    description: "Tables from your PDF, ready in Excel.",
+    takes: "One PDF", gives: "XLSX", steps: ["Add a PDF", "Choose the sheets", "Download"],
+    accept: PDF_ACCEPT, preset: { from: ["pdf"], to: "xlsx" },
+    keywords: ["pdf to excel", "pdf to xlsx", "xlsx", "table", "spreadsheet", "extract table", "convert", "pdf"],
+    features: ["Finds the tables on every page", "Numbers stay numbers", "A sheet per table, or per page"],
+  }),
+  fileTool({
+    id: "pdf-to-powerpoint", name: "PDF to PowerPoint", group: "Convert", icon: Presentation,
+    description: "Each PDF page as an editable slide.",
+    takes: "One PDF", gives: "PPTX", steps: ["Add a PDF", "Convert it", "Download"],
+    accept: PDF_ACCEPT, preset: { from: ["pdf"], to: "pptx" },
+    keywords: ["pdf to powerpoint", "pdf to pptx", "pptx", "slides", "presentation", "convert", "pdf"],
+    features: ["One slide per page", "Text and shapes stay editable", "Opens in PowerPoint, Keynote and Google Slides"],
+  }),
+  fileTool({
+    id: "pdf-to-jpg", name: "PDF to JPG", group: "Convert", icon: FileImage,
+    description: "Each page as an image, or the pictures inside.",
+    takes: "One PDF", gives: "JPG, or a ZIP", steps: ["Add a PDF", "Choose the images", "Download"],
+    accept: PDF_ACCEPT, preset: { from: ["pdf"], to: "jpg" },
+    keywords: ["pdf to jpg", "pdf to image", "pdf to png", "jpg", "png", "image", "extract images", "convert", "pdf"],
+    features: ["Pages as JPG at 72, 150 or 300 dpi", "Or pull out the original pictures", "Pick the pages you want", "Several images arrive as one ZIP"],
+  }),
+  fileTool({
+    id: "word-to-pdf", name: "Word to PDF", group: "Convert", icon: FileText,
+    description: "Turn DOC and DOCX files into PDF.",
+    takes: "DOC, DOCX, ODT, RTF", gives: "PDF", steps: ["Add a document", "Convert it", "Download"],
+    accept: { label: "Word documents", types: dotted(OFFICE_FORMATS.word) },
+    preset: { from: OFFICE_FORMATS.word, to: "pdf" },
+    keywords: ["word to pdf", "docx to pdf", "doc", "docx", "odt", "rtf", "convert", "pdf"],
+    features: ["Keeps fonts, tables, images and layout", "DOC, DOCX, ODT and RTF", "Preview the PDF before you save it"],
+  }),
+  fileTool({
+    id: "powerpoint-to-pdf", name: "PowerPoint to PDF", group: "Convert", icon: Presentation,
+    description: "Turn slides into a PDF, one page per slide.",
+    takes: "PPT, PPTX, ODP", gives: "PDF", steps: ["Add slides", "Convert them", "Download"],
+    accept: { label: "Presentations", types: dotted(OFFICE_FORMATS.slides) },
+    preset: { from: OFFICE_FORMATS.slides, to: "pdf" },
+    keywords: ["powerpoint to pdf", "ppt to pdf", "pptx to pdf", "slides", "presentation", "convert", "pdf"],
+    features: ["One page per slide", "PPT, PPTX, PPS and ODP", "Preview the PDF before you save it"],
+  }),
+  fileTool({
+    id: "excel-to-pdf", name: "Excel to PDF", group: "Convert", icon: FileSpreadsheet,
+    description: "Turn spreadsheets into PDF.",
+    takes: "XLS, XLSX, ODS, CSV", gives: "PDF", steps: ["Add a spreadsheet", "Choose the fit", "Download"],
+    accept: { label: "Spreadsheets", types: dotted(OFFICE_FORMATS.sheets) },
+    preset: { from: OFFICE_FORMATS.sheets, to: "pdf" },
+    keywords: ["excel to pdf", "xlsx to pdf", "xls", "csv to pdf", "spreadsheet", "sheet", "convert", "pdf"],
+    features: ["Every sheet included", "Option: each sheet on a single page", "XLS, XLSX, ODS and CSV"],
+  }),
+  // Compress
+  fileTool({
+    id: "compress-files", name: "Compress files", group: "Compress", icon: Shrink,
+    description: "Make any file smaller: PDF, Word, PowerPoint, Excel, photos, audio, video and more.",
+    takes: "Up to 20 files, any kind", gives: "Smaller files", limit: "Up to 20 files, 150 MB",
+    steps: ["Add files", "Pick a strength", "Download"],
+    accept: { label: "Any file", types: "" },
+    keywords: [
+      "compress", "compressor", "shrink", "reduce", "reduce size", "smaller", "file size", "optimize", "zip",
+      "compress pdf", "compress word", "compress docx", "compress powerpoint", "compress pptx", "compress excel",
+      "compress video", "compress mp4", "compress audio", "compress mp3", "compress wav", "compress image", "compress heic", "compress font",
+    ],
+    features: [
+      "PDF, Word, PowerPoint, Excel and EPUB: pictures inside are re-encoded",
+      "Photos (HEIC, TIFF, BMP, RAW…), audio and video",
+      "Fonts to WOFF2, JSON minified, anything else zipped",
+      "Light, Recommended or Strong",
+      "Before and after size for every file; nothing ever grows",
+    ],
+  }),
+  // Merge & split
+  fileTool({
+    id: "merge-files", name: "Merge files", group: "Merge & split", icon: Merge,
+    description: "Combine Word, PowerPoint, Excel, CSV, PDF, audio or video files into one.",
+    takes: "2 to 20 files of one kind", gives: "One file", limit: "Up to 20 files, 150 MB",
+    steps: ["Add files", "Set the order", "Download"],
+    accept: { label: "Word, PowerPoint, Excel, CSV, PDF, audio or video", types: "" },
+    keywords: [
+      "merge", "combine", "join", "append", "concatenate", "merge word", "merge docx", "combine word documents",
+      "merge powerpoint", "merge pptx", "combine slides", "merge excel", "combine excel", "merge csv", "combine csv", "stack",
+      "merge pdf", "merge audio", "join mp3", "merge video", "join mp4",
+    ],
+    features: [
+      "Word: styles, pictures and numbering kept, each on a new page",
+      "PowerPoint: every deck keeps its own design and speaker notes",
+      "Excel and CSV: sheets side by side, or rows stacked by column name",
+      "PDF, audio and video too, in the order you set",
+    ],
+  }),
+  fileTool({
+    id: "split-files", name: "Split files", group: "Merge & split", icon: Split,
+    description: "Break Word, PowerPoint, Excel, CSV, PDF, audio or video into parts.",
+    takes: "One file", gives: "Parts in a ZIP",
+    steps: ["Add a file", "Choose the parts", "Download"],
+    accept: { label: "Word, PowerPoint, Excel, CSV, PDF, audio or video", types: "" },
+    keywords: [
+      "split", "separate", "divide", "break", "cut", "split word", "split docx", "split by heading", "split chapters",
+      "split powerpoint", "split pptx", "split slides", "split excel", "split sheets", "split csv", "split rows", "split by column",
+      "split pdf", "split audio", "cut mp3", "split video", "cut mp4",
+    ],
+    features: [
+      "Word: at headings, page breaks or pages",
+      "PowerPoint and PDF: each, every few, or ranges you type",
+      "Excel and CSV: by sheet, every N rows, or by a column's values",
+      "Audio and video: every few minutes, in equal parts, or at times you type",
+    ],
+  }),
+];
+
 export const toolHref = (id: string) => `/tools/${id}`;
 export const getTool = (id: string) => tools.find((t) => t.id === id);
 export const stepsFor = (tool: Tool) => tool.steps ?? defaultSteps[tool.kind];
@@ -536,34 +641,25 @@ export const tools: Tool[] = [
   },
   {
     id: "audio",
-    name: "Video to audio",
+    name: "Video to MP3",
     category: "Convert",
     description: "Pull a clean MP3 out of any video file.",
     status: "live",
     icon: AudioLines,
     kind: "file",
-    options: ["MP3 · 192 kbps"],
     takes: "A video file",
     gives: "MP3 audio",
     limit: "Up to 150 MB",
-    steps: ["Add a video", "Extract the audio", "Save the MP3"],
-    accept: { label: "MP4, MOV, MKV or WebM", types: ".mp4,.mov,.mkv,.webm,.avi,.flv,.m4v,video/*" },
-    keywords: ["mp3", "music", "extract", "convert", "sound", "audio", "video"],
+    steps: ["Add a video", "Pick the quality", "Save the MP3"],
+    accept: { label: "MP4, MOV, MKV, WebM, AVI…", types: "video/*,.mkv,.avi,.flv,.wmv,.mts,.m2ts,.3gp" },
+    keywords: ["mp3", "music", "extract", "convert", "sound", "audio", "video", "video to mp3", "mp4 to mp3"],
     features: [
-      "MP4, MOV, MKV, WebM, AVI, FLV and M4V",
-      "192 kbps MP3, ready for any player",
+      "MP4, MOV, MKV, WebM, AVI, FLV and every other video format",
+      "128, 192 or 320 kbps, ready for any player",
       "Listen before you save",
       "Your video is deleted once the MP3 is sent",
     ],
-    converter: {
-      endpoint: "/api/tools/video2audio/extract",
-      input: "video",
-      extensions: [".mp4", ".mov", ".mkv", ".webm", ".avi", ".flv", ".m4v"],
-      maxMB: 150,
-      output: "MP3",
-      quality: "192 kbps MP3, named after your video.",
-      bytesPerSecond: 192_000 / 8,
-    },
+    preset: { from: ["mp4", "mov", "mkv", "webm", "avi", "m4v", "flv", "wmv", "3gp", "mpeg", "mts", "ogv"], to: "mp3" },
   },
   {
     id: "audio-to-text",
@@ -667,6 +763,39 @@ export const tools: Tool[] = [
     features: ["Format and validate JSON", "Base64 encode and decode", "SHA-256 and MD5 hashes"],
   },
   {
+    id: "convert-anything",
+    name: "Universal converter",
+    category: "Convert",
+    family: "files",
+    group: "Convert",
+    description: "Turn almost any file into the format you need: documents, data, images, audio, video, fonts and more.",
+    status: "live",
+    icon: ArrowRightLeft,
+    kind: "file",
+    takes: "Almost any file · 112 formats",
+    gives: "Any format it can become",
+    limit: "Up to 150 MB",
+    steps: ["Add a file", "Pick a format", "Download"],
+    accept: { label: "Any file", types: "" },
+    keywords: [
+      "convert", "converter", "any", "anything", "universal", "format", "file", "change format", "to",
+      "docx", "word", "pdf", "markdown", "md", "html", "epub", "latex", "odt", "rtf", "txt",
+      "xlsx", "excel", "csv", "json", "yaml", "xml", "toml", "sql", "tsv",
+      "pptx", "powerpoint", "heic", "jpg", "png", "webp", "avif", "svg", "ico", "tiff",
+      "mp3", "wav", "flac", "m4a", "ogg", "mp4", "mov", "mkv", "webm", "avi", "gif",
+      "srt", "vtt", "subtitles", "font", "ttf", "otf", "woff", "woff2", "zip", "7z", "tar", "eml", "ipynb", "notebook",
+    ],
+    features: [
+      "112 formats in 15 families, 1,800+ conversions",
+      "Documents, spreadsheets, slides, ebooks and Markdown",
+      "CSV, Excel, JSON, YAML, XML, TOML and SQL",
+      "Images (HEIC, RAW, SVG…), audio, video and subtitles",
+      "Fonts, archives, notebooks, email and source code",
+      "Picks the best route for you, and shows it",
+      "Free, no sign-up, deleted once it's sent",
+    ],
+  },
+  {
     id: "qr",
     name: "QR generator",
     category: "Utilities",
@@ -688,6 +817,7 @@ export const tools: Tool[] = [
       "Warns you before a code gets hard to scan",
     ],
   },
+  ...fileTools,
   ...pdfTools,
   ...imageTools,
 ];
@@ -699,6 +829,12 @@ export const exampleTasks = [
   "transcribe a voice recording",
   "merge two pdfs",
   "convert a pdf to word",
+  "compress a video",
+  "merge powerpoint files",
+  "split an excel sheet by region",
+  "make a favicon",
+  "convert csv to json",
+  "turn markdown into a word doc",
   "sign a pdf",
   "remove an image background",
   "convert heic to jpg",
@@ -709,7 +845,7 @@ export const exampleTasks = [
 
 /* ---------- Collections: how the toolbox is organised everywhere on the site ---------- */
 
-export type ClusterId = "pdf" | "images" | "downloads" | "media" | "utilities";
+export type ClusterId = "files" | "pdf" | "images" | "downloads" | "media" | "utilities";
 
 export type Cluster = {
   id: ClusterId;
@@ -729,29 +865,40 @@ export type Cluster = {
   featured: string[];
 };
 
-/** The five collections, in the order the site lists them. Every tool belongs to exactly one. */
+/** The six collections, in the order the site lists them. Every tool belongs to exactly one. */
 export const CLUSTERS: Cluster[] = [
+  {
+    id: "files",
+    name: "Any file",
+    title: "Any file",
+    noun: "file",
+    blurb: "Convert any file to any format, compress it, merge or split it.",
+    icon: ArrowRightLeft,
+    hub: "convert-anything",
+    groups: FILE_GROUPS,
+    featured: ["convert-anything", "compress-files", "merge-files", "split-files", "pdf-to-word", "word-to-pdf"],
+  },
   {
     id: "pdf",
     name: "PDF",
     title: "PDF tools",
     noun: "PDF",
-    blurb: "Merge, split, convert, edit, sign and protect PDFs.",
+    blurb: "Merge, split, edit, sign, protect and OCR PDFs.",
     icon: FileStack,
     hub: "pdf",
     groups: PDF_GROUPS,
-    featured: ["merge-pdf", "compress-pdf", "pdf-to-word", "word-to-pdf", "edit-pdf", "sign-pdf", "split-pdf", "pdf-to-jpg"],
+    featured: ["merge-pdf", "compress-pdf", "split-pdf", "edit-pdf", "sign-pdf", "jpg-to-pdf", "ocr-pdf", "protect-pdf"],
   },
   {
     id: "images",
     name: "Images",
     title: "Image tools",
     noun: "image",
-    blurb: "Compress, resize, convert, cut out and edit pictures.",
+    blurb: "Compress, resize, convert, cut out and edit pictures, and make icons.",
     icon: ImageIcon,
     hub: "image",
     groups: IMAGE_GROUPS,
-    featured: ["compress-image", "resize-image", "remove-background", "convert-to-jpg", "upscale-image", "photo-editor"],
+    featured: ["compress-image", "resize-image", "remove-background", "convert-to-jpg", "icon-maker", "upscale-image"],
   },
   {
     id: "downloads",
@@ -776,7 +923,7 @@ export const CLUSTERS: Cluster[] = [
     name: "Text & utilities",
     title: "Text and utilities",
     noun: "utility",
-    blurb: "QR codes today. Writing and developer helpers are next.",
+    blurb: "Make QR codes. Writing and developer helpers are next.",
     icon: QrCode,
     featured: ["qr", "writing", "dev"],
   },
@@ -794,7 +941,7 @@ const CLUSTER_OF: Record<string, ClusterId> = {
 };
 
 export const clusterOf = (tool: Tool): ClusterId =>
-  tool.family === "pdf" ? "pdf" : tool.family === "image" ? "images" : (CLUSTER_OF[tool.id] ?? "utilities");
+  tool.family === "pdf" ? "pdf" : tool.family === "image" ? "images" : tool.family === "files" ? "files" : (CLUSTER_OF[tool.id] ?? "utilities");
 export const getCluster = (id: ClusterId) => CLUSTERS.find((c) => c.id === id)!;
 export const clusterHref = (id: ClusterId) => `/tools#${id}`;
 

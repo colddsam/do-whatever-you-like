@@ -14,6 +14,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     # One web worker and one PDF process: what fits in 512 MB alongside LibreOffice or Chromium.
     PDF_PROCESS_WORKERS=1 \
     CONVERT_OFFICE_CONCURRENCY=1 \
+    # Universal converter, compressor and merge/split share one "heavy" lane: one job at a time,
+    # each in its own child process. Icon packs (Pillow only) have a light lane of their own.
+    # (Pandoc comes inside the pypandoc_binary wheel; FFmpeg from static-ffmpeg.)
+    JOBS_HEAVY_CONCURRENCY=1 \
+    JOBS_LIGHT_CONCURRENCY=1 \
     CONVERT_OFFICE_PROFILE_DIR=/tmp/dw_lo \
     # Speech to text without a Groq key runs Whisper here; "base" is the largest that fits 512 MB.
     TRANSCRIBE_MODEL=base \

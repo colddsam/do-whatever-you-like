@@ -373,42 +373,7 @@ async def ocr(
     )
 
 
-# ---------- PDF ↔ images ----------
-
-
-@router.post("/to-images", response_class=FileResponse, summary="Pages to JPG/PNG, or extract the pictures inside")
-async def to_images(
-    request: Request,
-    background_tasks: BackgroundTasks,
-    file: Optional[UploadFile] = File(default=None),
-    token: Optional[str] = Form(default=None),
-    mode: str = Form(default="pages", pattern="^(pages|extract)$"),
-    format: str = Form(default="jpg", pattern="^(jpg|png)$"),
-    dpi: int = Form(default=150),
-    pages: Optional[str] = Form(default=None, max_length=2000),
-):
-    request_id = uuid.uuid4().hex
-    job_dir = settings.TEMP_DIR / f"pdf_toimg_{request_id}"
-    try:
-        job_dir.mkdir(parents=True, exist_ok=True)
-        src, name = await _resolve_single(file, token, job_dir, request_id)
-        out_dir = job_dir / "images"
-        files: List[Path] = await run_pdf("tools.to_images", src, out_dir, mode, format, dpi, pages, name, request=request)
-        background_tasks.add_task(cleanup_folder, job_dir)
-        if len(files) == 1:
-            f = files[0]
-            media = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png"}.get(f.suffix[1:].lower(), "application/octet-stream")
-            return FileResponse(path=f, filename=f.name, media_type=media)
-        archive = await run_in_threadpool(
-            pdf_tools_service.zip_files, files, job_dir / f"{_stem(name)}_{'images' if mode == 'extract' else format}.zip"
-        )
-        return FileResponse(path=archive, filename=archive.name, media_type="application/zip")
-    except Exception:
-        cleanup_folder(job_dir)
-        raise
-    finally:
-        if file is not None:
-            await file.close()
+# ---------- images → PDF ----------
 
 
 @router.post("/from-images", response_class=FileResponse, summary="Images (or phone scans) to one PDF, in order")

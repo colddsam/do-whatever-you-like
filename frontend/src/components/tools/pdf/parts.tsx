@@ -40,8 +40,8 @@ export const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n ==
 let uid = 0;
 export const nextId = () => `f${++uid}`;
 
-/** A small paper sheet with a folded corner: how a PDF looks on the worksheet. */
-export function Sheet({ index, className }: { index?: number; className?: string }) {
+/** A small paper sheet with a folded corner: how a PDF (or any file, labelled) looks on the worksheet. */
+export function Sheet({ index, className, label = "PDF" }: { index?: number; className?: string; label?: string }) {
   return (
     <span
       aria-hidden
@@ -63,7 +63,7 @@ export function Sheet({ index, className }: { index?: number; className?: string
           <span className="block h-px w-2/3 bg-line" />
         </span>
       )}
-      <span className="text-center font-mono text-[8px] font-medium tracking-[0.08em] text-ink-3">PDF</span>
+      <span className="text-center font-mono text-[8px] font-medium tracking-[0.08em] text-ink-3">{label}</span>
     </span>
   );
 }

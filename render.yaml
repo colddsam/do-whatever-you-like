@@ -36,3 +36,14 @@ services:
         value: "25000000"
       - key: IMAGE_UPSCALE_MAX_OUTPUT_PIXELS
         value: "4000000"
+      # Universal converter (any file -> any format). Re-encoding video on 0.1 CPU runs at about real
+      # time or slower, so it's capped; copying streams (MP4 -> MKV, M4A -> AAC) isn't.
+      - key: UNIVERSAL_VIDEO_MAX_SECONDS
+        value: "600"
+      - key: UNIVERSAL_TIMEOUT_SECONDS
+        value: "900"
+      # Compressing video, and merging videos that need re-encoding, have the same cap.
+      - key: COMPRESS_VIDEO_MAX_SECONDS
+        value: "600"
+      - key: MERGE_SPLIT_VIDEO_MAX_SECONDS
+        value: "600"

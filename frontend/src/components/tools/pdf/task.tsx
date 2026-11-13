@@ -392,6 +392,8 @@ export function ResultPanel({
   backLabel,
   onBack,
   onSave,
+  kindLabel,
+  children,
 }: {
   result: TaskResult;
   note?: React.ReactNode;
@@ -399,10 +401,17 @@ export function ResultPanel({
   backLabel: string;
   onBack: () => void;
   onSave: () => void;
+  /** What the file is ("MP3", "Markdown") when its type alone doesn't say. ZIPs are always "ZIP". */
+  kindLabel?: string;
+  /** Previews the shared ones don't cover (audio, video, text), shown above the buttons. */
+  children?: React.ReactNode;
 }) {
   const [preview, setPreview] = useState(false);
   const panel = useRef<HTMLDivElement>(null);
-  const kind = KIND_LABEL.find(([re]) => re.test(result.type) || re.test(result.name.toLowerCase()))?.[1] ?? "File";
+  const kind =
+    (result.name.toLowerCase().endsWith(".zip") ? "ZIP" : kindLabel) ??
+    KIND_LABEL.find(([re]) => re.test(result.type) || re.test(result.name.toLowerCase()))?.[1] ??
+    "File";
   const isPdf = kind === "PDF";
   const isImage = kind === "PNG" || kind === "JPG";
   let infoLine: React.ReactNode = null;
@@ -478,6 +487,8 @@ export function ResultPanel({
           </AnimatePresence>
         </div>
       )}
+
+      {children}
 
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <button

@@ -24,7 +24,7 @@ function scrollToId(id: string) {
 }
 
 /**
- * The toolbox as a directory: five collections, each in its family's groups, with a filter that
+ * The toolbox as a directory: six collections, each in its family's groups, with a filter that
  * narrows everything as you type and an index that follows you down the page.
  */
 export function ToolDirectory() {
@@ -143,7 +143,7 @@ export function ToolDirectory() {
         <aside className="hidden lg:col-span-3 lg:block">
           <nav aria-label="Collections" className="sticky" style={{ top: STICKY_TOP + 24 }}>
             <p className="label-mono border-b border-line pb-3 text-ink-3">
-              {matches ? `${total} ${total === 1 ? "match" : "matches"}` : `${total} tools · 5 collections`}
+              {matches ? `${total} ${total === 1 ? "match" : "matches"}` : `${total} tools · ${CLUSTERS.length} collections`}
             </p>
             <ul className="mt-2 space-y-0.5">
               {CLUSTERS.map((c, i) => (

@@ -32,7 +32,6 @@ const ACTIONS = {
   unlock: { path: "pdf/unlock", maxMB: MAX_MB, failed: "We couldn't unlock that PDF." },
   repair: { path: "pdf/repair", maxMB: MAX_MB, failed: "We couldn't repair that PDF." },
   ocr: { path: "pdf/ocr", maxMB: MAX_MB, failed: "We couldn't read the text in that PDF." },
-  "to-images": { path: "pdf/to-images", maxMB: MAX_MB, failed: "We couldn't turn that PDF into images." },
   "from-images": { path: "pdf/from-images", maxMB: MAX_MB, failed: "We couldn't make a PDF from those images." },
   pdfa: { path: "pdf/pdfa", maxMB: MAX_MB, failed: "We couldn't convert that PDF to PDF/A." },
   compare: { path: "pdf/compare", maxMB: SMALL_MB, failed: "We couldn't compare those PDFs." },

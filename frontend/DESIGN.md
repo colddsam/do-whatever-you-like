@@ -315,12 +315,52 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
       into the file at the same spot.
     - Grids that hold a canvas use `grid-cols-[minmax(0,1fr)]` on phones: an `auto` track grows to the canvas's
       natural width and pushes the page sideways.
+  - `convert-anything` (by id) → `UniversalConverter` (`components/tools/universal/`): any file to any format it
+    can become (112 formats in 15 families). The formats and routes come from `lib/universal-formats.json` (made by
+    `backend/scripts/export_universal_formats.py`) so the picker works at once, then from the live server
+    (`/api/tools/universal/formats`), which leaves out anything that server lacks.
+    - Step one is the `FileDrop` (accepts anything) over **Fig. 01 — What we read**: a disclosure that opens a
+      hairline grid of the families (icon, name, count, every format as mono extensions). The format is read from
+      the name (longest extension first, like the backend); an unknown or missing extension gets a `warning` Notice
+      and a "It's a…" select, grouped by family.
+    - Step two is a dashed `Panel`: **Most asked** (2–3 columns of large tiles: icon box, mono extension, name,
+      chosen per source in `SUGGESTED`), then **Every format**: a search field (matches id, name, extension,
+      family and aliases like "word", "excel"), family chips with mono counts (scroll sideways on phones, wrap from
+      `sm`), and the formats as a `gap-px bg-line` hairline grid of tiles (selected = `ink`). A tile whose name is
+      just its extension ("PDF") shows its family instead, so nothing reads twice.
+    - The line under `ProgressButton` is the **route**: the formats it passes through in mono with arrows, then the
+      engines ("· pdf2docx, then Pandoc"), plus a plain note for ZIP bundles, OCR and video re-encoding.
+    - Results use the shared `ResultPanel` (`kindLabel` names the format) with extra previews: `AudioPreview` for
+      audio, a `<video>` for MP4/WebM/MOV, a picture for WebP/GIF/AVIF/SVG/ICO/BMP, and a mono
+      `paper` box with the first 6 KB of text results. The backend's notes (`x-convert-info`) go in the small print.
   - The Workbench card uses `overflow-clip`, not `overflow-hidden`, so sticky panels inside it work.
+  - **Presets, not copies.** Popular pairs (PDF to Word/Excel/PowerPoint/JPG, Word/PowerPoint/Excel to PDF,
+    Video to MP3) are tools with a `preset: { from, to }` in `lib/tools.ts`, rendered by the same
+    `UniversalConverter`: the drop zone takes only `from`, the picker becomes a mono `PDF → DOCX` line with
+    "Convert to another format ↗", and a pair's options (PDF→images DPI/pages/extract, PDF→Excel sheets,
+    spreadsheet→PDF fit, audio bitrate) sit in a dashed `Panel` above the button. Never build a second
+    workspace for a pair the converter can run.
+  - **Any-file tools** (`components/tools/files/`): `compress-files`, `merge-files`, `split-files`.
+    - They share `FileStack` (`files/kit.tsx`): Merge PDF's list (folded `Sheet` labelled with the file's
+      extension, grip to drag, arrow buttons announced to screen readers, × to remove) with a compact `FileDrop`
+      under it. Families mirror the backend in `lib/file-tools.ts`; a file of another family is refused with
+      the reason, never silently dropped.
+    - Merge shows "You'll get" (one format, N files in this order) and the family's options; Split reads the
+      file first (`/merge-split/inspect`, or the browser's media duration) and offers only splits that exist:
+      heading levels show their part counts, a deck lists its slide titles, a workbook its sheets and columns.
+      The button always says how many parts ("Split into 3 parts") or why it can't yet.
+    - Compress's strengths are three radio cards (title + one line), and the result lists every file with a
+      before/after bar (ink, animated once), the change in green, notes in the small print, and any file that
+      failed in `danger` with its reason, while the rest still download.
+  - **Icon maker** (`image/icon-tool.tsx`): options on the left, a sticky preview on the right (stacked first
+    on phones): the icon on the checkerboard, a browser tab, a dark home-screen row (iOS rounds its own
+    icons, so that one is square and opaque), and a strip at actual pixel sizes. Shape, padding and background
+    are CSS on the preview, mirroring exactly what `services/icon/engine.py` draws.
   - **Sizes, before and after.** Every tool shows how big the result will be before anything is
     made or downloaded, and the exact size on the Download button once it is. Sizes are mono;
     predictions carry a `≈` (`formatSize` in `lib/media.ts`) and exact ones don't. Sources:
-    downloaders get `estimated_size` from the backend preview (the same format the download picks);
-    converters with a constant bitrate use `converter.bytesPerSecond` × the video's length; PDF
+    downloaders get `estimated_size` from the backend preview (the same format the download picks); compress
+    reports every file's size before and after; PDF
     tools run the real operation on the server (`/pdf/*/estimate`) against the copy uploaded once
     via `/pdf/upload`, so merge, split, organize and compress sizes are exact. While a size is being worked out,
     show the mono "measuring" spinner rather than a guess.
@@ -329,7 +369,8 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
   - File uploads go through a route under `app/api/tools/` that streams the body to the backend
     (never buffered) with `proxyUpload` from `lib/backend.ts`. Check files in the browser first
     with the same rules as the backend (`checkFile`). PDF tools post to `/api/tools/pdf/<action>`,
-    conversions to `/api/tools/convert/<action>`, speech to text to `/api/tools/transcribe/run`.
+    conversions to `/api/tools/universal/convert`, compression to `/api/tools/compress`, merge/split to
+    `/api/tools/merge-split/<action>`, icons to `/api/tools/icon`, speech to text to `/api/tools/transcribe/run`.
     In production (`BACKEND_PUBLIC_URL` set) the route hands out a short-lived signed ticket instead and
     the browser sends the file straight to the backend, because Vercel caps a route at 4.5 MB and 300 s.
     `uploadForm` (and `streamTranscription`) do this for you; never post files to the backend any other way.

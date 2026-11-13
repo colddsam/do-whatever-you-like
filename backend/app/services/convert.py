@@ -31,12 +31,7 @@ from app.exceptions.convert import ConverterUnavailableError, ConvertProcessingE
 
 logger = logging.getLogger(__name__)
 
-OFFICE_KINDS = {
-    "word": {".doc", ".docx", ".odt", ".rtf", ".txt", ".wpd"},
-    "powerpoint": {".ppt", ".pptx", ".odp", ".pps", ".ppsx", ".key"},
-    "excel": {".xls", ".xlsx", ".ods", ".csv", ".xlsm"},
-    "html": {".html", ".htm"},
-}
+OFFICE_KINDS = {"html": {".html", ".htm"}}
 PAGE_FORMATS = {"a4": "A4", "letter": "Letter", "legal": "Legal", "a3": "A3"}
 MARGINS = {"none": "0", "small": "10mm", "large": "20mm"}
 
@@ -141,23 +136,6 @@ class ConvertService:
             logger.error("soffice failed (%s): %s %s", proc.returncode, proc.stdout[-400:], proc.stderr[-400:])
             raise ConvertProcessingError("This document couldn't be converted. It may be damaged or password-protected.")
         return produced
-
-    def office_to_pdf(self, source: Path, out_dir: Path, kind: str, one_page_sheets: bool = False) -> Path:
-        """Word/PowerPoint/Excel/HTML file → PDF. Runs in a thread."""
-        target = "pdf"
-        if kind == "excel":
-            filt = '{"SinglePageSheets":{"type":"boolean","value":"%s"}}' % ("true" if one_page_sheets else "false")
-            target = f"pdf:calc_pdf_Export:{filt}"
-        elif kind == "powerpoint":
-            target = "pdf:impress_pdf_Export"
-        elif kind == "word":
-            target = "pdf:writer_pdf_Export"
-        return self._soffice_convert(source, out_dir, target)
-
-    def pdf_to_powerpoint(self, source: Path, out_dir: Path) -> Path:
-        """Each PDF page becomes a slide whose text and drawings stay editable. Runs in a thread."""
-        self._check_pdf(source)
-        return self._soffice_convert(source, out_dir, "pptx:Impress MS PowerPoint 2007 XML", infilter="impress_pdf_import")
 
     @staticmethod
     def _check_pdf(source: Path) -> int:

@@ -19,7 +19,7 @@ const faqs = [
   {
     q: "Which tools are available right now?",
     // Worked out from the registry, so it never goes stale.
-    a: `${liveCount} tools, in five collections: ${toolsIn("pdf").length} PDF tools (merge, split, convert to and from Word, Excel and PowerPoint, edit, sign, protect, OCR…), ${toolsIn("images").length} image tools (compress, resize, convert HEIC, remove backgrounds, upscale, blur faces, memes…), downloaders for YouTube, Instagram and Facebook, video to MP3 and speech to text, and a QR code maker. Writing helpers and developer utilities are next. The Tools page lists them all.`,
+    a: `${liveCount} tools, in six collections: a universal converter for 112 formats (PDF, Word, Excel, PowerPoint, images, audio, video, data…) with compress, merge and split for any file; ${toolsIn("pdf").length} PDF tools (merge, split, edit, sign, protect, OCR…), ${toolsIn("images").length} image tools (compress, resize, convert HEIC, remove backgrounds, upscale, blur faces, icons for apps and websites…), downloaders for YouTube, Instagram and Facebook, video to MP3 and speech to text, and a QR code maker. Writing helpers and developer utilities are next. The Tools page lists them all.`,
   },
   {
     q: "What happens to my files and links?",

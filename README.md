@@ -46,8 +46,6 @@ Every job runs inside an isolated, per-request temporary directory (`temp/<servi
 - **Facebook Downloader (`/api/v1/facebook`)**
   - Supports Facebook Watch videos, Reels (`/reel/...`), `fb.watch` shortlinks, and `/share/...` redirect links.
   - Pre-validates and resolves share redirects hop-by-hop with strict SSRF protection.
-- **Video to Audio Converter (`/api/v1/video2audio`)**
-  - Accepts uploaded video files (`.mp4`, `.mkv`, `.webm`, `.mov`, `.avi`, `.flv`, `.m4v`) up to 150 MB and extracts `192kbps` MP3 audio with in-browser audio preview.
 - **PDF Toolkit (`/api/v1/pdf`)**
   - **Upload Once & Reuse (`/upload`)**: Caches uploaded PDFs under a 32-char hex token (30-minute sliding TTL) for instant estimates and actions without re-uploading.
   - **Merge (`/merge`, `/merge/estimate`)**: Combines 2+ PDFs in custom order and previews the exact merged byte size.
@@ -58,6 +56,22 @@ Every job runs inside an isolated, per-request temporary directory (`temp/<servi
   - Encodes 9 content types: **URL**, **Text**, **Wi-Fi**, **vCard Contact**, **Email**, **SMS**, **Phone**, **Geo Location**, and **Calendar Event (`VEVENT`)**.
   - Customizes module shapes (`square`, `gapped`, `circle`, `rounded`, `vertical_bars`, `horizontal_bars`), finder eye shapes (`square`, `rounded`, `circle`), custom foreground/background/eye colors, transparent backgrounds, and gradients (`radial`, `square`, `horizontal`, `vertical`).
   - Supports center logo overlays (`/generate-with-logo`) with automatic Error Correction `H` promotion, rounded corners, and background padding, exporting to **PNG**, **SVG**, **WebP**, **JPEG**, or **300 DPI PDF**.
+- **Universal Converter (`/api/v1/universal`)** — any file to any format it can sensibly become
+  - **112 formats in 15 families, 1,827 conversions**: documents (PDF, DOCX, DOC, ODT, RTF, TXT), markup (Markdown, HTML, LaTeX, reStructuredText, Org, AsciiDoc, Textile, MediaWiki, Typst, Jupyter), ebooks (EPUB, FB2), spreadsheets (XLSX, XLS, ODS, XLSM), data (CSV, TSV, JSON, JSON Lines, XML, YAML, TOML, SQL), presentations (PPTX, PPT, ODP, PPSX), drawings (ODG), images (JPG, PNG, WebP, GIF, BMP, TIFF, ICO, AVIF, HEIC, PSD, SVG, camera RAW), audio (MP3, WAV, OGG, FLAC, M4A, AAC, Opus, WMA, AIFF, AC-3, AMR…), video (MP4, MKV, WebM, MOV, AVI, WMV, FLV, M4V, MPEG, 3GP, AVCHD, OGV), subtitles (SRT, VTT, ASS), fonts (TTF, OTF, WOFF, WOFF2), archives (ZIP, 7z, TAR, TAR.GZ/BZ2/XZ, GZ), email (EML), and source code & config files in 23 languages and formats (Python, JS/TS, Java, Go, Rust, C/C++, SQL, INI…).
+  - A **conversion graph** (`services/universal/graph.py`) treats each engine (LibreOffice, Pandoc, FFmpeg, Pillow, PyMuPDF, pdf2docx, Tesseract, Chromium, fontTools, py7zr, built-in data/text readers) as edges and plans the cheapest sensible route of up to 3 steps (e.g. `PDF → DOCX → Markdown`). Engines missing on a server are left out, so it never offers a conversion it can't run.
+  - Every job runs in its **own child process** (`app/core/isolation.py` → `python -m app.core.job_worker`), killed with everything it started on timeout or client cancel: a crash or memory spike in one conversion cannot affect the server or any other tool. The universal converter, compressor and merge/split share one "heavy" lane (`JOBS_HEAVY_CONCURRENCY`, 1 on Render); icon packs use a light lane of their own.
+  - Optional `options` (JSON) fine-tune the result: PDF→JPG/PNG resolution, pages or "the pictures inside", PDF→Excel sheet per table or page, spreadsheet→PDF one page per sheet, audio bitrate. The site's PDF to Word/Excel/PowerPoint/JPG, Word/PowerPoint/Excel to PDF and Video to MP3 pages are presets of this one converter.
+  - Hardened against hostile files: Pandoc `--sandbox`, FFmpeg restricted to local files with playlist/concat demuxers refused, YAML alias bombs and XML entities refused, SVG references stripped, archive path traversal/symlinks/zip bombs blocked, CSV formula injection neutralised in Excel output.
+  - Verify everything end to end: `backend/scripts/check_universal.py` builds a real sample of every format and runs and validates every offered conversion. After changing formats or routes, run `backend/scripts/export_universal_formats.py` to refresh the copy the frontend ships with.
+- **Compress (`/api/v1/compress`)** — any file smaller, 1 to 20 at once, Light / Recommended / Strong
+  - PDF (the Compress PDF engine), JPG/PNG/GIF/WebP/SVG (the Compress image engine), HEIC/AVIF/TIFF in their own format, BMP/PSD/RAW to JPG or PNG; DOCX/XLSX/PPTX/ODF/EPUB re-encode the pictures inside and re-zip at full strength; MP3/M4A/AAC/OGG/Opus/WMA at a lower bitrate, WAV/AIFF/FLAC to FLAC or MP3; video to H.264; fonts to WOFF2; ZIP/GZ/TAR repacked; JSON minified; anything else zipped.
+  - Each file is compressed on its own: one that fails is reported in `X-Convert-Info` and the rest still come back. A result that isn't smaller is replaced by the original.
+- **Merge & split (`/api/v1/merge-split`)** — Word, PowerPoint, Excel/CSV, PDF, audio and video
+  - Merge: Word via docxcompose (styles, numbering, pictures kept); PowerPoint by copying each slide with its layout, master, theme, media and notes (every deck keeps its design); spreadsheets as sheets side by side (with formatting) or rows stacked by column name; audio joined; video joined by stream copy when clips match, re-encoded otherwise.
+  - Split: Word at headings, page/section breaks or Word's recorded pages; PowerPoint and PDF each / every N / typed ranges; Excel by sheet, every N rows or a column's values; audio and video every N minutes, in equal parts or at typed times (no re-encoding). `/inspect` tells the UI what a file holds.
+  - DOC, ODT, RTF, PPT, ODP, XLS and ODS are opened with LibreOffice first.
+- **Icon maker (`/api/v1/icon`)** — one picture → `favicon.ico`, PNG favicons, Apple touch, PWA (incl. maskable) icons and `site.webmanifest` with the HTML to paste; Windows `app.ico` (16–256) and Store tiles; macOS `app.icns` and `AppIcon.iconset`; an Xcode-ready iOS `AppIcon.appiconset`; Android mipmaps (legacy, round, adaptive) and the Play Store icon; desktop PNGs 16–1024. Or a single `.ico` with the sizes picked. Square, rounded or round, with padding and a background colour.
+  - Verify merge/split, compress and icons end to end: `backend/scripts/check_file_tools.py` (each job through the real isolated worker, every result opened by an independent reader, merged Office files round-tripped through LibreOffice).
 
 ### Planned / Expandable Tool Categories
 - **Images**: Image Studio (Resize, Convert between PNG/JPG/WebP, Background Removal).
@@ -118,7 +132,7 @@ do-whatever-you-want/
 │       │   ├── lifespan.py          # Startup/shutdown hooks (FFmpeg, temp dirs, PDF process pool)
 │       │   ├── media_size.py        # Pre-download size estimators (yt-dlp & parallel HTTP probes)
 │       │   └── utils.py             # cleanup_folder() & cleanup_file() helpers
-│       ├── config/                  # Per-service Pydantic settings (instagram, facebook, youtube, video2audio, pdf, qrcode)
+│       ├── config/                  # Per-service Pydantic settings (instagram, facebook, youtube, pdf, qrcode, universal, compress, merge_split, icon…)
 │       ├── schemas/                 # Request/Response Pydantic models (common, instagram, facebook, youtube, qrcode)
 │       ├── exceptions/              # Domain-specific exception classes inheriting from AppBaseException
 │       ├── services/                # Core extraction, conversion, PDF, and QR business logic
@@ -133,7 +147,7 @@ do-whatever-you-want/
 │       └── api/
 │           └── v1/
 │               ├── router.py        # Aggregates all v1 endpoint routers
-│               └── endpoints/       # Route controllers (health, instagram, facebook, youtube, video2audio, pdf, qrcode)
+│               └── endpoints/       # Route controllers (health, instagram, facebook, youtube, pdf, qrcode, universal, compress, merge_split, icon…)
 └── frontend/
     ├── .env.local                   # Server-only BACKEND_URL and BACKEND_TOKEN
     ├── package.json
@@ -146,7 +160,7 @@ do-whatever-you-want/
         │   └── api/
         │       └── tools/           # Next.js BFF proxy route handlers
         │           ├── [platform]/[action]/route.ts
-        │           ├── video2audio/extract/route.ts
+        │           ├── compress/route.ts
         │           ├── pdf/[action]/route.ts
         │           └── qrcode/generate/route.ts
         ├── components/
@@ -332,7 +346,6 @@ Authorization: Bearer <HEADER_TOKEN>
 | `POST` | `/api/v1/facebook/download` | Download Facebook video/reel to client | `{"url": "https://www.facebook.com/reel/..."}` | Binary `.mp4` (or `.zip`) stream |
 | `POST` | `/api/v1/youtube/extract` | Fetch YouTube video/Short metadata & estimated size | `{"url": "https://www.youtube.com/watch?v=..."}` | `200 OK` JSON metadata (`is_short`, `view_count`, etc.) |
 | `POST` | `/api/v1/youtube/download` | Download YouTube video/Short to client | `{"url": "https://youtu.be/..."}` | Binary `.mp4` stream |
-| `POST` | `/api/v1/video2audio/extract` | Extract 192kbps MP3 audio from uploaded video | `multipart/form-data` (`file`) | Binary `.mp3` (`audio/mpeg`) stream |
 | `POST` | `/api/v1/pdf/upload` | Cache a PDF and return a reusable token + page count | `multipart/form-data` (`file`) | `200 OK` JSON (`token`, `filename`, `size`, `page_count`) |
 | `POST` | `/api/v1/pdf/merge` | Merge 2+ PDFs (via uploaded `files` or `tokens`) | `multipart/form-data` (`files` or `tokens`) | Binary `.pdf` stream |
 | `POST` | `/api/v1/pdf/merge/estimate` | Estimate merged PDF byte size from tokens | `multipart/form-data` (`tokens`) | `200 OK` JSON (`output`, `total_size`) |
@@ -342,6 +355,13 @@ Authorization: Bearer <HEADER_TOKEN>
 | `POST` | `/api/v1/pdf/compress/estimate` | Sample compressed sizes across strength percentages | `multipart/form-data` (`token`, `percentages`) | `200 OK` JSON (`original_size`, `exact`, `samples`) |
 | `POST` | `/api/v1/qrcode/generate` | Generate customized QR code (JSON payload, no logo) | `application/json` (`QRCodeGenerateRequest`) | Binary `.png`, `.svg`, `.webp`, `.jpeg`, or `.pdf` |
 | `POST` | `/api/v1/qrcode/generate-with-logo` | Generate customized QR code with optional center logo | `multipart/form-data` (style fields + optional `logo` file) | Binary `.png`, `.webp`, `.jpeg`, or `.pdf` |
+| `GET` | `/api/v1/universal/formats` | Every format, and every route this server can run | — | `200 OK` JSON (`categories`, `formats`, `routes`, `engines`, `max_mb`) |
+| `POST` | `/api/v1/universal/convert` | Convert any supported file to a target format | `multipart/form-data` (`file`, `target`, optional `source`, optional `options` JSON) | Binary file (or `.zip` for multi-page results) + `X-Convert-Info` JSON header (route, notes) |
+| `POST` | `/api/v1/compress` | Compress 1–20 files of any kind | `multipart/form-data` (`files`, `level`: light/recommended/strong) | The file, or a `.zip` of several + `X-Convert-Info` (sizes before/after per file) |
+| `POST` | `/api/v1/merge-split/inspect` | What a file holds: pages, slides, headings, sheets/columns, length | `multipart/form-data` (`file`) | `200 OK` JSON |
+| `POST` | `/api/v1/merge-split/split` | Split one file into parts | `multipart/form-data` (`file`, `plan` JSON) | `.zip` of parts + `X-Convert-Info` |
+| `POST` | `/api/v1/merge-split/merge` | Merge 2–20 files of one kind, in order | `multipart/form-data` (`files`, optional `options` JSON) | The merged file + `X-Convert-Info` |
+| `POST` | `/api/v1/icon` | Icons for web, Windows, macOS, iOS, Android, desktop | `multipart/form-data` (`file`, `options` JSON) | `.zip` of icon packs, or one `.ico` |
 
 ---
 

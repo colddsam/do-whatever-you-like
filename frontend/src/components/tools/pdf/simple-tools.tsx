@@ -13,7 +13,6 @@ import { plural } from "./parts";
 import { PdfTask, type TaskContext } from "./task";
 
 const pdfApi = (a: string) => `/api/tools/pdf/${a}`;
-const convertApi = (a: string) => `/api/tools/convert/${a}`;
 
 const INK_COLOURS = [
   { value: "#000000", name: "Black" },
@@ -625,64 +624,7 @@ export function OcrTool({ toolId }: { toolId: string }) {
   );
 }
 
-/* ---------- PDF → images, PDF/A ---------- */
-
-export function PdfToImagesTool({ toolId }: { toolId: string }) {
-  const [mode, setMode] = useState<"pages" | "extract">("pages");
-  const [format, setFormat] = useState("jpg");
-  const [dpi, setDpi] = useState(150);
-  const [pages, setPages] = useState("");
-  return (
-    <PdfTask
-      toolId={toolId}
-      input={{ kind: "pdf" }}
-      endpoint={pdfApi("to-images")}
-      dropTitle="Drop the PDF to turn into images"
-      label={(ctx) => {
-        if (mode === "extract") return "Extract the pictures";
-        const total = ctx.doc?.upload.pages ?? 0;
-        const n = pages.trim() ? Array.from({ length: total }, (_, i) => i + 1).filter((p) => inSelection(pages, p)).length : total;
-        return `Make ${plural(n, format.toUpperCase())}`;
-      }}
-      working="Drawing the pages…"
-      invalid={(ctx) => pagesError(pages, ctx.doc?.upload.pages ?? null)}
-      fields={() => [["mode", mode], ["format", format], ["dpi", String(dpi)], ["pages", pages]]}
-      resultNote="Several images arrive together in one ZIP."
-      options={(ctx) => (
-        <Panel>
-          <Row label="What you get">
-            <Chips value={mode} onChange={setMode} disabled={ctx.locked} options={[{ value: "pages", label: "Each page as an image" }, { value: "extract", label: "The pictures inside" }]} />
-            <p className="mt-2 text-xs text-ink-3">
-              {mode === "pages" ? "Every page drawn as a picture, text and all." : "The photos and graphics embedded in the PDF, at their original quality."}
-            </p>
-          </Row>
-          {mode === "pages" && (
-            <>
-              <Row label="Format">
-                <Chips value={format} onChange={setFormat} disabled={ctx.locked} options={[{ value: "jpg", label: "JPG · smaller" }, { value: "png", label: "PNG · sharpest" }]} />
-              </Row>
-              <Row label="Quality">
-                <Chips
-                  value={dpi}
-                  onChange={setDpi}
-                  disabled={ctx.locked}
-                  options={[
-                    { value: 72, label: "Screen · 72 dpi" },
-                    { value: 150, label: "Standard · 150 dpi" },
-                    { value: 300, label: "Print · 300 dpi" },
-                  ]}
-                />
-              </Row>
-            </>
-          )}
-          <Row label="Pages">
-            <PagesField value={pages} onChange={setPages} pages={ctx.doc?.upload.pages ?? null} disabled={ctx.locked} />
-          </Row>
-        </Panel>
-      )}
-    />
-  );
-}
+/* ---------- PDF/A ---------- */
 
 export function PdfaTool({ toolId }: { toolId: string }) {
   const [level, setLevel] = useState(2);
@@ -723,82 +665,3 @@ export function PdfaTool({ toolId }: { toolId: string }) {
     />
   );
 }
-
-/* ---------- Office ↔ PDF ---------- */
-
-const OFFICE = {
-  word: { noun: "document", accept: ".doc,.docx,.odt,.rtf,.txt", extensions: [".doc", ".docx", ".odt", ".rtf", ".txt"], formats: "DOC, DOCX, ODT, RTF or TXT · up to 150 MB", verb: "Convert to PDF" },
-  powerpoint: { noun: "presentation", accept: ".ppt,.pptx,.odp,.pps,.ppsx", extensions: [".ppt", ".pptx", ".odp", ".pps", ".ppsx"], formats: "PPT, PPTX, PPS or ODP · up to 150 MB", verb: "Convert the slides" },
-  excel: { noun: "spreadsheet", accept: ".xls,.xlsx,.xlsm,.ods,.csv", extensions: [".xls", ".xlsx", ".xlsm", ".ods", ".csv"], formats: "XLS, XLSX, ODS or CSV · up to 150 MB", verb: "Convert to PDF" },
-} as const;
-
-export function OfficeToPdfTool({ toolId, kind }: { toolId: string; kind: keyof typeof OFFICE }) {
-  const cfg = OFFICE[kind];
-  const [onePage, setOnePage] = useState(false);
-  return (
-    <PdfTask
-      toolId={toolId}
-      input={{ kind: "file", accept: cfg.accept, extensions: [...cfg.extensions], noun: cfg.noun, formats: cfg.formats }}
-      endpoint={convertApi("office-to-pdf")}
-      needs="office"
-      dropTitle={`Drop the ${cfg.noun} to convert`}
-      label={cfg.verb}
-      working="Converting…"
-      fields={() => [["kind", kind], ["one_page_sheets", String(onePage)]]}
-      hint="Fonts that aren't on our server are swapped for the closest match."
-      resultNote="Check the preview: layouts made with unusual fonts can shift slightly."
-      options={
-        kind === "excel"
-          ? (ctx) => (
-              <Panel>
-                <Row label="Fit">
-                  <Toggle checked={onePage} onChange={setOnePage} disabled={ctx.locked} label="Each sheet on a single page" description="Shrinks wide or long sheets to fit one page each, instead of breaking them across pages." />
-                </Row>
-              </Panel>
-            )
-          : undefined
-      }
-    />
-  );
-}
-
-export function PdfToOfficeTool({ toolId, kind }: { toolId: string; kind: "word" | "powerpoint" | "excel" }) {
-  const [mode, setMode] = useState("tables");
-  const action = { word: "pdf-to-word", powerpoint: "pdf-to-powerpoint", excel: "pdf-to-excel" }[kind];
-  const what = { word: "Word document", powerpoint: "PowerPoint", excel: "Excel workbook" }[kind];
-  return (
-    <PdfTask
-      toolId={toolId}
-      input={{ kind: "pdf" }}
-      endpoint={convertApi(action)}
-      needs={kind === "powerpoint" ? "office" : undefined}
-      dropTitle="Drop the PDF to convert"
-      label={`Convert to ${what}`}
-      working="Converting…"
-      fields={() => (kind === "excel" ? [["mode", mode]] : [])}
-      hint={kind === "excel" ? "Tables with ruled lines come out best." : "Text, images and tables come across as editable content."}
-      resultNote={
-        <>
-          Scanned pages have no text to edit. If yours look empty,{" "}
-          <Link href={toolHref("ocr-pdf")} className="underline underline-offset-4 hover:text-ink">
-            run OCR first
-          </Link>
-          .
-        </>
-      }
-      options={
-        kind === "excel"
-          ? (ctx) => (
-              <Panel>
-                <Row label="Sheets">
-                  <Chips value={mode} onChange={setMode} disabled={ctx.locked} options={[{ value: "tables", label: "A sheet per table" }, { value: "pages", label: "A sheet per page" }]} />
-                  <p className="mt-2 text-xs text-ink-3">No tables found? You get the text of each page, split into columns.</p>
-                </Row>
-              </Panel>
-            )
-          : undefined
-      }
-    />
-  );
-}
-

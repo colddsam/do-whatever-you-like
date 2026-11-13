@@ -38,7 +38,7 @@ export default function ToolsPage() {
               Every tool, <span className="serif-em">one place.</span>
             </>
           }
-          description={`${liveCount} tools work today${soon ? ` and ${soon} more are on the way` : ""}, in five collections: ${summary}. Filter by what you want to do, or jump to a collection.`}
+          description={`${liveCount} tools work today${soon ? ` and ${soon} more are on the way` : ""}, in ${CLUSTERS.length} collections: ${summary}. Filter by what you want to do, or jump to a collection.`}
         />
       </Reveal>
 

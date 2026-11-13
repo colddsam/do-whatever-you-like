@@ -96,12 +96,34 @@ def _svg_size(text: str) -> Tuple[Optional[float], Optional[float], Optional[Tup
     return length("width"), length("height"), box if box and len(box) == 4 else None
 
 
+_PX_PER_UNIT = {"mm": 96 / 25.4, "cm": 96 / 2.54, "in": 96.0, "pt": 96 / 72, "pc": 16.0, "px": 1.0}
+
+
+def _root_size_in_px(text: str) -> str:
+    """
+    resvg refuses a root width/height in physical units ("52.92mm", which LibreOffice and Inkscape
+    write), so they become pixels at 96 dpi. Percentages are dropped and the viewBox decides.
+    """
+    root = re.search(r"<svg\b[^>]*>", text, flags=re.I | re.S)
+    if not root:
+        return text
+
+    def fix(m: "re.Match[str]") -> str:
+        value, unit = float(m.group(3)), (m.group(4) or "px").lower()
+        if unit == "%":
+            return ""
+        return f' {m.group(1)}={m.group(2)}{value * _PX_PER_UNIT[unit]:.3f}{m.group(2)}'
+
+    tag = re.sub(r"""\s(width|height)\s*=\s*(["'])\s*([\d.]+)\s*(mm|cm|in|pt|pc|px|%)?\s*\2""", fix, root.group(0), flags=re.I)
+    return text[: root.start()] + tag + text[root.end() :]
+
+
 def _render_svg(path: Path, name: str, width: Optional[int] = None) -> Image.Image:
     try:
         import resvg_py
     except ImportError:
         raise ImageToolUnavailableError("SVG images can't be read on this server yet.")
-    text = sanitize_svg(path.read_text(encoding="utf-8", errors="replace"))
+    text = _root_size_in_px(sanitize_svg(path.read_text(encoding="utf-8", errors="replace")))
     w, h, box = _svg_size(text)
     natural_w = w or (box[2] if box else 1024)
     natural_h = h or (box[3] if box else natural_w)

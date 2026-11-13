@@ -52,7 +52,7 @@ export type Converted = {
   name: string;
   size: number;
   type: string;
-  /** JSON some tools send in `x-pdf-info` or `x-image-info` (what was repaired, sizes per image). */
+  /** JSON some tools send in `x-pdf-info`, `x-image-info` or `x-convert-info` (what was repaired, sizes per image, the route taken). */
   info?: string;
 };
 
@@ -143,7 +143,7 @@ function sendForm(
         size: blob.size,
         type: blob.type || xhr.getResponseHeader("content-type") || "application/octet-stream",
         name: filenameFrom(xhr.getResponseHeader("content-disposition"), fallbackName),
-        info: xhr.getResponseHeader("x-pdf-info") ?? xhr.getResponseHeader("x-image-info") ?? undefined,
+        info: xhr.getResponseHeader("x-pdf-info") ?? xhr.getResponseHeader("x-image-info") ?? xhr.getResponseHeader("x-convert-info") ?? undefined,
       });
     };
 
