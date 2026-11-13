@@ -393,6 +393,17 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
     as a block, every notation with copy) and swatch groups; picked swatches spring in. The Font creator has a mode
     switch (Draw / Pixel / Handwriting), a character grid that fills with the user's own glyphs, editing canvases
     with accent guide lines (cap, x-height, baseline), and a live preview typed in the font being made.
+  - **Browser-only media tools** (`media/`, `image/gif-speed-tool.tsx`, `image/pixelate-tool.tsx`, `image/emoji-tool.tsx`): nothing is uploaded, so the
+    free server does no work. Video to frames and Video to GIF share `media/trim.tsx`: the video above a two-handle range (ink handles, accent
+    track, mono times, "Start here / End here"), dragging a handle shows that moment. Frames are read by seeking a hidden `<video>` (`lib/video.ts`),
+    shown as a `gap-px` hairline grid of tiles (mono `01 · 00:00.727` + a pick checkbox), downloaded as a ZIP (fflate) or a contact sheet. GIFs use
+    `lib/gif.ts`: speed and looping are rewritten in place (lossless, said so on the button); reverse, boomerang and speeds past the 20 ms frame
+    floor re-draw frames (gifenc, a palette per frame). Results sit on the `CHECKER`; before/after GIFs are `figure`s with a mono caption.
+    Pixelate draws a live canvas preview (block averages, then squares/rounded/dots/mosaic, optional palettes) and can be limited to a dragged box.
+    Emoji to image renders on a canvas from Noto/Twemoji/OpenMoji SVGs (jsDelivr, credited in the footer) or the device's emoji font.
+  - **Scientific calculator** (`utilities/calculator-engine.tsx`): an `ink` display card (mono expression, the live answer in `paper-dim`, the final
+    one large in `paper`, fraction/hex/binary under it) over two key grids: functions (5 columns, the `2nd` key turns `accent` and relabels its
+    keys) and the number pad (4 columns; operators `paper-2`, `=` ink, AC `danger` text). mathjs evaluates; never `eval`.
   - **Drop zones** take the scanner's motif: while a file is held over one, four viewfinder brackets snap onto its
     corners.
   - **Reveal on tiles**: in a hairline grid (`gap-px bg-line`), never fade the tile itself, only its content;

@@ -221,6 +221,99 @@ const GUIDES: Record<string, Guide> = {
     ],
     see: ["icon-maker", "my-ip", "compress-image"],
   },
+  "emoji-to-image": {
+    intro: [
+      "Turn any of 1,900 emoji into a crisp PNG, WebP, or SVG image at any size from 16 px to 2048 px. Pick between Noto, Twemoji, OpenMoji, or your device's native emoji style, with skin tone support.",
+      "Everything renders right in your browser—keep a transparent background, add a solid backdrop, or download a full ZIP of icon sizes.",
+    ],
+    faqs: [
+      { q: "Which emoji styles are included?", a: "Noto, Twemoji, OpenMoji, and your device's own system emoji." },
+      { q: "Can I download a transparent PNG or SVG?", a: "Yes. Keep the background transparent and export as PNG, WebP, or the original SVG." },
+      { q: "Is anything uploaded?", a: "No. Everything runs in your browser." },
+    ],
+    see: ["icon-maker", "text-to-image", "resize-image"],
+  },
+  "pixelate-image": {
+    intro: [
+      "Turn any picture into retro pixel art or censor part of a photo with a live preview. Choose square blocks, rounded blocks, dots, or mosaic tiles, and optionally snap colours to Game Boy, PICO-8, or CGA palettes.",
+      "You can pixelate the whole image or select just a region, then export as PNG, JPG, or WebP without uploading your photo.",
+    ],
+    faqs: [
+      { q: "Can I pixelate only part of an image?", a: "Yes. You can apply the effect to the entire image or target just a selected area." },
+      { q: "Can I export true pixel-art dimensions?", a: "Yes, you can export at pixel-art size for sprites as well as full-resolution PNG, JPG, or WebP." },
+      { q: "Does my image leave my device?", a: "No. Pixelation runs entirely in your browser." },
+    ],
+    see: ["blur-faces", "crop-image", "compress-image"],
+  },
+  "gif-speed": {
+    intro: [
+      "Speed up or slow down any animated GIF from 0.1× to 8×, or set a fixed delay per frame. You can also play the animation backwards, turn it into a boomerang, and adjust the loop count.",
+      "Only the frame timing metadata is rewritten, so every pixel stays lossless and your GIF never leaves your browser.",
+    ],
+    faqs: [
+      { q: "Does changing GIF speed reduce image quality?", a: "No. It's lossless—only the frame timing changes while every pixel stays intact." },
+      { q: "Can I reverse or boomerang a GIF?", a: "Yes. You can reverse the frames, create a forward-and-back boomerang, and compare before and after side by side." },
+      { q: "Is my GIF uploaded to a server?", a: "No. All processing happens locally in your browser." },
+    ],
+    see: ["video-to-gif", "compress-image", "crop-image"],
+  },
+  "video-to-frames": {
+    intro: [
+      "Extract still frames from any MP4, MOV, WebM, or M4V video right in your browser. Trim to the exact clip you need, then capture a fixed number of frames, one every few seconds, or N frames per second.",
+      "Inspect the captured frames, pick the ones you want, and download them as a ZIP of JPG, PNG, or WebP images—or as a single contact sheet.",
+    ],
+    faqs: [
+      { q: "How many frames can I extract?", a: "Up to 500 frames per run, trimmed to any part of your video." },
+      { q: "Can I make a contact sheet?", a: "Yes. You can download individual frames in a ZIP or export a combined contact sheet." },
+      { q: "Is my video uploaded?", a: "No. Your video stays on your device and is processed in your browser." },
+    ],
+    see: ["video-to-gif", "audio", "compress-image"],
+  },
+  "video-to-gif": {
+    intro: [
+      "Convert any short MP4, MOV, WebM, or M4V clip (up to 30 seconds) into a smooth animated GIF directly in your browser. Trim the exact moment with a live preview, then pick 5 to 25 fps and 240 to 800 px width.",
+      "Adjust playback speed from 0.25× to 4×, turn on boomerang mode, or set looping, with an estimated size before and exact size after.",
+    ],
+    faqs: [
+      { q: "How long can the video clip be?", a: "Up to 30 seconds of video per GIF." },
+      { q: "Can I control the file size?", a: "Yes. Lowering the frame rate (5–25 fps) or width (240–800 px) shrinks the GIF, and you get a size estimate before exporting." },
+      { q: "Does it upload my video?", a: "No. The GIF is created entirely in your browser." },
+    ],
+    see: ["gif-speed", "video-to-frames", "audio"],
+  },
+  "find-and-replace": {
+    intro: [
+      "Search and replace text in your browser with every match highlighted, counted, and shown with its line number. Toggle case matching, whole words, or full regular expressions with capture groups ($1).",
+      "Smart case preservation can even match capitalization automatically—for example turning Fox into Cat and FOX into CAT.",
+    ],
+    faqs: [
+      { q: "Does it support regular expressions?", a: "Yes. You can switch on regex mode and use capture groups like $1 in the replacement." },
+      { q: "Is my text sent anywhere?", a: "No. Everything runs locally in your browser." },
+    ],
+    see: ["split-text", "line-tools", "regex-tester"],
+  },
+  "split-text": {
+    intro: [
+      "Split any block of text into clean pieces by lines, commas, spaces, sentences, words, characters, a custom separator, a regex, or every N characters.",
+      "Tidy the result by trimming whitespace, dropping empty items, removing duplicates, or sorting, then copy it as lines, numbered items, JSON, CSV, or a quoted list.",
+    ],
+    faqs: [
+      { q: "Can I convert a comma-separated list into JSON or lines?", a: "Yes. Split by commas, optionally trim and deduplicate, and export as lines, JSON, CSV, or a quoted list." },
+      { q: "Does my text stay private?", a: "Yes. Splitting and formatting happen entirely in your browser." },
+    ],
+    see: ["find-and-replace", "line-tools", "json-formatter"],
+  },
+  "scientific-calculator": {
+    intro: [
+      "A full scientific calculator in your browser with trigonometry (degrees, radians, or gradians, including inverses and hyperbolics), logarithms, powers, roots, factorials, nCr, nPr, modulo, and percentages.",
+      "It also keeps memory, Ans, and a reusable history, shows each result as a fraction, hex, and binary, and handles unit conversions like 5 inch to cm.",
+    ],
+    faqs: [
+      { q: "Can I use my keyboard?", a: "Yes. Full keyboard input is supported alongside clicking the keypad." },
+      { q: "Does it convert units too?", a: "Yes. You can type unit conversions directly, such as 5 inch to cm." },
+    ],
+    see: ["number-to-words", "roman-numerals", "qr"],
+  },
 };
 
 /* ---------- Families that share one engine: a note specific to each variant ---------- */

@@ -19,9 +19,9 @@ export const HUBS: Record<ClusterId, { title: string; description: string; intro
   },
   images: {
     title: "Free Image Tools Online: Compress, Resize, Remove Background",
-    description: "Compress, resize, crop, convert and upscale images, remove backgrounds, add watermarks and make icons. Free, no sign-up.",
+    description: "Compress, resize, crop, pixelate, convert and upscale images, remove backgrounds, edit GIF speed, make emoji images and icons. Free, no sign-up.",
     intro:
-      "Tools for pictures: make them smaller for the web, resize and crop them, convert between formats, cut out the background, upscale with AI, blur faces, add a watermark, or make a full set of icons. The meme generator and photo editor run entirely in your browser.",
+      "Tools for pictures: make them smaller for the web, resize and crop them, convert between formats, cut out the background, upscale with AI, blur faces, pixelate regions, adjust GIF speed, render emojis as PNG/SVG, add a watermark, or make a full set of icons. The meme generator, photo editor, emoji maker, pixelator and GIF speed changer run entirely in your browser.",
   },
   developer: {
     title: "Free Developer Tools: Formatters, Hashes, DNS, JSON",
@@ -31,9 +31,9 @@ export const HUBS: Record<ClusterId, { title: string; description: string; intro
   },
   text: {
     title: "Free Text Tools: Binary Translator, Number to Words, Morse",
-    description: "Convert text to binary, hex and ASCII, spell numbers in words, translate Morse, summarise text and more. Free, in your browser.",
+    description: "Convert text to binary, hex and ASCII, find and replace, split text, spell numbers in words, translate Morse and summarise text. Free, in your browser.",
     intro:
-      "Small tools for working with text: translate to and from binary, hex and ASCII codes, write numbers as words (with lakh and crore), convert Roman numerals, translate Morse code with sound, summarise long text, and flip, mirror or repeat text for posts.",
+      "Small tools for working with text: translate to and from binary, hex and ASCII codes, find and replace with regex, split text into lists, write numbers as words (with lakh and crore), convert Roman numerals, translate Morse code with sound, summarise long text, and flip, mirror or repeat text for posts.",
   },
   design: {
     title: "Free Font & Colour Tools: Font Checker, Font Maker, Colour Picker",
@@ -48,15 +48,15 @@ export const HUBS: Record<ClusterId, { title: string; description: string; intro
       "Paste a link to save a public video or post, or just its sound. Downloads are fetched, sent to you and deleted straight away; nothing is kept. Only download content you own or have permission to use.",
   },
   media: {
-    title: "Free Audio & Video Tools: Video to MP3, Audio to Text",
-    description: "Pull MP3 audio out of any video, or transcribe speech to text and subtitles in 99 languages. Free, no sign-up.",
+    title: "Free Audio & Video Tools: Video to MP3, Audio to Text, Video to GIF",
+    description: "Pull MP3 audio out of any video, transcribe speech in 99 languages, extract still frames, or turn clips into animated GIFs. Free, no sign-up.",
     intro:
-      "Tools for sound: extract a clean MP3 from any video file, or turn speech from a recording or your microphone into editable text and SRT or VTT subtitles.",
+      "Tools for audio and video: extract a clean MP3 from any video file, turn speech from a recording or your microphone into editable text and SRT or VTT subtitles, or split videos into still frames and animated GIFs right in your browser.",
   },
   utilities: {
-    title: "Free Everyday Tools: QR Code Generator, My IP, Screen Size",
-    description: "Make QR codes, see your IP address and screen resolution, test your webcam and measure pixels on screen. Free, no sign-up.",
+    title: "Free Everyday Tools: QR Code Generator, Calculator, My IP",
+    description: "Make QR codes, use a scientific calculator, see your IP address and screen resolution, test your webcam and measure pixels. Free, no sign-up.",
     intro:
-      "Handy everyday tools: make a styled QR code for a link, Wi-Fi or contact; see your public IP address; check your screen resolution and browser window size; test your webcam; and measure anything on screen with a pixel ruler.",
+      "Handy everyday tools: make a styled QR code for a link, Wi-Fi or contact; crunch trig, logs and unit conversions in a scientific calculator; see your public IP address; check your screen resolution and browser window size; test your webcam; and measure anything on screen with a pixel ruler.",
   },
 };

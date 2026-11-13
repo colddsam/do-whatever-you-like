@@ -12,6 +12,8 @@ import {
   AppWindow,
   Binary,
   Calculator,
+  Replace,
+  Scissors,
   CheckCheck,
   Code,
   CreditCard,
@@ -52,7 +54,7 @@ export type Engine =
   | "codes" | "fancy" | "numwords" | "roman" | "repeat" | "lines" | "morse" | "lorem" | "summarize" | "text-image"
   | "format" | "minify" | "validate" | "card" | "editor" | "html-viewer" | "markdown"
   | "xpath" | "xslt" | "xsd" | "xml-viewer" | "jsonpath" | "uritemplate" | "escape" | "ieee"
-  | "hash" | "random" | "network" | "device" | "webgen";
+  | "hash" | "random" | "network" | "device" | "webgen" | "calculator" | "find-replace" | "split";
 
 export type UtilityDef = {
   id: string;
@@ -89,6 +91,8 @@ const TEXT: UtilityDef[] = [
   fancy("mirror-text", "Mirror text", "Text as its mirror image.", ["mirror text", "reverse text", "backwards writing"], { kind: "mirror" }),
   fancy("reverse-text", "Reverse text", "Reverse the letters, the words, each word or the lines.", ["backwards text", "reverse text generator", "flip text", "reverse words", "reverse lines"], { kind: "reverse" }),
   d("text", "Transform", "repeat", Repeat)("text-repeater", "Text repeater", "Repeat text any number of times, with a separator.", ["text repeater", "repeat text", "duplicate text", "copy paste many times"]),
+  d("text", "Transform", "find-replace", Replace)("find-and-replace", "Find and replace", "Find words or patterns in text, see every match, and replace them.", ["find and replace", "replace text", "search and replace", "find word in text", "find pattern", "regex replace", "replace all", "word finder", "highlight matches"]),
+  d("text", "Transform", "split", Scissors)("split-text", "Split text", "Split text by lines, commas, words, a pattern or a length.", ["split text", "split string", "string splitter", "text to list", "comma separated to list", "explode string", "chunk text", "split by delimiter", "csv to list"]),
   d("text", "Transform", "lines", Shuffle)("line-tools", "Sort and shuffle lines", "Shuffle, sort, de-duplicate, number or trim lines.", ["text lines shuffler", "shuffle lines", "sort lines", "remove duplicate lines", "randomize list"]),
   d("text", "Generate", "lorem", ScrollText)("lorem-ipsum", "Lorem ipsum generator", "Placeholder text by paragraphs, sentences or words.", ["lorem ipsum", "dummy text", "placeholder text", "filler text"]),
   d("text", "Generate", "text-image", Type)("text-to-image", "Text to image", "Turn text into a PNG, with font, colours and padding.", ["text to image", "text to png", "quote image", "caption image"]),
@@ -208,6 +212,7 @@ const DEV: UtilityDef[] = [
 
 const dev = (icon: LucideIcon) => d("everyday", "Device & browser", "device", icon);
 const EVERYDAY: UtilityDef[] = [
+  d("everyday", "Device & browser", "calculator", Calculator)("scientific-calculator", "Scientific calculator", "Trig, logs, powers, factorials, memory and history, with units too.", ["scientific calculator", "calculator", "calc", "sin cos tan", "logarithm", "factorial", "nCr", "permutation", "combination", "online calculator", "percentage calculator", "unit converter", "math"]),
   dev(Monitor)("screen-resolution", "Screen resolution", "Your screen's resolution, pixel ratio and colour depth.", ["screen resolution detection", "what is my screen resolution", "display size", "dpi"], { kind: "screen" }),
   dev(Maximize2)("browser-window-size", "Browser window size", "The browser's viewport size, live as you resize.", ["browser window size checker", "viewport size", "window size"], { kind: "window" }),
   dev(AppWindow)("screen-resolution-tester", "Responsive tester", "See a website in 30+ real device frames, or at any custom size.", ["screen resolution tester", "responsive design checker", "mobile view", "viewport tester", "device mockup", "iphone preview", "ipad preview", "macbook frame", "mobile simulator", "custom screen size"], { kind: "tester" }),
@@ -237,6 +242,9 @@ export const ENGINE_INFO: Record<Engine, { takes: string; gives: string; steps: 
   card: { takes: "A card number", gives: "Valid or not, and brand", steps: ["Type a number", "See the result", "Fix it"], features: ["Luhn checksum and length rules", "Visa, Mastercard, Amex, RuPay and more", "Never sent anywhere"] },
   editor: { takes: "Code or text", gives: "Your file", steps: ["Pick a language", "Edit", "Download or copy"], features: ["100+ languages with highlighting", "Saved in this browser as you type", "Open a file, download as a file", "Live HTML preview (Markdown has its own editor)"] },
   markdown: { takes: "Markdown, a .md file or a link", gives: "Formatted document, .md, HTML or PDF", steps: ["Open or write", "See it formatted", "Export"], features: ["GitHub-flavoured Markdown: tables, task lists, footnotes", "Highlighted code, maths (KaTeX) and Mermaid diagrams", "Live split view with synced scrolling and an outline", "Open a file, drop it in, or load a GitHub link", "Export .md, a standalone HTML page, or PDF", "Saved in this browser as you type"] },
+  calculator: { takes: "Numbers and functions", gives: "The answer", steps: ["Type or tap", "See it live", "Copy or reuse"], features: ["Trig in degrees, radians or gradians, with inverses and hyperbolics", "Logs, powers, roots, factorials, nCr and nPr, mod, %", "Memory, Ans and a history you can reuse", "Fractions, hex and binary of every answer, and units (5 inch to cm)", "Full keyboard input; runs in your browser"] },
+  "find-replace": { takes: "Text", gives: "Text, replaced", steps: ["Paste text", "Find and replace", "Copy the result"], features: ["Every match highlighted, counted, with its line", "Match case, whole words, or a regex pattern", "Keeps capitals: Fox → Cat, FOX → CAT", "Regex groups ($1) in the replacement"] },
+  split: { takes: "Text", gives: "A list", steps: ["Paste text", "Pick how to split", "Copy the pieces"], features: ["By lines, commas, spaces, sentences, words or characters", "A custom separator, a regex, or every N characters", "Trim, drop empties, remove duplicates, sort", "Out as lines, numbered, JSON, CSV or a quoted list"] },
   "html-viewer": { takes: "HTML", gives: "A live preview", steps: ["Paste HTML", "See it", "Copy or download"], features: ["Live as you type", "Sandboxed: scripts can't touch this site", "Phone, tablet and desktop widths"] },
   xpath: { takes: "XML and an XPath", gives: "Matching nodes", steps: ["Paste XML", "Write XPath", "See matches"], features: ["Browser's own XPath engine", "Namespaces supported", "Each match with its path"] },
   xslt: { takes: "XML and XSLT", gives: "Transformed output", steps: ["Paste XML", "Paste XSLT", "Copy the output"], features: ["XSLT 1.0 (libxslt), the same in every browser", "HTML output previewed", "Locked down: no file or network access"], server: true },

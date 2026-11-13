@@ -35,7 +35,7 @@ export function ToolDirectory() {
   // Support /tools?q=... links (e.g. WebSite SearchAction) without opting out of static rendering.
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get("q");
-    if (q) setQuery(q);
+    if (q) queueMicrotask(() => setQuery(q));
   }, []);
 
   // "/" jumps to the filter from anywhere on the page, like most directories.

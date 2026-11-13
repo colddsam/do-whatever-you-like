@@ -54,6 +54,11 @@ const ColorPicker = dynamic(() => import("./design/color-picker").then((m) => m.
 const FontCreator = dynamic(() => import("./design/font-creator").then((m) => m.FontCreator), { loading });
 const SoonWorkspace = dynamic(() => import("./soon-workspace").then((m) => m.SoonWorkspace), { loading });
 const UtilityTool = dynamic(() => import("./utilities/utility-tool").then((m) => m.UtilityTool), { loading });
+const VideoFramesTool = dynamic(() => import("./media/video-frames-tool").then((m) => m.VideoFramesTool), { loading });
+const VideoGifTool = dynamic(() => import("./media/video-gif-tool").then((m) => m.VideoGifTool), { loading });
+const GifSpeedTool = dynamic(() => import("./image/gif-speed-tool").then((m) => m.GifSpeedTool), { loading });
+const PixelateTool = dynamic(() => import("./image/pixelate-tool").then((m) => m.PixelateTool), { loading });
+const EmojiTool = dynamic(() => import("./image/emoji-tool").then((m) => m.EmojiTool), { loading });
 
 type Workspace = ComponentType<{ toolId: string }>;
 
@@ -143,6 +148,12 @@ const byId: Record<string, Workspace> = {
   "icon-maker": IconMakerTool,
   "watermark-image": WatermarkImageTool,
   "blur-face": BlurFaceTool,
+  "pixelate-image": PixelateTool,
+  "gif-speed": GifSpeedTool,
+  "emoji-to-image": EmojiTool,
+  // Audio & video, made in the browser
+  "video-to-frames": VideoFramesTool,
+  "video-to-gif": VideoGifTool,
 };
 
 export function Playground({ toolId }: { toolId: string }) {

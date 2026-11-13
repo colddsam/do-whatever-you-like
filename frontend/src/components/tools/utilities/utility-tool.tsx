@@ -8,6 +8,8 @@ import { EditorEngine, FormatEngine, HtmlViewerEngine, MinifyEngine, ValidateEng
 import { JsonPathEngine, UriTemplateEngine, XmlViewerEngine, XPathEngine, XsdEngine, XsltEngine } from "./xml-engines";
 import { HashEngine, RandomEngine } from "./data-engines";
 import { MarkdownEngine } from "./markdown-engine";
+import { CalculatorEngine } from "./calculator-engine";
+import { FindReplaceEngine, SplitEngine } from "./string-engines";
 import { DeviceEngine, NetworkEngine, TextImageEngine, WebGenEngine } from "./web-engines";
 
 const ENGINES: Record<Engine, ComponentType<EngineProps>> = {
@@ -28,6 +30,9 @@ const ENGINES: Record<Engine, ComponentType<EngineProps>> = {
   editor: EditorEngine,
   "html-viewer": HtmlViewerEngine,
   markdown: MarkdownEngine,
+  calculator: CalculatorEngine,
+  "find-replace": FindReplaceEngine,
+  split: SplitEngine,
   xpath: XPathEngine,
   xslt: XsltEngine,
   xsd: XsdEngine,
