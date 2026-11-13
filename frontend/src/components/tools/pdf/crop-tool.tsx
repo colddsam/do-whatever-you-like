@@ -86,7 +86,7 @@ export function CropTool({ toolId }: { toolId: string }) {
                         <span aria-hidden className="pointer-events-none absolute left-0 top-1/3 h-px w-full bg-surface/50" />
                         <span aria-hidden className="pointer-events-none absolute left-0 top-2/3 h-px w-full bg-surface/50" />
                       </EditableBox>
-                      <span className="pointer-events-none absolute rounded-[3px] bg-ink px-1.5 py-0.5 font-mono text-[10px] text-paper" style={{ ...boxStyle(box), width: "auto", height: "auto" }}>
+                      <span className="pointer-events-none absolute rounded-[3px] bg-ink px-1.5 py-0.5 font-mono text-[12px] text-paper" style={{ ...boxStyle(box), width: "auto", height: "auto" }}>
                         {mm(out.w)} × {mm(out.h)} mm
                       </span>
                     </>

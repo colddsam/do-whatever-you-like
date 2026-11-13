@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion, useScroll, useTransform, type Variants } from "motion/react";
+import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { ButtonLink, Container } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 import { Announcement } from "./announcement";
@@ -16,15 +16,6 @@ const rise = (delay: number, y = 16) => ({
   animate: { opacity: 1, y: 0 },
   transition: { duration: 0.7, ease: EASE, delay },
 });
-
-/** Headline lines slide up from behind a mask, one after another. */
-const lineVariants: Variants = {
-  hidden: { y: "105%" },
-  show: (i: number) => ({
-    y: "0%",
-    transition: { duration: 0.9, ease: EASE, delay: 0.08 + i * 0.1 },
-  }),
-};
 
 const suggestions = ["reels", "merge pdf", "heic", "mp3"];
 
@@ -47,15 +38,12 @@ function useMinWidth(px: number) {
   return match;
 }
 
-function MaskLine({ i, children }: { i: number; children: React.ReactNode }) {
-  return (
-    // Padding/negative margin keeps descenders and the italic overhang from being clipped.
-    <span className="-mx-[0.08em] -mb-[0.12em] block overflow-hidden px-[0.08em] pb-[0.12em]">
-      <motion.span className="block" variants={lineVariants} custom={i}>
-        {children}
-      </motion.span>
-    </span>
-  );
+/**
+ * One headline line. Painted with the server HTML, with no entrance animation: the headline is the
+ * page's largest content, and hiding it until the scripts load made it paint seconds late.
+ */
+function HeadLine({ children }: { children: React.ReactNode }) {
+  return <span className="block">{children}</span>;
 }
 
 export function Hero() {
@@ -100,12 +88,12 @@ export function Hero() {
               <Announcement />
             </motion.div>
 
-            <motion.h1 id="hero-title" initial="hidden" animate="show" className="text-display mt-7">
-              <MaskLine i={0}>One place to do</MaskLine>
-              <MaskLine i={1}>
+            <h1 id="hero-title" className="text-display mt-7">
+              <HeadLine>One place to do</HeadLine>{" "}
+              <HeadLine>
                 <span className="serif-em text-accent">whatever</span> you need.
-              </MaskLine>
-            </motion.h1>
+              </HeadLine>
+            </h1>
           </motion.div>
 
           {has3d && (
@@ -142,14 +130,14 @@ export function Hero() {
         <div className="relative mt-10 grid grid-cols-1 gap-12 md:mt-16 lg:grid-cols-12 lg:gap-10 [&>*]:min-w-0">
           {/* Left rail — copy, actions, suggestions, stats. Stretches to the palette's height. */}
           <div className="flex flex-col lg:col-span-5">
-            {/* -mt offsets the text's half-leading so the first line sits on the palette's top edge. */}
-            <motion.p
-              {...rise(0.3)}
-              className="max-w-md text-lg leading-relaxed text-ink-2 text-pretty lg:-mt-[0.4em]"
-            >
+            {/*
+              -mt offsets the text's half-leading so the first line sits on the palette's top edge.
+              Not faded in: on phones this paragraph is the largest thing on screen (the LCP element).
+            */}
+            <p className="max-w-md text-lg leading-relaxed text-ink-2 text-pretty lg:-mt-[0.4em]">
               Do-Whatever is a growing toolbox for everyday digital chores. Download media, convert
               files, tidy documents and more, without installing a thing.
-            </motion.p>
+            </p>
 
             <motion.div {...rise(0.38)} className="mt-8 flex flex-wrap gap-3">
               <ButtonLink href="/tools" size="lg" arrow>

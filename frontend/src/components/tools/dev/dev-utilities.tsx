@@ -257,8 +257,8 @@ function DiffUtil() {
                   l.kind === "del" && "bg-danger/10",
                 )}
               >
-                <span className="select-none pr-2 text-right text-[11px] text-ink-3">{l.a ?? ""}</span>
-                <span className="select-none pr-2 text-right text-[11px] text-ink-3">{l.b ?? ""}</span>
+                <span className="select-none pr-2 text-right text-[12px] text-ink-3">{l.a ?? ""}</span>
+                <span className="select-none pr-2 text-right text-[12px] text-ink-3">{l.b ?? ""}</span>
                 <span className={cn("select-none", l.kind === "add" ? "text-success" : l.kind === "del" ? "text-danger" : "text-ink-3")}>
                   {l.kind === "add" ? "+" : l.kind === "del" ? "−" : ""}
                 </span>
@@ -818,7 +818,7 @@ function PasswordUtil() {
             transition={{ type: "spring", stiffness: 200, damping: 30 }}
           />
         </div>
-        <p className="flex justify-between bg-paper px-3 py-1 font-mono text-[11px] text-ink-3">
+        <p className="flex justify-between bg-paper px-3 py-1 font-mono text-[12px] text-ink-3">
           <span>{strength}</span>
           <span>≈ {bits} bits of entropy</span>
         </p>

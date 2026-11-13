@@ -402,7 +402,7 @@ function Tiles({
                     {item.file.name.split(".").pop()?.toUpperCase()}
                   </span>
                 )}
-                <span className="label-mono absolute left-1 top-1 rounded-[3px] bg-ink/85 px-1 text-[10px] text-paper">{String(i + 1).padStart(2, "0")}</span>
+                <span className="label-mono absolute left-1 top-1 rounded-[3px] bg-ink/85 px-1 text-[12px] text-paper">{String(i + 1).padStart(2, "0")}</span>
                 {!locked && (
                   <button
                     type="button"
@@ -420,11 +420,11 @@ function Tiles({
               <p className="mt-1.5 truncate px-0.5 text-[13px] font-medium text-ink" title={item.file.name}>
                 {item.file.name}
               </p>
-              <p className="truncate px-0.5 font-mono text-[11px] text-ink-3">
+              <p className="truncate px-0.5 font-mono text-[12px] text-ink-3">
                 {item.size ? `${item.size.width} × ${item.size.height} · ` : ""}
                 {formatBytes(item.file.size)}
               </p>
-              {note && <div className="truncate px-0.5 font-mono text-[11px] text-ink">{note(item, ctx)}</div>}
+              {note && <div className="truncate px-0.5 font-mono text-[12px] text-ink">{note(item, ctx)}</div>}
               {sortable && !locked && items.length > 1 && (
                 <div className="mt-1 flex gap-1">
                   <button
@@ -609,7 +609,7 @@ export function ResultPanel({
           <ol className={cn("divide-y divide-line border-y border-line", files.length > 6 && "max-h-[260px] overflow-y-auto overscroll-contain")}>
             {files.map((f, i) => (
               <li key={f.name} className="grid grid-cols-[1.75rem_1fr_auto] items-center gap-2 py-2 sm:grid-cols-[1.75rem_1fr_auto_auto] sm:gap-3">
-                <span className="font-mono text-[11px] text-ink-3">{String(i + 1).padStart(2, "0")}</span>
+                <span className="font-mono text-[12px] text-ink-3">{String(i + 1).padStart(2, "0")}</span>
                 <span className="min-w-0 truncate text-sm text-ink" title={f.name}>
                   {f.name}
                 </span>
@@ -676,8 +676,8 @@ export function CompareSlider({ before, after }: { before: string; after: string
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={before} alt="Before" draggable={false} className="size-full object-contain" />
         </div>
-        <span className="label-mono pointer-events-none absolute left-2 top-2 rounded-[3px] bg-ink/85 px-1.5 py-0.5 text-[10px] text-paper">Before</span>
-        <span className="label-mono pointer-events-none absolute right-2 top-2 rounded-[3px] bg-ink/85 px-1.5 py-0.5 text-[10px] text-paper">After</span>
+        <span className="label-mono pointer-events-none absolute left-2 top-2 rounded-[3px] bg-ink/85 px-1.5 py-0.5 text-[12px] text-paper">Before</span>
+        <span className="label-mono pointer-events-none absolute right-2 top-2 rounded-[3px] bg-ink/85 px-1.5 py-0.5 text-[12px] text-paper">After</span>
         <div aria-hidden className="pointer-events-none absolute inset-y-0 w-px bg-ink" style={{ left: `${split * 100}%` }} />
         <div
           role="slider"

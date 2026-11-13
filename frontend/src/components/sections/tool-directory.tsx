@@ -131,7 +131,7 @@ export function ToolDirectory() {
                 )}
               >
                 {c.name}
-                <span className={cn("font-mono text-[11px]", active === c.id ? "text-paper-dim" : "text-ink-3")}>{counts[c.id]}</span>
+                <span className={cn("font-mono text-[12px]", active === c.id ? "text-paper-dim" : "text-ink-3")}>{counts[c.id]}</span>
               </button>
             </li>
           ))}

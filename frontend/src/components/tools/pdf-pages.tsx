@@ -54,7 +54,7 @@ export function PageImage({
         <span
           aria-hidden
           className={cn(
-            "absolute inset-0 flex items-center justify-center font-mono text-[11px] text-ink-3",
+            "absolute inset-0 flex items-center justify-center font-mono text-[12px] text-ink-3",
             state === "loading" && "animate-pulse",
           )}
         >
@@ -460,7 +460,7 @@ export function OrganizeBoard({ token, pageCount, pages, locked, onChange }: Boa
                 {/* New position, top-left. Ink when picked. */}
                 <span
                   className={cn(
-                    "absolute left-1.5 top-1.5 inline-flex h-5 items-center rounded-[4px] px-1 font-mono text-[11px] font-medium tabular-nums",
+                    "absolute left-1.5 top-1.5 inline-flex h-5 items-center rounded-[4px] px-1 font-mono text-[12px] font-medium tabular-nums",
                     picked ? "bg-ink text-paper" : "border border-line bg-surface/95 text-ink",
                   )}
                 >
@@ -468,13 +468,13 @@ export function OrganizeBoard({ token, pageCount, pages, locked, onChange }: Boa
                   {pad(i + 1)}
                 </span>
                 {p.rot ? (
-                  <span className="absolute right-1.5 top-1.5 inline-flex h-5 items-center rounded-[4px] border border-line bg-surface/95 px-1 font-mono text-[10px] text-ink-2">
+                  <span className="absolute right-1.5 top-1.5 inline-flex h-5 items-center rounded-[4px] border border-line bg-surface/95 px-1 font-mono text-[12px] text-ink-2">
                     {p.rot}°
                   </span>
                 ) : null}
 
                 <span className="mt-1 flex h-6 items-center justify-between gap-1 px-0.5">
-                  <span className={cn("truncate font-mono text-[11px]", moved ? "text-ink" : "text-ink-3")}>
+                  <span className={cn("truncate font-mono text-[12px]", moved ? "text-ink" : "text-ink-3")}>
                     p. {p.page}
                   </span>
                   <span
@@ -643,12 +643,12 @@ export function SplitPicker({
                   : "border-line bg-surface text-ink-2 hover:border-ink-3 hover:text-ink",
               )}
             >
-              <span className={cn("font-mono text-[11px]", current === i ? "text-paper-dim" : "text-ink-3")}>
+              <span className={cn("font-mono text-[12px]", current === i ? "text-paper-dim" : "text-ink-3")}>
                 {pad(i + 1)}
               </span>
               <span className="max-w-[14rem] truncate">{pagesLabel(g)}</span>
               {sizes[i] !== undefined && (
-                <span className={cn("font-mono text-[11px]", current === i ? "text-paper-dim" : "text-ink-3")}>
+                <span className={cn("font-mono text-[12px]", current === i ? "text-paper-dim" : "text-ink-3")}>
                   {formatBytes(sizes[i]!)}
                 </span>
               )}
@@ -727,7 +727,7 @@ export function SplitPicker({
                         <span
                           key={pi}
                           className={cn(
-                            "inline-flex h-5 items-center rounded-[4px] px-1 font-mono text-[11px] font-medium",
+                            "inline-flex h-5 items-center rounded-[4px] px-1 font-mono text-[12px] font-medium",
                             pi === current ? "bg-ink text-paper" : "border border-line bg-surface/95 text-ink",
                           )}
                         >
@@ -737,7 +737,7 @@ export function SplitPicker({
                     </span>
                   )}
                   <span className="mt-1 flex h-5 items-center justify-between px-0.5">
-                    <span className="font-mono text-[11px] text-ink-3">p. {page}</span>
+                    <span className="font-mono text-[12px] text-ink-3">p. {page}</span>
                     {out && <span className="label-mono text-[9px] text-ink-3">out</span>}
                   </span>
                 </button>

@@ -703,7 +703,7 @@ function ResponsiveTester() {
                     )}
                   >
                     {d.name}
-                    <span className={cn("font-mono text-[11px]", d.id === deviceId ? "text-paper/60" : "text-ink-3")}>
+                    <span className={cn("font-mono text-[12px]", d.id === deviceId ? "text-paper/60" : "text-ink-3")}>
                       {d.w}×{d.h}
                     </span>
                   </button>

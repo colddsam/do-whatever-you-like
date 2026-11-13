@@ -101,7 +101,7 @@ function StatusBar({ cutout, dark }: { cutout: Cutout; dark?: boolean }) {
   return (
     <div className={cn("flex shrink-0 items-center justify-between font-semibold tracking-tight", dark ? "bg-black text-white" : "bg-white text-black")} style={{ height: h, padding: big ? "0 30px 0 34px" : "0 14px", fontSize: big ? 16 : 12 }}>
       <span style={{ width: big ? 54 : undefined }}>9:41</span>
-      {cutout === "home" && <span className="text-[11px] font-semibold">Safari</span>}
+      {cutout === "home" && <span className="text-[12px] font-semibold">Safari</span>}
       <span className="flex items-center gap-[5px]" aria-hidden>
         <svg width={big ? 18 : 15} height="11" viewBox="0 0 18 11" fill="currentColor">
           <rect x="0" y="7" width="3" height="4" rx="0.7" />

@@ -417,7 +417,7 @@ function Result({
           </span>
         )}
         {preview.duration ? (
-          <span className="absolute bottom-2 right-2 rounded-sm bg-ink/85 px-1.5 py-0.5 font-mono text-[11px] text-paper">
+          <span className="absolute bottom-2 right-2 rounded-sm bg-ink/85 px-1.5 py-0.5 font-mono text-[12px] text-paper">
             {formatDuration(preview.duration)}
           </span>
         ) : null}
@@ -552,7 +552,7 @@ function Result({
                             )}
                           >
                             {q.label}
-                            {q.size ? <span className={cn("font-mono text-[11px]", on ? "text-paper/60" : "text-ink-3")}>{formatSize(q.size, q.sizeExact)}</span> : null}
+                            {q.size ? <span className={cn("font-mono text-[12px]", on ? "text-paper/60" : "text-ink-3")}>{formatSize(q.size, q.sizeExact)}</span> : null}
                           </button>
                         );
                       })}

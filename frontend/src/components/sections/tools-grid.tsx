@@ -142,7 +142,7 @@ export function ToolsGrid() {
                       className="inline-flex h-8 items-center gap-1.5 rounded-sm border border-line bg-surface px-2.5 text-sm text-ink-2 transition-colors hover:border-ink-3 hover:text-ink"
                     >
                       {g}
-                      <span className="font-mono text-[11px] text-ink-3">{toolsIn("pdf").filter((t) => t.group === g).length}</span>
+                      <span className="font-mono text-[12px] text-ink-3">{toolsIn("pdf").filter((t) => t.group === g).length}</span>
                     </Link>
                   </li>
                 ))}
@@ -180,7 +180,7 @@ export function ToolsGrid() {
                       className="inline-flex h-8 items-center gap-1.5 rounded-sm border border-line bg-surface px-2.5 text-sm text-ink-2 transition-colors hover:border-ink-3 hover:text-ink"
                     >
                       {g}
-                      <span className="font-mono text-[11px] text-ink-3">{toolsIn("developer").filter((t) => t.group === g).length}</span>
+                      <span className="font-mono text-[12px] text-ink-3">{toolsIn("developer").filter((t) => t.group === g).length}</span>
                     </Link>
                   </li>
                 ))}

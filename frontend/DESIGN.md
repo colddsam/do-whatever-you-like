@@ -56,11 +56,17 @@ of the same palette, not a separate theme.
 
 - **Sans (UI + headings):** Geist — 400 / 500 / 600.
 - **Display emphasis:** Instrument Serif Italic — headline accent words only.
-- **Mono (labels, indices, kbd):** Geist Mono — 400 / 500, uppercase, `tracking-[0.08em]`, 11–12px.
+- **Mono (labels, indices, kbd):** Geist Mono — 400 / 500, uppercase, `tracking-[0.08em]`, 12px (`label-mono`).
 
 Scale: display `clamp(2.75rem, 7vw, 6rem)` / leading 0.95 / tracking -0.04em ·
 h2 `clamp(2rem, 4.5vw, 3.5rem)` / leading 1.02 / tracking -0.03em ·
-h3 20px/600 · body-lg 18px/1.6 · body 15–16px/1.6 · small 13px.
+h3 20px/600 · body-lg 18px/1.6 · body 15–16px/1.6 · small 13px · micro (mono labels, counts, badges) 12px.
+
+**12px is the floor.** No readable text is set below 12px: not labels, counts, line numbers,
+badges or captions on image previews. Use `text-[12px]` for one-off mono text (not `text-xs`,
+which also changes line-height). A badge that holds 12px text is at least `h-5`. The only
+exception is a decorative placeholder drawn inside a preview smaller than 24px (the icon
+maker's "IMG" swatch), which nobody needs to read.
 
 ## D. Layout
 
@@ -418,7 +424,11 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
 
 - Easing `cubic-bezier(0.22, 1, 0.36, 1)`; durations 150ms (hover), 600ms (reveal).
 - Reveal: fade + 12px rise, once, staggered 60ms in lists only.
-- Hero headline: each line slides up from behind a mask (900ms, 100ms apart); copy, actions and stats follow with the standard rise.
+- Hero headline and its intro paragraph: no entrance animation. They are painted with the server HTML
+  because they are the page's largest content (LCP); hiding them until scripts load delayed LCP by
+  seconds. Actions, suggestions and stats follow with the standard rise.
+- Never put a page's largest above-the-fold element (a hero headline, a tool page's title, the tool
+  workspace) inside `Reveal` or any opacity-0/transform entrance. Reveal is for content below the fold.
 - Hero palette: rises in with a 0.985→1 scale; rows stagger in once (50ms); the active-row fill slides between rows (shared layout spring); the list fades at the bottom edge while more rows are below; typewriter placeholder cycles through example tasks.
 - Hero "Try" chips fill the palette query; the stats hairline draws in from the left.
 - Marquee: slow linear loop, paused on hover.

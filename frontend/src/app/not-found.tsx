@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import { ButtonLink } from "@/components/ui/primitives";
 import { Page } from "@/components/ui/paper";
+
+export const metadata: Metadata = {
+  title: "Page not found — Do-Whatever",
+  description: "This page doesn't exist. Browse every Do-Whatever tool instead.",
+};
 
 export default function NotFound() {
   return (

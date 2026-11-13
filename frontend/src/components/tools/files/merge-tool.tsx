@@ -294,7 +294,7 @@ export function FamilyStrip() {
               <Icon aria-hidden className="size-4 text-ink-2" />
               {label}
             </p>
-            <p className="mt-1 truncate font-mono text-[11px] tracking-[0.06em] text-ink-3" title={exts.join(", ").toUpperCase()}>
+            <p className="mt-1 truncate font-mono text-[12px] tracking-[0.06em] text-ink-3" title={exts.join(", ").toUpperCase()}>
               {exts.slice(0, 4).join(" ").toUpperCase()}
               {exts.length > 4 ? " …" : ""}
             </p>

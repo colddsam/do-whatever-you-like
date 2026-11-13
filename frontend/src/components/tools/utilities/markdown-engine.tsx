@@ -523,7 +523,7 @@ export function MarkdownEngine({ preset }: EngineProps) {
         </div>
 
         {/* Status */}
-        <p className="flex flex-wrap justify-between gap-x-4 gap-y-1 border-t border-line bg-paper px-3 py-1.5 font-mono text-[11px] text-ink-3">
+        <p className="flex flex-wrap justify-between gap-x-4 gap-y-1 border-t border-line bg-paper px-3 py-1.5 font-mono text-[12px] text-ink-3">
           <span className="truncate">
             {name} · saved in this browser
           </span>

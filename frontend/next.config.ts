@@ -1,7 +1,28 @@
 import type { NextConfig } from "next";
 
+/**
+ * Security headers for every response. Deliberately no script-src/style-src CSP: the tools rely on
+ * workers, WebAssembly, blob: and data: URLs, and a strict policy would need testing tool by tool.
+ * - frame-ancestors 'self': other sites can't frame us (clickjacking); the device preview tool
+ *   can still frame this site.
+ * - Permissions-Policy: camera (scan to PDF, webcam test), microphone (audio to text) and
+ *   geolocation (QR "my location") for this origin only; everything else off.
+ */
+const securityHeaders = [
+  { key: "Content-Security-Policy", value: "frame-ancestors 'self'; base-uri 'self'; object-src 'none'" },
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  {
+    key: "Permissions-Policy",
+    value: "camera=(self), microphone=(self), geolocation=(self), payment=(), usb=(), serial=(), bluetooth=()",
+  },
+];
+
 const nextConfig: NextConfig = {
-  /* config options here */
+  async headers() {
+    return [{ source: "/:path*", headers: securityHeaders }];
+  },
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {

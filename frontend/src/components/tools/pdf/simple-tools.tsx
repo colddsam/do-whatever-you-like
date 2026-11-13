@@ -34,7 +34,7 @@ function Preview({ ctx, children, caption }: { ctx: TaskContext; children: (scal
           {(scale) => children(scale, current)}
         </PageView>
       </div>
-      <p className="text-center font-mono text-[11px] text-ink-3">—— {caption}</p>
+      <p className="text-center font-mono text-[12px] text-ink-3">—— {caption}</p>
       <div className="mx-auto max-w-[300px]">
         <PageNav page={current} pages={pages} onChange={setPage} />
       </div>

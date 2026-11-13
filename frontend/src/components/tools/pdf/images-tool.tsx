@@ -295,7 +295,7 @@ function ImageRow({
       <span className="relative shrink-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={item.url} alt="" className="size-12 rounded-[4px] border border-line bg-surface object-cover" />
-        <span className="absolute -left-1 -top-1 inline-flex h-4 items-center rounded-[3px] bg-ink px-1 font-mono text-[10px] text-paper">
+        <span className="absolute -left-1 -top-1 inline-flex h-5 items-center rounded-[3px] bg-ink px-1 font-mono text-[12px] text-paper">
           {String(index + 1).padStart(2, "0")}
         </span>
       </span>

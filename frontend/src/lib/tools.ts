@@ -633,6 +633,25 @@ const utilityTools: Tool[] = UTILITIES.map((u) => {
 });
 
 export const toolHref = (id: string) => `/tools/${id}`;
+
+/** Tools whose work never leaves the device (the utilities say so in their own `limit`). */
+const ON_DEVICE = new Set(["meme-generator", "photo-editor", "font-creator", "dev"]);
+
+/**
+ * Where a tool does its work and how long anything is kept, for the tool page's spec sheet.
+ * Mirrors each workspace's footer note; undefined when the tool's `limit` already says it.
+ */
+export function wherePrivacy(tool: Tool): string | undefined {
+  if (tool.status !== "live") return undefined;
+  if (tool.limit === "Public addresses only") return "Runs on our server";
+  if (/browser/i.test(tool.limit ?? "") || tool.family === "developer" || tool.family === "text" || tool.category === "Utilities") return undefined;
+  if (ON_DEVICE.has(tool.id)) return "Stays on your device";
+  if (tool.kind === "link") return "Fetched on our server, deleted once sent";
+  if (tool.id === "audio-to-text") return "On our server or Groq's Whisper, then deleted";
+  if (tool.id === "pdf" || tool.family === "pdf") return "On our server, deleted within 30 min";
+  if (tool.id === "color-picker") return "Pictures stay on your device; documents are deleted after";
+  return "On our server, deleted once done";
+}
 export const getTool = (id: string) => tools.find((t) => t.id === id);
 export const stepsFor = (tool: Tool) => tool.steps ?? defaultSteps[tool.kind];
 
@@ -1111,7 +1130,8 @@ export const clusterOf = (tool: Tool): ClusterId =>
             ? "text"
             : (CLUSTER_OF[tool.id] ?? "utilities");
 export const getCluster = (id: ClusterId) => CLUSTERS.find((c) => c.id === id)!;
-export const clusterHref = (id: ClusterId) => `/tools#${id}`;
+/** A collection's own page (app/tools/category/[id]). The directory at /tools still has #<id> anchors. */
+export const clusterHref = (id: ClusterId) => `/tools/category/${id}`;
 
 /** A collection's tools: its hub first, then the rest in registry order, tools in the works last. */
 export function toolsIn(id: ClusterId): Tool[] {

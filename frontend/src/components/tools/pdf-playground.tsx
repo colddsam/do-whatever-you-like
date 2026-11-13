@@ -776,7 +776,7 @@ function ModeSwitch({ mode, disabled, onChange }: { mode: PdfMode; disabled: boo
               <m.icon aria-hidden className="relative size-4 shrink-0" />
               <span className="relative flex min-w-0 flex-col items-center leading-tight sm:items-start">
                 <span className="font-medium">{m.label}</span>
-                <span className={cn("label-mono hidden text-[10px] sm:block", active ? "text-paper-dim" : "text-ink-3")}>
+                <span className={cn("label-mono hidden text-[12px] sm:block", active ? "text-paper-dim" : "text-ink-3")}>
                   {m.hint}
                 </span>
               </span>

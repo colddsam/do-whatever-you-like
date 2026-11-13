@@ -41,7 +41,7 @@ function DoneVisual() {
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm text-paper">video-1080p.mp4</span>
-        <span className="block font-mono text-[11px] text-paper-dim">48.2 MB · ready</span>
+        <span className="block font-mono text-[12px] text-paper-dim">48.2 MB · ready</span>
       </span>
       <span className="flex size-6 items-center justify-center rounded-full bg-accent text-ink">
         <Check aria-hidden className="size-3.5" strokeWidth={3} />

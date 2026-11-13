@@ -255,7 +255,7 @@ function ToolLink({ tool, onNavigate, described }: { tool: Tool; onNavigate: () 
         <span className={cn("block truncate", live ? "text-ink" : "text-ink-3")}>{tool.name}</span>
         {described && <span className="block truncate text-xs text-ink-3">{tool.description}</span>}
       </span>
-      {!live && <span className="label-mono shrink-0 text-[10px] text-ink-3">Soon</span>}
+      {!live && <span className="label-mono shrink-0 text-[12px] text-ink-3">Soon</span>}
     </Link>
   );
 }

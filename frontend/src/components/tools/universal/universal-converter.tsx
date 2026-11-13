@@ -520,7 +520,7 @@ function TargetPicker({
                   )}
                 >
                   {g.label}
-                  <span className={cn("font-mono text-[11px]", active ? "text-paper-dim" : "text-ink-3")}>
+                  <span className={cn("font-mono text-[12px]", active ? "text-paper-dim" : "text-ink-3")}>
                     {g.id === "all" ? routes.length : counts.get(g.id)}
                   </span>
                 </button>
@@ -611,7 +611,7 @@ function RouteLine({ route, source, cat }: { route: Route; source: string; cat: 
         {chain.map((id, i) => (
           <span key={`${id}-${i}`} className="inline-flex items-center gap-1.5">
             {i > 0 && <ArrowRight aria-hidden className="size-3 text-ink-3" />}
-            <span className={cn("font-mono text-[11px] tracking-[0.06em]", i === chain.length - 1 ? "text-ink" : "text-ink-2")}>{extLabel(id)}</span>
+            <span className={cn("font-mono text-[12px] tracking-[0.06em]", i === chain.length - 1 ? "text-ink" : "text-ink-2")}>{extLabel(id)}</span>
           </span>
         ))}
         <span className="text-ink-3">· {describeRoute(route)}</span>
@@ -725,7 +725,7 @@ function FormatAtlas({ cat }: { cat: Catalogue }) {
                       {g.label}
                       <span className="label-mono ml-auto text-ink-3">{g.formats.length}</span>
                     </p>
-                    <p className="mt-1.5 font-mono text-[11px] leading-relaxed tracking-[0.06em] text-ink-2">
+                    <p className="mt-1.5 font-mono text-[12px] leading-relaxed tracking-[0.06em] text-ink-2">
                       {g.formats.map((f) => (
                         <span key={f.id} title={f.label} className="mr-2 inline-block">
                           {extLabel(f.id)}

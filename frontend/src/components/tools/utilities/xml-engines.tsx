@@ -135,7 +135,7 @@ function MatchList({ items }: { items: { path: string; value: string }[] }) {
         <ol className="max-h-[420px] divide-y divide-line overflow-auto" data-lenis-prevent>
           {items.map((it, i) => (
             <li key={i} className="px-3 py-2">
-              <p className="font-mono text-[11px] text-ink-3">{it.path}</p>
+              <p className="font-mono text-[12px] text-ink-3">{it.path}</p>
               <pre className="mt-0.5 whitespace-pre-wrap break-all font-mono text-[13px] text-ink">{it.value}</pre>
             </li>
           ))}
@@ -329,7 +329,7 @@ function XmlNode({ el, depth, onPath }: { el: Element; depth: number; onPath: (p
         ))}
         <span className="text-accent">&gt;</span>
         {text && <span className="ml-1 break-all text-ink">{text}</span>}
-        {!open && kids.length > 0 && <span className="mx-1 rounded-sm bg-paper-2 px-1.5 text-[11px] text-ink-3">{kids.length} children</span>}
+        {!open && kids.length > 0 && <span className="mx-1 rounded-sm bg-paper-2 px-1.5 text-[12px] text-ink-3">{kids.length} children</span>}
       </div>
       {open && kids.length > 0 && (
         <div className="ml-2.5 border-l border-line pl-1">
@@ -362,7 +362,7 @@ export function XmlViewerEngine() {
           <div className="overflow-hidden rounded-md border border-line bg-surface">
             <div className="flex items-center justify-between gap-3 border-b border-line bg-paper px-3 py-1.5">
               <span className="font-mono text-[12px] text-ink">tree · {count} elements</span>
-              <span className="truncate font-mono text-[11px] text-ink-3" aria-live="polite">{copied ? `Copied ${copied}` : "Click a tag to copy its XPath"}</span>
+              <span className="truncate font-mono text-[12px] text-ink-3" aria-live="polite">{copied ? `Copied ${copied}` : "Click a tag to copy its XPath"}</span>
             </div>
             <div className="max-h-[480px] overflow-auto px-2 py-2 font-mono text-[13px] leading-relaxed" data-lenis-prevent>
               <XmlNode el={doc.documentElement} depth={0} onPath={onPath} />

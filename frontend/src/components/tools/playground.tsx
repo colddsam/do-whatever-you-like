@@ -2,54 +2,58 @@
 
 import type { ComponentType } from "react";
 import { getTool, type ToolKind } from "@/lib/tools";
-import { DownloaderPlayground } from "./downloader-playground";
-import { PdfPlayground } from "./pdf-playground";
-import { CompareTool } from "./pdf/compare-tool";
-import { CropTool } from "./pdf/crop-tool";
-import { EditTool } from "./pdf/edit-tool";
-import { HtmlToPdfTool } from "./pdf/html-tool";
-import { ImagesToPdfTool } from "./pdf/images-tool";
-import { RedactTool } from "./pdf/redact-tool";
-import {
-  OcrTool,
-  PageNumbersTool,
-  PdfaTool,
-  ProtectTool,
-  RepairTool,
-  UnlockTool,
-  WatermarkTool,
-} from "./pdf/simple-tools";
-import { QrPlayground } from "./qr-playground";
-import { BlurFaceTool } from "./image/blur-tool";
-import { CropImageTool } from "./image/crop-tool";
-import { HtmlToImageTool } from "./image/html-tool";
-import { MemeGeneratorTool } from "./image/meme-tool";
-import { PhotoEditorTool } from "./image/photo-editor";
-import {
-  CompressImageTool,
-  ConvertFromJpgTool,
-  ConvertToJpgTool,
-  RemoveBackgroundTool,
-  ResizeImageTool,
-  RotateImageTool,
-  UpscaleImageTool,
-} from "./image/simple-tools";
-import { ImageStudio } from "./image/studio";
-import { WatermarkImageTool } from "./image/watermark-tool";
-import { TranscribePlayground } from "./transcribe/transcribe-playground";
-import { UniversalConverter } from "./universal/universal-converter";
-import { CompressFilesTool } from "./files/compress-tool";
-import { MergeFilesTool } from "./files/merge-tool";
-import { SplitFilesTool } from "./files/split-tool";
-import { IconMakerTool } from "./image/icon-tool";
-import { DevUtilities } from "./dev/dev-utilities";
-import { ScanTool } from "./pdf/scan/scan-tool";
-import { FontChecker } from "./design/font-checker";
-import { ColorPicker } from "./design/color-picker";
-import { FontCreator } from "./design/font-creator";
-import { SoonWorkspace } from "./soon-workspace";
-import { UtilityTool } from "./utilities/utility-tool";
+import dynamic from "next/dynamic";
 import { getUtility } from "@/lib/utilities/catalog";
+
+/**
+ * Each workspace is its own chunk, so a tool page downloads only the code for its tool (the PDF,
+ * image and converter workspaces pull in heavy libraries). Pages are still rendered on the server;
+ * `loading` only shows during client-side navigation, at the workbench's usual height.
+ */
+const loading = () => <div aria-hidden className="h-80 animate-pulse rounded-lg border border-line bg-surface" />;
+const DownloaderPlayground = dynamic(() => import("./downloader-playground").then((m) => m.DownloaderPlayground), { loading });
+const PdfPlayground = dynamic(() => import("./pdf-playground").then((m) => m.PdfPlayground), { loading });
+const CompareTool = dynamic(() => import("./pdf/compare-tool").then((m) => m.CompareTool), { loading });
+const CropTool = dynamic(() => import("./pdf/crop-tool").then((m) => m.CropTool), { loading });
+const EditTool = dynamic(() => import("./pdf/edit-tool").then((m) => m.EditTool), { loading });
+const HtmlToPdfTool = dynamic(() => import("./pdf/html-tool").then((m) => m.HtmlToPdfTool), { loading });
+const ImagesToPdfTool = dynamic(() => import("./pdf/images-tool").then((m) => m.ImagesToPdfTool), { loading });
+const RedactTool = dynamic(() => import("./pdf/redact-tool").then((m) => m.RedactTool), { loading });
+const OcrTool = dynamic(() => import("./pdf/simple-tools").then((m) => m.OcrTool), { loading });
+const PageNumbersTool = dynamic(() => import("./pdf/simple-tools").then((m) => m.PageNumbersTool), { loading });
+const PdfaTool = dynamic(() => import("./pdf/simple-tools").then((m) => m.PdfaTool), { loading });
+const ProtectTool = dynamic(() => import("./pdf/simple-tools").then((m) => m.ProtectTool), { loading });
+const RepairTool = dynamic(() => import("./pdf/simple-tools").then((m) => m.RepairTool), { loading });
+const UnlockTool = dynamic(() => import("./pdf/simple-tools").then((m) => m.UnlockTool), { loading });
+const WatermarkTool = dynamic(() => import("./pdf/simple-tools").then((m) => m.WatermarkTool), { loading });
+const QrPlayground = dynamic(() => import("./qr-playground").then((m) => m.QrPlayground), { loading });
+const BlurFaceTool = dynamic(() => import("./image/blur-tool").then((m) => m.BlurFaceTool), { loading });
+const CropImageTool = dynamic(() => import("./image/crop-tool").then((m) => m.CropImageTool), { loading });
+const HtmlToImageTool = dynamic(() => import("./image/html-tool").then((m) => m.HtmlToImageTool), { loading });
+const MemeGeneratorTool = dynamic(() => import("./image/meme-tool").then((m) => m.MemeGeneratorTool), { loading });
+const PhotoEditorTool = dynamic(() => import("./image/photo-editor").then((m) => m.PhotoEditorTool), { loading });
+const CompressImageTool = dynamic(() => import("./image/simple-tools").then((m) => m.CompressImageTool), { loading });
+const ConvertFromJpgTool = dynamic(() => import("./image/simple-tools").then((m) => m.ConvertFromJpgTool), { loading });
+const ConvertToJpgTool = dynamic(() => import("./image/simple-tools").then((m) => m.ConvertToJpgTool), { loading });
+const RemoveBackgroundTool = dynamic(() => import("./image/simple-tools").then((m) => m.RemoveBackgroundTool), { loading });
+const ResizeImageTool = dynamic(() => import("./image/simple-tools").then((m) => m.ResizeImageTool), { loading });
+const RotateImageTool = dynamic(() => import("./image/simple-tools").then((m) => m.RotateImageTool), { loading });
+const UpscaleImageTool = dynamic(() => import("./image/simple-tools").then((m) => m.UpscaleImageTool), { loading });
+const ImageStudio = dynamic(() => import("./image/studio").then((m) => m.ImageStudio), { loading });
+const WatermarkImageTool = dynamic(() => import("./image/watermark-tool").then((m) => m.WatermarkImageTool), { loading });
+const TranscribePlayground = dynamic(() => import("./transcribe/transcribe-playground").then((m) => m.TranscribePlayground), { loading });
+const UniversalConverter = dynamic(() => import("./universal/universal-converter").then((m) => m.UniversalConverter), { loading });
+const CompressFilesTool = dynamic(() => import("./files/compress-tool").then((m) => m.CompressFilesTool), { loading });
+const MergeFilesTool = dynamic(() => import("./files/merge-tool").then((m) => m.MergeFilesTool), { loading });
+const SplitFilesTool = dynamic(() => import("./files/split-tool").then((m) => m.SplitFilesTool), { loading });
+const IconMakerTool = dynamic(() => import("./image/icon-tool").then((m) => m.IconMakerTool), { loading });
+const DevUtilities = dynamic(() => import("./dev/dev-utilities").then((m) => m.DevUtilities), { loading });
+const ScanTool = dynamic(() => import("./pdf/scan/scan-tool").then((m) => m.ScanTool), { loading });
+const FontChecker = dynamic(() => import("./design/font-checker").then((m) => m.FontChecker), { loading });
+const ColorPicker = dynamic(() => import("./design/color-picker").then((m) => m.ColorPicker), { loading });
+const FontCreator = dynamic(() => import("./design/font-creator").then((m) => m.FontCreator), { loading });
+const SoonWorkspace = dynamic(() => import("./soon-workspace").then((m) => m.SoonWorkspace), { loading });
+const UtilityTool = dynamic(() => import("./utilities/utility-tool").then((m) => m.UtilityTool), { loading });
 
 type Workspace = ComponentType<{ toolId: string }>;
 
@@ -124,7 +128,7 @@ const byId: Record<string, Workspace> = {
   "redact-pdf": RedactTool,
   "compare-pdf": CompareTool,
   // Image family
-  image: ImageStudio,
+  image: () => <ImageStudio />,
   "compress-image": CompressImageTool,
   "upscale-image": UpscaleImageTool,
   "remove-background": RemoveBackgroundTool,

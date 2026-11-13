@@ -274,7 +274,7 @@ export function QrPlayground({ toolId }: { toolId: string }) {
               {CONTENT[type].label} · {CONTENT[type].hint}
             </h3>
             {ready && (
-              <span className={cn("font-mono text-[11px] tabular-nums", tooLong ? "text-danger" : "text-ink-3")}>
+              <span className={cn("font-mono text-[12px] tabular-nums", tooLong ? "text-danger" : "text-ink-3")}>
                 {reads.length.toLocaleString()} / {QR_MAX_CHARS.toLocaleString()}
               </span>
             )}
@@ -679,7 +679,7 @@ function Plate({
         </div>
       )}
       {measuring && made && (
-        <span className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-sm border border-line bg-surface/95 px-2 py-1 font-mono text-[11px] text-ink-3">
+        <span className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-sm border border-line bg-surface/95 px-2 py-1 font-mono text-[12px] text-ink-3">
           <Loader2 aria-hidden className="size-3 animate-spin" />
           drawing
         </span>

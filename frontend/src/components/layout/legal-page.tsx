@@ -5,6 +5,7 @@ import { Reveal } from "@/components/ui/reveal";
 import { cn } from "@/lib/utils";
 
 const legalLinks = [
+  { href: "/about", label: "About" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
   { href: "/fair-use", label: "Fair use" },
@@ -29,7 +30,7 @@ export function LegalPage({
     <Page className="pt-8 md:pt-10">
       <Link
         href="/"
-        className="group -ml-2 inline-flex h-9 items-center gap-1.5 rounded-md px-2 text-sm text-ink-2 transition-colors hover:bg-paper-2 hover:text-ink"
+        className="group -ml-2 inline-flex h-11 items-center gap-1.5 rounded-md px-2 text-sm text-ink-2 transition-colors hover:bg-paper-2 hover:text-ink"
       >
         <ArrowLeft aria-hidden className="size-4 transition-transform duration-150 ease-out-soft group-hover:-translate-x-0.5" />
         Home
@@ -37,8 +38,8 @@ export function LegalPage({
 
       <div className="mt-10 grid gap-10 md:mt-14 md:grid-cols-12 md:gap-8">
         <aside className="md:col-span-3">
-          <nav aria-label="Legal" className="md:sticky md:top-24">
-            <p className="label-mono text-ink-3">Legal</p>
+          <nav aria-label="About and legal" className="md:sticky md:top-24">
+            <p className="label-mono text-ink-3">About &amp; legal</p>
             <ul className="mt-4 flex gap-1 md:flex-col">
               {legalLinks.map((l) => (
                 <li key={l.href}>
@@ -46,7 +47,7 @@ export function LegalPage({
                     href={l.href}
                     aria-current={l.href === current ? "page" : undefined}
                     className={cn(
-                      "-ml-2 inline-flex h-9 items-center gap-2 rounded-md px-2 text-[15px] transition-colors",
+                      "-ml-2 inline-flex h-11 items-center gap-2 rounded-md px-2 text-[15px] transition-colors",
                       l.href === current ? "font-medium text-ink" : "text-ink-2 hover:bg-paper-2 hover:text-ink",
                     )}
                   >

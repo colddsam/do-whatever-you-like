@@ -127,7 +127,7 @@ export function BlurFaceTool({ toolId, band }: { toolId: string; band?: React.Re
                       )}
                       <span
                         className={cn(
-                          "label-mono pointer-events-none absolute -top-5 left-0 whitespace-nowrap rounded-[3px] px-1 text-[10px]",
+                          "label-mono pointer-events-none absolute -top-5 left-0 whitespace-nowrap rounded-[3px] px-1 text-[12px]",
                           a.on ? "bg-ink/85 text-paper" : "bg-surface/90 text-ink-2",
                         )}
                       >

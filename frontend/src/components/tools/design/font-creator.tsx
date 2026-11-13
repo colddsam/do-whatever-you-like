@@ -165,7 +165,7 @@ export function FontCreator({ toolId }: { toolId: string }) {
                 const on = settings.sets.includes(s.id);
                 return (
                   <button key={s.id} type="button" aria-pressed={on} onClick={() => set({ sets: on ? settings.sets.filter((x) => x !== s.id) : [...settings.sets, s.id] })} className={cn("inline-flex h-8 items-center rounded-sm border px-2.5 text-[13px] transition-colors", on ? "border-ink bg-ink text-paper" : "border-line bg-surface text-ink-2 hover:border-ink-3")}>
-                    {s.label} <span className={cn("ml-1.5 font-mono text-[11px]", on ? "text-paper-dim" : "text-ink-3")}>{s.chars.length}</span>
+                    {s.label} <span className={cn("ml-1.5 font-mono text-[12px]", on ? "text-paper-dim" : "text-ink-3")}>{s.chars.length}</span>
                   </button>
                 );
               })}
@@ -247,7 +247,7 @@ function Guides() {
         ["baseline", 0, "solid"],
       ].map(([label, u, style]) => (
         <div key={label as string} className="absolute inset-x-0 border-t border-accent/40" style={{ top: y(u as number), borderTopStyle: style as "solid" | "dashed" }}>
-          <span className="absolute left-1 -translate-y-full font-mono text-[10px] text-accent/70">{label}</span>
+          <span className="absolute left-1 -translate-y-full font-mono text-[12px] text-accent/70">{label}</span>
         </div>
       ))}
     </div>
@@ -340,7 +340,7 @@ function DrawPad({ ch, brush, glyph, onChange, onNext, onBrush }: { ch: string; 
             void commit(strokes);
           }}
         />
-        {tracing && <span className="absolute right-2 top-2 rounded-sm bg-ink px-1.5 py-0.5 font-mono text-[10px] text-paper">tracing…</span>}
+        {tracing && <span className="absolute right-2 top-2 rounded-sm bg-ink px-1.5 py-0.5 font-mono text-[12px] text-paper">tracing…</span>}
       </div>
       <div className="space-y-3">
         <div className="flex flex-wrap gap-1.5">

@@ -334,7 +334,7 @@ function Viewer({ src, sample, onImage, onPick }: { src: string; sample: 1 | 3 |
           style={{ left: Math.min(Math.max(hover.x - 56, 4), hover.w - 116), top: hover.y > 150 ? hover.y - 150 : hover.y + 24 }}
         >
           <canvas ref={loupe} width={110} height={110} className="size-[110px] rounded-full border-2 border-paper shadow-float" style={{ imageRendering: "pixelated" }} />
-          <span className="mt-1 rounded-sm px-1.5 py-0.5 font-mono text-[11px] shadow-card" style={{ background: hex(hover.rgb), color: inkOn(hover.rgb) }}>
+          <span className="mt-1 rounded-sm px-1.5 py-0.5 font-mono text-[12px] shadow-card" style={{ background: hex(hover.rgb), color: inkOn(hover.rgb) }}>
             {hex(hover.rgb).toUpperCase()}
           </span>
         </div>
@@ -375,7 +375,7 @@ function Detail({ rgb }: { rgb: RGB | null }) {
           </li>
         ))}
       </ul>
-      <p className="border-t border-line px-3 py-2 font-mono text-[11px] text-ink-3">
+      <p className="border-t border-line px-3 py-2 font-mono text-[12px] text-ink-3">
         Text on white {onWhite.toFixed(1)}:1 {grade(onWhite)} · on black {onBlack.toFixed(1)}:1 {grade(onBlack)}
       </p>
     </div>
@@ -415,7 +415,7 @@ function Grid({ items, selected, onSelect }: { items: { key: string; rgb: RGB; n
             <span className="size-6 shrink-0 rounded-[4px] border border-line" style={{ background: hex(it.rgb) }} />
             <span className="min-w-0">
               <span className="block font-mono text-[12px] text-ink">{hex(it.rgb).toUpperCase()}</span>
-              <span className="block truncate text-[11px] text-ink-3">{it.note}</span>
+              <span className="block truncate text-[12px] text-ink-3">{it.note}</span>
             </span>
           </button>
         </li>

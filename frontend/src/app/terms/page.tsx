@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import { pageMeta } from "@/lib/site";
 import { LegalPage } from "@/components/layout/legal-page";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
   title: "Terms — Do-Whatever",
   description: "The terms for using Do-Whatever's tools.",
-};
+  path: "/terms",
+});
 
 export default function TermsPage() {
   return (

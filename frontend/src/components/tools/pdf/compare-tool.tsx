@@ -258,9 +258,9 @@ function Results({
                 className={cn("block w-full px-3 py-2.5 text-left text-sm transition-colors", i === active ? "bg-paper-2" : "hover:bg-paper")}
               >
                 <span className="flex items-center gap-2">
-                  <span className="font-mono text-[11px] text-ink-3">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="font-mono text-[12px] text-ink-3">{String(i + 1).padStart(2, "0")}</span>
                   <span className={cn("label-mono", c.type === "insert" ? "text-success" : c.type === "delete" ? "text-danger" : "text-ink-2")}>{tag(c.type)}</span>
-                  <span className="ml-auto font-mono text-[11px] text-ink-3">p. {c.new_marks[0]?.page ?? c.old_marks[0]?.page ?? "–"}</span>
+                  <span className="ml-auto font-mono text-[12px] text-ink-3">p. {c.new_marks[0]?.page ?? c.old_marks[0]?.page ?? "–"}</span>
                 </span>
                 {c.old && <span className="mt-1 line-clamp-2 block text-ink-3 line-through decoration-danger/60">{c.old}</span>}
                 {c.new && <span className="mt-0.5 line-clamp-2 block text-ink">{c.new}</span>}

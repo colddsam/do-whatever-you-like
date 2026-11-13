@@ -3,7 +3,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, ArrowUpRight, Check, ChevronRight } from "lucide-react";
-import { clusterHref, clusterOf, getCluster, getTool, toolHref, tools, toolsIn, type Tool } from "@/lib/tools";
+import { clusterHref, clusterOf, getCluster, getTool, toolHref, tools, toolsIn, wherePrivacy, type Tool } from "@/lib/tools";
+import { pageMeta } from "@/lib/site";
+import { toolGraph } from "@/lib/schema";
+import { JsonLd } from "@/components/seo/json-ld";
+import { guideFor, howTo } from "@/lib/guides";
 import { Badge } from "@/components/ui/primitives";
 import { Page } from "@/components/ui/paper";
 import { Reveal } from "@/components/ui/reveal";
@@ -18,9 +22,23 @@ export async function generateMetadata({ params }: PageProps<"/tools/[id]">): Pr
   const tool = getTool((await params).id);
   if (!tool) return {};
   return {
-    title: `${tool.name} — Do-Whatever`,
-    description: tool.description,
+    ...pageMeta({ title: toolTitle(tool), description: toolDescription(tool), path: toolHref(tool.id), image: `${toolHref(tool.id)}/opengraph-image` }),
+    // "Coming soon" pages stay reachable but out of the index (and out of the sitemap) until they work.
+    ...(tool.status !== "live" && { robots: { index: false, follow: true } }),
   };
+}
+
+/** "Merge PDF — Free Online, No Sign-up | Do-Whatever": the name people search, then the promise. */
+function toolTitle(tool: Tool) {
+  return `${tool.name} — Free Online, No Sign-up | Do-Whatever`;
+}
+
+/** The tool's one line, then what every result snippet should answer: cost, limits, privacy. */
+function toolDescription(tool: Tool) {
+  // Skip a limit the description already says ("…, in your browser." + "Runs in your browser").
+  const limit = tool.limit && !(/browser/i.test(tool.limit) && /browser/i.test(tool.description)) ? tool.limit : undefined;
+  const facts = ["Free, no sign-up", limit, wherePrivacy(tool)].filter(Boolean).join(". ");
+  return `${tool.description.replace(/\.?$/, ".")} ${facts}.`;
 }
 
 /** "YouTube downloader" → "YouTube" + italic "downloader". */
@@ -41,7 +59,7 @@ export default function ToolPage({ params }: PageProps<"/tools/[id]">) {
       <nav aria-label="Breadcrumb" className="flex items-center gap-3">
         <Link
           href="/tools"
-          className="group -ml-2 inline-flex h-9 items-center gap-1.5 rounded-md px-2 text-sm text-ink-2 transition-colors hover:bg-paper-2 hover:text-ink"
+          className="group -ml-2 inline-flex h-11 items-center gap-1.5 rounded-md px-2 text-sm text-ink-2 transition-colors hover:bg-paper-2 hover:text-ink"
         >
           <ArrowLeft aria-hidden className="size-4 transition-transform duration-150 ease-out-soft group-hover:-translate-x-0.5" />
           All tools
@@ -64,7 +82,8 @@ async function ToolCategory({ params }: Pick<PageProps<"/tools/[id]">, "params">
   const tool = getTool(id);
   if (!tool) return null;
   const cluster = getCluster(clusterOf(tool));
-  const crumb = "label-mono text-ink-3 transition-colors hover:text-ink";
+  // min-h-11: a 44px touch target around the small label.
+  const crumb = "label-mono inline-flex min-h-11 items-center text-ink-3 transition-colors hover:text-ink";
   return (
     <>
       {/* Where this tool lives: its collection, and its group within it. */}
@@ -112,6 +131,7 @@ async function ToolDetails({ params }: Pick<PageProps<"/tools/[id]">, "params">)
     ["Gives", tool.gives],
     ...(tool.limit ? [["Limit", tool.limit]] : []),
     ["Cost", "Free, no sign-up"],
+    ...(wherePrivacy(tool) ? [["Your files", wherePrivacy(tool)!]] : []),
   ];
 
   return (
@@ -120,7 +140,9 @@ async function ToolDetails({ params }: Pick<PageProps<"/tools/[id]">, "params">)
         Compact header: icon + name + one line. Kept short so the tool itself sits on the
         first screen, even on a 768px-tall laptop.
       */}
-      <Reveal className="mt-5 flex items-start gap-4 md:mt-7 md:gap-5">
+      {live && <JsonLd data={toolGraph(tool)} />}
+      {/* Painted straight away, not faded in: the heading is the page's largest content. */}
+      <div className="mt-5 flex items-start gap-4 md:mt-7 md:gap-5">
         <span className="flex size-11 shrink-0 items-center justify-center rounded-md border border-line bg-surface text-ink md:size-14">
           <Icon aria-hidden className="size-5 md:size-6" />
         </span>
@@ -130,12 +152,12 @@ async function ToolDetails({ params }: Pick<PageProps<"/tools/[id]">, "params">)
           </h1>
           <p className="mt-2 max-w-xl text-base leading-relaxed text-ink-2 text-pretty md:text-lg">{tool.description}</p>
         </div>
-      </Reveal>
+      </div>
 
       <div className="mt-8 grid grid-cols-1 gap-12 md:mt-10 lg:grid-cols-12 lg:gap-10 [&>*]:min-w-0">
-        <Reveal delay={0.06} className="lg:col-span-8">
+        <div className="lg:col-span-8">
           <Playground toolId={tool.id} />
-        </Reveal>
+        </div>
 
         <Reveal delay={0.12} className="lg:col-span-4">
           <aside className="space-y-10">
@@ -171,6 +193,8 @@ async function ToolDetails({ params }: Pick<PageProps<"/tools/[id]">, "params">)
         </Reveal>
       </div>
 
+      {live && <ToolGuide tool={tool} />}
+
       {/* Related tools: a full-width row under the workbench, same category first. */}
       <section aria-labelledby="more-title" className="mt-20 md:mt-24">
         <div className="flex items-end justify-between gap-6 border-b border-line pb-4">
@@ -182,7 +206,7 @@ async function ToolDetails({ params }: Pick<PageProps<"/tools/[id]">, "params">)
           </div>
           <Link
             href={siblings > 1 ? clusterHref(cluster.id) : "/tools"}
-            className="group inline-flex shrink-0 items-center gap-1 text-sm font-medium text-ink-2 transition-colors hover:text-ink"
+            className="group inline-flex min-h-11 shrink-0 items-center gap-1 text-sm font-medium text-ink-2 transition-colors hover:text-ink"
           >
             {siblings > 1 ? `All ${siblings} ${cluster.noun} tools` : "All tools"}
             <ArrowRight aria-hidden className="size-4 transition-transform duration-150 ease-out-soft group-hover:translate-x-0.5" />
@@ -200,6 +224,69 @@ async function ToolDetails({ params }: Pick<PageProps<"/tools/[id]">, "params">)
         </ul>
       </section>
     </>
+  );
+}
+
+/**
+ * The written part of the page, under the tool: how to use it in three steps, then (for tools that
+ * have one) what it's for and the questions people ask. Plain server HTML, readable without scripts.
+ */
+function ToolGuide({ tool }: { tool: Tool }) {
+  const guide = guideFor(tool);
+  const steps = howTo(tool);
+  const see = (guide?.see ?? []).map(getTool).filter((t): t is Tool => !!t && t.status === "live");
+  return (
+    <section aria-labelledby="guide-title" className="mt-20 grid gap-12 md:mt-24 lg:grid-cols-12 lg:gap-10 [&>*]:min-w-0">
+      <div className="lg:col-span-5">
+        <p className="label-mono text-ink-3">Guide</p>
+        <h2 id="guide-title" className="mt-2 text-2xl font-semibold tracking-[-0.02em]">
+          How to use <span className="serif-em">{tool.name}</span>
+        </h2>
+        <ol className="mt-6 divide-y divide-line border-y border-line">
+          {steps.map(([title, detail], i) => (
+            <li key={title} className="flex gap-4 py-4">
+              <span className="label-mono pt-0.5 text-ink-3">0{i + 1}</span>
+              <div>
+                <p className="text-[15px] font-medium text-ink">{title}</p>
+                {detail && <p className="mt-1 text-[15px] leading-relaxed text-ink-2">{detail}</p>}
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      {guide && (
+        <div className="lg:col-span-7">
+          <div className="max-w-2xl space-y-4 text-[17px] leading-relaxed text-ink-2 text-pretty">
+            {guide.intro.map((p) => (
+              <p key={p}>{p}</p>
+            ))}
+          </div>
+          <h3 className="label-mono mt-10 text-ink-3">Questions</h3>
+          <dl className="mt-4 max-w-2xl divide-y divide-line border-y border-line">
+            {guide.faqs.map((f) => (
+              <div key={f.q} className="py-4">
+                <dt className="text-[15px] font-semibold text-ink">{f.q}</dt>
+                <dd className="mt-1.5 text-[15px] leading-relaxed text-ink-2">{f.a}</dd>
+              </div>
+            ))}
+          </dl>
+          {see.length > 0 && (
+            <p className="mt-6 text-[15px] text-ink-2">
+              Next:{" "}
+              {see.map((t, i) => (
+                <span key={t.id}>
+                  {i > 0 && " · "}
+                  <Link href={toolHref(t.id)} className="font-medium text-ink underline decoration-line underline-offset-4 hover:decoration-ink">
+                    {t.name}
+                  </Link>
+                </span>
+              ))}
+            </p>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 

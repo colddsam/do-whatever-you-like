@@ -53,7 +53,7 @@ export function Sheet({ index, className, label = "PDF" }: { index?: number; cla
     >
       <span className="absolute right-0 top-0 size-2 rounded-bl-[2px] border-b border-l border-line bg-paper-2" />
       {index !== undefined ? (
-        <span className="absolute inset-x-0 top-2.5 text-center font-mono text-[11px] font-medium text-ink">
+        <span className="absolute inset-x-0 top-2.5 text-center font-mono text-[12px] font-medium text-ink">
           {String(index).padStart(2, "0")}
         </span>
       ) : (
@@ -322,7 +322,7 @@ export function PartsList({ parts }: { parts: ZipEntry[] }) {
         <ol className="divide-y divide-line border-y border-line">
           {parts.map((p, i) => (
             <li key={p.name} className="flex items-center gap-3 py-2">
-              <span className="w-6 shrink-0 font-mono text-[11px] text-ink-3">{String(i + 1).padStart(2, "0")}</span>
+              <span className="w-6 shrink-0 font-mono text-[12px] text-ink-3">{String(i + 1).padStart(2, "0")}</span>
               <span className="w-24 shrink-0 text-sm font-medium text-ink">{describePart(p.name)}</span>
               <span className="min-w-0 flex-1 truncate font-mono text-xs text-ink-3">{p.name}</span>
               <span className="shrink-0 font-mono text-xs text-ink-2">{formatBytes(p.size)}</span>

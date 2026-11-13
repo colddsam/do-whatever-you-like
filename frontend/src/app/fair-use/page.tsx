@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import { CONTACT_EMAIL, pageMeta } from "@/lib/site";
 import { LegalPage } from "@/components/layout/legal-page";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
   title: "Fair use — Do-Whatever",
   description: "How to use Do-Whatever's downloaders responsibly.",
-};
+  path: "/fair-use",
+});
 
 export default function FairUsePage() {
   return (
@@ -50,7 +52,11 @@ export default function FairUsePage() {
           body: (
             <p>
               We don&apos;t host or store the media people download. If you believe a tool is being misused with your
-              content, contact us through the request form on the home page.
+              content, email us at{" "}
+              <a href={`mailto:${CONTACT_EMAIL}`} className="underline decoration-line underline-offset-4 hover:decoration-ink">
+                {CONTACT_EMAIL}
+              </a>{" "}
+              and we&apos;ll act on it quickly.
             </p>
           ),
         },

@@ -451,7 +451,7 @@ function IconPreview({ look, name, onFail }: { look: Look; name: string; onFail:
               {[16, 24, 32, 48, 64].map((s) => (
                 <span key={s} className="flex flex-col items-center gap-1">
                   <Icon look={look} size={s} />
-                  <span className="font-mono text-[10px] text-ink-3">{s}</span>
+                  <span className="font-mono text-[12px] text-ink-3">{s}</span>
                 </span>
               ))}
             </div>

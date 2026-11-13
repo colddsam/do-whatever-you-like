@@ -110,7 +110,7 @@ export function Editor({
         aria-invalid={invalid}
         className="block w-full resize-y bg-transparent px-3 py-2.5 font-mono text-[13px] leading-relaxed text-ink outline-none placeholder:text-ink-3"
       />
-      <p className="flex justify-between border-t border-line bg-paper px-3 py-1 font-mono text-[11px] text-ink-3">
+      <p className="flex justify-between border-t border-line bg-paper px-3 py-1 font-mono text-[12px] text-ink-3">
         <span>{lines ? `${lines} line${lines === 1 ? "" : "s"}` : "empty"}</span>
         <span>{value.length.toLocaleString("en")} chars</span>
       </p>
@@ -183,7 +183,7 @@ export function Output({
           )}
         </motion.div>
       </AnimatePresence>
-      <p className="flex justify-between gap-3 whitespace-nowrap border-t border-line bg-paper px-3 py-1 font-mono text-[11px] text-ink-3">
+      <p className="flex justify-between gap-3 whitespace-nowrap border-t border-line bg-paper px-3 py-1 font-mono text-[12px] text-ink-3">
         <span className="truncate">{lang}</span>
         <span className="shrink-0">{value && !error ? `${lines} line${lines === 1 ? "" : "s"} · ${formatBytes(bytes)}` : "—"}</span>
       </p>
@@ -257,7 +257,7 @@ function Node({ name, value, path, depth, onPath }: { name: string | null; value
         {keyEl}
         <span className="text-ink-2">{isArr ? "[" : "{"}</span>
         {!open && (
-          <button type="button" onClick={() => setOpen(true)} className="mx-1 rounded-sm bg-paper-2 px-1.5 text-[11px] text-ink-3 hover:text-ink">
+          <button type="button" onClick={() => setOpen(true)} className="mx-1 rounded-sm bg-paper-2 px-1.5 text-[12px] text-ink-3 hover:text-ink">
             {entries.length} {isArr ? (entries.length === 1 ? "item" : "items") : entries.length === 1 ? "key" : "keys"}
           </button>
         )}
@@ -268,7 +268,7 @@ function Node({ name, value, path, depth, onPath }: { name: string | null; value
           {entries.slice(0, 500).map(([k, v]) => (
             <Node key={k} name={k} value={v} path={isArr ? `${path}[${k}]` : /^[A-Za-z_$][\w$]*$/.test(k) ? `${path}.${k}` : `${path}[${JSON.stringify(k)}]`} depth={depth + 1} onPath={onPath} />
           ))}
-          {entries.length > 500 && <p className="pl-5 text-[11px] text-ink-3">… {entries.length - 500} more (switch to Text to see them all)</p>}
+          {entries.length > 500 && <p className="pl-5 text-[12px] text-ink-3">… {entries.length - 500} more (switch to Text to see them all)</p>}
         </div>
       )}
       {open && <span className="pl-5 text-ink-2">{isArr ? "]" : "}"}</span>}

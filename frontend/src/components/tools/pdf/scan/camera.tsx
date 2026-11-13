@@ -285,7 +285,7 @@ export function ScanCamera({
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={lastThumb} alt="" className="size-full object-cover" />
-                <span className="absolute -right-0 -top-0 rounded-bl-[6px] bg-accent px-1 font-mono text-[11px] font-medium text-paper">{pages}</span>
+                <span className="absolute -right-0 -top-0 rounded-bl-[6px] bg-accent px-1 font-mono text-[12px] font-medium text-paper">{pages}</span>
               </motion.span>
             )}
           </AnimatePresence>

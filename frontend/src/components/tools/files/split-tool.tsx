@@ -535,7 +535,7 @@ function Contents({ label, items }: { label: string; items: string[] }) {
       <ol className="mt-1.5 max-h-48 overflow-y-auto overscroll-contain rounded-sm border border-line" data-lenis-prevent>
         {items.map((t, i) => (
           <li key={i} className="flex gap-3 border-b border-line px-2.5 py-1.5 text-[13px] last:border-b-0">
-            <span className="w-6 shrink-0 font-mono text-[11px] text-ink-3">{String(i + 1).padStart(2, "0")}</span>
+            <span className="w-6 shrink-0 font-mono text-[12px] text-ink-3">{String(i + 1).padStart(2, "0")}</span>
             <span className="min-w-0 truncate text-ink-2">{t || <span className="text-ink-3">Untitled</span>}</span>
           </li>
         ))}

@@ -11,12 +11,12 @@ const principles = [
   {
     icon: ShieldCheck,
     title: "Private by default",
-    body: "Files are processed for your request and then discarded. Nothing is kept or resold.",
+    body: "Some tools never leave your device. The rest delete your file once the result is sent (PDFs after 30 minutes). Nothing is resold.",
   },
   {
     icon: MonitorSmartphone,
     title: "Works anywhere",
-    body: "Phone, tablet or laptop. Everything runs in the browser, so there's nothing to install.",
+    body: "Phone, tablet or laptop. Every tool opens in your web browser, so there's nothing to install.",
   },
   {
     icon: Gift,

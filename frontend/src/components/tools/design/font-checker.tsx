@@ -207,7 +207,7 @@ export function FontChecker({ toolId }: { toolId: string }) {
                       {on && <motion.span layoutId="font-tab" aria-hidden className="absolute inset-0 rounded-[8px] bg-ink" transition={{ type: "spring", bounce: 0.22, duration: 0.45 }} />}
                       <span className="relative">{t.label}</span>
                       {badge ? (
-                        <span className={cn("relative rounded-sm px-1 font-mono text-[11px]", on ? "bg-paper/15 text-paper" : t.id === "checks" && loaded.report.summary.fail ? "bg-danger/10 text-danger" : "bg-paper-2 text-ink-3")}>
+                        <span className={cn("relative rounded-sm px-1 font-mono text-[12px]", on ? "bg-paper/15 text-paper" : t.id === "checks" && loaded.report.summary.fail ? "bg-danger/10 text-danger" : "bg-paper-2 text-ink-3")}>
                           {badge.toLocaleString("en")}
                         </span>
                       ) : null}
@@ -327,7 +327,7 @@ function Tester({ loaded }: { loaded: Loaded }) {
           <div className="space-y-2 overflow-x-auto px-4 py-4" data-lenis-prevent>
             {[12, 16, 20, 24, 32, 40, 56, 72, 96].map((s) => (
               <div key={s} className="flex items-baseline gap-3 whitespace-nowrap">
-                <span className={cn("w-8 shrink-0 text-right font-mono text-[11px]", dark ? "text-paper-dim" : "text-ink-3")}>{s}</span>
+                <span className={cn("w-8 shrink-0 text-right font-mono text-[12px]", dark ? "text-paper-dim" : "text-ink-3")}>{s}</span>
                 <span style={{ ...style, fontSize: s }}>{text.split("\n")[0] || " "}</span>
               </div>
             ))}
@@ -373,7 +373,7 @@ function Tester({ loaded }: { loaded: Loaded }) {
               {r.axes.map((a) => (
                 <div key={a.tag} className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-2">
                   <span className="truncate text-sm text-ink-2" title={a.tag}>
-                    {a.name} <span className="font-mono text-[11px] text-ink-3">{a.tag}</span>
+                    {a.name} <span className="font-mono text-[12px] text-ink-3">{a.tag}</span>
                   </span>
                   <Slider value={axes[a.tag] ?? a.default} min={a.min} max={a.max} step={(a.max - a.min) / 200} onChange={(v) => setAxes((x) => ({ ...x, [a.tag]: v }))} format={(v) => String(Math.round(v * 10) / 10)} label={a.name} />
                 </div>
@@ -410,7 +410,7 @@ function Tester({ loaded }: { loaded: Loaded }) {
                 );
               })}
             </div>
-            {featureCss && <p className="mt-2 break-all font-mono text-[11px] text-ink-3">font-feature-settings: {featureCss};</p>}
+            {featureCss && <p className="mt-2 break-all font-mono text-[12px] text-ink-3">font-feature-settings: {featureCss};</p>}
           </Row>
         )}
       </Panel>
@@ -638,7 +638,7 @@ function Languages({ report, family }: { report: FontReport; family: string | nu
                 <span className="h-1.5 overflow-hidden rounded-full bg-paper-2">
                   <motion.span className={cn("block h-full rounded-full", pct === 100 ? "bg-success" : "bg-ink")} initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }} />
                 </span>
-                <span className="text-right font-mono text-[11px] text-ink-2">{c.have}/{c.total}</span>
+                <span className="text-right font-mono text-[12px] text-ink-2">{c.have}/{c.total}</span>
               </li>
             );
           })}

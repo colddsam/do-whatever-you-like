@@ -310,9 +310,9 @@ export function ScanTool({ toolId }: { toolId: string }) {
                       ) : null}
                       {p.working && <span className="absolute inset-0 flex items-center justify-center"><span className="size-6 animate-spin rounded-full border-2 border-ink/20 border-t-ink" /></span>}
                     </button>
-                    <span className="absolute left-1.5 top-1.5 rounded-sm bg-ink px-1.5 font-mono text-[11px] text-paper">{String(i + 1).padStart(2, "0")}</span>
+                    <span className="absolute left-1.5 top-1.5 rounded-sm bg-ink px-1.5 font-mono text-[12px] text-paper">{String(i + 1).padStart(2, "0")}</span>
                     {!p.found && !p.working && (
-                      <span className="absolute right-1.5 top-1.5 rounded-sm bg-warning px-1.5 text-[11px] text-ink" title="No page edges found: drag the corners to crop">
+                      <span className="absolute right-1.5 top-1.5 rounded-sm bg-warning px-1.5 text-[12px] text-ink" title="No page edges found: drag the corners to crop">
                         Check crop
                       </span>
                     )}
@@ -548,7 +548,7 @@ function PageEditor({
                   )}
                 >
                   <span className="block text-[13px] font-medium">{f.label}</span>
-                  <span className={cn("block text-[11px] leading-snug", page.filter === f.value ? "text-paper-dim" : "text-ink-3")}>{f.hint}</span>
+                  <span className={cn("block text-[12px] leading-snug", page.filter === f.value ? "text-paper-dim" : "text-ink-3")}>{f.hint}</span>
                 </button>
               ))}
             </div>

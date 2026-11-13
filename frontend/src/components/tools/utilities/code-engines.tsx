@@ -489,7 +489,7 @@ export function EditorEngine({ preset }: EngineProps) {
           </div>
         </div>
         <CodeArea value={value} onChange={setValue} language={plain ? "" : language} wrap={wrap} />
-        <p className="flex justify-between gap-3 border-t border-line bg-paper px-3 py-1 font-mono text-[11px] text-ink-3">
+        <p className="flex justify-between gap-3 border-t border-line bg-paper px-3 py-1 font-mono text-[12px] text-ink-3">
           <span>{plain ? "Plain text" : language} · saved in this browser</span>
           <span>
             {lines} lines · {words} words · {value.length.toLocaleString("en")} chars

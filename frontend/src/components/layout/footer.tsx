@@ -17,6 +17,7 @@ const columns = [
       { label: "How it works", href: "/#how" },
       { label: "Why us", href: "/#why" },
       { label: "FAQ", href: "/#faq" },
+      { label: "About", href: "/about" },
       { label: "Request a tool", href: "/#request" },
     ],
   },

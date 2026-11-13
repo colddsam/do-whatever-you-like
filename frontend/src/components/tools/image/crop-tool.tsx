@@ -122,7 +122,7 @@ export function CropImageTool({ toolId, band }: { toolId: string; band?: React.R
                       ))}
                     </span>
                     {p && (
-                      <span className="label-mono pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[3px] bg-ink/85 px-1.5 py-0.5 text-[10px] text-paper">
+                      <span className="label-mono pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[3px] bg-ink/85 px-1.5 py-0.5 text-[12px] text-paper">
                         {p.w} × {p.h}
                       </span>
                     )}
