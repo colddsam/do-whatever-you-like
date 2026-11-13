@@ -51,11 +51,11 @@ function CardHead({ id, title, big }: { id: ClusterId; title: React.ReactNode; b
   return (
     <div>
       <div className="flex items-center justify-between gap-3">
-        <span className="flex items-center gap-3">
-          <span className="flex size-10 items-center justify-center rounded-md border border-line bg-surface text-ink">
+        <span className="flex min-w-0 items-center gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-md border border-line bg-surface text-ink">
             <Icon aria-hidden className="size-[18px]" />
           </span>
-          <span className="label-mono text-ink-3">
+          <span className="label-mono truncate text-ink-3">
             {c.name} · {all.length} {all.length === 1 ? "tool" : "tools"}
           </span>
         </span>
@@ -101,10 +101,10 @@ export function ToolsGrid() {
             label="Tools"
             title={
               <span id="tools-title">
-                Six collections, <span className="serif-em">one flow.</span>
+                Seven collections, <span className="serif-em">one flow.</span>
               </span>
             }
-            description={`${liveCount} tools that work today, sorted the way you think about the job: any file, PDFs, images, downloads, audio and video, and handy utilities. Pick a collection, or search for the task.`}
+            description={`${liveCount} tools that work today, sorted the way you think about the job: any file, PDFs, images, fonts and colour, downloads, audio and video, and handy utilities. Pick a collection, or search for the task.`}
           />
         </Reveal>
 
@@ -201,8 +201,17 @@ export function ToolsGrid() {
               <SeeAll id="media" label="All audio and video tools" />
             </article>
 
+            {/* Design: fonts and colour */}
+            <article className={cn(cell, "sm:col-span-2 lg:col-span-3")}>
+              <CardHead id="design" title={<>Type and colour, <span className="serif-em">checked.</span></>} />
+              <div className="mt-6">
+                <ToolRows ids={getCluster("design").featured} />
+              </div>
+              <SeeAll id="design" label="All design tools" />
+            </article>
+
             {/* Text & utilities */}
-            <article className={cn(cell, "lg:col-span-2")}>
+            <article className={cn(cell, "lg:col-span-3")}>
               <CardHead id="utilities" title={<>Handy <span className="serif-em">extras.</span></>} />
               <div className="mt-6">
                 <ToolRows ids={getCluster("utilities").featured} compact />
@@ -211,7 +220,7 @@ export function ToolsGrid() {
             </article>
 
             {/* Request */}
-            <article className={cn(cell, "justify-between gap-8 bg-paper-2/60 sm:col-span-2 sm:flex-row sm:items-end lg:col-span-4")}>
+            <article className={cn(cell, "justify-between gap-8 bg-paper-2/60 sm:col-span-2 sm:flex-row sm:items-end lg:col-span-6")}>
               <div>
                 <span className="flex size-10 items-center justify-center rounded-md border border-dashed border-ink-3 text-ink-2">
                   <Plus aria-hidden className="size-[18px]" />

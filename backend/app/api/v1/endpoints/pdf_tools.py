@@ -385,6 +385,8 @@ async def from_images(
     orientation: str = Form(default="auto", pattern="^(auto|portrait|landscape)$"),
     margin: str = Form(default="small", pattern="^(none|small|large)$"),
     enhance: bool = Form(default=False, description="Scan look: greyscale with stronger contrast"),
+    ocr: bool = Form(default=False, description="Also recognise the text, so the PDF can be searched and copied from"),
+    languages: Optional[List[str]] = Form(default=None, description="OCR languages (Tesseract codes, e.g. eng, hin). Up to 5"),
 ):
     if len(images) > settings.IMAGES_MAX_FILES:
         raise InvalidPDFInputError(f"Up to {settings.IMAGES_MAX_FILES} images at a time.")
@@ -395,8 +397,15 @@ async def from_images(
         names = [Path(img.filename or f"image {i + 1}").name for i, img in enumerate(images)]
         out = job_dir / f"{_stem(names[0]) if len(names) == 1 else 'images'}{'_scan' if enhance else ''}.pdf"
         await run_pdf("tools.from_images", saved, names, out, page_size, orientation, margin, enhance, request=request)
+        headers = {}
+        if ocr:
+            # Scans become searchable in the same request (the OCR PDF tool's own engine).
+            searchable = job_dir / f"{out.stem}_ocr.pdf"
+            report = await run_pdf("tools.ocr", out, searchable, languages or ["eng"], False, out.name, request=request)
+            searchable.replace(out)
+            headers["X-PDF-Info"] = json.dumps(report, ensure_ascii=True, default=str)
         background_tasks.add_task(cleanup_folder, job_dir)
-        return FileResponse(path=out, filename=out.name, media_type=PDF_MEDIA)
+        return FileResponse(path=out, filename=out.name, media_type=PDF_MEDIA, headers=headers)
     except Exception:
         cleanup_folder(job_dir)
         raise

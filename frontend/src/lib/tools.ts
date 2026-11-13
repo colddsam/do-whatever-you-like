@@ -1,6 +1,9 @@
 import {
   Archive,
   AppWindow,
+  Type,
+  Pipette,
+  PenTool,
   ArrowRightLeft,
   AudioLines,
   Braces,
@@ -320,12 +323,18 @@ const pdfTools: Tool[] = [
   }),
   pdfTool({
     id: "scan-to-pdf", name: "Scan to PDF", group: "Organize", icon: ScanLine,
-    description: "Photograph paper with your phone and get a clean PDF.",
-    takes: "Photos of pages", gives: "One PDF", limit: "Up to 100 pages",
-    steps: ["Take or add photos", "Tidy the scan", "Download"],
+    description: "A guided camera finds the page, straightens it and cleans it up: a crisp, searchable PDF.",
+    takes: "Your camera, or photos", gives: "Searchable PDF", limit: "Up to 100 pages",
+    steps: ["Scan the pages", "Check and adjust", "Download"],
     accept: { label: "Photos", types: "image/*" },
-    keywords: ["scan", "camera", "photo", "document scanner", "paper", "pdf"],
-    features: ["Use your phone's camera straight from the page", "Scan look: white paper, crisp text", "Reorder pages before you save"],
+    keywords: ["scan", "scanner", "camera", "photo", "document scanner", "adobe scan", "camscanner", "paper", "receipt", "whiteboard", "edge detection", "crop", "ocr", "searchable", "pdf"],
+    features: [
+      "Finds the page's edges live and shoots by itself when it's steady",
+      "Tells you what to fix: light, distance, angle, focus",
+      "Straightened to the page's true shape, shadows evened out",
+      "Auto, greyscale or black & white; drag corners to fine-tune",
+      "Searchable text (OCR) in 100+ languages, free, no watermark",
+    ],
   }),
   // Optimize
   pdfTool({
@@ -751,16 +760,30 @@ export const tools: Tool[] = [
     id: "dev",
     name: "Developer utilities",
     category: "Developers",
-    description: "Format JSON, encode Base64, hash strings.",
-    status: "soon",
+    description: "JSON, Base64, hashes, JWT, regex, timestamps, UUIDs and more, in your browser.",
+    status: "live",
     icon: Braces,
     kind: "text",
-    options: ["Format JSON", "Base64", "Hash"],
-    takes: "JSON or plain text",
-    gives: "Formatted or encoded text",
-    steps: ["Paste your input", "Pick a utility", "Copy the result"],
-    keywords: ["json", "base64", "hash", "format", "encode", "decode"],
-    features: ["Format and validate JSON", "Base64 encode and decode", "SHA-256 and MD5 hashes"],
+    options: ["JSON", "Diff", "Base64", "URL", "Hash", "JWT", "Regex", "Timestamp", "Number base", "Colour", "Case", "UUID", "Password"],
+    takes: "Text, JSON, tokens or files",
+    gives: "Formatted, encoded or generated text",
+    limit: "Runs in your browser",
+    steps: ["Pick a utility", "Paste your input", "Copy the result"],
+    keywords: [
+      "json", "json formatter", "json validator", "beautify", "minify", "json to csv", "diff", "compare text",
+      "base64", "encode", "decode", "data url", "url encode", "url decode", "query string",
+      "hash", "md5", "sha1", "sha256", "sha512", "hmac", "checksum", "jwt", "jwt decoder", "token",
+      "regex", "regular expression", "timestamp", "unix time", "epoch", "binary", "hex", "octal",
+      "color", "colour", "hex to rgb", "contrast", "camelcase", "snake case", "word count",
+      "uuid", "guid", "uuid v7", "nanoid", "password generator", "developer", "dev tools",
+    ],
+    features: [
+      "13 utilities: JSON, diff, Base64, URL, hashes, JWT, regex and more",
+      "Results update as you type; copy or download any of them",
+      "JSON errors point to the line and column; browse it as a tree",
+      "Verify JWT signatures and HMACs with your own secret",
+      "Nothing leaves your browser: safe for tokens and keys",
+    ],
   },
   {
     id: "convert-anything",
@@ -793,6 +816,71 @@ export const tools: Tool[] = [
       "Fonts, archives, notebooks, email and source code",
       "Picks the best route for you, and shows it",
       "Free, no sign-up, deleted once it's sent",
+    ],
+  },
+  {
+    id: "font-checker",
+    name: "Font checker",
+    category: "Design",
+    description: "See, test and validate any font, or find the fonts inside a PDF or Office file.",
+    status: "live",
+    icon: Type,
+    kind: "file",
+    takes: "TTF, OTF, WOFF, WOFF2, TTC, or a document",
+    gives: "A full report and live preview",
+    limit: "Fonts up to 60 MB",
+    steps: ["Add a font", "Test and inspect", "Fix or save"],
+    accept: { label: "Fonts or documents", types: "" },
+    keywords: ["font", "font checker", "font validator", "font viewer", "glyphs", "ttf", "otf", "woff", "woff2", "type tester", "opentype", "variable font", "fonts in pdf", "embedded fonts", "character map"],
+    features: [
+      "Type tester with OpenType features and variable axes",
+      "Every glyph, with outlines, points and metrics",
+      "Over 20 checks, incl. the sanitizer browsers run on web fonts",
+      "Script and language coverage, names, licence and embedding rights",
+      "Fonts used in PDF, Word, PowerPoint, Excel and EPUB files",
+    ],
+  },
+  {
+    id: "font-creator",
+    name: "Font creator",
+    category: "Design",
+    description: "Make your own font: draw letters, build a pixel font, or turn your handwriting into a font.",
+    status: "live",
+    icon: PenTool,
+    kind: "generate",
+    takes: "Your drawing, pixels or handwriting",
+    gives: "OTF, TTF, WOFF and WOFF2",
+    limit: "Made in your browser",
+    steps: ["Make the letters", "Preview and tune", "Download"],
+    keywords: ["font creator", "font maker", "make a font", "create font", "handwriting font", "my handwriting", "pixel font", "bitmap font", "draw font", "custom font", "calligraphy", "otf", "ttf", "woff2", "typeface"],
+    features: [
+      "Draw each letter with mouse, finger or pen",
+      "Or build a pixel font on a grid",
+      "Or print a template, write on it, and photograph it",
+      "Live preview while you work; spacing and name are yours",
+      "OTF, TTF, WOFF and WOFF2, free for any use",
+    ],
+  },
+  {
+    id: "color-picker",
+    name: "Colour picker",
+    category: "Design",
+    description: "Pick colours from any image, PDF, slide deck, document or video, and export the palette.",
+    status: "live",
+    icon: Pipette,
+    kind: "file",
+    takes: "Any image, PDF, Office file, video, SVG or CSS",
+    gives: "Colour codes and palettes",
+    limit: "Up to 150 MB",
+    steps: ["Add a file", "Pick colours", "Copy or export"],
+    accept: { label: "Any file", types: "" },
+    keywords: ["color picker", "colour picker", "eyedropper", "hex", "rgb", "hsl", "palette", "extract colors", "colors from image", "color from pdf", "color from powerpoint", "brand colors", "theme colors", "ase", "tailwind colors"],
+    features: [
+      "A magnifier shows the exact pixel; click to pick",
+      "The main colours found automatically, with their share",
+      "Exact colours from PDFs and Office files (theme and text)",
+      "HEX, RGB, HSL, OKLCH and CMYK, with contrast grades",
+      "Export to CSS, Tailwind, SCSS, JSON, GIMP or Adobe .ase",
     ],
   },
   {
@@ -845,7 +933,7 @@ export const exampleTasks = [
 
 /* ---------- Collections: how the toolbox is organised everywhere on the site ---------- */
 
-export type ClusterId = "files" | "pdf" | "images" | "downloads" | "media" | "utilities";
+export type ClusterId = "files" | "pdf" | "images" | "design" | "downloads" | "media" | "utilities";
 
 export type Cluster = {
   id: ClusterId;
@@ -865,7 +953,7 @@ export type Cluster = {
   featured: string[];
 };
 
-/** The six collections, in the order the site lists them. Every tool belongs to exactly one. */
+/** The seven collections, in the order the site lists them. Every tool belongs to exactly one. */
 export const CLUSTERS: Cluster[] = [
   {
     id: "files",
@@ -901,6 +989,15 @@ export const CLUSTERS: Cluster[] = [
     featured: ["compress-image", "resize-image", "remove-background", "convert-to-jpg", "icon-maker", "upscale-image"],
   },
   {
+    id: "design",
+    name: "Design",
+    title: "Fonts and colour",
+    noun: "design",
+    blurb: "Check any font, make your own, and pick colours from anything.",
+    icon: Type,
+    featured: ["font-checker", "font-creator", "color-picker"],
+  },
+  {
     id: "downloads",
     name: "Downloads",
     title: "Media downloads",
@@ -923,7 +1020,7 @@ export const CLUSTERS: Cluster[] = [
     name: "Text & utilities",
     title: "Text and utilities",
     noun: "utility",
-    blurb: "Make QR codes. Writing and developer helpers are next.",
+    blurb: "QR codes and developer utilities. A writing helper is next.",
     icon: QrCode,
     featured: ["qr", "writing", "dev"],
   },
@@ -931,6 +1028,9 @@ export const CLUSTERS: Cluster[] = [
 
 /** Tools outside the two families, placed by hand. Anything unlisted lands in utilities. */
 const CLUSTER_OF: Record<string, ClusterId> = {
+  "font-checker": "design",
+  "font-creator": "design",
+  "color-picker": "design",
   pdf: "pdf",
   image: "images",
   youtube: "downloads",

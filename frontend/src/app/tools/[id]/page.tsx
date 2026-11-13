@@ -190,9 +190,12 @@ async function ToolDetails({ params }: Pick<PageProps<"/tools/[id]">, "params">)
         </div>
         <ul className="mt-6 grid gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
           {related.map((t, i) => (
-            <Reveal as="li" key={t.id} delay={i * 0.05} className="bg-paper">
-              <RelatedCard tool={t} />
-            </Reveal>
+            // Solid tile, fading content: never an empty grey slab before it scrolls into view.
+            <li key={t.id} className="bg-paper">
+              <Reveal delay={i * 0.05} className="h-full">
+                <RelatedCard tool={t} />
+              </Reveal>
+            </li>
           ))}
         </ul>
       </section>

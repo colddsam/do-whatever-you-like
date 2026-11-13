@@ -96,7 +96,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "label-mono inline-flex h-6 items-center gap-1.5 rounded-sm border px-2",
+        "label-mono inline-flex h-6 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-sm border px-2",
         variant === "dark" ? "border-line-dark text-paper-dim" : "border-line text-ink-2",
         variant === "live" && "bg-surface text-ink",
         className,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { FileUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -8,6 +9,13 @@ import { cn } from "@/lib/utils";
  * The drop zone every file tool starts with. The whole box is a <label> for a real file
  * input, so click, keyboard (focus + Enter/Space) and drag-and-drop all work.
  */
+const CORNERS = [
+  "left-2 top-2 rounded-tl-[4px] border-l-2 border-t-2",
+  "right-2 top-2 rounded-tr-[4px] border-r-2 border-t-2",
+  "bottom-2 right-2 rounded-br-[4px] border-b-2 border-r-2",
+  "bottom-2 left-2 rounded-bl-[4px] border-b-2 border-l-2",
+];
+
 export function FileDrop({
   accept,
   title,
@@ -73,6 +81,21 @@ export function FileDrop({
               : "border-ink-3/50 bg-paper hover:border-ink-3 hover:bg-paper-2/40",
         )}
       >
+        {/* While a file is held over it, viewfinder brackets snap onto the corners (the scanner's motif). */}
+        <AnimatePresence>
+          {over &&
+            CORNERS.map((c, i) => (
+              <motion.span
+                key={i}
+                aria-hidden
+                initial={{ opacity: 0, scale: 1.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.2 }}
+                transition={{ type: "spring", stiffness: 420, damping: 24, delay: i * 0.02 }}
+                className={cn("pointer-events-none absolute size-4 border-ink", c)}
+              />
+            ))}
+        </AnimatePresence>
         <input
           id={id}
           type="file"

@@ -10,7 +10,6 @@ LibreOffice for merged Office files (if it can open them, Word/PowerPoint/Excel 
 """
 
 import argparse
-import io
 import json
 import shutil
 import subprocess

@@ -30,3 +30,5 @@ fonttools>=4.50.0
 # Merge and split Word and PowerPoint files.
 python-pptx>=1.0.2
 docxcompose>=1.4.0
+# Font checker: the OpenType Sanitizer browsers run on web fonts.
+opentype-sanitizer>=9.2.0

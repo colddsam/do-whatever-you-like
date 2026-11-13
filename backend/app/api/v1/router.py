@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from app.api.v1.endpoints import (
-    compress, convert, facebook, health, icon, image, instagram, merge_split, pdf, pdf_tools, qrcode, transcribe, universal, youtube,
+    compress, convert, facebook, fonts, health, icon, image, instagram, merge_split, palette, pdf, pdf_tools, qrcode, transcribe, universal, youtube,
 )
 
 api_v1_router = APIRouter()
@@ -20,3 +20,5 @@ api_v1_router.include_router(universal.router)
 api_v1_router.include_router(compress.router)
 api_v1_router.include_router(merge_split.router)
 api_v1_router.include_router(icon.router)
+api_v1_router.include_router(fonts.router)
+api_v1_router.include_router(palette.router)

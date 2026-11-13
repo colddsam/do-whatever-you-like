@@ -503,8 +503,8 @@ const LANGUAGE_NAMES: Record<string, string> = {
   isl: "Icelandic", gle: "Irish", cym: "Welsh", lat: "Latin", epo: "Esperanto", bel: "Belarusian", mkd: "Macedonian",
   sqi: "Albanian", bos: "Bosnian", kat: "Georgian", hye: "Armenian", san: "Sanskrit", bod: "Tibetan",
 };
-const langName = (code: string) => LANGUAGE_NAMES[code] ?? code.replace(/_/g, " ");
-const POPULAR = ["eng", "hin", "spa", "fra", "deu", "por", "ara", "chi_sim", "jpn", "ben"];
+export const langName = (code: string) => LANGUAGE_NAMES[code] ?? code.replace(/_/g, " ");
+export const POPULAR_OCR = ["eng", "hin", "spa", "fra", "deu", "por", "ara", "chi_sim", "jpn", "ben"];
 
 export function OcrTool({ toolId }: { toolId: string }) {
   const [available, setAvailable] = useState<string[] | null>(null);
@@ -526,7 +526,7 @@ export function OcrTool({ toolId }: { toolId: string }) {
     const q = query.trim().toLowerCase();
     const pool = q
       ? list.filter((c) => c.includes(q) || langName(c).toLowerCase().includes(q))
-      : POPULAR.filter((c) => list.includes(c));
+      : POPULAR_OCR.filter((c) => list.includes(c));
     return pool.filter((c) => !chosen.includes(c) && !c.endsWith("_vert")).slice(0, 12);
   }, [available, query, chosen]);
 

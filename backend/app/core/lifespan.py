@@ -16,6 +16,8 @@ from app.config.universal import settings as universal_settings
 from app.config.compress import settings as compress_settings
 from app.config.merge_split import settings as merge_split_settings
 from app.config.icon import settings as icon_settings
+from app.config.fonts import settings as fonts_settings
+from app.config.palette import settings as palette_settings
 from app.services.pdf import pdf_service
 from app.services.pdf_pool import shutdown_pool, warm_pool
 from app.services.ffmpeg_service import init_ffmpeg
@@ -38,6 +40,8 @@ async def lifespan(app: FastAPI):
     compress_settings.TEMP_DIR.mkdir(parents=True, exist_ok=True)
     merge_split_settings.TEMP_DIR.mkdir(parents=True, exist_ok=True)
     icon_settings.TEMP_DIR.mkdir(parents=True, exist_ok=True)
+    fonts_settings.TEMP_DIR.mkdir(parents=True, exist_ok=True)
+    palette_settings.TEMP_DIR.mkdir(parents=True, exist_ok=True)
     pdf_service.purge_stale()
     asyncio.get_running_loop().call_later(5, warm_pool)
     yield
@@ -55,7 +59,7 @@ async def lifespan(app: FastAPI):
         shutil.rmtree(transcribe_settings.TEMP_DIR, ignore_errors=True)
     if image_settings.TEMP_DIR.exists():
         shutil.rmtree(image_settings.TEMP_DIR, ignore_errors=True)
-    for tool in (universal_settings, compress_settings, merge_split_settings, icon_settings):
+    for tool in (universal_settings, compress_settings, merge_split_settings, icon_settings, fonts_settings, palette_settings):
         if tool.TEMP_DIR.exists():
             shutil.rmtree(tool.TEMP_DIR, ignore_errors=True)
     pdf_service.purge_stale()

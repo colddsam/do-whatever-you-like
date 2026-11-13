@@ -91,15 +91,18 @@ export function HowItWorks() {
 
         <ol className="mt-14 grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-line-dark bg-line-dark md:mt-16 lg:grid-cols-3">
           {steps.map((s, i) => (
-            <Reveal as="li" key={s.word} delay={i * 0.06} className="flex flex-col bg-ink-raised p-6 md:p-8">
-              <div className="flex items-baseline justify-between">
-                <span className="serif-em text-5xl text-paper md:text-6xl">{s.word}</span>
-                <span className="label-mono text-paper-dim">0{i + 1}</span>
-              </div>
-              <div className="mt-6 md:mt-8 lg:mt-10 lg:min-h-[92px]">{s.visual}</div>
-              <h3 className="mt-6 text-lg lg:mt-8 font-semibold tracking-[-0.01em]">{s.title}</h3>
-              <p className="mt-2 text-[15px] leading-relaxed text-paper-dim">{s.body}</p>
-            </Reveal>
+            // The tile's colour stays put and only its content fades in, so the hairline grid never shows through.
+            <li key={s.word} className="bg-ink-raised">
+              <Reveal delay={i * 0.06} className="flex h-full flex-col p-6 md:p-8">
+                <div className="flex items-baseline justify-between">
+                  <span className="serif-em text-5xl text-paper md:text-6xl">{s.word}</span>
+                  <span className="label-mono text-paper-dim">0{i + 1}</span>
+                </div>
+                <div className="mt-6 md:mt-8 lg:mt-10 lg:min-h-[92px]">{s.visual}</div>
+                <h3 className="mt-6 text-lg lg:mt-8 font-semibold tracking-[-0.01em]">{s.title}</h3>
+                <p className="mt-2 text-[15px] leading-relaxed text-paper-dim">{s.body}</p>
+              </Reveal>
+            </li>
           ))}
         </ol>
       </Container>

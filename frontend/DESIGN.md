@@ -356,6 +356,36 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
     on phones): the icon on the checkerboard, a browser tab, a dark home-screen row (iOS rounds its own
     icons, so that one is square and opaque), and a strip at actual pixel sizes. Shape, padding and background
     are CSS on the preview, mirroring exactly what `services/icon/engine.py` draws.
+  - **Scan to PDF** (`pdf/scan/`): a full-screen camera (`camera.tsx`, a portal over the page, near-black
+    `#0d0c09` so the picture reads true) with three bands: close / guidance pill / torch + Auto on top, the
+    viewfinder (exactly the video's shape, via container units, so the outline lines up), and thumbnail /
+    shutter / Done at the bottom. The guidance pill changes colour with what's asked (searching: translucent
+    with a spinner; adjust: paper; good: success; warn: warning). While searching, viewfinder brackets frame the
+    view and an accent scan line sweeps; once a page is found its outline glides (smoothed in `lib/scan.ts`),
+    brackets sit on its corners, and the accent outline draws itself as the page holds steady (the same progress
+    rings the shutter). A capture flashes paper-white, and the new page's thumbnail springs into the corner.
+    Vision runs in `public/scan/scan-worker.js` (OpenCV.js from `/vendor`, copied from npm by
+    `scripts/copy-vendor.mjs`; nothing leaves the device). Pages sit in a tray of 3:4 tiles; tapping one opens the
+    editor below it: `CornerEditor` (four accent handles, draggable or arrow-keyable, with a 3x loupe while
+    dragging), the four looks as radio cards, turn left/right, and the cleaned result.
+  - **Developer utilities** (`dev/`): a rail of 13 utilities grouped Data / Encode / Inspect / Convert /
+    Generate (an ink thumb slides between them; one scrolling row on phones). The choice lives in the URL hash
+    (`#jwt`), so each has a link. Inputs are `Editor` (file tab on top, mono line/char count under) and results
+    `Output` (the same frame, read-only, with a spring copy button and download); lists of values use `ValueRow`.
+    Layouts inside respond to the panel's own width (`@container`), not the screen's, because the panel shares the
+    page with the "At a glance" column.
+  - **Design tools** (`design/`): the Font checker opens on a specimen card (big "Aa" in the font, name, verdict
+    pill coloured by the worst check, a mono fact grid), then tabs with a sliding ink thumb: Type tester, Glyphs
+    (a `gap-px` grid of outlines; tapping one opens its outline with metric lines and points), Checks, Languages
+    (coverage bars that grow in), Details. The Colour picker is a picture with a pixel loupe that follows the
+    pointer (11× zoom, sampled pixel outlined, its hex on a chip in its own colour) beside a detail card (the colour
+    as a block, every notation with copy) and swatch groups; picked swatches spring in. The Font creator has a mode
+    switch (Draw / Pixel / Handwriting), a character grid that fills with the user's own glyphs, editing canvases
+    with accent guide lines (cap, x-height, baseline), and a live preview typed in the font being made.
+  - **Drop zones** take the scanner's motif: while a file is held over one, four viewfinder brackets snap onto its
+    corners.
+  - **Reveal on tiles**: in a hairline grid (`gap-px bg-line`), never fade the tile itself, only its content;
+    a faded tile shows the grid colour through as an empty slab until it scrolls into view.
   - **Sizes, before and after.** Every tool shows how big the result will be before anything is
     made or downloaded, and the exact size on the Download button once it is. Sizes are mono;
     predictions carry a `≈` (`formatSize` in `lib/media.ts`) and exact ones don't. Sources:

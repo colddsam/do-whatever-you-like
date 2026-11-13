@@ -42,6 +42,11 @@ import { CompressFilesTool } from "./files/compress-tool";
 import { MergeFilesTool } from "./files/merge-tool";
 import { SplitFilesTool } from "./files/split-tool";
 import { IconMakerTool } from "./image/icon-tool";
+import { DevUtilities } from "./dev/dev-utilities";
+import { ScanTool } from "./pdf/scan/scan-tool";
+import { FontChecker } from "./design/font-checker";
+import { ColorPicker } from "./design/color-picker";
+import { FontCreator } from "./design/font-creator";
 import { SoonWorkspace } from "./soon-workspace";
 
 type Workspace = ComponentType<{ toolId: string }>;
@@ -79,6 +84,10 @@ const byId: Record<string, Workspace> = {
   qr: QrPlayground,
   "audio-to-text": TranscribePlayground,
   "convert-anything": UniversalConverter,
+  dev: DevUtilities,
+  "font-checker": FontChecker,
+  "color-picker": ColorPicker,
+  "font-creator": FontCreator,
   "compress-files": CompressFilesTool,
   "merge-files": MergeFilesTool,
   "split-files": SplitFilesTool,
@@ -88,7 +97,7 @@ const byId: Record<string, Workspace> = {
   "remove-pages": (p) => <PdfPlayground {...p} mode="organize" />,
   "extract-pages": (p) => <PdfPlayground {...p} mode="split" chosenPages />,
   "organize-pdf": (p) => <PdfPlayground {...p} mode="organize" />,
-  "scan-to-pdf": (p) => <ImagesToPdfTool {...p} scan />,
+  "scan-to-pdf": ScanTool,
   // optimize
   "compress-pdf": (p) => <PdfPlayground {...p} mode="compress" />,
   "repair-pdf": RepairTool,

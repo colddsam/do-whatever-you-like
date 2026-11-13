@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, Reorder, useDragControls } from "motion/react";
-import { ArrowDown, ArrowUp, Camera, GripVertical, X } from "lucide-react";
+import { ArrowDown, ArrowUp, GripVertical, X } from "lucide-react";
 import { formatBytes } from "@/lib/media";
 import { saveBlob, uploadForm } from "@/lib/files";
 import { getTool, stepsFor } from "@/lib/tools";
@@ -20,21 +20,20 @@ const IMAGE_EXT = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".tif", ".t
 type Item = { id: string; file: File; url: string };
 
 /**
- * JPG to PDF and Scan to PDF: images in the order you set, one per page.
- * Scan mode adds the phone camera and the "clean scan" look (white paper, crisp text).
+ * JPG to PDF: images in the order you set, one per page. (Scan to PDF has its own guided
+ * camera, in scan/scan-tool.tsx.)
  */
-export function ImagesToPdfTool({ toolId, scan = false }: { toolId: string; scan?: boolean }) {
+export function ImagesToPdfTool({ toolId }: { toolId: string }) {
   const tool = getTool(toolId)!;
   const [items, setItems] = useState<Item[]>([]);
   const [rejected, setRejected] = useState<string | null>(null);
-  const [pageSize, setPageSize] = useState(scan ? "a4" : "a4");
+  const [pageSize, setPageSize] = useState("a4");
   const [orientation, setOrientation] = useState("auto");
-  const [margin, setMargin] = useState(scan ? "none" : "small");
-  const [enhance, setEnhance] = useState(scan);
+  const [margin, setMargin] = useState("small");
+  const [enhance, setEnhance] = useState(false);
   const [job, setJob] = useState<Job>({ kind: "ready" });
   const [result, setResult] = useState<TaskResult | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const cameraRef = useRef<HTMLInputElement>(null);
   const itemsRef = useRef(items);
   useEffect(() => {
     itemsRef.current = items;
@@ -107,7 +106,7 @@ export function ImagesToPdfTool({ toolId, scan = false }: { toolId: string; scan
     try {
       const out = await uploadForm("/api/tools/pdf/from-images", form, {
         signal: ctrl.signal,
-        fallbackName: scan ? "scan.pdf" : "images.pdf",
+        fallbackName: "images.pdf",
         onUpload: (p) => setJob(p >= 1 ? { kind: "processing" } : { kind: "uploading", progress: p }),
         onProcessing: () => setJob({ kind: "processing" }),
       });
@@ -123,32 +122,6 @@ export function ImagesToPdfTool({ toolId, scan = false }: { toolId: string; scan
   const step = !items.length ? 0 : !result ? 1 : result.saved ? 3 : 2;
   const accept = tool.accept?.types ?? "image/*";
 
-  const camera = scan && (
-    <>
-      <input
-        ref={cameraRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="sr-only"
-        tabIndex={-1}
-        aria-hidden
-        onChange={(e) => {
-          add(Array.from(e.target.files ?? []));
-          e.target.value = "";
-        }}
-      />
-      <button
-        type="button"
-        onClick={() => cameraRef.current?.click()}
-        disabled={busy}
-        className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-md border border-ink bg-surface px-4 text-[15px] font-medium text-ink transition-colors hover:bg-paper-2 disabled:opacity-40"
-      >
-        <Camera aria-hidden className="size-4" /> {items.length ? "Photograph another page" : "Photograph a page"}
-      </button>
-    </>
-  );
-
   return (
     <Workbench
       steps={stepsFor(tool)}
@@ -158,16 +131,14 @@ export function ImagesToPdfTool({ toolId, scan = false }: { toolId: string; scan
       <div className="space-y-3 p-3 sm:p-4">
         {!items.length ? (
           <>
-            {camera}
             <FileDrop
               multiple
               accept={accept}
-              title={scan ? "Or drop photos of the pages" : "Drop the images"}
+              title="Drop the images"
               formats={`JPG, PNG, WebP, GIF, BMP or TIFF · up to ${MAX_FILES} images`}
               error={rejected}
               onFiles={add}
             />
-            {scan && <p className="px-1 text-xs text-ink-3">On a phone, the button opens the camera. Shoot each page flat, in good light, filling the frame.</p>}
           </>
         ) : (
           <div>
@@ -196,8 +167,7 @@ export function ImagesToPdfTool({ toolId, scan = false }: { toolId: string; scan
             </Reorder.Group>
             {!busy && items.length < MAX_FILES && (
               <div className="mt-2 space-y-2">
-                {camera}
-                <FileDrop compact multiple accept={accept} title={scan ? "Add more photos" : "Add more images"} formats={`Up to ${MAX_FILES - items.length} more`} error={rejected} onFiles={add} />
+                <FileDrop compact multiple accept={accept} title="Add more images" formats={`Up to ${MAX_FILES - items.length} more`} error={rejected} onFiles={add} />
               </div>
             )}
           </div>
