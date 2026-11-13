@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 
 class DownloadRequest(BaseModel):
@@ -8,6 +8,10 @@ class DownloadRequest(BaseModel):
         min_length=5,
         max_length=512,
         description="Instagram post/reel URL or shortcode",
+    )
+    audio: Optional[Literal["m4a", "mp3"]] = Field(
+        default=None,
+        description="Save only the sound: 'm4a' (original quality, instant) or 'mp3' (encoded). Omit for the video.",
     )
 
 

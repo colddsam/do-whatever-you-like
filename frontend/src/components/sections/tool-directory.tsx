@@ -24,7 +24,7 @@ function scrollToId(id: string) {
 }
 
 /**
- * The toolbox as a directory: seven collections, each in its family's groups, with a filter that
+ * The toolbox as a directory: nine collections, each in its family's groups, with a filter that
  * narrows everything as you type and an index that follows you down the page.
  */
 export function ToolDirectory() {

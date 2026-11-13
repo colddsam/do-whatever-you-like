@@ -15,6 +15,8 @@ class AppSettings(BaseSettings):
     REQUEST_TIMEOUT: int = 25
     MAX_DOWNLOAD_SIZE_MB: int = 150
     MAX_VIDEO_DURATION_SECONDS: int = 3600
+    # MP3 means encoding, which runs at about real time on a 0.1-CPU instance; M4A (a copy) has no cap.
+    AUDIO_MP3_MAX_SECONDS: int = 1800
 
     model_config = SettingsConfigDict(
         env_file=".env",

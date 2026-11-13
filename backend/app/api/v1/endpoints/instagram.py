@@ -10,6 +10,7 @@ from app.core.utils import cleanup_file, cleanup_folder
 from app.exceptions.instagram import MediaExtractionError
 from app.schemas.instagram import DownloadRequest, MediaResponse
 from app.services.instagram import ig_service
+from app.services.audio_extract import MEDIA_TYPES as AUDIO_MEDIA_TYPES, AudioExtractError, files_to_audio
 
 router = APIRouter(prefix="/instagram", tags=["Instagram"])
 
@@ -41,6 +42,16 @@ async def download_media(payload: DownloadRequest, background_tasks: BackgroundT
     try:
         job_dir.mkdir(parents=True, exist_ok=True)
         files = await run_in_threadpool(ig_service.download_to_disk, shortcode, job_dir)
+        if payload.audio:
+            try:
+                files = await run_in_threadpool(files_to_audio, files, payload.audio)
+            except AudioExtractError as exc:
+                raise MediaExtractionError(str(exc))
+            # Photos and the source videos go; only the audio files are sent (or zipped).
+            keep = set(files)
+            for leftover in job_dir.iterdir():
+                if leftover.is_file() and leftover not in keep:
+                    leftover.unlink(missing_ok=True)
 
         if not files:
             cleanup_folder(job_dir)
@@ -52,7 +63,7 @@ async def download_media(payload: DownloadRequest, background_tasks: BackgroundT
             return FileResponse(
                 path=target_file,
                 filename=target_file.name,
-                media_type="application/octet-stream",
+                media_type=AUDIO_MEDIA_TYPES.get(target_file.suffix.lower(), "application/octet-stream"),
             )
 
         zip_base = settings.TEMP_DIR / f"{shortcode}_{request_id}_archive"
@@ -66,7 +77,7 @@ async def download_media(payload: DownloadRequest, background_tasks: BackgroundT
         background_tasks.add_task(full_cleanup)
         return FileResponse(
             path=zip_path,
-            filename=f"{shortcode}.zip",
+            filename=f"{shortcode}{'-audio' if payload.audio else ''}.zip",
             media_type="application/zip",
         )
     except Exception:

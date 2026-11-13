@@ -14,7 +14,9 @@ const ACTIONS = ["extract", "download"] as const;
 type Platform = (typeof PLATFORMS)[number];
 type Action = (typeof ACTIONS)[number];
 
-const EXTRACT_TIMEOUT_MS = 60_000;
+// Vercel stops a route at maxDuration; give up a little before so the browser gets a real answer.
+export const maxDuration = 60;
+const EXTRACT_TIMEOUT_MS = 55_000;
 const DOWNLOAD_TIMEOUT_MS = 10 * 60_000;
 
 const isPlatform = (v: string): v is Platform => (PLATFORMS as readonly string[]).includes(v);
@@ -28,8 +30,10 @@ export async function POST(req: NextRequest, ctx: RouteContext<"/api/tools/[plat
   if (!backend) return notConfigured();
 
   let url: unknown;
+  let quality: unknown;
+  let audio: unknown;
   try {
-    ({ url } = await req.json());
+    ({ url, quality, audio } = await req.json());
   } catch {
     return apiError(400, "Send a JSON body with a `url` field.");
   }
@@ -38,7 +42,11 @@ export async function POST(req: NextRequest, ctx: RouteContext<"/api/tools/[plat
   }
 
   // Instagram's schema names the field differently from the other two.
-  const payload = platform === "instagram" ? { url_or_shortcode: url.trim() } : { url: url.trim() };
+  // YouTube takes a quality: a height like "720", "audio" or "auto" (the backend checks it too).
+  const q = platform === "youtube" && typeof quality === "string" && /^(auto|audio|\d{3,4})$/.test(quality) ? quality : undefined;
+  // Every platform can save only the sound, as M4A or MP3.
+  const a = audio === "m4a" || audio === "mp3" ? { audio } : {};
+  const payload = platform === "instagram" ? { url_or_shortcode: url.trim(), ...a } : { url: url.trim(), ...(q ? { quality: q } : {}), ...a };
 
   // Downloads can outlast a hosted route's time limit, so the browser may fetch them directly.
   if (action === "download" && wantsDirect(req)) {
@@ -60,7 +68,7 @@ export async function POST(req: NextRequest, ctx: RouteContext<"/api/tools/[plat
     });
   } catch (e) {
     if (e instanceof DOMException && e.name === "TimeoutError") {
-      return apiError(504, "That took too long. Try again, or try a shorter video.");
+      return apiError(504, action === "extract" ? "The server is waking up. Try again in a few seconds." : "That took too long. Try again, or try a shorter video.");
     }
     return apiError(502, "Couldn't reach the downloader service. Is the backend running?");
   }

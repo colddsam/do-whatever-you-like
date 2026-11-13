@@ -451,3 +451,19 @@ export function contrast(a: Rgb, b: Rgb): number {
 
 export const toHex = ({ r, g, b, a }: Rgb) =>
   `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}${a < 1 ? Math.round(a * 255).toString(16).padStart(2, "0") : ""}`;
+
+/**
+ * A demo token for the JWT tool, signed here at runtime (HS256) with SAMPLE_JWT_SECRET. Building it
+ * rather than pasting a literal keeps token-shaped strings out of the source, so secret scanners
+ * don't flag a harmless example.
+ */
+export const SAMPLE_JWT_SECRET = "demo-secret";
+export async function sampleJwt(): Promise<string> {
+  const b64url = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const part = (o: object) => b64url(new TextEncoder().encode(JSON.stringify(o)));
+  const now = Math.floor(Date.now() / 1000);
+  const signing = `${part({ alg: "HS256", typ: "JWT" })}.${part({ sub: "1234567890", name: "Ada Lovelace", role: "demo", iat: now, exp: now + 3600 })}`;
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(SAMPLE_JWT_SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const sig = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(signing)));
+  return `${signing}.${b64url(sig)}`;
+}

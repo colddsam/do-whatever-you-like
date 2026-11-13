@@ -1,49 +1,66 @@
-# Render Blueprint for the backend (Dashboard -> New -> Blueprint -> pick this repo).
-# The frontend deploys separately on Vercel (root directory: frontend).
-services:
-  - type: web
-    name: do-whatever-api
-    runtime: docker
-    plan: free
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
-    autoDeploy: true
-    envVars:
-      # Same value as BACKEND_TOKEN on Vercel. Render can generate one; copy it across.
-      - key: HEADER_TOKEN
-        generateValue: true
-      # Your Vercel address as a JSON list, e.g. ["https://do-whatever.vercel.app"].
-      # Browsers send files straight here, so only your site may call it.
-      - key: ALLOWED_ORIGINS
-        sync: false
-      # The free instance has 0.1 CPU: cap the slowest jobs so they finish in minutes, not hours.
-      - key: PDF_OCR_MAX_PAGES
-        value: "30"
-      - key: PDF_COMPARE_MAX_PAGES
-        value: "100"
-      - key: CONVERT_EXCEL_MAX_PAGES
-        value: "100"
-      # Speech to text. With a free Groq key (https://console.groq.com) recordings are transcribed by
-      # Whisper large-v3 in seconds; without one, Whisper "base" runs on the 0.1 CPU here, which is slow.
-      # With a key, audio is sent to Groq, and the page says so.
-      - key: TRANSCRIBE_GROQ_API_KEY
-        sync: false
-      - key: TRANSCRIBE_MAX_DURATION_SECONDS
-        value: "7200"
-      # Image tools. Images are decoded in memory (4 bytes a pixel), and upscaling on 0.1 CPU takes
-      # about a minute per megapixel out, so both are capped for the free instance.
-      - key: IMAGE_MAX_PIXELS
-        value: "25000000"
-      - key: IMAGE_UPSCALE_MAX_OUTPUT_PIXELS
-        value: "4000000"
-      # Universal converter (any file -> any format). Re-encoding video on 0.1 CPU runs at about real
-      # time or slower, so it's capped; copying streams (MP4 -> MKV, M4A -> AAC) isn't.
-      - key: UNIVERSAL_VIDEO_MAX_SECONDS
-        value: "600"
-      - key: UNIVERSAL_TIMEOUT_SECONDS
-        value: "900"
-      # Compressing video, and merging videos that need re-encoding, have the same cap.
-      - key: COMPRESS_VIDEO_MAX_SECONDS
-        value: "600"
-      - key: MERGE_SPLIT_VIDEO_MAX_SECONDS
-        value: "600"
+# Render Blueprint for the backend (Dashboard -> New -> Blueprint -> pick this repo).
+# The frontend deploys separately on Vercel (root directory: frontend).
+services:
+  - type: web
+    name: do-whatever-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    autoDeploy: true
+    envVars:
+      # Same value as BACKEND_TOKEN on Vercel. Render can generate one; copy it across.
+      - key: HEADER_TOKEN
+        generateValue: true
+      # Your Vercel address as a JSON list, e.g. ["https://do-whatever.vercel.app"].
+      # Browsers send files straight here, so only your site may call it.
+      - key: ALLOWED_ORIGINS
+        sync: false
+      # The free instance has 0.1 CPU: cap the slowest jobs so they finish in minutes, not hours.
+      - key: PDF_OCR_MAX_PAGES
+        value: "30"
+      - key: PDF_COMPARE_MAX_PAGES
+        value: "100"
+      - key: CONVERT_EXCEL_MAX_PAGES
+        value: "100"
+      # Speech to text. With a free Groq key (https://console.groq.com) recordings are transcribed by
+      # Whisper large-v3 in seconds; without one, Whisper "base" runs on the 0.1 CPU here, which is slow.
+      # With a key, audio is sent to Groq, and the page says so.
+      - key: TRANSCRIBE_GROQ_API_KEY
+        sync: false
+      - key: TRANSCRIBE_MAX_DURATION_SECONDS
+        value: "7200"
+      # Image tools. Images are decoded in memory (4 bytes a pixel), and upscaling on 0.1 CPU takes
+      # about a minute per megapixel out, so both are capped for the free instance.
+      - key: IMAGE_MAX_PIXELS
+        value: "25000000"
+      - key: IMAGE_UPSCALE_MAX_OUTPUT_PIXELS
+        value: "4000000"
+      # Universal converter (any file -> any format). Re-encoding video on 0.1 CPU runs at about real
+      # time or slower, so it's capped; copying streams (MP4 -> MKV, M4A -> AAC) isn't.
+      - key: UNIVERSAL_VIDEO_MAX_SECONDS
+        value: "600"
+      - key: UNIVERSAL_TIMEOUT_SECONDS
+        value: "900"
+      # Compressing video, and merging videos that need re-encoding, have the same cap.
+      - key: COMPRESS_VIDEO_MAX_SECONDS
+        value: "600"
+      - key: MERGE_SPLIT_VIDEO_MAX_SECONDS
+        value: "600"
+      # YouTube: long videos are fine; the page offers only the qualities that fit this size cap.
+      - key: YOUTUBE_MAX_DOWNLOAD_MB
+        value: "500"
+      - key: YOUTUBE_MAX_DURATION_SECONDS
+        value: "14400"
+      # Instagram only shares posts with a signed-in session. Export cookies.txt from a browser signed in
+      # to a spare Instagram account (README, "Cookie Configuration") and add it in the Render dashboard
+      # under Environment -> Secret Files, named cookies_instagram.txt; Render mounts it here. Without it,
+      # the Instagram page explains that downloads aren't set up. The session lasts weeks to months.
+      - key: INSTAGRAM_COOKIE_FILE_PATH
+        value: /etc/secrets/cookies_instagram.txt
+      - key: FACEBOOK_COOKIE_FILE_PATH
+        value: /etc/secrets/cookies_facebook.txt
+      # Optional: if YouTube starts answering "Sign in to confirm you're not a bot" (it does that to
+      # some cloud IP ranges), add a cookies.txt from a signed-in browser as cookies_youtube.txt.
+      - key: YOUTUBE_COOKIE_FILE_PATH
+        value: /etc/secrets/cookies_youtube.txt

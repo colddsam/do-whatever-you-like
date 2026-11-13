@@ -1,7 +1,10 @@
 fastapi>=0.115.0
 uvicorn[standard]>=0.30.0
 instaloader>=4.13.0
-yt-dlp>=2024.8.6
+# [default] brings yt-dlp-ejs, the solver YouTube now needs; Deno (a wheel, no system install)
+# runs it. Without them YouTube hides most formats or refuses downloads.
+yt-dlp[default]>=2026.10.26
+deno==2.9.8
 requests>=2.31.0
 pydantic>=2.7.0
 pydantic-settings>=2.2.0
@@ -32,3 +35,5 @@ python-pptx>=1.0.2
 docxcompose>=1.4.0
 # Font checker: the OpenType Sanitizer browsers run on web fonts.
 opentype-sanitizer>=9.2.0
+# Developer tools: DNS lookups.
+dnspython>=2.7.0

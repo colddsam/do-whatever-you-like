@@ -4,6 +4,13 @@ import { filenameFrom, saveBlob, type DirectTarget } from "./files";
 
 export type Platform = "youtube" | "instagram" | "facebook";
 
+/** Saving only the sound: M4A keeps the original track (instant); MP3 is encoded. */
+export type AudioFormat = "m4a" | "mp3";
+/** MP3 means encoding on the server, so it's offered up to this length (backend AUDIO_MP3_MAX_SECONDS). */
+export const MP3_MAX_SECONDS = 30 * 60;
+/** What a download asks for beyond the link. */
+export type DownloadChoice = { quality?: string; audio?: AudioFormat };
+
 export type MediaItem = {
   type: "video" | "image";
   url: string;
@@ -26,7 +33,15 @@ export type MediaPreview = {
   /** Predicted size of that file in bytes, and whether it's exact or approximate. */
   size?: number;
   sizeExact: boolean;
+  /** YouTube: the qualities that can be saved (best first), and the one picked by default. */
+  qualities?: Quality[];
+  defaultQuality?: string;
+  maxMB?: number;
+  /** How many items have sound to extract (videos). 0 for a photo-only post. */
+  videoCount: number;
 };
+
+export type Quality = { id: string; label: string; height: number | null; ext: string; size: number | null; sizeExact: boolean; fits: boolean };
 
 export class ToolError extends Error {}
 
@@ -42,6 +57,9 @@ type YoutubeRes = SizeFields & {
   thumbnail?: string | null;
   is_short?: boolean;
   items: VideoItem[];
+  qualities?: { id: string; label: string; height: number | null; ext: string; size: number | null; size_is_exact: boolean; fits: boolean }[];
+  default_quality?: string | null;
+  max_download_mb?: number;
 };
 type FacebookRes = Omit<YoutubeRes, "view_count" | "is_short">;
 type InstagramRes = SizeFields & {
@@ -77,11 +95,13 @@ function normalize(platform: Platform, raw: unknown): MediaPreview {
       size: r.estimated_size ?? undefined,
       // A ZIP adds a little packaging around the files, so its size is close but not exact.
       sizeExact: Boolean(r.size_is_exact) && r.items.length === 1,
+      videoCount: r.items.filter((i) => i.type === "video").length,
     };
   }
 
   const r = raw as YoutubeRes | FacebookRes;
   const first = r.items[0];
+  const qualities = "qualities" in r && r.qualities?.length ? r.qualities.map((q) => ({ ...q, sizeExact: q.size_is_exact })) : undefined;
   return {
     title: r.title || "Untitled video",
     author: r.uploader ?? undefined,
@@ -98,6 +118,10 @@ function normalize(platform: Platform, raw: unknown): MediaPreview {
     size: r.estimated_size ?? undefined,
     // Video and audio are merged into one MP4 after downloading, which shifts the size slightly.
     sizeExact: false,
+    qualities,
+    defaultQuality: ("default_quality" in r && r.default_quality) || undefined,
+    maxMB: ("max_download_mb" in r && r.max_download_mb) || undefined,
+    videoCount: r.items.length,
   };
 }
 
@@ -106,11 +130,11 @@ async function readError(res: Response): Promise<never> {
   throw new ToolError(body?.detail ?? `Request failed (${res.status}).`);
 }
 
-const post = (platform: Platform, action: "extract" | "download", url: string, signal?: AbortSignal) =>
+const post = (platform: Platform, action: "extract" | "download", url: string, signal?: AbortSignal, choice: DownloadChoice = {}) =>
   fetch(`/api/tools/${platform}/${action}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url }),
+    body: JSON.stringify({ url, ...choice }),
     signal,
   });
 
@@ -118,12 +142,12 @@ const post = (platform: Platform, action: "extract" | "download", url: string, s
  * Fetches the file straight from the backend when our route hands out a ticket (hosted frontends
  * stop a route after a few minutes, and a long video can take longer), through the route otherwise.
  */
-async function startDownload(platform: Platform, url: string, signal?: AbortSignal) {
+async function startDownload(platform: Platform, url: string, signal?: AbortSignal, choice: DownloadChoice = {}) {
   const endpoint = `/api/tools/${platform}/download`;
   const pre = await fetch(`${endpoint}?direct=1`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url }),
+    body: JSON.stringify({ url, ...choice }),
     signal,
   }).catch((e: unknown) => {
     if (e instanceof DOMException && e.name === "AbortError") throw e;
@@ -131,7 +155,7 @@ async function startDownload(platform: Platform, url: string, signal?: AbortSign
   });
   if (pre && !pre.ok) return pre; // The link itself was rejected; show why.
   const direct = (await pre?.json().catch(() => null)) as (DirectTarget & { body: unknown }) | null;
-  if (!direct?.url || !direct.ticket) return post(platform, "download", url, signal);
+  if (!direct?.url || !direct.ticket) return post(platform, "download", url, signal, choice);
   return fetch(direct.url, {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-Upload-Ticket": direct.ticket },
@@ -140,8 +164,15 @@ async function startDownload(platform: Platform, url: string, signal?: AbortSign
   });
 }
 
+/** Starts the backend booting if it's asleep (free hosts sleep when idle). Fire and forget. */
+export function wakeBackend() {
+  void fetch("/api/tools/wake", { cache: "no-store" }).catch(() => {});
+}
+
 export async function extract(platform: Platform, url: string, signal?: AbortSignal) {
-  const res = await post(platform, "extract", url, signal);
+  let res = await post(platform, "extract", url, signal);
+  // A sleeping free-tier server can miss the first deadline while it boots; it's up by the retry.
+  if (res.status === 502 || res.status === 504) res = await post(platform, "extract", url, signal);
   if (!res.ok) await readError(res);
   const preview = normalize(platform, await res.json());
   if (preview.items.length === 0) throw new ToolError("We found the post, but nothing in it can be downloaded.");
@@ -159,14 +190,20 @@ export async function download(
     signal,
     onStart,
     onProgress,
+    quality,
+    audio,
   }: {
     signal?: AbortSignal;
+    /** YouTube: a height like "720", "audio", or "auto". */
+    quality?: string;
+    /** Save only the sound, in this format. */
+    audio?: AudioFormat;
     onStart?: (total: number | null) => void;
     /** 0–1 once bytes arrive (null when the size is unknown), plus bytes received so far. */
     onProgress?: (p: number | null, received: number) => void;
   },
 ) {
-  const res = await startDownload(platform, url, signal);
+  const res = await startDownload(platform, url, signal, { ...(quality && !audio ? { quality } : {}), ...(audio ? { audio } : {}) });
   if (!res.ok) await readError(res);
   const total = Number(res.headers.get("x-file-size") ?? res.headers.get("content-length")) || 0;
   onStart?.(total || null);

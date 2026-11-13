@@ -28,8 +28,6 @@ import {
   entropyBits,
   fromBase64,
   fromUnix,
-  hash,
-  HASHES,
   jsonToCsv,
   nanoid,
   parseBigInt,
@@ -45,8 +43,9 @@ import {
   uuidV4,
   uuidV7,
   verifyHmacJwt,
+  sampleJwt,
+  SAMPLE_JWT_SECRET,
   words,
-  type HashName,
   type PasswordOptions,
 } from "@/lib/dev";
 import { saveBlob } from "@/lib/files";
@@ -56,6 +55,8 @@ import { cn } from "@/lib/utils";
 import { Workbench } from "../workbench";
 import { Chips, Notice, Panel, Row, Slider, TextField, Toggle } from "../pdf/kit";
 import { CopyButton, Editor, FilePick, JsonTree, Output, ValueList, ValueRow } from "./parts";
+import { HashEngine } from "../utilities/data-engines";
+import { CSS_COLOR_NAMES, namedColor, nearestName, rgbToCmyk, rgbToHsv } from "@/lib/utilities/colors";
 
 type UtilId = "json" | "diff" | "base64" | "url" | "hash" | "jwt" | "regex" | "time" | "base" | "color" | "case" | "uuid" | "password";
 
@@ -64,12 +65,12 @@ const UTILS: { id: UtilId; label: string; blurb: string; group: string; icon: Lu
   { id: "diff", label: "Text diff", blurb: "What changed between two texts", group: "Data", icon: GitCompare },
   { id: "base64", label: "Base64", blurb: "Encode and decode text or files", group: "Encode", icon: Binary },
   { id: "url", label: "URL", blurb: "Encode, decode and take apart", group: "Encode", icon: Link2 },
-  { id: "hash", label: "Hash", blurb: "MD5, SHA-1/256/384/512, HMAC", group: "Encode", icon: Hash },
+  { id: "hash", label: "Hash", blurb: "MD5, SHA-2, SHA-3, CRC, NTLM and HMAC", group: "Encode", icon: Hash },
   { id: "jwt", label: "JWT", blurb: "Decode and verify tokens", group: "Inspect", icon: ShieldCheck },
   { id: "regex", label: "Regex", blurb: "Test patterns, see every match", group: "Inspect", icon: Regex },
   { id: "time", label: "Timestamp", blurb: "Unix time to dates and back", group: "Convert", icon: Clock },
   { id: "base", label: "Number base", blurb: "Binary, octal, decimal, hex", group: "Convert", icon: Hash },
-  { id: "color", label: "Colour", blurb: "HEX, RGB, HSL and contrast", group: "Convert", icon: Palette },
+  { id: "color", label: "Colour", blurb: "HEX, RGB, HSL, HSV, CMYK, names and contrast", group: "Convert", icon: Palette },
   { id: "case", label: "Case & count", blurb: "camelCase, snake_case, word count", group: "Convert", icon: CaseSensitive },
   { id: "uuid", label: "UUID & IDs", blurb: "UUID v4, v7 and Nano IDs", group: "Generate", icon: Fingerprint },
   { id: "password", label: "Password", blurb: "Strong, random, made here", group: "Generate", icon: KeyRound },
@@ -145,7 +146,7 @@ export function DevUtilities({ toolId }: { toolId: string }) {
               {active === "diff" && <DiffUtil />}
               {active === "base64" && <Base64Util />}
               {active === "url" && <UrlUtil />}
-              {active === "hash" && <HashUtil />}
+              {active === "hash" && <HashEngine preset={{ alg: "sha256", all: "1" }} />}
               {active === "jwt" && <JwtUtil />}
               {active === "regex" && <RegexUtil />}
               {active === "time" && <TimeUtil />}
@@ -392,60 +393,17 @@ function UrlUtil() {
   );
 }
 
-function HashUtil() {
-  const [input, setInput] = useState("hello world");
-  const [file, setFile] = useState<File | null>(null);
-  const [key, setKey] = useState("");
-  const [check, setCheck] = useState("");
-  const [hashes, setHashes] = useState<Partial<Record<HashName, string>>>({});
-  const deferred = useDeferredValue(input);
 
+function JwtUtil() {
+  const [token, setToken] = useState("");
+  // The example token is signed in the browser (see sampleJwt), not stored in the source.
   useEffect(() => {
     let live = true;
-    const run = async () => {
-      const bytes = file ? new Uint8Array(await file.arrayBuffer()) : utf8(deferred);
-      const out: Partial<Record<HashName, string>> = {};
-      for (const h of HASHES) out[h] = await hash(h, bytes, key || undefined);
-      if (live) setHashes(out);
-    };
-    void run();
+    void sampleJwt().then((t) => live && setToken((cur) => cur || t));
     return () => {
       live = false;
     };
-  }, [deferred, file, key]);
-
-  const want = check.trim().toLowerCase();
-  const match = want ? HASHES.find((h) => hashes[h] === want) : undefined;
-  return (
-    <>
-      <Panel>
-        <Row label="Source">
-          <FilePick label={file ? "Pick another file" : "Or hash a file…"} onFile={setFile} file={file} />
-        </Row>
-        <Row label="HMAC key (optional)">
-          <TextField label="HMAC key" value={key} onChange={setKey} placeholder="Leave empty for a plain hash" mono />
-        </Row>
-      </Panel>
-      {!file && <Editor value={input} onChange={setInput} name="input.txt" rows={5} />}
-      <ValueList>
-        {HASHES.map((h) => (
-          <ValueRow key={h} label={key ? `HMAC ${h}` : h} value={hashes[h] ?? ""} highlight={match === h} note={h === "MD5" || h === "SHA-1" ? "Checksums only; not safe for passwords or signatures." : undefined} />
-        ))}
-      </ValueList>
-      <Panel>
-        <Row label="Compare">
-          <TextField label="Hash to compare" value={check} onChange={setCheck} placeholder="Paste a hash to check it matches" mono invalid={Boolean(want) && !match} />
-          {want && <p className={cn("mt-1.5 text-xs", match ? "text-success" : "text-danger")}>{match ? `✓ Matches the ${match} hash.` : "✗ Doesn't match any of the hashes above."}</p>}
-        </Row>
-      </Panel>
-    </>
-  );
-}
-
-const SAMPLE_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
-
-function JwtUtil() {
-  const [token, setToken] = useState(SAMPLE_JWT);
+  }, []);
   const [secret, setSecret] = useState("");
   const [verified, setVerified] = useState<{ for: string; ok: boolean | null } | null>(null);
   const [now] = useState(() => Date.now());
@@ -500,7 +458,7 @@ function JwtUtil() {
             )}
             <Panel>
               <Row label="Verify the signature">
-                <TextField label="Secret" value={secret} onChange={setSecret} placeholder="Shared secret (HS256, HS384, HS512)" mono />
+                <TextField label="Secret" value={secret} onChange={setSecret} placeholder={`Shared secret (HS256/384/512). The example uses “${SAMPLE_JWT_SECRET}”.`} mono />
                 <p className={cn("mt-1.5 text-xs", state === true ? "text-success" : state === false ? "text-danger" : "text-ink-3")}>
                   {!secret
                     ? "Decoding never needs the secret; checking the signature does. It stays in this tab."
@@ -699,7 +657,7 @@ function BaseUtil() {
 
 function ColorUtil() {
   const [input, setInput] = useState("#eb4a10");
-  const c = parseColor(input);
+  const c = parseColor(input) ?? namedColor(input);
   const [h, s, l] = c ? rgbToHsl(c) : [0, 0, 0];
   const white = { r: 255, g: 255, b: 255, a: 1 };
   const black = { r: 0, g: 0, b: 0, a: 1 };
@@ -712,7 +670,7 @@ function ColorUtil() {
             <label className="relative size-11 shrink-0 cursor-pointer overflow-hidden rounded-md border border-line" style={{ background: c ? toHex(c) : "transparent" }}>
               <input type="color" aria-label="Pick a colour" value={c ? toHex({ ...c, a: 1 }) : "#000000"} onChange={(e) => setInput(e.target.value)} className="absolute inset-0 cursor-pointer opacity-0" />
             </label>
-            <TextField label="Colour" value={input} onChange={setInput} placeholder="#1a73e8, rgb(26 115 232), hsl(214 82% 51%)" mono invalid={!c && Boolean(input.trim())} />
+            <TextField label="Colour" value={input} onChange={setInput} placeholder="#1a73e8, rgb(26 115 232), hsl(214 82% 51%), tomato" mono invalid={!c && Boolean(input.trim())} />
           </div>
         </Row>
       </Panel>
@@ -722,6 +680,9 @@ function ColorUtil() {
             <ValueRow label="HEX" value={toHex(c)} />
             <ValueRow label="RGB" value={c.a < 1 ? `rgb(${c.r} ${c.g} ${c.b} / ${+c.a.toFixed(2)})` : `rgb(${c.r} ${c.g} ${c.b})`} />
             <ValueRow label="HSL" value={c.a < 1 ? `hsl(${h} ${s}% ${l}% / ${+c.a.toFixed(2)})` : `hsl(${h} ${s}% ${l}%)`} />
+            <ValueRow label="HSV" value={`hsv(${rgbToHsv(c).join(", ").replace(/, (\d+), (\d+)$/, ", $1%, $2%")})`} />
+            <ValueRow label="CMYK" value={`cmyk(${rgbToCmyk(c).map((v) => `${v}%`).join(", ")})`} note="A plain conversion; print colours depend on the printer's profile." />
+            <ValueRow label="Name" value={nearestName(c).exact ? nearestName(c).name : `≈ ${nearestName(c).name}`} note={nearestName(c).exact ? "An exact CSS colour name." : `Closest of the ${CSS_COLOR_NAMES.length} CSS colour names.`} />
           </ValueList>
           <div className="grid gap-px overflow-hidden rounded-md border border-line bg-line @md:grid-cols-2">
             {[

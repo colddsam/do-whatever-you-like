@@ -71,7 +71,10 @@ Every job runs inside an isolated, per-request temporary directory (`temp/<servi
   - Split: Word at headings, page/section breaks or Word's recorded pages; PowerPoint and PDF each / every N / typed ranges; Excel by sheet, every N rows or a column's values; audio and video every N minutes, in equal parts or at typed times (no re-encoding). `/inspect` tells the UI what a file holds.
   - DOC, ODT, RTF, PPT, ODP, XLS and ODS are opened with LibreOffice first.
 - **Scan to PDF** — a guided camera in the browser (OpenCV.js in a Web Worker, self-hosted, free): finds the page's edges live, says what to fix (light, distance, angle, focus), notices text on the page, and shoots by itself when the page is steady. Pages are straightened to their true shape (perspective-corrected aspect ratio, snapped to A4/Letter), shadows evened out, and cleaned (Auto, greyscale, black & white); corners can be dragged by hand. `/api/v1/pdf-tools/from-images` builds the PDF and, with `ocr=true`, makes it searchable in the same request.
-- **Developer utilities** — JSON (format, validate with line/column, tree, CSV), text diff, Base64 (text and files), URL encode/decode/parse, hashes (MD5, SHA-1/256/384/512, HMAC), JWT decode and HS256/384/512 verification, regex tester with replace, timestamps, number bases, colours with WCAG contrast, case conversion and counts, UUID v4/v7 and Nano IDs, and passwords. All in the browser; nothing is sent anywhere.
+- **Developer utilities** — JSON (format, validate with line/column, tree, CSV), text diff, Base64 (text and files), URL encode/decode/parse, hashes (MD5, SHA-1/2/3, SHAKE, MD2/MD4, NTLM, CRC-16/32, HMAC), JWT decode and HS256/384/512 verification, regex tester with replace, timestamps, number bases, colours (HEX, RGB, HSL, HSV, CMYK, the 148 CSS names, WCAG contrast), case conversion and counts, UUID v4/v7 and Nano IDs, and passwords. All in the browser; nothing is sent anywhere.
+- **Developer collection** (`lib/utilities/catalog.ts`, one page per job over shared engines) — formatters for HTML, CSS/SCSS/Less, JavaScript, TypeScript, React/JSX, Angular, XML, PHP, Java, SQL (12 dialects), YAML and Markdown (Prettier and sql-formatter, in the browser); minifiers for HTML, CSS (csso) and JavaScript (Terser); validators for JavaScript/jQuery, CSS (css-tree, property values too), XML, YAML, JSON and card numbers (Luhn); XSD validation and XSLT 1.0 (`/api/v1/devtools/xsd`, `/xslt`, lxml, locked down); a CodeMirror editor for 140+ languages and an online notepad; a Markdown editor and viewer (`markdown-editor`, `markdown-viewer`: GitHub-flavoured Markdown with tables, task lists and footnotes, highlighted code, KaTeX maths and Mermaid diagrams, live split view with synced scrolling and an outline, open a file, drop it in or load a GitHub/GitLab/Gist link, export .md, standalone HTML or PDF, everything sanitised with DOMPurify and autosaved in the browser); HTML and XML viewers, XPath, JSONPath and URI-template testers; JSON escape, HTML entities and an IEEE-754 analyser; a hash page per algorithm, HMAC and WordPress (phpass) hashes; 21 random-data generators (numbers, primes, strings, dates, IPs, MACs, JSON/CSV/TSV/XML records, strings from a regex, bitmaps, a name picker); DNS/MX/NS lookups, website to IP, reverse DNS, HTTP headers and status with redirect chains, an open-port checker and an API tester (`/api/v1/devtools/*`, public addresses only, every hop checked, connections pinned to the checked IP); HTML link, table, redirect and share-link generators, REM↔PX, CSS to Less and an ASCII table.
+- **Text collection** — text ⇄ binary, hex, ASCII codes; number ⇄ words (international or lakh/crore); Roman numerals; Morse code with playback and WAV download; upside-down, mirror and reverse text; a text repeater; sort/shuffle/de-duplicate lines; lorem ipsum; an extractive summariser; text to PNG.
+- **Everyday utilities** — what's my IP (`/api/tools/my-ip`, from the request headers, never stored), screen resolution, browser window size, a responsive tester, a webcam test and a pixel ruler.
 - **Font checker (`/api/v1/fonts`)** — `/fonts/inspect` reports everything about a TTF, OTF, WOFF, WOFF2 or TTC (fontTools): names, metrics, embedding rights, licence, tables, OpenType features, variable axes and named styles, colour formats, script and language coverage, WOFF2 size, and 20+ checks including OTS, the OpenType Sanitizer Chrome and Firefox run on web fonts. `/fonts/document` lists the fonts a PDF, Word, PowerPoint, Excel, OpenDocument, EPUB, HTML, CSS or SVG file uses, embedded or not, and recovers embedded font files (de-obfuscating Word's and EPUB's). The page adds a type tester (features, variable axes, waterfall, language samples) and a glyph browser drawn with opentype.js.
 - **Font creator** — in the browser: draw letters (pen pressure on tablets), build a pixel font, or print a handwriting template, write on it and photograph it (corner markers and a page code are found with OpenCV, every box traced into outlines). opentype.js builds a real OpenType font live for the preview; it downloads as OTF, or TTF/WOFF/WOFF2 through the universal converter.
 - **Colour picker (`/api/v1/palette`)** — pick colours from any file with a pixel magnifier; the main colours found automatically (k-means in OKLab); HEX, RGB, HSL, OKLCH, CMYK and contrast grades; exports to CSS, Tailwind, SCSS, JSON, GIMP and Adobe ASE. Images stay in the browser; `/palette/extract` renders PDFs, Office files, video frames and other formats, and reads the exact colours they declare (Office theme colours, PDF vector and text colours, CSS/SVG colours).
@@ -295,11 +298,20 @@ TEMP_ROOT_DIR="./temp"
 REQUEST_TIMEOUT=25
 MAX_DOWNLOAD_SIZE_MB=150
 MAX_VIDEO_DURATION_SECONDS=3600
+# Downloaders can save only the sound: M4A copies the original track (instant, any length);
+# MP3 is encoded, which runs at about real time on a small instance, so it is capped by length.
+AUDIO_MP3_MAX_SECONDS=1800
 
 # Optional Per-Service Cookie Paths (Netscape format)
 INSTAGRAM_COOKIE_FILE_PATH="cookies_instagram.txt"
 FACEBOOK_COOKIE_FILE_PATH="cookies_facebook.txt"
 YOUTUBE_COOKIE_FILE_PATH=""
+
+# YouTube: the page offers each quality (up to 1080p, plus audio only) with its size; only those
+# under the cap can be downloaded, so long videos still work at a lower quality or as audio.
+YOUTUBE_MAX_DOWNLOAD_MB=500
+YOUTUBE_MAX_DURATION_SECONDS=14400
+YOUTUBE_MAX_HEIGHT=1080
 
 # Optional PDF & QR Service Settings
 PDF_CACHE_TTL_SECONDS=1800
@@ -321,8 +333,7 @@ BACKEND_TOKEN=replace-with-a-strong-random-secret-token
 
 ## Cookie Configuration (Optional — Age-Gated / Carousel Media)
 
-Public standard videos on YouTube, Facebook, and Instagram work without cookies. However, **cookies are required** when:
-- Extracting **Instagram photo posts or multi-item carousels** (Instagram restricts its `/api/v1/media/{id}/info/` endpoint to authenticated sessions).
+Public YouTube and Facebook videos work without cookies. **Instagram needs a signed-in session for every post** (reels, photos and carousels alike): its `/api/v1/media/{id}/info/` endpoint answers only authenticated sessions. Without `cookies_instagram.txt` the Instagram page says downloads aren't set up, and the backend logs a warning at startup. Cookies are also needed for:
 - Extracting **age-restricted (18+) or sensitive content** on Instagram, Facebook, or YouTube.
 - Bypassing datacenter IP bot challenges on cloud VPS hosts.
 
@@ -332,6 +343,9 @@ Public standard videos on YouTube, Facebook, and Instagram work without cookies.
 3. Use a browser extension such as **Get cookies.txt LOCALLY** to export cookies in **Netscape HTTP Cookie File** format.
 4. **Close the Incognito window without clicking "Log Out"** (clicking Log Out immediately invalidates the `sessionid` / `xs` token on the server).
 5. Save the file as `backend/cookies_instagram.txt` or `backend/cookies_facebook.txt` (or configure `*_COOKIE_FILE_PATH` in `backend/.env`).
+
+### On Render (production)
+`cookies*.txt` are gitignored, so they never reach the server with the code. Add each one in the Render dashboard under **Environment → Secret Files** with the same file name (`cookies_instagram.txt`, and optionally `cookies_facebook.txt` / `cookies_youtube.txt`). Render mounts them in `/etc/secrets/`, which `render.yaml` already points `*_COOKIE_FILE_PATH` at; redeploy after adding one. The files are read-only there, so yt-dlp works on a private copy. When the Instagram page reports that the session expired, export a fresh file and replace the secret.
 
 ---
 
@@ -346,11 +360,11 @@ Authorization: Bearer <HEADER_TOKEN>
 | :--- | :--- | :--- | :--- | :--- |
 | `GET` | `/api/v1/health` | Service health and version check | — | `200 OK` JSON status |
 | `POST` | `/api/v1/instagram/extract` | Fetch Instagram post/reel/carousel metadata & size | `{"url_or_shortcode": "..."}` | `200 OK` JSON metadata & direct URLs |
-| `POST` | `/api/v1/instagram/download` | Download Instagram media to client | `{"url_or_shortcode": "..."}` | Binary stream (`.mp4`, `.jpg`, or `.zip`) |
+| `POST` | `/api/v1/instagram/download` | Download Instagram media to client, or only the sound | `{"url_or_shortcode": "...", "audio": "m4a" \| "mp3" (optional)}` | Binary stream (`.mp4`, `.jpg`, or `.zip`) |
 | `POST` | `/api/v1/facebook/extract` | Fetch Facebook video/reel metadata & estimated size | `{"url": "https://www.facebook.com/reel/..."}` | `200 OK` JSON metadata & stream info |
-| `POST` | `/api/v1/facebook/download` | Download Facebook video/reel to client | `{"url": "https://www.facebook.com/reel/..."}` | Binary `.mp4` (or `.zip`) stream |
+| `POST` | `/api/v1/facebook/download` | Download Facebook video/reel to client, or only the sound | `{"url": "https://www.facebook.com/reel/...", "audio": "m4a" \| "mp3" (optional)}` | Binary `.mp4` (or `.zip`) stream |
 | `POST` | `/api/v1/youtube/extract` | Fetch YouTube video/Short metadata & estimated size | `{"url": "https://www.youtube.com/watch?v=..."}` | `200 OK` JSON metadata (`is_short`, `view_count`, etc.) |
-| `POST` | `/api/v1/youtube/download` | Download YouTube video/Short to client | `{"url": "https://youtu.be/..."}` | Binary `.mp4` stream |
+| `POST` | `/api/v1/youtube/download` | Download YouTube video/Short at a chosen quality, or only the sound | `{"url": "https://youtu.be/...", "quality": "auto" \| "720" \| …, "audio": "m4a" \| "mp3" (optional)}` | Binary `.mp4` stream |
 | `POST` | `/api/v1/pdf/upload` | Cache a PDF and return a reusable token + page count | `multipart/form-data` (`file`) | `200 OK` JSON (`token`, `filename`, `size`, `page_count`) |
 | `POST` | `/api/v1/pdf/merge` | Merge 2+ PDFs (via uploaded `files` or `tokens`) | `multipart/form-data` (`files` or `tokens`) | Binary `.pdf` stream |
 | `POST` | `/api/v1/pdf/merge/estimate` | Estimate merged PDF byte size from tokens | `multipart/form-data` (`tokens`) | `200 OK` JSON (`output`, `total_size`) |
@@ -371,6 +385,12 @@ Authorization: Bearer <HEADER_TOKEN>
 | `POST` | `/api/v1/fonts/document` | Fonts a document uses, embedded or not | `multipart/form-data` (`file`) | `200 OK` JSON (`fonts`, embedded `files` base64) |
 | `POST` | `/api/v1/palette/extract` | Pictures and exact colours of any file | `multipart/form-data` (`file`) | `200 OK` JSON (`pages` PNG base64, `declared`, `theme`) |
 | `POST` | `/api/v1/icon` | Icons for web, Windows, macOS, iOS, Android, desktop | `multipart/form-data` (`file`, `options` JSON) | `.zip` of icon packs, or one `.ico` |
+| `POST` | `/api/v1/devtools/dns` | DNS records (A, AAAA, CNAME, MX, NS, TXT, SOA, CAA, SRV) via public resolvers | `{"host": "example.com", "types": ["A", "MX"]}` | `200 OK` JSON (`records`, `ms`) |
+| `POST` | `/api/v1/devtools/reverse` | Hostnames behind an IP (PTR) | `{"ip": "8.8.8.8"}` | `200 OK` JSON (`hostnames`) |
+| `POST` | `/api/v1/devtools/port` | Is a TCP port open on a public host | `{"host": "example.com", "port": 443}` | `200 OK` JSON (`state`: open/closed/filtered) |
+| `POST` | `/api/v1/devtools/http` | One HTTP request to a public address, redirects followed hop by hop | `{"url", "method", "headers": [[k, v]], "body", "follow"}` | `200 OK` JSON (`status`, `headers`, `body` ≤1 MB, `hops`) |
+| `POST` | `/api/v1/devtools/xsd` | Validate XML against an XSD | `{"xml", "xsd"}` | `200 OK` JSON (`valid`, `errors` with lines) |
+| `POST` | `/api/v1/devtools/xslt` | XSLT 1.0 transform (no file/network access) | `{"xml", "xsl"}` | `200 OK` JSON (`ok`, `output`, `html`) |
 
 ---
 

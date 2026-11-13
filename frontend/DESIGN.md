@@ -96,16 +96,21 @@ h3 20px/600 · body-lg 18px/1.6 · body 15–16px/1.6 · small 13px.
 
 ## E1. Collections: how the toolbox is organised
 
-Every tool belongs to exactly one of five **collections** (`CLUSTERS` in `lib/tools.ts`, `clusterOf()`):
-**PDF** (with its six groups), **Images** (five groups), **Downloads**, **Audio & video**, **Text &
-utilities**. Each has a name, a title (last word in `serif-em`), a one-line blurb, an icon, a `noun` for
+Every tool belongs to exactly one of nine **collections** (`CLUSTERS` in `lib/tools.ts`, `clusterOf()`):
+**Any file** (three groups), **PDF** (five groups), **Images** (five groups), **Developer** (ten groups,
+hub: Developer utilities), **Text** (four groups), **Design**, **Downloads**, **Audio & video** and
+**Everyday**. The Developer, Text and Everyday pages are generated from `lib/utilities/catalog.ts`: each
+page is one engine (format, minify, validate, hash, random, network, device…) with a `preset` as its
+starting state, rendered by `components/tools/utilities/utility-tool.tsx`. A new page there is one line
+in the catalogue; never a new component for a variant of an existing job. Engines render in the browser
+only (a same-sized pulse placeholder on the server) because they use browser APIs and random output. Each has a name, a title (last word in `serif-em`), a one-line blurb, an icon, a `noun` for
 counts ("30 PDF tools", "14 image tools"), an optional hub and its `featured` tools. Every surface reads
 from it, so a new tool appears everywhere once it's in the registry:
 
 - **Home** (`01 — Tools`): a hairline bento of the collections, not of single tools. PDF is the big card
   (group chips with counts, eight featured tools in two columns, "All 30 PDF tools →" and the toolkit);
-  Images beside it; Downloads (with the link field) and Audio & video under them; Text & utilities and the
-  request cell last. Rows are icon + name (+ description) + arrow, "Soon" in mono for tools in the works.
+  Images beside it; Developer (group chips, eight featured in two columns) and Text under them; Downloads
+  (with the link field) and Audio & video; Design and Everyday; the request cell last. Rows are icon + name (+ description) + arrow, "Soon" in mono for tools in the works.
 - **`/tools`** is a directory (`components/sections/tool-directory.tsx`): a filter field (`/` focuses it,
   Esc clears) that narrows everything as you type, using the same ranking as the palette. Collections are
   numbered sections (icon box, mono `01 — PDF · 30 tools`, title, blurb, "Open the PDF toolkit →"), each in

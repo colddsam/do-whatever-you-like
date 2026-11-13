@@ -1,5 +1,8 @@
 import {
   Archive,
+  CodeSquare,
+  Monitor,
+  WholeWord,
   AppWindow,
   Type,
   Pipette,
@@ -51,6 +54,7 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
+import { DEV_GROUPS, ENGINE_INFO, EVERYDAY_GROUPS, TEXT_GROUPS, UTILITIES } from "@/lib/utilities/catalog";
 
 export type ToolStatus = "live" | "soon";
 
@@ -87,6 +91,11 @@ export type ImageGroup = (typeof IMAGE_GROUPS)[number];
 export const FILE_GROUPS = ["Convert", "Compress", "Merge & split"] as const;
 export type FileGroup = (typeof FILE_GROUPS)[number];
 
+/** The Developer and Text collections' sections (lib/utilities/catalog.ts). */
+export type DevGroup = (typeof DEV_GROUPS)[number];
+export type TextGroup = (typeof TEXT_GROUPS)[number];
+export type EverydayGroup = (typeof EVERYDAY_GROUPS)[number];
+
 export type Tool = {
   id: string;
   name: string;
@@ -111,8 +120,8 @@ export type Tool = {
    * Tools that belong to a family (the single-purpose PDF tools) get their own section on /tools,
    * grouped by `group`, and stay out of the home page grid, which shows the family's hub instead.
    */
-  family?: "pdf" | "image" | "files";
-  group?: PdfGroup | ImageGroup | FileGroup;
+  family?: "pdf" | "image" | "files" | "developer" | "text";
+  group?: PdfGroup | ImageGroup | FileGroup | DevGroup | TextGroup | EverydayGroup;
   /** What the tool page promises, shown as a checklist. */
   features: string[];
   /** Live downloaders only: how the playground talks to the backend. */
@@ -598,6 +607,31 @@ const fileTools: Tool[] = [
   }),
 ];
 
+/**
+ * The Developer, Text and Everyday utilities: one Tool per page, generated from the catalogue
+ * (each page is a shared engine with a preset; see components/tools/utilities).
+ */
+const utilityTools: Tool[] = UTILITIES.map((u) => {
+  const info = ENGINE_INFO[u.engine];
+  return {
+    id: u.id,
+    name: u.name,
+    category: u.cluster === "dev" ? "Developers" : u.cluster === "text" ? "Text" : "Utilities",
+    description: u.description,
+    status: "live",
+    icon: u.icon,
+    kind: u.engine === "device" ? "generate" : "text",
+    takes: info.takes,
+    gives: info.gives,
+    limit: info.server ? "Public addresses only" : "Runs in your browser",
+    steps: info.steps,
+    keywords: u.keywords,
+    family: u.cluster === "dev" ? "developer" : u.cluster === "text" ? "text" : undefined,
+    group: u.group as DevGroup | TextGroup | EverydayGroup,
+    features: info.features,
+  } satisfies Tool;
+});
+
 export const toolHref = (id: string) => `/tools/${id}`;
 export const getTool = (id: string) => tools.find((t) => t.id === id);
 export const stepsFor = (tool: Tool) => tool.steps ?? defaultSteps[tool.kind];
@@ -607,45 +641,45 @@ export const tools: Tool[] = [
     id: "youtube",
     name: "YouTube downloader",
     category: "Downloads",
-    description: "Save videos and Shorts in the best quality available.",
+    description: "Save videos and Shorts in the quality you pick, or just the audio as MP3 or M4A.",
     status: "live",
     icon: Download,
     kind: "link",
     takes: "A public YouTube link",
-    gives: "MP4 video",
-    limit: "Up to 1 hour",
-    keywords: ["video", "shorts", "save", "yt", "download"],
-    features: ["Videos and Shorts up to 1 hour", "Best available quality, merged to MP4", "Title, channel and length preview before you save"],
+    gives: "MP4 video, MP3 or M4A audio",
+    limit: "Up to 4 hours",
+    keywords: ["video", "shorts", "save", "yt", "download", "youtube to mp3", "youtube audio", "mp3", "m4a", "extract audio", "song"],
+    features: ["Videos and Shorts up to 4 hours", "Pick the quality, up to 1080p, with each size shown", "Or save just the audio: M4A (original sound) or MP3", "Title, channel and length preview before you save"],
     downloader: { platform: "youtube", placeholder: "https://www.youtube.com/watch?v=…", hosts: ["youtube.com", "youtu.be"], examples: ["youtube.com/watch?v=…", "youtube.com/shorts/…", "youtu.be/…"] },
   },
   {
     id: "instagram",
     name: "Instagram downloader",
     category: "Downloads",
-    description: "Reels, posts and carousels, straight from a link.",
+    description: "Reels, posts and carousels, or just a reel's audio, straight from a link.",
     status: "live",
     icon: Download,
     kind: "link",
     takes: "A post link or shortcode",
-    gives: "MP4, JPG or ZIP",
+    gives: "MP4, JPG, ZIP, MP3 or M4A",
     limit: "Public posts only",
-    keywords: ["reel", "reels", "post", "carousel", "ig", "insta", "download"],
-    features: ["Reels, single posts and carousels", "Carousels arrive as one ZIP", "Paste a link or just the shortcode"],
+    keywords: ["reel", "reels", "post", "carousel", "ig", "insta", "download", "reel audio", "reel to mp3", "instagram mp3", "extract audio", "song"],
+    features: ["Reels, single posts and carousels", "Carousels arrive as one ZIP", "Save a reel's sound as MP3 or M4A", "Paste a link or just the shortcode"],
     downloader: { platform: "instagram", placeholder: "https://www.instagram.com/reel/…", hosts: ["instagram.com", "instagr.am"], allowShortcode: true, examples: ["instagram.com/reel/…", "instagram.com/p/…", "A bare shortcode"] },
   },
   {
     id: "facebook",
     name: "Facebook downloader",
     category: "Downloads",
-    description: "Grab public videos and reels without the hassle.",
+    description: "Grab public videos and reels, or just their audio, without the hassle.",
     status: "live",
     icon: Download,
     kind: "link",
     takes: "A public video or reel link",
-    gives: "MP4 video",
+    gives: "MP4 video, MP3 or M4A audio",
     limit: "Public videos only",
-    keywords: ["fb", "video", "reel", "download", "save"],
-    features: ["Public videos and reels", "Share links are resolved for you", "Saved as MP4"],
+    keywords: ["fb", "video", "reel", "download", "save", "facebook mp3", "facebook audio", "extract audio"],
+    features: ["Public videos and reels", "Share links are resolved for you", "Saved as MP4, or just the audio as MP3 or M4A"],
     downloader: { platform: "facebook", placeholder: "https://www.facebook.com/reel/…", hosts: ["facebook.com", "fb.watch", "fb.com"], examples: ["facebook.com/reel/…", "facebook.com/watch?v=…", "fb.watch/…"] },
   },
   {
@@ -908,6 +942,7 @@ export const tools: Tool[] = [
   ...fileTools,
   ...pdfTools,
   ...imageTools,
+  ...utilityTools,
 ];
 
 export const exampleTasks = [
@@ -933,7 +968,7 @@ export const exampleTasks = [
 
 /* ---------- Collections: how the toolbox is organised everywhere on the site ---------- */
 
-export type ClusterId = "files" | "pdf" | "images" | "design" | "downloads" | "media" | "utilities";
+export type ClusterId = "files" | "pdf" | "images" | "developer" | "text" | "design" | "downloads" | "media" | "utilities";
 
 export type Cluster = {
   id: ClusterId;
@@ -953,7 +988,7 @@ export type Cluster = {
   featured: string[];
 };
 
-/** The seven collections, in the order the site lists them. Every tool belongs to exactly one. */
+/** The nine collections, in the order the site lists them. Every tool belongs to exactly one. */
 export const CLUSTERS: Cluster[] = [
   {
     id: "files",
@@ -989,6 +1024,27 @@ export const CLUSTERS: Cluster[] = [
     featured: ["compress-image", "resize-image", "remove-background", "convert-to-jpg", "icon-maker", "upscale-image"],
   },
   {
+    id: "developer",
+    name: "Developer",
+    title: "Developer tools",
+    noun: "developer",
+    blurb: "Format, minify and validate code, hash, query XML and JSON, and check DNS and HTTP.",
+    icon: CodeSquare,
+    hub: "dev",
+    groups: DEV_GROUPS,
+    featured: ["dev", "markdown-editor", "javascript-formatter", "sql-formatter", "code-editor", "sha256-hash", "dns-lookup", "api-tester"],
+  },
+  {
+    id: "text",
+    name: "Text",
+    title: "Text tools",
+    noun: "text",
+    blurb: "Binary and hex translators, number to words, Morse, summaries and playful text.",
+    icon: WholeWord,
+    groups: TEXT_GROUPS,
+    featured: ["text-to-binary", "number-to-words", "morse-code", "text-summarizer", "upside-down-text", "lorem-ipsum"],
+  },
+  {
     id: "design",
     name: "Design",
     title: "Fonts and colour",
@@ -1017,17 +1073,19 @@ export const CLUSTERS: Cluster[] = [
   },
   {
     id: "utilities",
-    name: "Text & utilities",
-    title: "Text and utilities",
+    name: "Everyday",
+    title: "Everyday utilities",
     noun: "utility",
-    blurb: "QR codes and developer utilities. A writing helper is next.",
-    icon: QrCode,
-    featured: ["qr", "writing", "dev"],
+    blurb: "QR codes, your IP and screen, a webcam check and a pixel ruler.",
+    icon: Monitor,
+    featured: ["qr", "my-ip", "screen-resolution", "webcam-test", "browser-window-size", "pixel-ruler"],
   },
 ];
 
 /** Tools outside the two families, placed by hand. Anything unlisted lands in utilities. */
 const CLUSTER_OF: Record<string, ClusterId> = {
+  dev: "developer",
+  writing: "text",
   "font-checker": "design",
   "font-creator": "design",
   "color-picker": "design",
@@ -1041,7 +1099,17 @@ const CLUSTER_OF: Record<string, ClusterId> = {
 };
 
 export const clusterOf = (tool: Tool): ClusterId =>
-  tool.family === "pdf" ? "pdf" : tool.family === "image" ? "images" : tool.family === "files" ? "files" : (CLUSTER_OF[tool.id] ?? "utilities");
+  tool.family === "pdf"
+    ? "pdf"
+    : tool.family === "image"
+      ? "images"
+      : tool.family === "files"
+        ? "files"
+        : tool.family === "developer"
+          ? "developer"
+          : tool.family === "text"
+            ? "text"
+            : (CLUSTER_OF[tool.id] ?? "utilities");
 export const getCluster = (id: ClusterId) => CLUSTERS.find((c) => c.id === id)!;
 export const clusterHref = (id: ClusterId) => `/tools#${id}`;
 

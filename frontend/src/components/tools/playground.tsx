@@ -48,6 +48,8 @@ import { FontChecker } from "./design/font-checker";
 import { ColorPicker } from "./design/color-picker";
 import { FontCreator } from "./design/font-creator";
 import { SoonWorkspace } from "./soon-workspace";
+import { UtilityTool } from "./utilities/utility-tool";
+import { getUtility } from "@/lib/utilities/catalog";
 
 type Workspace = ComponentType<{ toolId: string }>;
 
@@ -73,6 +75,9 @@ type Workspace = ComponentType<{ toolId: string }>;
  * - the image family (by id) → components/tools/image/: most run in ImageTask (images in, options,
  *   one action, a result to compare); crop and blur draw on the image; meme and photo editor run
  *   in the browser; image (the home-page hub) → ImageStudio, four of them behind a mode switch
+ *
+ * - the Developer, Text and Everyday utilities (lib/utilities/catalog.ts) → UtilityTool: one engine
+ *   per job (format, hash, random, network…) with the page's preset as its starting state
  *
  * Anything not registered shows its kind's preview in SoonWorkspace.
  */
@@ -138,6 +143,6 @@ const byId: Record<string, Workspace> = {
 
 export function Playground({ toolId }: { toolId: string }) {
   const tool = getTool(toolId)!;
-  const Live = tool.status === "live" ? (byId[tool.id] ?? (tool.preset ? UniversalConverter : byKind[tool.kind])) : undefined;
+  const Live = tool.status === "live" ? (byId[tool.id] ?? (getUtility(tool.id) ? UtilityTool : tool.preset ? UniversalConverter : byKind[tool.kind])) : undefined;
   return Live ? <Live toolId={toolId} /> : <SoonWorkspace toolId={toolId} />;
 }

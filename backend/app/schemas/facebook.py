@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 
 class FacebookDownloadRequest(BaseModel):
@@ -9,6 +9,10 @@ class FacebookDownloadRequest(BaseModel):
         max_length=512,
         description="Public Facebook video or reel URL",
         examples=["https://www.facebook.com/reel/1195289147628387"],
+    )
+    audio: Optional[Literal["m4a", "mp3"]] = Field(
+        default=None,
+        description="Save only the sound: 'm4a' (original quality, instant) or 'mp3' (encoded). Omit for the video.",
     )
 
 

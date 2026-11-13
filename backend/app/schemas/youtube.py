@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 
 class YoutubeDownloadRequest(BaseModel):
@@ -10,6 +10,25 @@ class YoutubeDownloadRequest(BaseModel):
         description="Public YouTube video or Shorts URL",
         examples=["https://www.youtube.com/shorts/dQw4w9WgXcQ"],
     )
+    quality: str = Field(
+        default="auto",
+        pattern=r"^(auto|audio|\d{3,4})$",
+        description="'auto' (the best that fits the size cap), a height like '720', or 'audio' (M4A)",
+    )
+    audio: Optional[Literal["m4a", "mp3"]] = Field(
+        default=None,
+        description="Save only the sound: 'm4a' (original quality, instant) or 'mp3' (encoded). Omit for the video.",
+    )
+
+
+class YoutubeQuality(BaseModel):
+    id: str = Field(description="What to send as `quality`: a height like '720', or 'audio'")
+    label: str
+    height: Optional[int] = None
+    ext: str
+    size: Optional[int] = None
+    size_is_exact: bool = False
+    fits: bool = Field(description="False when it's over the size cap and can't be downloaded")
 
 
 class YoutubeMediaItem(BaseModel):
@@ -37,4 +56,7 @@ class YoutubeMediaResponse(BaseModel):
     )
     size_is_exact: bool = Field(default=False, description="False when any part of the size is approximated")
     items: List[YoutubeMediaItem]
+    qualities: List[YoutubeQuality] = Field(default_factory=list, description="Best first; the first that fits is the default")
+    default_quality: Optional[str] = None
+    max_download_mb: int = 0
 

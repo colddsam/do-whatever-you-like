@@ -1,5 +1,4 @@
 import logging
-import os
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List
@@ -9,6 +8,7 @@ import yt_dlp
 
 from app.config.facebook import settings
 from app.core.config import app_settings
+from app.core.utils import writable_cookie_copy
 from app.core.media_size import estimate_ydl_entry_size, sum_estimates
 from app.exceptions.facebook import FacebookExtractionError, InvalidFacebookURLError
 from app.services.ffmpeg_service import init_ffmpeg
@@ -154,8 +154,9 @@ class FacebookDownloaderService:
             "allowed_extractors": ["facebook", "facebook:reel", "facebook:ads"],
             "match_filter": cls._safety_match_filter,
         }
-        if settings.COOKIE_FILE_PATH and os.path.exists(settings.COOKIE_FILE_PATH):
-            opts["cookiefile"] = str(settings.COOKIE_FILE_PATH)
+        cookie_file = writable_cookie_copy(settings.COOKIE_FILE_PATH, settings.TEMP_DIR)
+        if cookie_file:
+            opts["cookiefile"] = cookie_file
         return opts
 
     @staticmethod
@@ -229,7 +230,7 @@ class FacebookDownloaderService:
             "items": items,
         }
 
-    def download_to_disk(self, url: str, target_dir: Path) -> List[Path]:
+    def download_to_disk(self, url: str, target_dir: Path, audio_only: bool = False) -> List[Path]:
         init_ffmpeg()
         valid_url = self.validate_url(url)
         target_dir.mkdir(parents=True, exist_ok=True)
@@ -238,7 +239,8 @@ class FacebookDownloaderService:
         opts = {
             **self._get_base_ydl_opts(),
             "outtmpl": output_template,
-            "format": self.DOWNLOAD_FORMAT,
+            # Audio only: Facebook serves sound as its own stream, so there's no need to fetch the video.
+            "format": "ba[ext=m4a]/ba/b" if audio_only else self.DOWNLOAD_FORMAT,
             "merge_output_format": "mp4",
             "max_filesize": app_settings.MAX_DOWNLOAD_SIZE_MB * 1024 * 1024,
         }
@@ -255,7 +257,7 @@ class FacebookDownloaderService:
         saved_files = [
             f
             for f in target_dir.iterdir()
-            if f.is_file() and f.suffix.lower() in {".mp4", ".mkv", ".webm", ".mov"}
+            if f.is_file() and f.suffix.lower() in {".mp4", ".mkv", ".webm", ".mov", ".m4a", ".opus", ".ogg", ".aac"}
         ]
         if not saved_files:
             raise FacebookExtractionError("Downloaded Facebook media file could not be located on disk.")

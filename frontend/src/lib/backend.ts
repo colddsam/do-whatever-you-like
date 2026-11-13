@@ -151,3 +151,27 @@ export async function getJson(path: string, failed: string) {
     headers: { "Content-Type": "application/json", "Cache-Control": "private, max-age=60" },
   });
 }
+
+/** POSTs a small JSON body to the backend and passes its JSON answer back (developer tools). */
+export async function postJson(req: Request, path: string, opts: { maxBytes: number; timeoutMs: number; failed: string }) {
+  const backend = backendConfig();
+  if (!backend) return notConfigured();
+  const body = await req.text().catch(() => "");
+  if (!body) return apiError(400, "Send the details as JSON.");
+  if (body.length > opts.maxBytes) return apiError(413, "That's too much input for this tool.");
+  let upstream: Response;
+  try {
+    upstream = await fetch(backend.endpoint(path), {
+      method: "POST",
+      headers: { Authorization: `Bearer ${backend.token}`, "Content-Type": "application/json" },
+      body,
+      cache: "no-store",
+      signal: AbortSignal.timeout(opts.timeoutMs),
+    });
+  } catch (err) {
+    const timedOut = err instanceof Error && err.name === "TimeoutError";
+    return apiError(timedOut ? 504 : 502, timedOut ? "That took too long. Try again." : "Couldn't reach the tool service. Is the backend running?");
+  }
+  if (!upstream.ok) return upstreamError(upstream, opts.failed);
+  return new Response(upstream.body, { status: 200, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
+}

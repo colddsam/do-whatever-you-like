@@ -9,6 +9,7 @@ import {
   ClipboardPaste,
   Download,
   ExternalLink,
+  Music,
   ImageIcon,
   Link2,
   Loader2,
@@ -27,6 +28,9 @@ import {
   formatDuration,
   formatSize,
   ToolError,
+  wakeBackend,
+  MP3_MAX_SECONDS,
+  type AudioFormat,
   type MediaPreview,
 } from "@/lib/media";
 import { Kbd } from "@/components/ui/primitives";
@@ -65,11 +69,14 @@ export function DownloaderPlayground({ toolId }: { toolId: string }) {
   const [hint, setHint] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const [saving, setSaving] = useState<Saving>({ kind: "none" });
+  const [quality, setQuality] = useState<string | undefined>(undefined);
+  const [audio, setAudio] = useState<AudioFormat | null>(null);
   const [canPaste, setCanPaste] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
+    wakeBackend();
     const t = setTimeout(() => setCanPaste(typeof navigator.clipboard?.readText === "function"), 0);
     return () => {
       clearTimeout(t);
@@ -99,6 +106,8 @@ export function DownloaderPlayground({ toolId }: { toolId: string }) {
     setPhase({ kind: "fetching" });
     try {
       const preview = await extract(cfg.platform, value, ctrl.signal);
+      setQuality(preview.defaultQuality);
+      setAudio(null);
       setPhase({ kind: "ready", preview });
     } catch (e) {
       if (ctrl.signal.aborted) return;
@@ -114,6 +123,8 @@ export function DownloaderPlayground({ toolId }: { toolId: string }) {
     try {
       const file = await download(cfg.platform, submitted, {
         signal: ctrl.signal,
+        quality,
+        audio: audio ?? undefined,
         onStart: (total) => setSaving({ kind: "receiving", progress: null, received: 0, total }),
         onProgress: (progress, received) =>
           setSaving((s) => ({ kind: "receiving", progress, received, total: s.kind === "receiving" ? s.total : null })),
@@ -307,7 +318,7 @@ export function DownloaderPlayground({ toolId }: { toolId: string }) {
           )}
 
           {phase.kind === "ready" && (
-            <Result key="ready" preview={phase.preview} saving={saving} onSave={save} onCancel={cancelSave} onReset={reset} />
+            <Result key="ready" preview={phase.preview} saving={saving} onSave={save} onCancel={cancelSave} onReset={reset} quality={quality} onQuality={setQuality} audio={audio} onAudio={setAudio} />
           )}
         </AnimatePresence>
       </div>
@@ -338,13 +349,41 @@ function Result({
   onSave,
   onCancel,
   onReset,
+  quality,
+  onQuality,
+  audio,
+  onAudio,
 }: {
   preview: MediaPreview;
   saving: Saving;
   onSave: () => void;
   onCancel: () => void;
   onReset: () => void;
+  quality?: string;
+  onQuality: (q: string) => void;
+  audio: AudioFormat | null;
+  onAudio: (a: AudioFormat | null) => void;
 }) {
+  const videoQualities = preview.qualities?.filter((q) => q.id !== "audio");
+  const audioTrack = preview.qualities?.find((q) => q.id === "audio");
+  const chosen = audio ? undefined : videoQualities?.find((q) => q.id === quality);
+  const noSound = preview.videoCount === 0;
+  const mp3TooLong = Boolean(preview.duration && preview.duration > MP3_MAX_SECONDS);
+  // Audio from a carousel with several videos comes as one ZIP of tracks.
+  const output = audio ? (preview.videoCount > 1 ? "ZIP" : audio.toUpperCase()) : chosen ? "MP4" : preview.output;
+  // Sizes: YouTube knows its audio track exactly; MP3 at ~190 kb/s is estimated from the length.
+  const size = audio
+    ? audio === "m4a"
+      ? (audioTrack?.size ?? undefined)
+      : preview.duration
+        ? Math.round((preview.duration * 190_000) / 8)
+        : undefined
+    : chosen
+      ? (chosen.size ?? undefined)
+      : preview.size;
+  const sizeExact = audio ? audio === "m4a" && Boolean(audioTrack?.sizeExact) : chosen ? chosen.sizeExact : preview.sizeExact;
+  const blocked = audio ? noSound || (audio === "mp3" && mp3TooLong) || (audio === "m4a" && audioTrack ? !audioTrack.fits : false) : videoQualities ? !videoQualities.some((q) => q.fits) : false;
+  const noneFit = !audio && blocked;
   const meta = [
     preview.author,
     preview.duration ? formatDuration(preview.duration) : null,
@@ -448,20 +487,96 @@ function Result({
               </motion.div>
             ) : (
               <motion.div key="actions" {...swap}>
+                <div className="mb-3">
+                  <p className="label-mono mb-2 text-ink-3">Save as</p>
+                  <div role="radiogroup" aria-label="Save as" className="grid grid-cols-3 gap-1.5">
+                    {(
+                      [
+                        { id: null, label: "Video", icon: Video, off: false, why: "" },
+                        { id: "m4a", label: "Audio · M4A", icon: Music, off: noSound, why: "This post has only photos." },
+                        { id: "mp3", label: "Audio · MP3", icon: Music, off: noSound || mp3TooLong, why: noSound ? "This post has only photos." : `MP3 is for videos up to ${MP3_MAX_SECONDS / 60} minutes; M4A has no limit.` },
+                      ] as const
+                    ).map((o) => {
+                      const on = audio === o.id;
+                      const Icon = o.icon;
+                      return (
+                        <button
+                          key={o.label}
+                          type="button"
+                          role="radio"
+                          aria-checked={on}
+                          disabled={o.off || inFlight}
+                          title={o.off ? o.why : undefined}
+                          onClick={() => onAudio(o.id)}
+                          className={cn(
+                            "relative inline-flex h-10 items-center justify-center gap-1.5 rounded-[8px] border px-2 text-[13px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40",
+                            on ? "border-ink text-paper" : "border-line bg-surface text-ink hover:border-ink-3",
+                          )}
+                        >
+                          {on && <motion.span layoutId={`save-as-${preview.title}`} aria-hidden className="absolute inset-0 rounded-[7px] bg-ink" transition={{ type: "spring", bounce: 0.2, duration: 0.4 }} />}
+                          <Icon aria-hidden className="relative size-3.5 shrink-0" />
+                          <span className="relative truncate">{o.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-2 text-xs text-ink-3">
+                    {audio === "m4a"
+                      ? "The original soundtrack, copied as it is: no quality loss. Plays on phones, Mac and Windows."
+                      : audio === "mp3"
+                        ? "Converted to MP3 (~190 kb/s), which plays on anything, including older car stereos."
+                        : noSound
+                          ? "This post has only photos, so there's no sound to save."
+                          : "Or save just the sound, as M4A or MP3."}
+                  </p>
+                </div>
+                {videoQualities && !audio && (
+                  <div className="mb-3">
+                    <p className="label-mono mb-2 text-ink-3">Quality</p>
+                    <div role="radiogroup" aria-label="Quality" className="flex flex-wrap gap-1.5">
+                      {videoQualities.map((q) => {
+                        const on = q.id === quality;
+                        return (
+                          <button
+                            key={q.id}
+                            type="button"
+                            role="radio"
+                            aria-checked={on}
+                            disabled={!q.fits || inFlight}
+                            onClick={() => onQuality(q.id)}
+                            title={q.fits ? undefined : `Over the ${preview.maxMB ?? ""} MB limit`}
+                            className={cn(
+                              "inline-flex h-9 items-center gap-1.5 rounded-[8px] border px-2.5 text-[13px] transition-colors disabled:cursor-not-allowed",
+                              on ? "border-ink bg-ink text-paper" : "border-line bg-surface text-ink hover:border-ink-3",
+                              !q.fits && "opacity-40 line-through decoration-ink-3/60",
+                            )}
+                          >
+                            {q.label}
+                            {q.size ? <span className={cn("font-mono text-[11px]", on ? "text-paper/60" : "text-ink-3")}>{formatSize(q.size, q.sizeExact)}</span> : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {videoQualities.some((q) => !q.fits) && (
+                      <p className="mt-2 text-xs text-ink-3">
+                        {noneFit ? `Every quality of this video is over the ${preview.maxMB} MB limit.` : `Struck-out qualities are over the ${preview.maxMB} MB limit for one download.`}
+                      </p>
+                    )}
+                  </div>
+                )}
                 <dl className="mb-3 flex items-baseline justify-between gap-4 border-y border-line py-2.5">
                   <dt className="label-mono text-ink-3">You&apos;ll save</dt>
                   <dd className="truncate text-right text-sm text-ink">
-                    {preview.output === "File" ? "Original file" : preview.output}
-                    {preview.size ? (
-                      <span className="font-mono text-ink-2"> · {formatSize(preview.size, preview.sizeExact)}</span>
-                    ) : null}
+                    {output === "File" ? "Original file" : output}
+                    {audio ? (preview.videoCount > 1 ? ` · ${preview.videoCount} ${audio.toUpperCase()} tracks` : " · audio only") : chosen ? ` · ${chosen.label}` : ""}
+                    {size ? <span className="font-mono text-ink-2"> · {formatSize(size, sizeExact)}</span> : null}
                   </dd>
                 </dl>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={onSave}
-                    disabled={inFlight}
+                    disabled={inFlight || blocked}
                     className="group relative inline-flex h-12 flex-1 items-center justify-center gap-2 overflow-hidden rounded-md bg-ink px-5 text-[15px] font-medium text-paper transition-[background-color,transform] duration-150 hover:bg-ink/85 active:translate-y-px disabled:cursor-progress disabled:hover:bg-ink"
                   >
                     {saving.kind === "receiving" && saving.progress !== null && (
@@ -480,11 +595,9 @@ function Result({
                           ? saving.progress !== null
                             ? `Downloading ${Math.round(saving.progress * 100)}%`
                             : "Downloading…"
-                          : `Download ${preview.output}`}
-                      {saving.kind !== "preparing" && saving.kind !== "receiving" && preview.size ? (
-                        <span className="font-mono text-[13px] font-normal text-paper/60">
-                          {formatSize(preview.size, preview.sizeExact)}
-                        </span>
+                          : `Download ${output}`}
+                      {saving.kind !== "preparing" && saving.kind !== "receiving" && size ? (
+                        <span className="font-mono text-[13px] font-normal text-paper/60">{formatSize(size, sizeExact)}</span>
                       ) : null}
                     </span>
                   </button>
@@ -507,7 +620,11 @@ function Result({
                         : `${formatBytes(saving.received)} so far`
                     : saving.kind === "preparing"
                       ? "We fetch and package the file first, which can take a moment for longer videos."
-                      : `Best available quality, saved as ${preview.output === "File" ? "the original file" : preview.output}.`}
+                      : audio
+                        ? `Just the sound${preview.videoCount > 1 ? " of every video in the post" : ""}, saved as ${audio.toUpperCase()}.`
+                        : chosen
+                          ? `${chosen.label}, saved as ${output}.`
+                          : `Best available quality, saved as ${preview.output === "File" ? "the original file" : preview.output}.`}
                 </p>
               </motion.div>
             )}

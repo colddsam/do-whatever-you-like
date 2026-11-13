@@ -101,10 +101,10 @@ export function ToolsGrid() {
             label="Tools"
             title={
               <span id="tools-title">
-                Seven collections, <span className="serif-em">one flow.</span>
+                Nine collections, <span className="serif-em">one flow.</span>
               </span>
             }
-            description={`${liveCount} tools that work today, sorted the way you think about the job: any file, PDFs, images, fonts and colour, downloads, audio and video, and handy utilities. Pick a collection, or search for the task.`}
+            description={`${liveCount} tools that work today, sorted the way you think about the job: any file, PDFs, images, developer and text tools, fonts and colour, downloads, audio and video, and everyday utilities. Pick a collection, or search for the task.`}
           />
         </Reveal>
 
@@ -169,6 +169,38 @@ export function ToolsGrid() {
               <SeeAll id="images" />
             </article>
 
+            {/* Developer: the biggest after PDF, with its sections one click away. */}
+            <article className={cn(cell, "sm:col-span-2 lg:col-span-4")}>
+              <CardHead id="developer" big title={<>Format, check and query code, <span className="serif-em">in the browser.</span></>} />
+              <ul aria-label="Developer sections" className="mt-5 flex flex-wrap gap-1.5">
+                {getCluster("developer").groups!.map((g) => (
+                  <li key={g}>
+                    <Link
+                      href={`/tools#developer-${g.toLowerCase().replace(/[^a-z]+/g, "-")}`}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-sm border border-line bg-surface px-2.5 text-sm text-ink-2 transition-colors hover:border-ink-3 hover:text-ink"
+                    >
+                      {g}
+                      <span className="font-mono text-[11px] text-ink-3">{toolsIn("developer").filter((t) => t.group === g).length}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-6">
+                <ToolRows ids={getCluster("developer").featured} columns compact />
+              </div>
+              <SeeAll id="developer" />
+            </article>
+
+            {/* Text */}
+            <article className={cn(cell, "sm:col-span-2 lg:col-span-2")}>
+              <CardHead id="text" title={<>Words, codes and <span className="serif-em">Morse.</span></>} />
+              <p className="mt-1.5 text-[15px] leading-relaxed text-ink-2">{getCluster("text").blurb}</p>
+              <div className="mt-6">
+                <ToolRows ids={getCluster("text").featured} compact />
+              </div>
+              <SeeAll id="text" />
+            </article>
+
             {/* Downloads */}
             <article className={cn(cell, "sm:col-span-2 lg:col-span-3")}>
               <CardHead id="downloads" title={<>Save it from a <span className="serif-em">link.</span></>} />
@@ -210,7 +242,7 @@ export function ToolsGrid() {
               <SeeAll id="design" label="All design tools" />
             </article>
 
-            {/* Text & utilities */}
+            {/* Everyday utilities */}
             <article className={cn(cell, "lg:col-span-3")}>
               <CardHead id="utilities" title={<>Handy <span className="serif-em">extras.</span></>} />
               <div className="mt-6">

@@ -45,8 +45,15 @@ class InstagramDownloaderService:
         )
         self._load_netscape_cookies(settings.COOKIE_FILE_PATH)
 
-    def _load_netscape_cookies(self, cookie_path: Path):
-        if not cookie_path.exists():
+    def _load_netscape_cookies(self, cookie_path: Path | None):
+        if not cookie_path or not cookie_path.exists():
+            # Instagram's media API answers only signed-in sessions, so without cookies every post
+            # fails. Say so once, loudly, rather than per request.
+            logger.warning(
+                "No Instagram session: INSTAGRAM_COOKIE_FILE_PATH (%s) doesn't exist. Instagram downloads will be refused "
+                "until a cookies.txt from a signed-in browser is provided (see README, Cookie Configuration).",
+                cookie_path,
+            )
             return
 
         jar = http.cookiejar.MozillaCookieJar(str(cookie_path))
@@ -123,7 +130,15 @@ class InstagramDownloaderService:
             "height": best_image.get("height"),
         }
 
+    NOT_SET_UP = (
+        "Instagram downloads aren't set up on this server yet: Instagram only shares posts with a "
+        "signed-in session, and none is configured."
+    )
+    EXPIRED = "The server's Instagram session has expired or was signed out. It needs a fresh cookies file."
+
     def _fetch_product_info(self, shortcode: str) -> Dict[str, Any]:
+        if not self.loader.context.is_logged_in:
+            raise MediaExtractionError(self.NOT_SET_UP)
         try:
             media_id = self._shortcode_to_media_id(shortcode)
             url = f"https://www.instagram.com/api/v1/media/{media_id}/info/"
@@ -136,6 +151,13 @@ class InstagramDownloaderService:
                 headers=headers,
                 timeout=app_settings.REQUEST_TIMEOUT,
             )
+            if resp.status_code in (401, 403) or "login" in resp.url.split("?")[0]:
+                logger.error("Instagram rejected the session (%s) for %s", resp.status_code, shortcode)
+                raise MediaExtractionError(self.EXPIRED)
+            if resp.status_code == 404:
+                raise MediaExtractionError("That post doesn't exist, or it's private.")
+            if resp.status_code == 429:
+                raise MediaExtractionError("Instagram is rate-limiting this server. Try again in a few minutes.")
             if resp.status_code != 200:
                 try:
                     err_msg = resp.json().get("message", "Upstream error")

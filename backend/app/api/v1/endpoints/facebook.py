@@ -10,6 +10,7 @@ from app.core.utils import cleanup_file, cleanup_folder
 from app.exceptions.facebook import FacebookExtractionError
 from app.schemas.facebook import FacebookDownloadRequest, FacebookMediaResponse
 from app.services.facebook import fb_service
+from app.services.audio_extract import MEDIA_TYPES as AUDIO_MEDIA_TYPES, AudioExtractError, files_to_audio
 
 router = APIRouter(prefix="/facebook", tags=["Facebook"])
 
@@ -43,7 +44,17 @@ async def download_facebook_media(
 
     try:
         job_dir.mkdir(parents=True, exist_ok=True)
-        files = await run_in_threadpool(fb_service.download_to_disk, valid_url, job_dir)
+        files = await run_in_threadpool(fb_service.download_to_disk, valid_url, job_dir, bool(payload.audio))
+        if payload.audio:
+            try:
+                files = await run_in_threadpool(files_to_audio, files, payload.audio)
+            except AudioExtractError as exc:
+                raise FacebookExtractionError(str(exc))
+            # Photos and the source videos go; only the audio files are sent (or zipped).
+            keep = set(files)
+            for leftover in job_dir.iterdir():
+                if leftover.is_file() and leftover not in keep:
+                    leftover.unlink(missing_ok=True)
 
         if not files:
             cleanup_folder(job_dir)
@@ -55,7 +66,7 @@ async def download_facebook_media(
             return FileResponse(
                 path=target_file,
                 filename=target_file.name,
-                media_type="video/mp4",
+                media_type=AUDIO_MEDIA_TYPES.get(target_file.suffix.lower(), "video/mp4"),
             )
 
         zip_base = settings.TEMP_DIR / f"fb_{request_id}_archive"
