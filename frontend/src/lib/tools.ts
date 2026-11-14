@@ -76,6 +76,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { DESIGN_GROUPS, DEV_GROUPS, ENGINE_INFO, EVERYDAY_GROUPS, TEXT_GROUPS, UTILITIES } from "@/lib/utilities/catalog";
+import { rankToolsForTask } from "./tool-search";
 
 export type ToolStatus = "live" | "soon";
 
@@ -1612,28 +1613,8 @@ export function toolsIn(id: ClusterId): Tool[] {
 export const liveCount = tools.filter((t) => t.status === "live").length;
 
 /**
- * Ranks tools for a query. A word found in the name counts most, then keywords, then the rest,
- * so "compress" puts Compress PDF and Compress image above tools that merely mention it.
+ * Ranks tools for a query using natural-language task intent, synonyms and format routes.
  */
 export function searchTools(query: string): Tool[] {
-  const q = query.trim().toLowerCase();
-  if (!q) return tools;
-  const terms = q.split(/\s+/);
-  return tools
-    .map((tool) => {
-      const name = tool.name.toLowerCase();
-      const keywords = tool.keywords.join(" ").toLowerCase();
-      const rest = [tool.category, tool.description, getCluster(clusterOf(tool)).name, tool.group ?? ""].join(" ").toLowerCase();
-      let score = 0;
-      let hits = 0;
-      for (const t of terms) {
-        const s = name.includes(t) ? 3 : keywords.includes(t) ? 2 : rest.includes(t) ? 1 : 0;
-        score += s;
-        hits += s ? 1 : 0;
-      }
-      return { tool, score: score + (hits === terms.length ? 2 : 0) };
-    })
-    .filter((r) => r.score > 0)
-    .sort((a, b) => b.score - a.score || Number(b.tool.status === "live") - Number(a.tool.status === "live"))
-    .map((r) => r.tool);
+  return rankToolsForTask(query);
 }

@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "motion/react";
-import { ArrowUpRight, CornerDownLeft, Search } from "lucide-react";
-import { CLUSTERS, clusterOf, exampleTasks, searchTools, toolHref, tools, toolsIn, type Tool } from "@/lib/tools";
+import { AnimatePresence, motion } from "motion/react";
+import { ArrowUpRight, CornerDownLeft, Search, Sparkles } from "lucide-react";
+import { CLUSTERS, exampleTasks, toolHref, tools, toolsIn, type Tool } from "@/lib/tools";
+import { analyzeTaskQuery } from "@/lib/tool-search";
 import { Kbd, SignalDot } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 
@@ -88,17 +89,25 @@ export function CommandPalette({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
+  const analysis = useMemo(() => analyzeTaskQuery(query, { limit: 5 }), [query]);
+
   // Results come grouped by collection: in collection order when browsing, best match first when searching.
   const groups = useMemo(() => {
-    if (!query.trim()) return CLUSTERS.map((c) => ({ cluster: c, list: toolsIn(c.id) }));
-    const byCluster = new Map<string, Tool[]>();
-    for (const t of searchTools(query)) {
-      const id = clusterOf(t);
-      byCluster.set(id, [...(byCluster.get(id) ?? []), t]);
+    if (!query.trim()) {
+      return CLUSTERS.map((c) => ({
+        cluster: c,
+        list: toolsIn(c.id).map((tool) => ({ tool, matchReason: "" })),
+      }));
+    }
+    const byCluster = new Map<string, Array<{ tool: Tool; matchReason: string }>>();
+    for (const match of analysis.results) {
+      const id = match.cluster.id;
+      byCluster.set(id, [...(byCluster.get(id) ?? []), { tool: match.tool, matchReason: match.matchReason }]);
     }
     return [...byCluster].map(([id, list]) => ({ cluster: CLUSTERS.find((c) => c.id === id)!, list }));
-  }, [query]);
+  }, [query, analysis.results]);
   const results = useMemo(() => groups.flatMap((g) => g.list), [groups]);
+  const topSuggestion = query.trim() ? analysis.suggestions[0] : undefined;
   const placeholder = useTypewriter(exampleTasks, !focused && query === "");
   const liveCount = tools.filter((t) => t.status === "live").length;
 
@@ -157,7 +166,10 @@ export function CommandPalette({
       setActive((i) => Math.max(i - 1, 0));
     } else if (e.key === "Enter" && results[active]) {
       e.preventDefault();
-      open(results[active].id);
+      open(results[active].tool.id);
+    } else if (e.key === "Tab" && topSuggestion && topSuggestion.phrase.toLowerCase() !== query.trim().toLowerCase()) {
+      e.preventDefault();
+      setQuery(topSuggestion.phrase);
     } else if (e.key === "Escape") {
       setQuery("");
       inputRef.current?.blur();
@@ -181,7 +193,7 @@ export function CommandPalette({
             role="combobox"
             aria-expanded="true"
             aria-controls="palette-results"
-            aria-activedescendant={results[active] ? `palette-${results[active].id}` : undefined}
+            aria-activedescendant={results[active] ? `palette-${results[active].tool.id}` : undefined}
             autoComplete="off"
             spellCheck={false}
             className="peer w-full bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-3"
@@ -200,11 +212,89 @@ export function CommandPalette({
         </span>
       </label>
 
-      {/* Results */}
+      {/* Results & animated availability / query suggestions */}
       <div className="px-2 pt-2">
-        <p className="label-mono px-2 pb-1.5 pt-1 text-ink-3">
-          {query ? `${results.length} result${results.length === 1 ? "" : "s"}` : "All tools"}
-        </p>
+        <div className="flex items-center justify-between gap-2 px-2 pb-1.5 pt-1">
+          <AnimatePresence mode="wait" initial={false}>
+            {!query.trim() ? (
+              <motion.p
+                key="idle"
+                initial={{ opacity: 0, y: 2 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -2 }}
+                transition={{ duration: 0.16, ease: EASE }}
+                className="label-mono text-ink-3"
+              >
+                All tools
+              </motion.p>
+            ) : (
+              <motion.p
+                key={`${analysis.availability.status}-${analysis.availability.topTool?.id ?? "none"}`}
+                initial={{ opacity: 0, y: 3 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -3 }}
+                transition={{ duration: 0.18, ease: EASE }}
+                className="label-mono flex min-w-0 items-center gap-1.5 truncate text-ink-2"
+              >
+                {(analysis.availability.status === "available" || analysis.availability.status === "converter-route") && (
+                  <SignalDot />
+                )}
+                <span
+                  className={cn(
+                    "shrink-0 font-medium",
+                    analysis.availability.status === "available" || analysis.availability.status === "converter-route"
+                      ? "text-success"
+                      : analysis.availability.status === "coming-soon"
+                        ? "text-warning"
+                        : "text-ink-3",
+                  )}
+                >
+                  {analysis.availability.label}
+                </span>
+                <span className="truncate text-ink-3">· {analysis.availability.detail}</span>
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <AnimatePresence initial={false}>
+          {query.trim() && analysis.suggestions.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto", transition: { duration: 0.22, ease: EASE } }}
+              exit={{ opacity: 0, height: 0, transition: { duration: 0.15 } }}
+              className="overflow-hidden px-1 pb-1.5"
+            >
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <Sparkles aria-hidden className="size-3 shrink-0 text-accent" />
+                {analysis.suggestions.map((s, idx) => (
+                  <motion.button
+                    key={s.id}
+                    type="button"
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2, ease: EASE, delay: idx * 0.025 }}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setQuery(s.phrase);
+                      inputRef.current?.focus();
+                    }}
+                    className="inline-flex h-6 shrink-0 items-center gap-1 rounded-sm border border-line bg-paper px-2 text-xs text-ink-2 transition-colors hover:border-ink-3 hover:bg-paper-2 hover:text-ink"
+                  >
+                    {s.matchedPrefix ? (
+                      <span>
+                        <span className="text-ink-3">{s.matchedPrefix}</span>
+                        <span className="font-semibold text-ink">{s.completion}</span>
+                      </span>
+                    ) : (
+                      <span>{s.phrase}</span>
+                    )}
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
       <ul
         ref={listRef}
@@ -223,7 +313,10 @@ export function CommandPalette({
             <p className="text-sm text-ink-2">
               No tool for <span className="font-medium text-ink">“{query}”</span> yet.
             </p>
-            <Link href="/#request" className="text-sm font-medium text-ink underline decoration-line underline-offset-4 hover:decoration-ink">
+            <Link
+              href={`/?idea=${encodeURIComponent(query.trim())}#request`}
+              className="text-sm font-medium text-ink underline decoration-line underline-offset-4 hover:decoration-ink"
+            >
               Request it
             </Link>
           </li>
@@ -233,8 +326,8 @@ export function CommandPalette({
             <span>{cluster.name}</span>
             <span>{list.length}</span>
           </li>,
-          ...list.map((tool) => {
-          const i = results.indexOf(tool);
+          ...list.map(({ tool, matchReason }) => {
+          const i = results.findIndex((r) => r.tool.id === tool.id);
           const Icon = tool.icon;
           const isActive = i === active;
           return (
@@ -270,7 +363,9 @@ export function CommandPalette({
               </span>
               <span className="relative min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium text-ink">{tool.name}</span>
-                <span className="block truncate text-xs text-ink-3">{tool.description}</span>
+                <span className="block truncate text-xs text-ink-3">
+                  {query.trim() && matchReason ? `${matchReason} · ${tool.description}` : tool.description}
+                </span>
               </span>
               {tool.status === "live" ? (
                 <span className="label-mono relative flex items-center gap-1.5 text-ink">

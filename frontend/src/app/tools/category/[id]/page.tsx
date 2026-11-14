@@ -8,6 +8,7 @@ import { SITE_URL, absUrl, pageMeta } from "@/lib/site";
 import { JsonLd } from "@/components/seo/json-ld";
 import { Page } from "@/components/ui/paper";
 import { Badge } from "@/components/ui/primitives";
+import { ToolHopperSearch } from "@/components/tools/tool-hopper-search";
 import { cn } from "@/lib/utils";
 
 const clusterFor = (id: string) => CLUSTERS.find((c) => c.id === id);
@@ -74,7 +75,7 @@ export default async function CategoryPage({ params }: PageProps<"/tools/categor
         }}
       />
 
-      <nav aria-label="Breadcrumb">
+      <nav aria-label="Breadcrumb" className="flex items-center justify-between gap-3">
         <Link
           href="/tools"
           className="group -ml-2 inline-flex h-11 items-center gap-1.5 rounded-md px-2 text-sm text-ink-2 transition-colors hover:bg-paper-2 hover:text-ink"
@@ -82,6 +83,7 @@ export default async function CategoryPage({ params }: PageProps<"/tools/categor
           <ArrowLeft aria-hidden className="size-4 transition-transform duration-150 ease-out-soft group-hover:-translate-x-0.5" />
           All tools
         </Link>
+        <ToolHopperSearch mode="compact" contextClusterId={cluster.id} />
       </nav>
 
       <header className="mt-8 flex items-start gap-4 md:mt-12 md:gap-5">

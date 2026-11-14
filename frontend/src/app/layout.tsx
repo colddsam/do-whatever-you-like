@@ -60,9 +60,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased`}
     >
-      <body className="flex min-h-full flex-col">
+      <body className="flex min-h-dvh flex-col">
         <link rel="alternate" type="text/markdown" href="/llms.txt" title="LLM site map" />
         <link rel="alternate" type="text/markdown" href="/llms-full.txt" title="Full LLM tool specifications" />
         <JsonLd data={siteGraph} />

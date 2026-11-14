@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/primitives";
 import { Page } from "@/components/ui/paper";
 import { Reveal } from "@/components/ui/reveal";
 import { Playground } from "@/components/tools/playground";
+import { ToolHopperSearch } from "@/components/tools/tool-hopper-search";
 import { cn } from "@/lib/utils";
 
 export function generateStaticParams() {
@@ -98,13 +99,14 @@ async function ToolCategory({ params }: Pick<PageProps<"/tools/[id]">, "params">
           </Link>
         </>
       )}
-      {tool.status === "live" ? (
-        <Badge variant="live" className="ml-auto">
-          Live
-        </Badge>
-      ) : (
-        <Badge className="ml-auto">Coming soon</Badge>
-      )}
+      <div className="ml-auto flex items-center gap-2.5">
+        <ToolHopperSearch mode="compact" currentToolId={tool.id} contextClusterId={cluster.id} />
+        {tool.status === "live" ? (
+          <Badge variant="live">Live</Badge>
+        ) : (
+          <Badge>Coming soon</Badge>
+        )}
+      </div>
     </>
   );
 }

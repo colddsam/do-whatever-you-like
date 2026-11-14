@@ -49,10 +49,16 @@ export function Navbar() {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [prevPathname, setPrevPathname] = useState(pathname);
   const [hovered, setHovered] = useState<string | null>(null);
   const active = useActiveSection(pathname === "/");
   const bubble = hovered ?? active;
   const pill = scrolled || open;
+
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
+    setOpen(false);
+  }
 
   // Reading progress, drawn along the pill's bottom edge.
   const { scrollYProgress } = useScroll();
@@ -66,13 +72,26 @@ export function Navbar() {
   }, []);
 
   useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const onDesktop = (e: MediaQueryListEvent) => {
+      if (e.matches) setOpen(false);
+    };
+    mq.addEventListener("change", onDesktop);
+    return () => mq.removeEventListener("change", onDesktop);
+  }, []);
+
+  useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     // Smooth scrolling drives the page from the wheel, so pause it while the menu is open.
     if (open) getLenis()?.stop();
     else getLenis()?.start();
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+      getLenis()?.start();
+    };
   }, [open]);
 
   return (

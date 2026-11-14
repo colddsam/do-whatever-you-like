@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, ArrowUpRight, Plus, Search, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Plus } from "lucide-react";
 import { CLUSTERS, searchTools, toolHref, toolsIn, type Cluster, type ClusterId, type Tool } from "@/lib/tools";
-import { Badge, Kbd } from "@/components/ui/primitives";
+import { Badge } from "@/components/ui/primitives";
+import { ToolHopperSearch } from "@/components/tools/tool-hopper-search";
 import { getLenis } from "@/lib/smooth-scroll";
 import { cn } from "@/lib/utils";
 
@@ -18,7 +19,7 @@ function scrollToId(id: string) {
   const el = document.getElementById(id);
   if (!el) return;
   const lenis = getLenis();
-  if (lenis) lenis.scrollTo(el, { offset: -STICKY_TOP - 48 });
+  if (lenis) lenis.scrollTo(el, { offset: -STICKY_TOP - 48, force: true });
   else window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - STICKY_TOP - 48, behavior: "smooth" });
   history.replaceState(null, "", `#${id}`);
 }
@@ -30,25 +31,11 @@ function scrollToId(id: string) {
 export function ToolDirectory() {
   const [query, setQuery] = useState("");
   const [active, setActive] = useState<ClusterId>(CLUSTERS[0].id);
-  const input = useRef<HTMLInputElement>(null);
 
   // Support /tools?q=... links (e.g. WebSite SearchAction) without opting out of static rendering.
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get("q");
     if (q) queueMicrotask(() => setQuery(q));
-  }, []);
-
-  // "/" jumps to the filter from anywhere on the page, like most directories.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
-      if (e.key === "/" && !typing) {
-        e.preventDefault();
-        input.current?.focus();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
   // Which collection is being read: the last one whose heading has passed a line a third down the screen.
@@ -84,38 +71,14 @@ export function ToolDirectory() {
 
   return (
     <div className="mt-12 md:mt-14">
-      {/* Filter */}
-      <div className="grid md:grid-cols-12 md:gap-8">
-        <label className="flex h-14 items-center gap-3 rounded-lg border border-line bg-surface px-4 shadow-float transition-[border-color,box-shadow] focus-within:border-ink focus-within:ring-4 focus-within:ring-accent/15 md:col-span-9 md:col-start-4">
-          <Search aria-hidden className="size-[18px] shrink-0 text-ink-3" />
-          <span className="sr-only">Filter tools</span>
-          <input
-            ref={input}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === "Escape" && setQuery("")}
-            placeholder="Filter tools: “pdf to word”, “heic”, “blur”, “mp3”…"
-            autoComplete="off"
-            spellCheck={false}
-            className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-3"
-          />
-          {query ? (
-            <button
-              type="button"
-              onClick={() => {
-                setQuery("");
-                input.current?.focus();
-              }}
-              aria-label="Clear the filter"
-              className="inline-flex size-8 items-center justify-center rounded-[8px] text-ink-3 hover:bg-paper-2 hover:text-ink"
-            >
-              <X aria-hidden className="size-4" />
-            </button>
-          ) : (
-            <Kbd className="hidden sm:inline-flex">/</Kbd>
-          )}
-        </label>
-      </div>
+      {/* Animated Google-style search + floating scroll hopper */}
+      <ToolHopperSearch
+        mode="directory"
+        query={query}
+        onQueryChange={setQuery}
+        contextClusterId={active}
+        matchCount={total}
+      />
 
       {/* Phones and tablets: the collections as a sticky chip bar. */}
       <nav
