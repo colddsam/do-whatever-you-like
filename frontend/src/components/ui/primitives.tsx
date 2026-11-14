@@ -57,6 +57,7 @@ export function ButtonLink({
   size = "md",
   arrow = false,
   pill = false,
+  onClick,
   className,
   children,
 }: {
@@ -66,11 +67,16 @@ export function ButtonLink({
   arrow?: boolean;
   /** Fully rounded — used inside the floating navbar pill. */
   pill?: boolean;
+  onClick?: () => void;
   className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <Link href={href} className={cn(buttonBase, pill ? "rounded-full" : "rounded-md", buttonVariants[variant], buttonSizes[size], className)}>
+    <Link
+      href={href}
+      onClick={onClick}
+      className={cn(buttonBase, pill ? "rounded-full" : "rounded-md", buttonVariants[variant], buttonSizes[size], className)}
+    >
       {children}
       {arrow && (
         <ArrowRight

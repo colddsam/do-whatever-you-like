@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from app.core.file_guard import guard_uploads
 from app.api.v1.endpoints import (
-    compress, convert, devtools, facebook, media, fonts, health, icon, image, instagram, merge_split, palette, pdf, pdf_tools, qrcode, transcribe, translate, universal, youtube,
+    compress, convert, devtools, facebook, media, fonts, health, icon, image, instagram, merge_split, palette, pdf, pdf_tools, qrcode, tool_request, transcribe, translate, universal, youtube,
 )
 
 # Every uploaded file is checked (type from its bytes, not its name) before any endpoint runs.
@@ -9,6 +9,7 @@ api_v1_router = APIRouter(dependencies=[Depends(guard_uploads)])
 
 
 api_v1_router.include_router(health.router)
+api_v1_router.include_router(tool_request.router)
 api_v1_router.include_router(instagram.router)
 api_v1_router.include_router(facebook.router)
 api_v1_router.include_router(youtube.router)

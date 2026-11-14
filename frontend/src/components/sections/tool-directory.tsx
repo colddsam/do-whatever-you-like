@@ -173,7 +173,10 @@ export function ToolDirectory() {
                 No tool for <span className="font-medium text-ink">“{query}”</span> yet.
               </p>
               <p className="mt-1 text-sm text-ink-3">Try another word, or ask for it: the most-requested tools get built first.</p>
-              <Link href="/#request" className="mt-4 inline-flex text-sm font-medium text-ink underline decoration-line underline-offset-4 hover:decoration-ink">
+              <Link
+                href={`/?idea=${encodeURIComponent(query.trim())}#request`}
+                className="mt-4 inline-flex text-sm font-medium text-ink underline decoration-line underline-offset-4 hover:decoration-ink"
+              >
                 Request “{query}”
               </Link>
             </div>

@@ -409,7 +409,7 @@ timeline
 
 | 📅 Days | 🧰 Live tools | 🗂️ Collections | 📡 API endpoints | 🧪 Check scripts |
 | :---: | :---: | :---: | :---: | :---: |
-| 7 | 218 | 9 | 75 | 8 backend suites + browser & unit tests |
+| 7 | 218 | 9 | 77 | 9 backend suites + browser & unit tests |
 
 ---
 
@@ -625,6 +625,7 @@ Everything new is checked end to end with real files before it ships.
 | No false refusals | `python scripts/check_guard_corpus.py` | Real samples of every format are accepted |
 | Audio and video edits | `python scripts/check_media.py` | Trim, volume, mute and noise removal measured with FFmpeg |
 | Translator (text, audio, video) | `python scripts/check_translate.py` | Multilingual text, SRT cues, MP3/MP4 dubbing, upload guard and FFprobe validation |
+| Request a tool email pipeline | `python scripts/check_tool_request.py` | Validation, header/HTML escaping, honeypot, rate limit, HTTP & SMTP delivery to `colddsam@gmail.com` |
 | Developer network tools | `python scripts/check_devtools.py` | DNS, HTTP, ports, XSD and XSLT, public addresses only |
 | Design tools | `python scripts/check_design_tools.py` | Font and colour inspection |
 
@@ -634,7 +635,7 @@ Run the backend scripts from `backend/` with the virtual environment's Python. B
 
 ## 📡 API reference
 
-75 endpoints, all under `/api/v1`, all needing `Authorization: Bearer <HEADER_TOKEN>`. With `DEBUG=true`, try them at `http://127.0.0.1:8000/docs`, or import `backend/postman_collection.json` into Postman (rebuild it with `python generate_postman.py`).
+77 endpoints, all under `/api/v1`, all needing `Authorization: Bearer <HEADER_TOKEN>`. With `DEBUG=true`, try them at `http://127.0.0.1:8000/docs`, or import `backend/postman_collection.json` into Postman (rebuild it with `python generate_postman.py`).
 
 <details>
 <summary><b>Health</b> — 1 endpoint</summary>
@@ -643,6 +644,17 @@ Run the backend scripts from `backend/` with the virtual environment's Python. B
 | Method | Endpoint | What it does |
 | :--- | :--- | :--- |
 | `GET` | `/api/v1/health` | Service health and version check |
+
+</details>
+
+<details>
+<summary><b>Tool Request</b> — 2 endpoints</summary>
+<br>
+
+| Method | Endpoint | What it does |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/tool-request/capabilities` | Active free email delivery channels (`resend`, `brevo`, `web3forms`, `apps_script`, `smtp`, `webhook`, `formsubmit`) |
+| `POST` | `/api/v1/tool-request` | Validate, rate-limit and deliver tool request messages to `colddsam@gmail.com` |
 
 </details>
 
@@ -920,7 +932,7 @@ do-whatever-you-like/
 │       ├── exceptions/          # Clean, user-safe errors per tool
 │       ├── schemas/             # Request and response models
 │       ├── services/            # The work: pdf, universal, compress, merge_split, image, media,
-│       │                        #   transcribe, translate, fonts, palette, icon, devtools, downloaders…
+│       │                        #   transcribe, translate, tool_request, fonts, palette, icon, devtools, downloaders…
 │       └── api/v1/              # Routes, one file per tool
 └── frontend/                    # Next.js website
     ├── DESIGN.md                # The design system

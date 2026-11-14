@@ -246,10 +246,10 @@ export function Navbar() {
               ))}
             </ul>
             <div className="mt-2 grid grid-cols-2 gap-2 border-t border-line p-2 pt-4">
-              <ButtonLink href="/#request" variant="secondary" size="lg" pill className="w-full">
+              <ButtonLink href="/#request" variant="secondary" size="lg" pill className="w-full" onClick={() => setOpen(false)}>
                 Request a tool
               </ButtonLink>
-              <ButtonLink href="/tools" size="lg" arrow pill className="w-full">
+              <ButtonLink href="/tools" size="lg" arrow pill className="w-full" onClick={() => setOpen(false)}>
                 Toolbox
               </ButtonLink>
             </div>

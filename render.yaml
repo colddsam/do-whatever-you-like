@@ -69,6 +69,18 @@ services:
         value: /etc/secrets/cookies_instagram.txt
       - key: FACEBOOK_COOKIE_FILE_PATH
         value: /etc/secrets/cookies_facebook.txt
+      # Tool request inbox & free HTTPS email providers (Render Free blocks SMTP 465/587, so HTTPS APIs
+      # like Resend, Brevo, Web3Forms, or Google Apps Script work here cleanly on port 443).
+      - key: TOOL_REQUEST_TO_EMAIL
+        value: "colddsam@gmail.com"
+      - key: TOOL_REQUEST_RESEND_API_KEY
+        sync: false
+      - key: TOOL_REQUEST_BREVO_API_KEY
+        sync: false
+      - key: TOOL_REQUEST_WEB3FORMS_ACCESS_KEY
+        sync: false
+      - key: TOOL_REQUEST_APPS_SCRIPT_URL
+        sync: false
       # Optional: if YouTube starts answering "Sign in to confirm you're not a bot" (it does that to
       # some cloud IP ranges), add a cookies.txt from a signed-in browser as cookies_youtube.txt.
       - key: YOUTUBE_COOKIE_FILE_PATH
