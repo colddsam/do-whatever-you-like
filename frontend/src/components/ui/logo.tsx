@@ -1,19 +1,12 @@
 import Link from "next/link";
+import { LOGO_HALO_PATH, LOGO_INK_PATH, LOGO_VIEWBOX } from "@/lib/logo-paths";
 import { cn } from "@/lib/utils";
 
 export function LogoMark({ className, inverted = false }: { className?: string; inverted?: boolean }) {
   return (
-    <svg viewBox="0 0 32 32" aria-hidden className={cn("size-7", className)}>
-      <rect width="32" height="32" rx="8" className={inverted ? "fill-paper" : "fill-ink"} />
-      <path
-        d="M9 16.5l4.5 4.5L23 11.5"
-        fill="none"
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className={inverted ? "stroke-ink" : "stroke-paper"}
-      />
-      <circle cx="24.5" cy="24.5" r="3" className="fill-accent" />
+    <svg viewBox={LOGO_VIEWBOX} aria-hidden className={cn("h-9 w-auto shrink-0", className)}>
+      <path d={LOGO_HALO_PATH} className={inverted ? "fill-ink" : "fill-surface"} />
+      <path d={LOGO_INK_PATH} fillRule="evenodd" className={inverted ? "fill-paper" : "fill-ink"} />
     </svg>
   );
 }

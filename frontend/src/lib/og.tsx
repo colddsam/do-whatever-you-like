@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { LOGO_HALO_PATH, LOGO_INK_PATH, LOGO_VIEWBOX } from "./logo-paths";
 
 /** Social card size (Open Graph and X both use 1200×630). */
 export const OG_SIZE = { width: 1200, height: 630 };
@@ -62,10 +63,9 @@ export function ogCard({ eyebrow, title, subtitle }: { eyebrow: string; title: s
           }}
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14 }}>
-            <svg width="44" height="44" viewBox="0 0 32 32">
-              <rect width="32" height="32" rx="8" fill={INK} />
-              <path d="M9 16.5l4.5 4.5L23 11.5" fill="none" stroke={PAPER} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-              <circle cx="24.5" cy="24.5" r="3" fill={ACCENT} />
+            <svg width="28" height="55" viewBox={LOGO_VIEWBOX}>
+              <path d={LOGO_HALO_PATH} fill="#ffffff" />
+              <path d={LOGO_INK_PATH} fill={INK} fillRule="evenodd" />
             </svg>
             <div style={{ display: "flex", fontSize: 28, fontWeight: 600, letterSpacing: "-0.02em" }}>
               Do<span style={{ color: INK_2 }}>-</span>Whatever<span style={{ color: INK_2 }}>-</span>You<span style={{ color: INK_2 }}>-</span>Like

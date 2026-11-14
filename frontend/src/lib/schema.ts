@@ -16,6 +16,7 @@ export const siteGraph = {
       alternateName: ["Do-Whatever-You-Like Tools", "do-whatever-you-like"],
       url: SITE_URL,
       logo: absUrl("/icon.svg"),
+      image: absUrl("/logo.png"),
       description: `${SITE_NAME} is a free, no-sign-up web toolbox with ${liveCount} online utilities for PDFs, images, file conversion, video/audio, design, and software development.`,
       email: CONTACT_EMAIL,
       contactPoint: {
