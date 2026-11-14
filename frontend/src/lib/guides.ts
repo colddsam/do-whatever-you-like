@@ -312,7 +312,336 @@ const GUIDES: Record<string, Guide> = {
       { q: "Can I use my keyboard?", a: "Yes. Full keyboard input is supported alongside clicking the keypad." },
       { q: "Does it convert units too?", a: "Yes. You can type unit conversions directly, such as 5 inch to cm." },
     ],
-    see: ["number-to-words", "roman-numerals", "qr"],
+    see: ["unit-converter", "number-to-words", "roman-numerals"],
+  },
+  "trim-media": {
+    intro: [
+      "Cut any video or audio file (MP4, MOV, MKV, WebM, MP3, WAV, M4A, and more up to 150 MB) to the exact start and end time you want. Drag the handles on a live preview or type exact timestamps.",
+      "Use fast mode to trim without re-encoding, or exact mode to cut on the precise frame. Your file keeps its original format and is deleted from our server once sent.",
+    ],
+    faqs: [
+      { q: "Does trimming reduce video or audio quality?", a: "Fast mode cuts without re-encoding, so it keeps the original quality. Exact mode re-encodes only when you need frame-accurate cuts." },
+      { q: "What happens to my file?", a: "It is deleted from our server as soon as the trimmed file is sent." },
+    ],
+    see: ["audio-volume", "noise-remover", "video-to-gif"],
+  },
+  "noise-remover": {
+    intro: [
+      "Clean up background hiss, fan noise, traffic, room rumble, and 50/60 Hz mains hum from audio or a video's soundtrack (up to 150 MB). It learns the noise profile from the quietest moment—or a section you choose—and removes it.",
+      "Switch between before and after while listening, keep your video's picture completely untouched, and download the cleaned file.",
+    ],
+    faqs: [
+      { q: "Does it touch the video picture?", a: "No. Only the audio track is cleaned; the video stream is kept intact." },
+      { q: "What kinds of noise can it remove?", a: "Steady hiss, fan and room noise, 50/60 Hz hum, and optionally clicks and pops." },
+      { q: "Are uploaded files kept?", a: "No. Files are deleted from our server once the cleaned result is sent." },
+    ],
+    see: ["audio-volume", "trim-media", "audio-to-text"],
+  },
+  "audio-volume": {
+    intro: [
+      "Make any audio or video file (up to 150 MB) louder or quieter by up to 30 dB with a built-in limiter to prevent clipping, normalise loudness to -16 LUFS for podcasts and streaming, or mute a video completely.",
+      "Preview the loudness change in your browser first; muting a video leaves its picture untouched without re-encoding.",
+    ],
+    faqs: [
+      { q: "What does normalising to -16 LUFS mean?", a: "-16 LUFS is the standard integrated loudness target used by podcasts and streaming platforms so episodes play at a consistent volume." },
+      { q: "Can I mute a video without losing quality?", a: "Yes. Muting removes the audio track without re-encoding the video stream." },
+    ],
+    see: ["noise-remover", "trim-media", "audio"],
+  },
+  "screen-recorder": {
+    intro: [
+      "Record your entire screen, a single window, or a browser tab with your microphone and system audio—or record just your voice—directly in your browser with no sign-up, no watermark, and no time limit.",
+      "Pause and resume anytime, watch the live mic level meter, and save as MP4 or WebM video (or audio).",
+    ],
+    faqs: [
+      { q: "Is my recording uploaded anywhere?", a: "No. Everything is recorded locally on your device unless you choose to convert an audio recording to MP3." },
+      { q: "Is there a watermark or time limit?", a: "No. Recordings have no watermark and no artificial time limit." },
+    ],
+    see: ["trim-media", "audio-to-text", "mic-speaker-test"],
+  },
+  "subtitle-editor": {
+    intro: [
+      "Open an SRT or VTT subtitle file—or start from scratch—to fix typos, split or merge cues, flag overlaps, convert frame rates (23.976, 25, 29.97 fps), and shift timing earlier or later for the whole file or from one line onward.",
+      "Preview your subtitles live on top of your own video and export as SRT, VTT, or plain text without uploading anything.",
+    ],
+    faqs: [
+      { q: "Can I shift all subtitles by a few seconds?", a: "Yes. You can offset every line or shift timing from a chosen line onward." },
+      { q: "Does it upload my video or subtitles?", a: "No. Editing and video preview happen entirely in your browser." },
+    ],
+    see: ["audio-to-text", "trim-media", "video-to-frames"],
+  },
+  "chart-maker": {
+    intro: [
+      "Create publication-ready bar, grouped bar, stacked bar, line, area, pie, donut, and scatter charts in your browser. Paste data from Excel or CSV, edit cells directly, and customise colours, fonts, gridlines, data labels, and legends.",
+      "Export crisp PNG, SVG, CSV, or PDF—everything stays on your device.",
+    ],
+    faqs: [
+      { q: "Can I paste data from Excel or Google Sheets?", a: "Yes. Paste tabular data or CSV directly into the data table." },
+      { q: "Which export formats are supported?", a: "PNG, scalable SVG, CSV data, and PDF." },
+    ],
+    see: ["flowchart-maker", "contrast-checker", "color-picker"],
+  },
+  "flowchart-maker": {
+    intro: [
+      "Build flowcharts, process maps, decision trees, org charts, and Mermaid diagrams in your browser. Drag 14 standard shapes onto the canvas or write Mermaid syntax, connect nodes with curved or orthogonal links, and animate the flow step by step.",
+      "Export as PNG, SVG, animated SVG, or Mermaid text—no account required.",
+    ],
+    faqs: [
+      { q: "Can I write Mermaid syntax instead of dragging shapes?", a: "Yes. You can start from a template, drag shapes visually, or edit in Mermaid text." },
+      { q: "Can I export an animated diagram?", a: "Yes. You can animate links and export as PNG, SVG, animated SVG, or Mermaid." },
+    ],
+    see: ["chart-maker", "markdown-editor", "icon-maker"],
+  },
+  "contrast-checker": {
+    intro: [
+      "Check any text and background colour pair against WCAG 2.1 AA and AAA contrast ratios for normal text, large text, and UI components (3:1). Supports hex, rgb(), and hsl() with alpha transparency.",
+      "If a pair fails, the checker suggests the nearest passing colour so you can fix accessibility issues in one click.",
+    ],
+    faqs: [
+      { q: "What ratio is needed for WCAG AA and AAA?", a: "WCAG AA requires 4.5:1 for normal text and 3:1 for large text or UI components. AAA requires 7:1 for normal text and 4.5:1 for large text." },
+      { q: "Does it handle semi-transparent colours?", a: "Yes. Alpha transparency is composited over the background before calculating the contrast ratio." },
+    ],
+    see: ["color-picker", "css-gradient-generator", "font-checker"],
+  },
+  "css-gradient-generator": {
+    intro: [
+      "Design linear, radial, and conic CSS gradients visually with any number of colour stops, angles, and positions. Preview the result live and copy clean, standard CSS in one click.",
+    ],
+    faqs: [
+      { q: "Which gradient types are supported?", a: "Linear, radial, and conic CSS gradients with multiple colour stops." },
+      { q: "Does it work in all modern browsers?", a: "Yes. It outputs standard CSS linear-gradient(), radial-gradient(), and conic-gradient() syntax." },
+    ],
+    see: ["box-shadow-generator", "border-radius-generator", "contrast-checker"],
+  },
+  "box-shadow-generator": {
+    intro: [
+      "Craft layered, soft, or crisp CSS box shadows with live controls for offset, blur, spread, colour, opacity, and inset mode. Stack multiple shadow layers and copy ready-to-paste CSS.",
+    ],
+    faqs: [
+      { q: "Can I layer multiple shadows?", a: "Yes. You can combine multiple shadow layers for realistic depth." },
+      { q: "Are inset shadows supported?", a: "Yes. Toggle inset on any shadow layer." },
+    ],
+    see: ["border-radius-generator", "css-gradient-generator", "contrast-checker"],
+  },
+  "border-radius-generator": {
+    intro: [
+      "Adjust all four corners together or individually, or switch to 8-value organic CSS blob shapes with a live preview. Copy the exact `border-radius` CSS rule in one click.",
+    ],
+    faqs: [
+      { q: "Can I make organic CSS blob shapes?", a: "Yes. Use the 8-value border-radius controls to shape smooth organic blobs." },
+      { q: "Can I control each corner separately?", a: "Yes. Toggle individual corner controls for asymmetric shapes." },
+    ],
+    see: ["box-shadow-generator", "css-gradient-generator", "crop-image"],
+  },
+  "json-formatter": {
+    intro: [
+      "Format, validate, minify, and inspect JSON right in your browser. Syntax errors point to the exact line and column, and you can browse nested objects as a collapsible tree, sort keys, or convert JSON to CSV.",
+    ],
+    faqs: [
+      { q: "Is my JSON sent to a server?", a: "No. Parsing, formatting, and validation run 100% in your browser." },
+      { q: "Can I convert JSON to CSV?", a: "Yes. Arrays of JSON objects can be exported directly as CSV." },
+    ],
+    see: ["jsonpath", "yaml-formatter", "diff-checker"],
+  },
+  "jwt-decoder": {
+    intro: [
+      "Decode any JSON Web Token (JWT) in your browser to inspect its header, payload claims, and expiration time in readable form. You can also verify HS256, HS384, and HS512 signatures with your secret.",
+    ],
+    faqs: [
+      { q: "Is it safe to paste real JWTs here?", a: "Yes. Decoding and signature verification run locally in your browser—nothing is sent to any server." },
+      { q: "Which signature algorithms can it verify?", a: "HS256, HS384, and HS512 HMAC signatures using your secret." },
+    ],
+    see: ["base64-encoder", "hmac-generator", "json-formatter"],
+  },
+  "base64-encoder": {
+    intro: [
+      "Encode text or files to Base64 and decode Base64 strings back to text or downloadable files in your browser. Supports standard and URL-safe Base64 (`base64url`) as well as `data:` URLs with image previews.",
+    ],
+    faqs: [
+      { q: "Does it support URL-safe Base64?", a: "Yes. Switch between standard Base64 and URL-safe Base64url." },
+      { q: "Can I preview decoded Base64 images?", a: "Yes. Image data URLs and Base64-encoded images preview right in the browser." },
+    ],
+    see: ["jwt-decoder", "url-encoder", "sha256-hash"],
+  },
+  "regex-tester": {
+    intro: [
+      "Test JavaScript regular expressions live with every match and capture group highlighted. Toggle global (`g`), case-insensitive (`i`), multiline (`m`), dotAll (`s`), and unicode (`u`) flags, and preview replacements using `$1` groups.",
+    ],
+    faqs: [
+      { q: "Does it show capture groups?", a: "Yes. Every match and numbered capture group is highlighted." },
+      { q: "Can I test find-and-replace patterns?", a: "Yes. Use the replacement preview with `$1` group references." },
+    ],
+    see: ["find-and-replace", "random-regex", "diff-checker"],
+  },
+  "timestamp-converter": {
+    intro: [
+      "Convert Unix timestamps (in seconds or milliseconds, auto-detected) to human-readable local, UTC, and ISO 8601 dates—or convert any date and time back to a Unix epoch timestamp.",
+    ],
+    faqs: [
+      { q: "Does it detect seconds vs milliseconds?", a: "Yes. 10-digit seconds and 13-digit millisecond timestamps are detected automatically." },
+      { q: "Can I see the current live Unix timestamp?", a: "Yes. The live current epoch timestamp updates in real time." },
+    ],
+    see: ["world-clock", "cron-explainer", "date-calculator"],
+  },
+  "diff-checker": {
+    intro: [
+      "Compare two blocks of text or code side by side or inline to spot every added, removed, and modified line or word. Optionally ignore whitespace or letter case—everything stays in your browser.",
+    ],
+    faqs: [
+      { q: "Can I ignore whitespace or case differences?", a: "Yes. Toggle whitespace and case sensitivity options to focus on meaningful changes." },
+      { q: "Is my code uploaded?", a: "No. Text comparison runs locally in your browser." },
+    ],
+    see: ["compare-pdf", "json-formatter", "find-and-replace"],
+  },
+  "cron-explainer": {
+    intro: [
+      "Translate any 5-field or 6-field cron expression (including day/month names and macros like `@daily`) into plain English and preview the next 8 scheduled run times in your local time zone or UTC.",
+    ],
+    faqs: [
+      { q: "Does it support 6-field cron and macros?", a: "Yes. Both standard 5-field and 6-field expressions, names (MON, JAN), and macros (@daily, @hourly) are supported." },
+      { q: "Can I check run times in UTC?", a: "Yes. Switch between your local time zone and UTC." },
+    ],
+    see: ["timestamp-converter", "world-clock", "regex-tester"],
+  },
+  "morse-audio-decoder": {
+    intro: [
+      "Decode Morse code beeps from an audio file (MP3, WAV, M4A, OGG), a video's audio track, or live through your microphone. It automatically detects tone pitch and speed from 5 to 50+ WPM, even with background noise or hand-keyed timing.",
+    ],
+    faqs: [
+      { q: "Can I decode Morse live from a speaker?", a: "Yes. Use microphone mode and hold your device near the audio source." },
+      { q: "Is the audio uploaded?", a: "No. Signal detection and decoding run locally in your browser." },
+    ],
+    see: ["morse-code", "audio-to-text", "mic-speaker-test"],
+  },
+  "unit-converter": {
+    intro: [
+      "Convert length, weight, temperature, area, volume, speed, data storage, time, energy, pressure, angle, and fuel economy across every unit at once in your browser.",
+    ],
+    faqs: [
+      { q: "How many unit categories are supported?", a: "12 categories, showing conversions to every unit in that category simultaneously." },
+      { q: "Can I convert currencies too?", a: "Yes. Use the Currency converter for 30 currencies at daily ECB reference rates." },
+    ],
+    see: ["currency-converter", "scientific-calculator", "date-calculator"],
+  },
+  "currency-converter": {
+    intro: [
+      "Convert between 30 world currencies using the European Central Bank's daily reference exchange rates. Type any amount to see instant conversions across currencies.",
+    ],
+    faqs: [
+      { q: "Where do the exchange rates come from?", a: "They use the European Central Bank's daily reference rates." },
+      { q: "Is it free to use?", a: "Yes, completely free with no sign-up." },
+    ],
+    see: ["unit-converter", "scientific-calculator", "number-to-words"],
+  },
+  "world-clock": {
+    intro: [
+      "Track the current time across any IANA city or time zone with automatic daylight saving adjustments, and use the meeting planner to pick a time in one city and see working hours, evenings, and nights everywhere else.",
+    ],
+    faqs: [
+      { q: "Does it handle daylight saving time automatically?", a: "Yes. It uses standard IANA time zones with current DST rules." },
+      { q: "Can I plan meetings across time zones?", a: "Yes. Pick a proposed time in any city to compare local hours across all added cities." },
+    ],
+    see: ["timestamp-converter", "date-calculator", "pomodoro-timer"],
+  },
+  "pomodoro-timer": {
+    intro: [
+      "Stay focused with 25-minute work intervals, short breaks, and long breaks, complete with a subtle chime and the remaining time shown right in your browser tab title so it keeps accurate time in the background.",
+    ],
+    faqs: [
+      { q: "Does the timer keep running if I switch tabs?", a: "Yes. It tracks elapsed wall-clock time and updates your browser tab title." },
+      { q: "Can I adjust focus and break lengths?", a: "Yes, you can customise work and break durations." },
+    ],
+    see: ["stopwatch", "world-clock", "date-calculator"],
+  },
+  stopwatch: {
+    intro: [
+      "Use a precision stopwatch with lap recording (highlighting your fastest and slowest laps) alongside a countdown timer with an audio alarm—all running locally in your browser tab.",
+    ],
+    faqs: [
+      { q: "Does it highlight best and worst laps?", a: "Yes. Fastest and slowest lap splits are automatically marked." },
+      { q: "Does the countdown timer play an alarm?", a: "Yes, it plays a chime when the countdown finishes." },
+    ],
+    see: ["pomodoro-timer", "world-clock", "date-calculator"],
+  },
+  "age-calculator": {
+    intro: [
+      "Calculate your exact age in years, months, and days—plus total days lived and a countdown to your next birthday—right in your browser, handling leap years and varying month lengths accurately.",
+    ],
+    faqs: [
+      { q: "Does it handle leap-year birthdays?", a: "Yes. Leap years and varying month lengths are handled accurately." },
+      { q: "Can I calculate days between two arbitrary dates?", a: "Yes. Use the Date calculator for spans, business days, and adding or subtracting days." },
+    ],
+    see: ["date-calculator", "world-clock", "timestamp-converter"],
+  },
+  "date-calculator": {
+    intro: [
+      "Find the exact days, weeks, and business days between any two dates, or add and subtract days, weeks, months, years, or working days from a starting date—all in your browser.",
+    ],
+    faqs: [
+      { q: "Can it count business days only?", a: "Yes. Both date-difference and add/subtract modes support business days." },
+      { q: "Are leap years handled?", a: "Yes, calendar leap years and month-end rules are handled automatically." },
+    ],
+    see: ["age-calculator", "world-clock", "timestamp-converter"],
+  },
+  "password-generator": {
+    intro: [
+      "Generate cryptographically random passwords or memorable Diceware passphrases from the EFF's 7,776-word list, or test an existing password's entropy in bits, estimated crack time, and common-pattern weaknesses.",
+    ],
+    faqs: [
+      { q: "Is my password sent to any server?", a: "No. Generation (via Web Crypto) and strength checking run 100% locally in your browser." },
+      { q: "What is a passphrase?", a: "A sequence of random dictionary words (from the EFF 7,776-word list) that is easier to type and remember than random symbols while staying high-entropy." },
+    ],
+    see: ["encrypt-note", "sha256-hash", "random-string"],
+  },
+  "encrypt-note": {
+    intro: [
+      "Encrypt a private note or message in your browser using AES-256-GCM with a PBKDF2 key (600,000 rounds), then share it as encrypted text or a `#`-fragment link that never sends your note or password to any server.",
+    ],
+    faqs: [
+      { q: "Can the server read my encrypted note or link?", a: "No. Encryption happens in your browser, and shareable links put the ciphertext after the `#` URL fragment, which browsers never send to servers." },
+      { q: "What encryption standard is used?", a: "AES-256-GCM authenticated encryption with PBKDF2-SHA256 (600,000 iterations)." },
+    ],
+    see: ["password-generator", "sha256-hash", "base64-encoder"],
+  },
+  "exif-remover": {
+    intro: [
+      "Inspect hidden EXIF, GPS location (plotted on a map), camera, lens, software, and serial number metadata inside your photos—then strip it losslessly from JPG, PNG, and WebP images without re-compression.",
+    ],
+    faqs: [
+      { q: "Does removing EXIF metadata reduce photo quality?", a: "No. Metadata is stripped losslessly from JPG, PNG, and WebP without re-compressing pixels, while keeping orientation and colour profiles intact." },
+      { q: "Are my photos uploaded?", a: "No. Metadata inspection and removal run locally in your browser." },
+    ],
+    see: ["compress-image", "blur-faces", "pixelate-image"],
+  },
+  "qr-scanner": {
+    intro: [
+      "Decode any QR code directly in your browser by uploading an image, pasting a screenshot, or scanning live with your phone or laptop camera. Recognises URLs, Wi-Fi logins, contacts, email, phone numbers, and locations.",
+    ],
+    faqs: [
+      { q: "Can I paste a screenshot directly?", a: "Yes. Paste an image from your clipboard, upload a file, or use your camera." },
+      { q: "Is the scanned image uploaded?", a: "No. QR decoding runs entirely in your browser." },
+    ],
+    see: ["qr", "webcam-test", "exif-remover"],
+  },
+  "mic-speaker-test": {
+    intro: [
+      "Test your microphone with a live audio level meter and verify your left and right speakers or headphones directly in your browser—no downloads or recordings stored.",
+    ],
+    faqs: [
+      { q: "Is my microphone audio recorded or uploaded?", a: "No. Audio is analysed locally in your browser solely for the live level meter." },
+      { q: "Can I test left and right stereo channels separately?", a: "Yes. You can play test tones to the left channel, right channel, or both." },
+    ],
+    see: ["webcam-test", "screen-recorder", "audio-to-text"],
+  },
+  "dead-pixel-test": {
+    intro: [
+      "Display full-screen solid colours (red, green, blue, black, white, and more) to spot dead pixels, stuck pixels, or backlight bleed on any monitor or phone screen, plus an optional rapid colour flasher to try unstucking stuck pixels.",
+    ],
+    faqs: [
+      { q: "What is the difference between a dead and a stuck pixel?", a: "A dead pixel stays permanently black, while a stuck pixel remains lit in red, green, blue, or white and can sometimes be revived by rapid colour cycling." },
+      { q: "How do I exit full-screen mode?", a: "Press Esc or tap/click the exit control." },
+    ],
+    see: ["screen-resolution", "pixel-ruler", "webcam-test"],
   },
 };
 

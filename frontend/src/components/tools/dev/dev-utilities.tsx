@@ -88,10 +88,11 @@ const choose = (id: UtilId) => {
   window.dispatchEvent(new HashChangeEvent("hashchange"));
 };
 
-export function DevUtilities({ toolId }: { toolId: string }) {
+/** `start`: the tab a standalone page (JSON formatter, JWT decoder…) opens on; a #hash still wins. */
+export function DevUtilities({ toolId, start }: { toolId: string; start?: string }) {
   const tool = getTool(toolId)!;
   const hashValue = useSyncExternalStore(subscribe, readHash, () => "");
-  const active: UtilId = isUtil(hashValue) ? hashValue : "json";
+  const active: UtilId = isUtil(hashValue) ? hashValue : start && isUtil(start) ? start : "json";
   const util = UTILS.find((u) => u.id === active)!;
 
   return (

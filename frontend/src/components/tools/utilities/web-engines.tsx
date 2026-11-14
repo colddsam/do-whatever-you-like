@@ -1,5 +1,6 @@
 "use client";
 
+import { DeadPixelTest, MicSpeakerTest } from "./device-tests";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Camera, CameraOff, Download, ExternalLink, Plus, RotateCw, X } from "lucide-react";
 import { motion } from "motion/react";
@@ -438,6 +439,10 @@ export function DeviceEngine({ preset }: EngineProps) {
       return <PixelRuler />;
     case "myip":
       return <MyIp />;
+    case "mic":
+      return <MicSpeakerTest />;
+    case "deadpixel":
+      return <DeadPixelTest />;
     default:
       return <ScreenInfo />;
   }

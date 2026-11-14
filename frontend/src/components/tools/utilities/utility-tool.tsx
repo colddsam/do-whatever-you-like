@@ -3,14 +3,61 @@
 import { useSyncExternalStore, type ComponentType } from "react";
 import { getUtility, ENGINE_INFO, type Engine } from "@/lib/utilities/catalog";
 import { Workbench } from "../workbench";
-import { CardEngine, CodesEngine, EscapeEngine, FancyEngine, IeeeEngine, LinesEngine, LoremEngine, MorseEngine, NumWordsEngine, RepeatEngine, RomanEngine, SummarizeEngine, type EngineProps } from "./text-engines";
-import { EditorEngine, FormatEngine, HtmlViewerEngine, MinifyEngine, ValidateEngine } from "./code-engines";
-import { JsonPathEngine, UriTemplateEngine, XmlViewerEngine, XPathEngine, XsdEngine, XsltEngine } from "./xml-engines";
+import {
+  CardEngine,
+  CodesEngine,
+  EscapeEngine,
+  FancyEngine,
+  IeeeEngine,
+  LinesEngine,
+  LoremEngine,
+  MorseEngine,
+  NumWordsEngine,
+  RepeatEngine,
+  RomanEngine,
+  SummarizeEngine,
+  type EngineProps,
+} from "./text-engines";
+import {
+  EditorEngine,
+  FormatEngine,
+  HtmlViewerEngine,
+  MinifyEngine,
+  ValidateEngine,
+} from "./code-engines";
+import {
+  JsonPathEngine,
+  UriTemplateEngine,
+  XmlViewerEngine,
+  XPathEngine,
+  XsdEngine,
+  XsltEngine,
+} from "./xml-engines";
 import { HashEngine, RandomEngine } from "./data-engines";
 import { MarkdownEngine } from "./markdown-engine";
 import { CalculatorEngine } from "./calculator-engine";
 import { FindReplaceEngine, SplitEngine } from "./string-engines";
-import { DeviceEngine, NetworkEngine, TextImageEngine, WebGenEngine } from "./web-engines";
+import {
+  DeviceEngine,
+  NetworkEngine,
+  TextImageEngine,
+  WebGenEngine,
+} from "./web-engines";
+import {
+  DateEngine,
+  TimerEngine,
+  UnitEngine,
+  WorldClockEngine,
+} from "./everyday-engines";
+import {
+  EncryptEngine,
+  ExifEngine,
+  PasswordEngine,
+  QrScanEngine,
+} from "./privacy-engines";
+import { ContrastEngine, CssGenEngine } from "./design-engines";
+import { CronEngine } from "./cron-engine";
+import { MorseAudioEngine } from "./morse-audio-engine";
 
 const ENGINES: Record<Engine, ComponentType<EngineProps>> = {
   codes: CodesEngine,
@@ -20,6 +67,7 @@ const ENGINES: Record<Engine, ComponentType<EngineProps>> = {
   repeat: RepeatEngine,
   lines: LinesEngine,
   morse: MorseEngine,
+  "morse-audio": MorseAudioEngine,
   lorem: LoremEngine,
   summarize: SummarizeEngine,
   "text-image": TextImageEngine,
@@ -46,6 +94,17 @@ const ENGINES: Record<Engine, ComponentType<EngineProps>> = {
   network: NetworkEngine,
   device: DeviceEngine,
   webgen: WebGenEngine,
+  units: UnitEngine,
+  worldclock: WorldClockEngine,
+  timer: TimerEngine,
+  date: DateEngine,
+  password: PasswordEngine,
+  encrypt: EncryptEngine,
+  qrscan: QrScanEngine,
+  exif: ExifEngine,
+  cron: CronEngine,
+  contrast: ContrastEngine,
+  cssgen: CssGenEngine,
 };
 
 /**
@@ -57,7 +116,11 @@ const noop = () => () => {};
 export function UtilityTool({ toolId }: { toolId: string }) {
   // Engines use browser APIs (DOMParser, crypto, canvas) and random output, so they render in the
   // browser only; the server sends a same-sized placeholder, which avoids hydration mismatches.
-  const mounted = useSyncExternalStore(noop, () => true, () => false);
+  const mounted = useSyncExternalStore(
+    noop,
+    () => true,
+    () => false,
+  );
   const def = getUtility(toolId)!;
   const info = ENGINE_INFO[def.engine];
   const Engine = ENGINES[def.engine];
@@ -67,7 +130,15 @@ export function UtilityTool({ toolId }: { toolId: string }) {
       : "Lookups run from our server against public addresses only. Nothing you enter is stored."
     : def.preset?.kind === "myip"
       ? "Your address is read from this one request and never stored."
-      : "Everything here runs in your browser. Nothing you type is sent anywhere.";
+      : def.engine === "units"
+        ? "Runs in your browser. Currency rates are fetched from frankfurter.dev (European Central Bank data); nothing you type is sent."
+        : def.engine === "morse-audio"
+          ? "Your recordings and microphone are decoded on this device. Nothing is uploaded."
+          : def.engine === "exif" ||
+              def.engine === "qrscan" ||
+              def.preset?.kind === "mic"
+            ? "Your photos, camera and microphone stay on this device. Nothing is uploaded."
+            : "Everything here runs in your browser. Nothing you type is sent anywhere.";
   return (
     <Workbench steps={info.steps} current={1} footer={footer}>
       <div className="@container grid gap-3 p-3 sm:p-4 md:gap-4 md:p-5">

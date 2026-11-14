@@ -24,6 +24,7 @@ export function GET() {
     "",
     `- [Home](${absUrl("/")}): overview, search, and FAQ`,
     `- [All tools](${absUrl("/tools")}): full searchable directory of all ${liveCount} live tools`,
+    `- [Full tool specs (llms-full.txt)](${absUrl("/llms-full.txt")}): detailed inputs, outputs, limits, and features for every tool`,
     `- [About](${absUrl("/about")}): who runs the site and how to get in touch (${CONTACT_EMAIL})`,
     `- [Privacy](${absUrl("/privacy")}): where files go and how long they're kept`,
     `- [Terms](${absUrl("/terms")}): ground rules for using the tools`,

@@ -31,15 +31,15 @@ export const HUBS: Record<ClusterId, { title: string; description: string; intro
   },
   text: {
     title: "Free Text Tools: Binary Translator, Number to Words, Morse",
-    description: "Convert text to binary, hex and ASCII, find and replace, split text, spell numbers in words, translate Morse and summarise text. Free, in your browser.",
+    description: "Convert text to binary, hex and ASCII, find and replace, split text, spell numbers in words, decode Morse audio and summarise text. Free, in your browser.",
     intro:
-      "Small tools for working with text: translate to and from binary, hex and ASCII codes, find and replace with regex, split text into lists, write numbers as words (with lakh and crore), convert Roman numerals, translate Morse code with sound, summarise long text, and flip, mirror or repeat text for posts.",
+      "Small tools for working with text: translate to and from binary, hex and ASCII codes, find and replace with regex, split text into lists, write numbers as words (with lakh and crore), convert Roman numerals, translate Morse code (and decode Morse audio), summarise long text, and flip, mirror or repeat text for posts.",
   },
   design: {
-    title: "Free Font & Colour Tools: Font Checker, Font Maker, Colour Picker",
-    description: "Check any font file, make your own font, and pick colours and palettes from images and documents. Free, no sign-up.",
+    title: "Free Chart, Flowchart, Font & Colour Tools Online",
+    description: "Make charts and flowcharts, check WCAG contrast, generate CSS gradients and shadows, inspect or create fonts, and pick colours. Free, no sign-up.",
     intro:
-      "Tools for type and colour. Inspect a font file's glyphs, features and metadata; draw or build your own font and export it; and pick exact colours or a whole palette from a picture or document.",
+      "Tools for diagrams, type and colour. Build bar, line, pie and scatter charts; draw flowcharts and Mermaid diagrams; check a font file's glyphs or make your own font; pick colours from any file; test WCAG AA/AAA contrast; and generate CSS gradients, box shadows and border radii.",
   },
   downloads: {
     title: "Free Video Downloader: YouTube, Instagram, Facebook",
@@ -48,15 +48,15 @@ export const HUBS: Record<ClusterId, { title: string; description: string; intro
       "Paste a link to save a public video or post, or just its sound. Downloads are fetched, sent to you and deleted straight away; nothing is kept. Only download content you own or have permission to use.",
   },
   media: {
-    title: "Free Audio & Video Tools: Video to MP3, Audio to Text, Video to GIF",
-    description: "Pull MP3 audio out of any video, transcribe speech in 99 languages, extract still frames, or turn clips into animated GIFs. Free, no sign-up.",
+    title: "Free Audio & Video Tools: Trim, Denoise, Record, Subtitles, GIF",
+    description: "Trim video and audio, remove background noise, boost volume, record screen and voice, edit SRT/VTT subtitles, extract MP3s, transcribe speech and make GIFs. Free, no sign-up.",
     intro:
-      "Tools for audio and video: extract a clean MP3 from any video file, turn speech from a recording or your microphone into editable text and SRT or VTT subtitles, or split videos into still frames and animated GIFs right in your browser.",
+      "Tools for audio and video: trim clips losslessly or frame-exact, clean up background hiss and hum, boost or normalise loudness, record your screen or voice, edit and sync SRT/VTT subtitles, extract MP3 audio, transcribe speech in 99 languages, or turn videos into still frames and animated GIFs.",
   },
   utilities: {
-    title: "Free Everyday Tools: QR Code Generator, Calculator, My IP",
-    description: "Make QR codes, use a scientific calculator, see your IP address and screen resolution, test your webcam and measure pixels. Free, no sign-up.",
+    title: "Free Everyday Tools: Converters, Passwords, QR, Clocks & Device Checks",
+    description: "Convert units and currencies, generate strong passwords, encrypt notes, strip photo EXIF data, scan or make QR codes, use timers and test your device. Free, no sign-up.",
     intro:
-      "Handy everyday tools: make a styled QR code for a link, Wi-Fi or contact; crunch trig, logs and unit conversions in a scientific calculator; see your public IP address; check your screen resolution and browser window size; test your webcam; and measure anything on screen with a pixel ruler.",
+      "Handy everyday tools: convert units and 30 currencies, check world time zones, run a Pomodoro or stopwatch, calculate ages and dates, generate passphrases, encrypt private notes with AES-256, view or strip photo EXIF metadata, scan or create QR codes, crunch maths in a scientific calculator, and test your screen, webcam, mic and IP.",
   },
 };

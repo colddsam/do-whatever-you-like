@@ -52,6 +52,8 @@ const ScanTool = dynamic(() => import("./pdf/scan/scan-tool").then((m) => m.Scan
 const FontChecker = dynamic(() => import("./design/font-checker").then((m) => m.FontChecker), { loading });
 const ColorPicker = dynamic(() => import("./design/color-picker").then((m) => m.ColorPicker), { loading });
 const FontCreator = dynamic(() => import("./design/font-creator").then((m) => m.FontCreator), { loading });
+const ChartMaker = dynamic(() => import("./design/chart-maker").then((m) => m.ChartMaker), { loading });
+const FlowchartMaker = dynamic(() => import("./design/flowchart-maker").then((m) => m.FlowchartMaker), { loading });
 const SoonWorkspace = dynamic(() => import("./soon-workspace").then((m) => m.SoonWorkspace), { loading });
 const UtilityTool = dynamic(() => import("./utilities/utility-tool").then((m) => m.UtilityTool), { loading });
 const VideoFramesTool = dynamic(() => import("./media/video-frames-tool").then((m) => m.VideoFramesTool), { loading });
@@ -59,6 +61,11 @@ const VideoGifTool = dynamic(() => import("./media/video-gif-tool").then((m) => 
 const GifSpeedTool = dynamic(() => import("./image/gif-speed-tool").then((m) => m.GifSpeedTool), { loading });
 const PixelateTool = dynamic(() => import("./image/pixelate-tool").then((m) => m.PixelateTool), { loading });
 const EmojiTool = dynamic(() => import("./image/emoji-tool").then((m) => m.EmojiTool), { loading });
+const TrimMediaTool = dynamic(() => import("./media/media-edit-tools").then((m) => m.TrimMediaTool), { loading });
+const SoundTool = dynamic(() => import("./media/media-edit-tools").then((m) => m.SoundTool), { loading });
+const DenoiseTool = dynamic(() => import("./media/media-edit-tools").then((m) => m.DenoiseTool), { loading });
+const RecorderTool = dynamic(() => import("./media/recorder-tool").then((m) => m.RecorderTool), { loading });
+const SubtitleTool = dynamic(() => import("./media/subtitle-tool").then((m) => m.SubtitleTool), { loading });
 
 type Workspace = ComponentType<{ toolId: string }>;
 
@@ -102,6 +109,8 @@ const byId: Record<string, Workspace> = {
   "font-checker": FontChecker,
   "color-picker": ColorPicker,
   "font-creator": FontCreator,
+  "chart-maker": ChartMaker,
+  "flowchart-maker": FlowchartMaker,
   "compress-files": CompressFilesTool,
   "merge-files": MergeFilesTool,
   "split-files": SplitFilesTool,
@@ -154,10 +163,24 @@ const byId: Record<string, Workspace> = {
   // Audio & video, made in the browser
   "video-to-frames": VideoFramesTool,
   "video-to-gif": VideoGifTool,
+  // Audio & video, edited on our server (trim, volume) or in the browser (recorder, subtitles)
+  "trim-media": TrimMediaTool,
+  "audio-volume": SoundTool,
+  "noise-remover": DenoiseTool,
+  "screen-recorder": RecorderTool,
+  "subtitle-editor": SubtitleTool,
 };
+
+/** A standalone page for one tab of the developer hub (JSON formatter, JWT decoder…). */
+function DevTabPage({ toolId }: { toolId: string }) {
+  return <DevUtilities toolId={toolId} start={getTool(toolId)?.devTab} />;
+}
 
 export function Playground({ toolId }: { toolId: string }) {
   const tool = getTool(toolId)!;
-  const Live = tool.status === "live" ? (byId[tool.id] ?? (getUtility(tool.id) ? UtilityTool : tool.preset ? UniversalConverter : byKind[tool.kind])) : undefined;
+  const Live =
+    tool.status === "live"
+      ? (byId[tool.id] ?? (tool.devTab ? DevTabPage : getUtility(tool.id) ? UtilityTool : tool.preset ? UniversalConverter : byKind[tool.kind]))
+      : undefined;
   return Live ? <Live toolId={toolId} /> : <SoonWorkspace toolId={toolId} />;
 }

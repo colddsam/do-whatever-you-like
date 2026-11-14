@@ -155,12 +155,12 @@ async function ToolDetails({ params }: Pick<PageProps<"/tools/[id]">, "params">)
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-12 md:mt-10 lg:grid-cols-12 lg:gap-10 [&>*]:min-w-0">
-        <div className="lg:col-span-8">
+        <div className={tool.wide ? "lg:col-span-12" : "lg:col-span-8"}>
           <Playground toolId={tool.id} />
         </div>
 
-        <Reveal delay={0.12} className="lg:col-span-4">
-          <aside className="space-y-10">
+        <Reveal delay={0.12} className={tool.wide ? "lg:col-span-12" : "lg:col-span-4"}>
+          <aside className={tool.wide ? "grid gap-10 md:grid-cols-2" : "space-y-10"}>
             <section aria-labelledby="spec-title">
               <h2 id="spec-title" className="label-mono text-ink-3">
                 At a glance

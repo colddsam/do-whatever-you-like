@@ -10,8 +10,24 @@
 
 import {
   AppWindow,
+  AudioLines,
   Binary,
   Calculator,
+  CalendarDays,
+  Clock3,
+  Contrast,
+  FileLock2,
+  Globe2,
+  ImageOff,
+  KeyRound,
+  Mic,
+  Palette,
+  Scale,
+  ScanLine,
+  ScanQrCode,
+  Square,
+  SquareDashed,
+  Timer,
   Replace,
   Scissors,
   CheckCheck,
@@ -48,18 +64,20 @@ import {
 
 export const DEV_GROUPS = ["Format", "Minify", "Validate", "Edit & view", "XML & JSON", "Encode", "Hash", "Random data", "Web & network", "HTML & CSS"] as const;
 export const TEXT_GROUPS = ["Convert", "Transform", "Generate", "Analyze"] as const;
-export const EVERYDAY_GROUPS = ["Device & browser"] as const;
+export const EVERYDAY_GROUPS = ["Calculate & convert", "Time & dates", "Privacy & security", "QR codes", "Device & browser"] as const;
+export const DESIGN_GROUPS = ["Charts & diagrams", "Fonts", "Colour", "CSS"] as const;
 
 export type Engine =
-  | "codes" | "fancy" | "numwords" | "roman" | "repeat" | "lines" | "morse" | "lorem" | "summarize" | "text-image"
+  | "codes" | "fancy" | "numwords" | "roman" | "repeat" | "lines" | "morse" | "morse-audio" | "lorem" | "summarize" | "text-image"
   | "format" | "minify" | "validate" | "card" | "editor" | "html-viewer" | "markdown"
   | "xpath" | "xslt" | "xsd" | "xml-viewer" | "jsonpath" | "uritemplate" | "escape" | "ieee"
-  | "hash" | "random" | "network" | "device" | "webgen" | "calculator" | "find-replace" | "split";
+  | "hash" | "random" | "network" | "device" | "webgen" | "calculator" | "find-replace" | "split"
+  | "units" | "worldclock" | "timer" | "date" | "password" | "encrypt" | "qrscan" | "exif" | "cron" | "contrast" | "cssgen";
 
 export type UtilityDef = {
   id: string;
   name: string;
-  cluster: "dev" | "text" | "everyday";
+  cluster: "dev" | "text" | "everyday" | "design";
   group: string;
   engine: Engine;
   preset?: Record<string, string>;
@@ -86,7 +104,8 @@ const TEXT: UtilityDef[] = [
   textConvert("numwords", Calculator)("number-to-words", "Number to words", "Spell out any number, with lakh and crore if you like.", ["number to word", "number to text", "amount in words", "cheque words", "spell number", "lakh", "crore"], { dir: "to-words" }),
   textConvert("numwords", Calculator)("words-to-number", "Words to number", "“Two thousand and five” becomes 2005.", ["word to number", "text to number", "words to digits"], { dir: "to-number" }),
   textConvert("roman", Sigma)("roman-numerals", "Roman numeral converter", "Numbers to Roman numerals and back, 1 to 3999.", ["roman numeral", "roman to number", "number to roman", "mcmxciv", "roman date"]),
-  textConvert("morse", Radio)("morse-code", "Morse code translator", "Text to Morse and back, with sound you can play.", ["morse", "morse translator", "morse audio", "sos", "dots and dashes"]),
+  textConvert("morse", Radio)("morse-code", "Morse code translator", "Text to Morse and back, with sound you can play.", ["morse", "morse translator", "morse to text", "text to morse", "sos", "dots and dashes"]),
+  textConvert("morse-audio", AudioLines)("morse-audio-decoder", "Morse code audio decoder", "Turn Morse beeps from a recording, a video or your microphone into text.", ["morse code audio decoder", "morse sound to text", "decode morse from audio", "morse audio to text", "morse code listener", "morse decoder microphone", "cw decoder", "morse from video", "morse beeps translator"]),
   fancy("upside-down-text", "Upside-down text", "Flip text upside down for posts and bios.", ["upside down text", "flip text upside down", "rotate text 180"], { kind: "upside" }),
   fancy("mirror-text", "Mirror text", "Text as its mirror image.", ["mirror text", "reverse text", "backwards writing"], { kind: "mirror" }),
   fancy("reverse-text", "Reverse text", "Reverse the letters, the words, each word or the lines.", ["backwards text", "reverse text generator", "flip text", "reverse words", "reverse lines"], { kind: "reverse" }),
@@ -212,16 +231,44 @@ const DEV: UtilityDef[] = [
 
 const dev = (icon: LucideIcon) => d("everyday", "Device & browser", "device", icon);
 const EVERYDAY: UtilityDef[] = [
-  d("everyday", "Device & browser", "calculator", Calculator)("scientific-calculator", "Scientific calculator", "Trig, logs, powers, factorials, memory and history, with units too.", ["scientific calculator", "calculator", "calc", "sin cos tan", "logarithm", "factorial", "nCr", "permutation", "combination", "online calculator", "percentage calculator", "unit converter", "math"]),
+  d("everyday", "Calculate & convert", "calculator", Calculator)("scientific-calculator", "Scientific calculator", "Trig, logs, powers, factorials, memory and history, with units too.", ["scientific calculator", "calculator", "calc", "sin cos tan", "logarithm", "factorial", "nCr", "permutation", "combination", "online calculator", "percentage calculator", "unit converter", "math"]),
   dev(Monitor)("screen-resolution", "Screen resolution", "Your screen's resolution, pixel ratio and colour depth.", ["screen resolution detection", "what is my screen resolution", "display size", "dpi"], { kind: "screen" }),
   dev(Maximize2)("browser-window-size", "Browser window size", "The browser's viewport size, live as you resize.", ["browser window size checker", "viewport size", "window size"], { kind: "window" }),
   dev(AppWindow)("screen-resolution-tester", "Responsive tester", "See a website in 30+ real device frames, or at any custom size.", ["screen resolution tester", "responsive design checker", "mobile view", "viewport tester", "device mockup", "iphone preview", "ipad preview", "macbook frame", "mobile simulator", "custom screen size"], { kind: "tester" }),
   dev(Webcam)("webcam-test", "Webcam test", "Check your camera works, and see its resolution and frame rate.", ["webcam test", "camera test", "test webcam online"], { kind: "webcam" }),
   dev(Ruler)("pixel-ruler", "Pixel ruler", "Measure anything on screen in pixels.", ["online pixel ruler", "screen ruler", "measure pixels"], { kind: "ruler" }),
   dev(Network)("my-ip", "What is my IP", "Your public IP address and what it says about your connection.", ["my ip address", "what is my ip", "my ip", "public ip", "ip address"], { kind: "myip" }),
+  dev(Mic)("mic-speaker-test", "Mic & speaker test", "Check your microphone with a live level meter, and your speakers left and right.", ["mic test", "microphone test", "test my mic", "speaker test", "left right audio test", "headphone test", "sound test", "audio test"], { kind: "mic" }),
+  dev(SquareDashed)("dead-pixel-test", "Dead pixel test", "Full-screen colours to spot dead or stuck pixels, and a flasher to try to fix them.", ["dead pixel test", "stuck pixel fixer", "screen test", "monitor test", "pixel checker", "backlight bleed test"], { kind: "deadpixel" }),
+  d("everyday", "Calculate & convert", "units", Scale)("unit-converter", "Unit converter", "Length, weight, temperature, area, volume, speed, data and more, all at once.", ["unit converter", "cm to inches", "kg to lbs", "celsius to fahrenheit", "km to miles", "liters to gallons", "mb to gb", "metric to imperial", "conversion calculator"]),
+  d("everyday", "Calculate & convert", "units", Globe2)("currency-converter", "Currency converter", "30 currencies at today's European Central Bank rates.", ["currency converter", "exchange rate", "usd to inr", "eur to usd", "gbp to inr", "dollar to rupee", "forex rates", "money converter"], { cat: "currency" }),
+  d("everyday", "Time & dates", "worldclock", Clock3)("world-clock", "World clock & time zones", "The time in any city, and a meeting planner across time zones.", ["world clock", "time zone converter", "timezone converter", "time in london", "ist to est", "utc converter", "meeting planner", "what time is it in"]),
+  d("everyday", "Time & dates", "timer", Timer)("pomodoro-timer", "Pomodoro timer", "Focus in 25-minute rounds with breaks, chimes and the time in your tab.", ["pomodoro timer", "focus timer", "study timer", "tomato timer", "productivity timer"], { mode: "pomodoro" }),
+  d("everyday", "Time & dates", "timer", Timer)("stopwatch", "Stopwatch & countdown", "A stopwatch with laps, and a countdown timer with an alarm.", ["stopwatch", "online stopwatch", "lap timer", "countdown timer", "timer", "alarm timer", "kitchen timer"], { mode: "stopwatch" }),
+  d("everyday", "Time & dates", "date", CalendarDays)("age-calculator", "Age calculator", "Your exact age in years, months and days, and your next birthday.", ["age calculator", "how old am i", "date of birth calculator", "birthday calculator", "age in days"], { mode: "age" }),
+  d("everyday", "Time & dates", "date", CalendarDays)("date-calculator", "Date calculator", "Days between two dates, business days, or a date plus or minus any time.", ["date calculator", "days between dates", "date difference", "business days calculator", "working days", "add days to date", "date duration"], { mode: "between" }),
+  d("everyday", "Privacy & security", "password", KeyRound)("password-generator", "Password generator & checker", "Strong passwords and memorable passphrases, and an honest strength check.", ["password generator", "passphrase generator", "diceware", "password strength checker", "how secure is my password", "random password", "strong password"]),
+  d("everyday", "Privacy & security", "encrypt", FileLock2)("encrypt-note", "Encrypt a note", "Lock a message with a password (AES-256), and share it as text or a link.", ["encrypt text", "encrypt message", "password protect text", "secret note", "aes encryption online", "decrypt text", "private message"]),
+  d("everyday", "Privacy & security", "exif", ImageOff)("exif-remover", "Photo metadata viewer & remover", "See the hidden GPS, camera and date in photos, and remove it without losing quality.", ["exif viewer", "exif remover", "remove metadata from photo", "remove gps from photo", "photo location", "image metadata", "strip exif", "exif data"]),
+  d("everyday", "QR codes", "qrscan", ScanQrCode)("qr-scanner", "QR code scanner", "Read a QR code from a picture, a screenshot or your camera.", ["qr scanner", "qr code reader", "scan qr code", "read qr from image", "qr decoder", "scan qr online", "wifi qr"]),
 ];
 
-export const UTILITIES: UtilityDef[] = [...TEXT, ...DEV, ...EVERYDAY];
+/* ---------- Design: colour and CSS ---------- */
+
+const DESIGN: UtilityDef[] = [
+  d("design", "Colour", "contrast", Contrast)("contrast-checker", "Contrast checker", "Check any text and background colours against WCAG AA and AAA, with fixes.", ["contrast checker", "wcag contrast", "color contrast", "accessibility checker", "a11y colors", "contrast ratio", "aa aaa"]),
+  d("design", "CSS", "cssgen", Palette)("css-gradient-generator", "CSS gradient generator", "Linear, radial and conic gradients with any number of colours.", ["css gradient generator", "gradient maker", "linear gradient", "radial gradient", "background gradient", "color gradient"], { kind: "gradient" }),
+  d("design", "CSS", "cssgen", Square)("box-shadow-generator", "Box shadow generator", "Layered, soft or crisp CSS shadows, live.", ["box shadow generator", "css shadow", "drop shadow css", "shadow maker", "inset shadow"], { kind: "shadow" }),
+  d("design", "CSS", "cssgen", ScanLine)("border-radius-generator", "Border radius generator", "Rounded corners, one by one, or organic blob shapes.", ["border radius generator", "rounded corners css", "css blob", "border-radius"], { kind: "radius" }),
+];
+
+/* ---------- Developer: scheduling ---------- */
+
+const CRON: UtilityDef[] = [
+  d("dev", "Validate", "cron", Clock3)("cron-explainer", "Cron expression explainer", "Cron schedules in plain English, with the next run times.", ["cron expression", "crontab guru", "cron explainer", "cron parser", "cron schedule", "cron next run", "crontab"]),
+];
+
+export const UTILITIES: UtilityDef[] = [...TEXT, ...DEV, ...CRON, ...EVERYDAY, ...DESIGN];
 export const getUtility = (id: string) => UTILITIES.find((u) => u.id === id);
 
 /** What each engine takes and gives, and the promises shown on its pages. */
@@ -232,6 +279,7 @@ export const ENGINE_INFO: Record<Engine, { takes: string; gives: string; steps: 
   roman: { takes: "A number or numeral", gives: "Roman or Arabic", steps: ["Type either", "Read the other", "Copy it"], features: ["Both directions, detected for you", "1 to 3999, written the standard way", "Explains malformed numerals"] },
   repeat: { takes: "Text", gives: "Repeated text", steps: ["Type text", "Set the count", "Copy it"], features: ["Up to 10,000 times", "New line, space, comma or your own separator", "Size shown before you copy"] },
   lines: { takes: "Lines of text", gives: "Reordered lines", steps: ["Paste lines", "Pick an action", "Copy them"], features: ["Shuffle fairly (crypto random)", "Sort A–Z, Z–A, by length or naturally", "Remove duplicates and blank lines", "Number or trim every line"] },
+  "morse-audio": { takes: "A recording, a video or your mic", gives: "Plain text", steps: ["Add a recording or listen", "It reads the beeps", "Copy the text"], features: ["MP3, WAV, M4A, OGG, or the sound of a video", "Live from the microphone: hold a speaker near it", "Tone pitch and speed found for you (5 to 50+ WPM)", "Copes with noise, hum, hand-keyed and Farnsworth timing", "Decoded in your browser: nothing is uploaded"] },
   morse: { takes: "Text or Morse", gives: "Morse or text, and sound", steps: ["Type either", "Listen or copy", "Download audio"], features: ["Both directions, detected for you", "Play it with adjustable speed and pitch", "Download it as a WAV"] },
   lorem: { takes: "How much", gives: "Placeholder text", steps: ["Pick paragraphs, sentences or words", "Set the amount", "Copy it"], features: ["Paragraphs, sentences or words", "Classic “Lorem ipsum” start optional", "As HTML paragraphs if you like"] },
   summarize: { takes: "A long text", gives: "Its key sentences", steps: ["Paste text", "Set the length", "Copy the summary"], features: ["Picks the most representative sentences", "Keeps their original order", "Runs in your browser: private"] },
@@ -259,5 +307,16 @@ export const ENGINE_INFO: Record<Engine, { takes: string; gives: string; steps: 
   network: { takes: "A domain, IP or URL", gives: "Live results", steps: ["Type it", "Run the check", "Read the result"], features: ["Live answers from our server", "Public addresses only: safe", "Timing for each step"], server: true },
   webgen: { takes: "A few details", gives: "Code to paste", steps: ["Fill in the details", "Preview it", "Copy the code"], features: ["Live preview", "Clean, standard code", "Copy with one tap"] },
   device: { takes: "This device", gives: "Measurements", steps: ["Open it", "Read the results", "Copy them"], features: ["Live, nothing to install", "Runs in your browser", "Private: nothing is stored"] },
+  units: { takes: "A value", gives: "Every unit at once", steps: ["Pick what to convert", "Type a value", "Read or copy"], features: ["12 kinds: length, weight, temperature, area, volume, speed, data, time, energy, pressure, angle, fuel", "Every unit converted at once", "Currencies at the European Central Bank's daily reference rates", "Runs in your browser"] },
+  worldclock: { takes: "Cities or time zones", gives: "Their times", steps: ["Add cities", "Pick a time", "See it everywhere"], features: ["Every IANA time zone, daylight saving included", "Plan a meeting: pick a time in one city, see it in all", "Working hours, evenings and nights marked", "Runs in your browser"] },
+  timer: { takes: "Nothing", gives: "A timer", steps: ["Pick a timer", "Start it", "Hear the chime"], features: ["Pomodoro with short and long breaks", "Stopwatch with laps, best and worst marked", "Countdown with an alarm", "Time shown in the tab title; keeps time in the background"] },
+  date: { takes: "Dates", gives: "Ages, gaps and dates", steps: ["Pick the calculation", "Enter dates", "Read the answer"], features: ["Exact age in years, months and days", "Days, weeks and business days between dates", "Add or subtract days, weeks, months, years or business days", "Leap years and month ends handled"] },
+  password: { takes: "Your settings or a password", gives: "A password, or its strength", steps: ["Pick generate or check", "Set the options", "Copy it"], features: ["Unbiased, cryptographically random", "Passphrases from the EFF's 7,776-word list", "Strength in bits, and time to crack", "Spots common passwords, keyboard runs and years", "Never sent anywhere"] },
+  encrypt: { takes: "A note and a password", gives: "Encrypted text or a link", steps: ["Write the note", "Set a password", "Share the result"], features: ["AES-256-GCM, tamper-evident", "PBKDF2 key, 600,000 rounds", "Share as text or a link (the note sits after #, never sent to a server)", "Runs entirely in your browser"] },
+  qrscan: { takes: "A picture or your camera", gives: "What the code says", steps: ["Add a picture or open the camera", "It reads the code", "Copy or open it"], features: ["Pictures, screenshots and pasted images", "Live camera scanning on phones and laptops", "Links, Wi-Fi, contacts, email, phone and places recognised", "Decoded in your browser"] },
+  exif: { takes: "Photos", gives: "Their metadata, or clean copies", steps: ["Add photos", "See what's hidden", "Download clean copies"], features: ["GPS location shown on a map", "Camera, lens, dates, software and serial numbers", "Removed losslessly from JPG, PNG and WebP: no re-compression", "Rotation and colour profile kept", "Many photos at once, as a ZIP"] },
+  cron: { takes: "A cron expression", gives: "Plain English and the next runs", steps: ["Type the expression", "Read it in English", "Check the next runs"], features: ["Explains every field", "The next 8 run times, in your time or UTC", "5 or 6 fields, names (MON, JAN) and macros (@daily)", "Common examples to start from"] },
+  contrast: { takes: "Two colours", gives: "WCAG contrast results", steps: ["Pick text and background", "See the ratio", "Use a passing fix"], features: ["AA and AAA for normal and large text", "UI components and icons (3:1)", "Nearest passing colour suggested", "Hex, rgb() and hsl(), with transparency"] },
+  cssgen: { takes: "A few settings", gives: "CSS to paste", steps: ["Adjust it", "Preview it live", "Copy the CSS"], features: ["Live preview", "Clean, standard CSS that works in every browser", "Gradients, layered shadows and blob shapes", "Copy with one tap"] },
 };
 

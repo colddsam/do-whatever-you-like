@@ -1,6 +1,7 @@
 "use client";
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { ArrowUpDown, Download, Pause, Play } from "lucide-react";
 import { saveBlob } from "@/lib/files";
 import {
@@ -312,7 +313,7 @@ export function LinesEngine() {
 
 /* ---------- Morse ---------- */
 
-function morseWav(code: string, wpm: number, freq: number): Blob {
+export function morseWav(code: string, wpm: number, freq: number): Blob {
   const rate = 22050;
   const unit = 1.2 / wpm;
   const parts: [boolean, number][] = [];
@@ -395,6 +396,12 @@ export function MorseEngine() {
           </div>
         </Row>
       </Panel>
+      <p className="text-sm text-ink-2">
+        Have Morse as a sound: a recording, a video, or beeps you can hold up to the mic?{" "}
+        <Link href="/tools/morse-audio-decoder" className="font-medium text-ink underline underline-offset-4">
+          Morse audio decoder →
+        </Link>
+      </p>
     </>
   );
 }

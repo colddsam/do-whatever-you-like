@@ -1,5 +1,16 @@
 import {
   Archive,
+  ChartColumnBig,
+  Workflow,
+  AudioWaveform,
+  GitCompare,
+  Clock,
+  Regex,
+  Binary,
+  KeySquare,
+  FileJson,
+  Volume2,
+  MonitorPlay,
   Clapperboard,
   Film,
   Gauge,
@@ -59,7 +70,7 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
-import { DEV_GROUPS, ENGINE_INFO, EVERYDAY_GROUPS, TEXT_GROUPS, UTILITIES } from "@/lib/utilities/catalog";
+import { DESIGN_GROUPS, DEV_GROUPS, ENGINE_INFO, EVERYDAY_GROUPS, TEXT_GROUPS, UTILITIES } from "@/lib/utilities/catalog";
 
 export type ToolStatus = "live" | "soon";
 
@@ -100,6 +111,7 @@ export type FileGroup = (typeof FILE_GROUPS)[number];
 export type DevGroup = (typeof DEV_GROUPS)[number];
 export type TextGroup = (typeof TEXT_GROUPS)[number];
 export type EverydayGroup = (typeof EVERYDAY_GROUPS)[number];
+export type DesignGroup = (typeof DESIGN_GROUPS)[number];
 
 export type Tool = {
   id: string;
@@ -126,7 +138,7 @@ export type Tool = {
    * grouped by `group`, and stay out of the home page grid, which shows the family's hub instead.
    */
   family?: "pdf" | "image" | "files" | "developer" | "text";
-  group?: PdfGroup | ImageGroup | FileGroup | DevGroup | TextGroup | EverydayGroup;
+  group?: PdfGroup | ImageGroup | FileGroup | DevGroup | TextGroup | EverydayGroup | DesignGroup;
   /** What the tool page promises, shown as a checklist. */
   features: string[];
   /** Live downloaders only: how the playground talks to the backend. */
@@ -145,6 +157,10 @@ export type Tool = {
    * workspace, with the source formats it takes and the format it makes fixed.
    */
   preset?: { from: string[]; to: string };
+  /** A standalone page for one tab of the developer hub (`dev`): the tab it opens on. */
+  devTab?: string;
+  /** Editors that need room (charts, flowcharts): the workspace spans the page, the spec sheet goes under it. */
+  wide?: boolean;
 };
 
 const PDF_ACCEPT = { label: "PDF files", types: ".pdf,application/pdf" };
@@ -646,7 +662,7 @@ const utilityTools: Tool[] = UTILITIES.map((u) => {
   return {
     id: u.id,
     name: u.name,
-    category: u.cluster === "dev" ? "Developers" : u.cluster === "text" ? "Text" : "Utilities",
+    category: u.cluster === "dev" ? "Developers" : u.cluster === "text" ? "Text" : u.cluster === "design" ? "Design" : "Utilities",
     description: u.description,
     status: "live",
     icon: u.icon,
@@ -657,15 +673,52 @@ const utilityTools: Tool[] = UTILITIES.map((u) => {
     steps: info.steps,
     keywords: u.keywords,
     family: u.cluster === "dev" ? "developer" : u.cluster === "text" ? "text" : undefined,
-    group: u.group as DevGroup | TextGroup | EverydayGroup,
+    group: u.group as DevGroup | TextGroup | EverydayGroup | DesignGroup,
     features: info.features,
   } satisfies Tool;
 });
 
+/** Standalone pages for the most-searched tabs of the developer hub: same workspace, opened on that tab. */
+const devTab = (id: string, tab: string, name: string, group: DevGroup, icon: LucideIcon, description: string, keywords: string[], features: string[]): Tool => ({
+  id,
+  name,
+  category: "Developers",
+  family: "developer",
+  group,
+  description,
+  status: "live",
+  icon,
+  kind: "text",
+  takes: "Text, JSON or tokens",
+  gives: "The result, live",
+  limit: "Runs in your browser",
+  steps: ["Paste your input", "See the result", "Copy it"],
+  keywords,
+  features,
+  devTab: tab,
+});
+const devTabTools: Tool[] = [
+  devTab("json-formatter", "json", "JSON formatter & validator", "XML & JSON", FileJson, "Format, validate, minify and browse JSON, with errors pointed out.", ["json formatter", "json beautifier", "json validator", "pretty print json", "json viewer", "json minify", "json lint", "json to csv"], ["Errors point to the line and column", "Beautify, minify, sort keys", "Browse it as a tree; JSON to CSV", "Nothing leaves your browser"]),
+  devTab("jwt-decoder", "jwt", "JWT decoder", "Encode", KeySquare, "Decode a JSON Web Token's header and claims, and verify its signature.", ["jwt decoder", "jwt debugger", "decode jwt", "jwt verify", "json web token", "jwt parser", "bearer token"], ["Header, claims and expiry made readable", "Verify HS256/384/512 with your secret", "Nothing leaves your browser: safe for real tokens"]),
+  devTab("base64-encoder", "base64", "Base64 encode & decode", "Encode", Binary, "Encode text or files to Base64, or decode it back, including data URLs.", ["base64 encode", "base64 decode", "base64 converter", "base64 to image", "image to base64", "data url", "base64url"], ["Text or files, both directions", "Standard and URL-safe Base64", "Decoded images previewed", "Nothing leaves your browser"]),
+  devTab("regex-tester", "regex", "Regex tester", "Validate", Regex, "Test a regular expression and see every match and group, live.", ["regex tester", "regular expression tester", "regex101", "regex match", "test regex online", "javascript regex"], ["Every match and capture group highlighted", "Flags: global, case, multiline, dotall, unicode", "Replace preview with $1 groups", "Live as you type"]),
+  devTab("timestamp-converter", "time", "Unix timestamp converter", "Encode", Clock, "Unix time to a date and back, in seconds or milliseconds, any time zone.", ["unix timestamp", "epoch converter", "timestamp to date", "date to timestamp", "unix time", "epoch time", "milliseconds to date"], ["Seconds or milliseconds, detected", "Local, UTC and ISO 8601", "Relative time (3 days ago)", "Live current timestamp"]),
+  devTab("diff-checker", "diff", "Diff checker", "Edit & view", GitCompare, "Compare two texts and see exactly what was added, removed or changed.", ["diff checker", "text compare", "compare two texts", "diff tool", "find differences", "text diff online", "code compare"], ["Line and word differences highlighted", "Side by side or inline", "Ignore whitespace or case", "Nothing leaves your browser"]),
+];
+
 export const toolHref = (id: string) => `/tools/${id}`;
 
 /** Tools whose work never leaves the device (the utilities say so in their own `limit`). */
-const ON_DEVICE = new Set(["meme-generator", "photo-editor", "font-creator", "dev"]);
+const ON_DEVICE = new Set([
+  "meme-generator",
+  "photo-editor",
+  "font-creator",
+  "dev",
+  "contrast-checker",
+  "css-gradient-generator",
+  "box-shadow-generator",
+  "border-radius-generator",
+]);
 
 /**
  * Where a tool does its work and how long anything is kept, for the tool page's spec sheet.
@@ -762,6 +815,115 @@ export const tools: Tool[] = [
     accept: { label: "MP4, MOV, WebM, M4V…", types: "video/*" },
     keywords: ["video to gif", "mp4 to gif", "gif maker", "make a gif", "clip to gif", "mov to gif", "webm to gif", "gif from video", "boomerang"],
     features: ["Trim to the moment with a live preview", "5 to 25 frames a second, 240 to 800 px wide", "Speed from 0.25× to 4×, boomerang, loop or play once", "Size estimate before, exact size after", "Your video is never uploaded"],
+  },
+  {
+    id: "trim-media",
+    name: "Video & audio trimmer",
+    category: "Edit",
+    description: "Cut a video or song to the part you want: fast and lossless, or frame-exact.",
+    status: "live",
+    icon: Scissors,
+    kind: "file",
+    takes: "A video or audio file",
+    gives: "The same format, trimmed",
+    limit: "Up to 150 MB",
+    steps: ["Add a file", "Pick the start and end", "Download"],
+    accept: { label: "MP4, MOV, MKV, WebM, MP3, WAV, M4A…", types: "audio/*,video/*,.mkv,.avi,.flac,.opus,.m4a,.wma,.amr,.3gp" },
+    keywords: ["trim video", "cut video", "video cutter", "trim audio", "cut mp3", "audio cutter", "ringtone maker", "clip video", "shorten video", "mp3 cutter", "video trimmer"],
+    features: [
+      "Drag the handles on a live preview, or type exact times",
+      "Fast mode keeps the original quality (no re-encoding)",
+      "Exact mode cuts on the very frame you pick",
+      "Keeps the format: MP4 stays MP4, MP3 stays MP3",
+      "Deleted from our server once it's sent",
+    ],
+  },
+  {
+    id: "noise-remover",
+    name: "Noise remover",
+    category: "Edit",
+    description: "Remove background noise, hiss, hum and clicks from audio or a video's sound.",
+    status: "live",
+    icon: AudioWaveform,
+    kind: "file",
+    takes: "A video or audio file",
+    gives: "The same format, cleaner",
+    limit: "Up to 150 MB",
+    steps: ["Add a file", "Pick the strength", "Compare and download"],
+    accept: { label: "MP4, MOV, MKV, WebM, MP3, WAV, M4A…", types: "audio/*,video/*,.mkv,.avi,.flac,.opus,.m4a,.wma,.amr,.3gp" },
+    keywords: ["noise remover", "remove background noise", "noise reduction", "denoise audio", "remove hiss", "remove hum", "clean audio", "remove noise from video", "background noise removal", "audio cleaner", "remove static", "fan noise", "voice cleaner", "podcast cleanup"],
+    features: [
+      "Learns the noise from the quietest moment (or a part you pick), then removes it",
+      "Hiss, fan, traffic and room noise; 50/60 Hz mains hum found by itself",
+      "Speech mode trims rumble and hiss; clicks and pops smoothed if you like",
+      "Flip between before and after while it plays",
+      "Video keeps its picture untouched; deleted from our server once sent",
+    ],
+  },
+  {
+    id: "audio-volume",
+    name: "Volume booster & normaliser",
+    category: "Edit",
+    description: "Make audio or a video louder or quieter, even out the loudness, or mute a video.",
+    status: "live",
+    icon: Volume2,
+    kind: "file",
+    takes: "A video or audio file",
+    gives: "The same format, louder, even or silent",
+    limit: "Up to 150 MB",
+    steps: ["Add a file", "Pick boost, normalise or mute", "Download"],
+    accept: { label: "MP4, MOV, MKV, WebM, MP3, WAV, M4A…", types: "audio/*,video/*,.mkv,.avi,.flac,.opus,.m4a,.wma,.amr,.3gp" },
+    keywords: ["volume booster", "increase volume", "make audio louder", "boost mp3", "normalize audio", "loudness normalization", "mute video", "remove audio from video", "silent video", "decrease volume", "amplify audio"],
+    features: [
+      "Boost or lower by up to 30 dB, with a limiter so it doesn't clip",
+      "Normalise to the -16 LUFS podcasts and streaming use",
+      "Mute a video without re-encoding the picture",
+      "Hear the change in the browser before you process it",
+      "Deleted from our server once it's sent",
+    ],
+  },
+  {
+    id: "screen-recorder",
+    name: "Screen & voice recorder",
+    category: "Record",
+    description: "Record your screen, a window or a tab with your voice, or just your voice.",
+    status: "live",
+    icon: MonitorPlay,
+    kind: "generate",
+    takes: "Your screen and microphone",
+    gives: "MP4 or WebM video, or audio",
+    limit: "Recorded in your browser",
+    steps: ["Pick screen or voice", "Record", "Save it"],
+    keywords: ["screen recorder", "record screen", "screen capture", "voice recorder", "record audio", "online voice recorder", "record my screen", "screencast", "loom alternative", "record tab", "audio recorder"],
+    features: [
+      "A whole screen, one window or a browser tab",
+      "Mix your microphone with the computer's sound",
+      "Pause and resume; a live mic level meter",
+      "Recorded on your device: nothing is uploaded unless you save it as MP3",
+      "No sign-up, no watermark, no time limit",
+    ],
+  },
+  {
+    id: "subtitle-editor",
+    name: "Subtitle editor",
+    category: "Edit",
+    description: "Fix subtitle timing and text, sync them to a video, and save as SRT or VTT.",
+    status: "live",
+    icon: Captions,
+    kind: "file",
+    takes: "An SRT or VTT file, or nothing",
+    gives: "SRT, VTT or plain text",
+    limit: "Edited in your browser",
+    steps: ["Open subtitles", "Fix timing and text", "Download"],
+    accept: { label: "SRT or VTT", types: ".srt,.vtt,text/vtt" },
+    keywords: ["subtitle editor", "srt editor", "vtt editor", "edit subtitles", "subtitle sync", "shift subtitles", "subtitle delay", "fix subtitle timing", "caption editor", "srt to vtt", "subtitle timing"],
+    features: [
+      "Shift every line earlier or later, or from one line on",
+      "Edit, add, delete and split lines; overlaps flagged and fixed",
+      "Convert between frame rates (23.976, 25, 29.97…)",
+      "Preview on your own video, with the subtitles drawn on it",
+      "Save as SRT, VTT or plain text; nothing is uploaded",
+    ],
   },
   {
     id: "audio",
@@ -934,9 +1096,58 @@ export const tools: Tool[] = [
     ],
   },
   {
+    id: "chart-maker",
+    name: "Chart maker",
+    category: "Design",
+    group: "Charts & diagrams",
+    description: "Make 30 kinds of charts from your own data, animate them, and save them as pictures, GIFs, videos or web pages.",
+    status: "live",
+    icon: ChartColumnBig,
+    kind: "generate",
+    takes: "Your numbers (typed, pasted or a CSV)",
+    gives: "PNG, JPG, SVG, GIF, video or HTML",
+    limit: "Made in your browser",
+    steps: ["Pick a chart", "Add your data", "Style and export"],
+    wide: true,
+    keywords: ["chart maker", "graph maker", "make a graph", "create chart online", "bar chart", "pie chart", "line graph", "donut chart", "scatter plot", "histogram", "radar chart", "sankey diagram", "treemap", "gauge chart", "waterfall chart", "candlestick chart", "heatmap", "animated chart", "csv to chart", "excel to chart", "infographic"],
+    features: [
+      "30 chart types: bar, line, area, pie, doughnut, scatter, bubble, radar, funnel, gauge, heatmap, treemap, sunburst, Sankey, candlestick, waterfall, box plot, calendar…",
+      "Type data in a table, paste straight from Excel or Google Sheets, or import CSV / JSON",
+      "Palettes, per-series colours, dark mode, fonts, labels, number formats (₹, $, %, 1.2K), axes and sorting",
+      "Animated: bars grow, lines draw, slices sweep, with bounce, elastic and stagger effects",
+      "Export PNG, JPG and SVG up to 4K, an animated GIF, a video, an animated SVG or a web page",
+      "Saved in your browser as you work, or as a project file",
+    ],
+  },
+  {
+    id: "flowchart-maker",
+    name: "Flowchart maker",
+    category: "Design",
+    group: "Charts & diagrams",
+    description: "Draw flowcharts and diagrams by dragging shapes or typing text, with animated links and a play-through.",
+    status: "live",
+    icon: Workflow,
+    kind: "generate",
+    takes: "Shapes you drag in, or text",
+    gives: "PNG, SVG, animated SVG or Mermaid",
+    limit: "Made in your browser",
+    steps: ["Start from a template", "Draw and connect", "Export or save"],
+    wide: true,
+    keywords: ["flowchart maker", "flow chart", "diagram maker", "process diagram", "decision tree", "workflow diagram", "org chart", "mind map", "mermaid editor", "draw.io alternative", "lucidchart alternative", "flowchart online free", "process map", "swimlane"],
+    features: [
+      "14 shapes: process, decision, start/end, input/output, database, document, subprocess and more",
+      "Drag to connect; curved, rounded, square or straight links with labels and arrows",
+      "Colours, borders, text size and style for every shape and link",
+      "Animated links (flowing or moving dots) and “Play the flow”, step by step",
+      "Type it as text (Mermaid syntax) or start from a template; tidy up with one click",
+      "Undo, copy and paste, full screen; export PNG, SVG, animated SVG or Mermaid",
+    ],
+  },
+  {
     id: "font-checker",
     name: "Font checker",
     category: "Design",
+    group: "Fonts",
     description: "See, test and validate any font, or find the fonts inside a PDF or Office file.",
     status: "live",
     icon: Type,
@@ -959,6 +1170,7 @@ export const tools: Tool[] = [
     id: "font-creator",
     name: "Font creator",
     category: "Design",
+    group: "Fonts",
     description: "Make your own font: draw letters, build a pixel font, or turn your handwriting into a font.",
     status: "live",
     icon: PenTool,
@@ -980,6 +1192,7 @@ export const tools: Tool[] = [
     id: "color-picker",
     name: "Colour picker",
     category: "Design",
+    group: "Colour",
     description: "Pick colours from any image, PDF, slide deck, document or video, and export the palette.",
     status: "live",
     icon: Pipette,
@@ -1002,6 +1215,7 @@ export const tools: Tool[] = [
     id: "qr",
     name: "QR generator",
     category: "Utilities",
+    group: "QR codes",
     description: "Turn links, Wi-Fi, contacts and more into a crisp QR code.",
     status: "live",
     icon: QrCode,
@@ -1023,6 +1237,7 @@ export const tools: Tool[] = [
   ...fileTools,
   ...pdfTools,
   ...imageTools,
+  ...devTabTools,
   ...utilityTools,
 ];
 
@@ -1128,11 +1343,12 @@ export const CLUSTERS: Cluster[] = [
   {
     id: "design",
     name: "Design",
-    title: "Fonts and colour",
+    title: "Charts, fonts and colour",
     noun: "design",
-    blurb: "Check any font, make your own, and pick colours from anything.",
+    blurb: "Make charts and flowcharts, check and make fonts, pick colours, check contrast, and generate CSS.",
     icon: Type,
-    featured: ["font-checker", "font-creator", "color-picker"],
+    groups: DESIGN_GROUPS,
+    featured: ["chart-maker", "flowchart-maker", "font-checker", "color-picker", "contrast-checker", "css-gradient-generator"],
   },
   {
     id: "downloads",
@@ -1148,18 +1364,19 @@ export const CLUSTERS: Cluster[] = [
     name: "Audio & video",
     title: "Audio and video",
     noun: "audio and video",
-    blurb: "Sound out of video, speech into text, and videos into frames or GIFs.",
+    blurb: "Trim, clean up, boost and record; subtitles, sound out of video, speech into text, frames and GIFs.",
     icon: AudioLines,
-    featured: ["audio", "audio-to-text", "video-to-frames", "video-to-gif"],
+    featured: ["trim-media", "noise-remover", "screen-recorder", "audio", "audio-to-text", "audio-volume", "subtitle-editor", "video-to-gif"],
   },
   {
     id: "utilities",
     name: "Everyday",
     title: "Everyday utilities",
     noun: "utility",
-    blurb: "QR codes, your IP and screen, a webcam check and a pixel ruler.",
+    blurb: "Converters, clocks and timers, passwords and privacy, QR codes, and device checks.",
     icon: Monitor,
-    featured: ["qr", "my-ip", "screen-resolution", "webcam-test", "browser-window-size", "pixel-ruler"],
+    groups: EVERYDAY_GROUPS,
+    featured: ["unit-converter", "currency-converter", "qr", "password-generator", "world-clock", "age-calculator", "pomodoro-timer", "my-ip"],
   },
 ];
 
@@ -1167,6 +1384,8 @@ export const CLUSTERS: Cluster[] = [
 const CLUSTER_OF: Record<string, ClusterId> = {
   dev: "developer",
   writing: "text",
+  "chart-maker": "design",
+  "flowchart-maker": "design",
   "font-checker": "design",
   "font-creator": "design",
   "color-picker": "design",
@@ -1179,6 +1398,12 @@ const CLUSTER_OF: Record<string, ClusterId> = {
   "audio-to-text": "media",
   "video-to-frames": "media",
   "video-to-gif": "media",
+  "trim-media": "media",
+  "audio-volume": "media",
+  "noise-remover": "media",
+  "screen-recorder": "media",
+  "subtitle-editor": "media",
+  ...Object.fromEntries(UTILITIES.filter((u) => u.cluster === "design").map((u) => [u.id, "design" as ClusterId])),
 };
 
 export const clusterOf = (tool: Tool): ClusterId =>

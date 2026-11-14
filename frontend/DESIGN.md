@@ -104,11 +104,12 @@ maker's "IMG" swatch), which nobody needs to read.
 
 Every tool belongs to exactly one of nine **collections** (`CLUSTERS` in `lib/tools.ts`, `clusterOf()`):
 **Any file** (three groups), **PDF** (five groups), **Images** (five groups), **Developer** (ten groups,
-hub: Developer utilities), **Text** (four groups), **Design**, **Downloads**, **Audio & video** and
-**Everyday**. The Developer, Text and Everyday pages are generated from `lib/utilities/catalog.ts`: each
+hub: Developer utilities), **Text** (four groups), **Design** (Fonts, Colour, CSS), **Downloads**, **Audio & video** and
+**Everyday** (Calculate & convert, Time & dates, Privacy & security, QR codes, Device & browser); Design's groups are Charts & diagrams, Fonts, Colour, CSS. The Developer, Text,
+Everyday and Design-CSS pages are generated from `lib/utilities/catalog.ts`: each
 page is one engine (format, minify, validate, hash, random, network, device…) with a `preset` as its
 starting state, rendered by `components/tools/utilities/utility-tool.tsx`. A new page there is one line
-in the catalogue; never a new component for a variant of an existing job. Engines render in the browser
+in the catalogue; never a new component for a variant of an existing job. Editors that need room (the chart and flowchart makers) set `wide` on their `Tool`: the workspace spans all twelve columns and the spec sheet moves under it in two columns. Inside them the same language holds: settings in a right-hand panel of hairline `Row`s (sticky on desktop), ink for the selected chip, the accent only for selection, live state and the flow being played; chart palettes default to the site's own (Studio: accent, ink, success, warning…), and flowchart shapes default to soft tints of the token colours with a 2px border in the matching tone. Animation there is part of the output (charts grow, links flow, Play the flow), always with a way to replay it, and every animated export honours reduced motion. A standalone page for one tab of the developer hub (JSON formatter, JWT decoder…) is a `Tool` with `devTab` set: the hub opens on that tab, never a copy of it. Timers show the time left in the tab title; anything that flashes (the stuck-pixel fixer) carries a seizure warning. Engines render in the browser
 only (a same-sized pulse placeholder on the server) because they use browser APIs and random output. Each has a name, a title (last word in `serif-em`), a one-line blurb, an icon, a `noun` for
 counts ("30 PDF tools", "14 image tools"), an optional hub and its `featured` tools. Every surface reads
 from it, so a new tool appears everywhere once it's in the registry:

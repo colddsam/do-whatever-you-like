@@ -394,6 +394,9 @@ def _policies() -> Dict[str, FrozenSet[str]]:
         "/merge-split/split": anything,
         "/merge-split/merge": anything,
         "/palette/extract": anything,
+        "/media/trim": frozenset(MEDIA),
+        "/media/sound": frozenset(MEDIA),
+        "/media/denoise": frozenset(MEDIA),
     }
     for tool in ("compress", "resize", "crop", "convert", "gif", "rotate", "blur", "upscale"):
         p[f"/image/{tool}"] = frozenset(TOOL_INPUTS[tool])
