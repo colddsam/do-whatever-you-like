@@ -30,10 +30,10 @@ export const HUBS: Record<ClusterId, { title: string; description: string; intro
       "Everyday tools for developers. Format and minify HTML, CSS, JavaScript, SQL and more; validate code; generate hashes, UUIDs and test data; query XML and JSON; and look up DNS records, headers and open ports. Most run entirely in your browser, so they're safe for private code and keys.",
   },
   text: {
-    title: "Free Text Tools: Binary Translator, Number to Words, Morse",
-    description: "Convert text to binary, hex and ASCII, find and replace, split text, spell numbers in words, decode Morse audio and summarise text. Free, in your browser.",
+    title: "Free Text & Translation Tools: Translator, WhatsApp Chat, Morse",
+    description: "Translate text, documents, subtitles and videos, analyse WhatsApp chats, convert binary/hex/ASCII, find and replace, and summarise text. Free, no sign-up.",
     intro:
-      "Small tools for working with text: translate to and from binary, hex and ASCII codes, find and replace with regex, split text into lists, write numbers as words (with lakh and crore), convert Roman numerals, translate Morse code (and decode Morse audio), summarise long text, and flip, mirror or repeat text for posts.",
+      "Tools for text and languages: translate text, documents, SRT/VTT subtitles and even dub videos across 100+ languages; analyse WhatsApp chat exports privately in your browser; translate to and from binary, hex and ASCII codes; find and replace with regex; split text; write numbers as words; convert Roman numerals; decode Morse audio; and summarise long text.",
   },
   design: {
     title: "Free Chart, Flowchart, Font & Colour Tools Online",

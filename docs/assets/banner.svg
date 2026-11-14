@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="420" viewBox="0 0 1280 420" role="img" aria-labelledby="t d">
   <title id="t">Do-Whatever-You-Like</title>
-  <desc id="d">One place to do whatever you need: 216 free online tools, no sign-up, nothing to install.</desc>
+  <desc id="d">One place to do whatever you need: 218 free online tools, no sign-up, nothing to install.</desc>
   <defs>
     <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
       <path d="M40 0H0V40" fill="none" stroke="#e2ddd0" stroke-width="1"/>
@@ -50,7 +50,7 @@
     <text x="78" y="262" font-size="66" letter-spacing="-1"><tspan class="serif" fill="#eb4a10">whatever</tspan><tspan class="sans" font-weight="600" letter-spacing="-2" fill="#15140f"> you need.</tspan></text>
   </g>
   <g class="rise d3">
-    <text x="80" y="310" class="sans" font-size="18" fill="#57544a">216 free tools for files, PDFs, media, code, charts and more.</text>
+    <text x="80" y="310" class="sans" font-size="18" fill="#57544a">218 free tools for files, PDFs, media, code, charts and more.</text>
   </g>
   <g class="rise d4 mono" font-size="12" letter-spacing="1.5" fill="#8a867a">
     <text x="80" y="362">0 SIGN-UPS</text>

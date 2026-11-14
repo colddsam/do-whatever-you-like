@@ -6,13 +6,13 @@
 
 <br>
 
-<a href="https://do-whatever-you-like.colddsam.com"><img src="https://readme-typing-svg.demolab.com?font=Inter&weight=500&size=20&duration=2600&pause=900&color=EB4A10&center=true&vCenter=true&width=640&lines=Merge+and+compress+PDFs;Convert+almost+any+file;Remove+background+noise+from+videos;Make+animated+charts+and+flowcharts;Track+your+period+privately;Download+Reels%2C+Shorts+and+videos;Free.+No+sign-up.+Nothing+to+install." alt="What you can do: merge PDFs, convert files, remove noise, make charts, download videos"></a>
+<a href="https://do-whatever-you-like.colddsam.com"><img src="https://readme-typing-svg.demolab.com?font=Inter&weight=500&size=20&duration=2600&pause=900&color=EB4A10&center=true&vCenter=true&width=640&lines=Merge+and+compress+PDFs;Translate+text%2C+audio+and+video;Convert+almost+any+file;Analyze+WhatsApp+chats+in+any+language;Remove+background+noise+from+videos;Make+animated+charts+and+flowcharts;Track+your+period+privately;Download+Reels%2C+Shorts+and+videos;Free.+No+sign-up.+Nothing+to+install." alt="What you can do: merge PDFs, translate text audio and video, convert files, analyze WhatsApp chats, remove noise, make charts, track periods, download videos"></a>
 
 <br><br>
 
 <a href="https://do-whatever-you-like.colddsam.com"><img src="https://img.shields.io/badge/Open%20the%20site-do--whatever--you--like.colddsam.com-eb4a10?style=for-the-badge&labelColor=15140f" alt="Open the live site"></a>
 
-<img src="https://img.shields.io/badge/tools-216%20live-15140f?style=flat-square" alt="216 live tools">
+<img src="https://img.shields.io/badge/tools-218%20live-15140f?style=flat-square" alt="218 live tools">
 <img src="https://img.shields.io/badge/price-free-2f7d4f?style=flat-square" alt="Free">
 <img src="https://img.shields.io/badge/sign--up-not%20needed-57544a?style=flat-square" alt="No sign-up">
 <img src="https://img.shields.io/badge/watermarks-none-57544a?style=flat-square" alt="No watermarks">
@@ -41,9 +41,9 @@
 
 ## 👋 What is Do-Whatever-You-Like?
 
-**Do-Whatever-You-Like is a free website with 216 small tools for everyday digital chores.**
+**Do-Whatever-You-Like is a free website with 218 small tools for everyday digital chores.**
 
-Need to turn a PDF into Word, shrink a photo, cut a song, clean up a noisy recording, format some JSON, make a chart for a report, track your period privately, or download a Reel? Open the site, pick the tool, done.
+Need to turn a PDF into Word, translate text, audio recordings or videos into another language, analyze an exported WhatsApp chat, shrink a photo, cut a song, clean up a noisy recording, format JSON, make a chart, track your period privately, or download a Reel? Open the site, pick the tool, done.
 
 - **Free, for everyone.** No account, no sign-up, no watermark, no "pro" plan.
 - **Private by default.** Most tools run inside your browser, so your file never leaves your device. When a tool does need our server, your file is deleted as soon as you have the result.
@@ -70,7 +70,7 @@ Need to turn a PDF into Word, shrink a photo, cut a song, clean up a noisy recor
 
 ## 🗂️ What's inside
 
-216 live tools in 9 collections. Click a name to open that collection on the site.
+218 live tools in 9 collections. Click a name to open that collection on the site.
 
 | | Collection | What you can do | Tools |
 | :---: | :--- | :--- | :---: |
@@ -78,11 +78,11 @@ Need to turn a PDF into Word, shrink a photo, cut a song, clean up a noisy recor
 | 📄 | [**PDF tools**](https://do-whatever-you-like.colddsam.com/tools/category/pdf) | Merge, split, compress, edit, sign, protect, OCR and compare PDFs | **23** |
 | 🖼️ | [**Image tools**](https://do-whatever-you-like.colddsam.com/tools/category/images) | Compress, resize, crop, remove backgrounds, upscale, blur faces, make memes and icons | **18** |
 | 💻 | [**Developer tools**](https://do-whatever-you-like.colddsam.com/tools/category/developer) | Format, minify and validate code, hashes, JWT, regex, DNS and HTTP checks, cron | **100** |
-| ✍️ | [**Text tools**](https://do-whatever-you-like.colddsam.com/tools/category/text) | Binary and hex, number to words, Morse code (even from sound), find and replace, summaries | **21** |
+| ✍️ | [**Text tools**](https://do-whatever-you-like.colddsam.com/tools/category/text) | Translator (text, audio & video), WhatsApp chat analyzer, binary and hex, Morse code, find and replace, summaries | **23** |
 | 🎨 | [**Charts, fonts and colour**](https://do-whatever-you-like.colddsam.com/tools/category/design) | Animated charts, flowcharts, font checker and maker, colour picker, CSS generators | **9** |
 | ⬇️ | [**Media downloads**](https://do-whatever-you-like.colddsam.com/tools/category/downloads) | Save public YouTube, Instagram and Facebook videos, or just their sound | **3** |
-| 🎬 | [**Audio and video**](https://do-whatever-you-like.colddsam.com/tools/category/media) | Trim, remove noise, change volume, record your screen, subtitles, speech to text, GIFs | **9** |
-| 🧰 | [**Everyday utilities**](https://do-whatever-you-like.colddsam.com/tools/category/utilities) | A private period tracker, QR codes, converters, clocks and timers, passwords, encrypted notes, device tests | **22** |
+| 🎬 | [**Audio and video**](https://do-whatever-you-like.colddsam.com/tools/category/media) | Trim, remove noise, change volume, record your screen, subtitles & caption translation, speech to text, GIFs | **9** |
+| 🧰 | [**Everyday utilities**](https://do-whatever-you-like.colddsam.com/tools/category/utilities) | Private period tracker, QR codes, converters, clocks and timers, passwords, encrypted notes, device tests | **22** |
 
 <details>
 <summary><b>📋 The full list of every tool</b> (click to open)</summary>
@@ -170,9 +170,11 @@ Need to turn a PDF into Word, shrink a photo, cut a song, clean up a noisy recor
 </details>
 
 <details>
-<summary><b>✍️ Text tools</b> — 21 tools</summary>
+<summary><b>✍️ Text tools</b> — 23 live tools</summary>
 <br>
 
+- [**Translator**](https://do-whatever-you-like.colddsam.com/tools/translator) — Translate plain text, subtitles (`.srt`/`.vtt`), audio recordings, voice notes or videos — returning dubbed audio/video files plus copyable input and translated transcripts.
+- [**WhatsApp chat analyzer**](https://do-whatever-you-like.colddsam.com/tools/whatsapp-chat-analyzer) — Turn any exported WhatsApp chat into stats, timelines, activity heatmaps, reply speed, top emojis and searchable messages — in your browser.
 - [**Text to binary**](https://do-whatever-you-like.colddsam.com/tools/text-to-binary) — Turn text into binary code, eight bits per byte.
 - [**Binary to text**](https://do-whatever-you-like.colddsam.com/tools/binary-to-text) — Read binary code back as text (binary translator).
 - [**Text to hex**](https://do-whatever-you-like.colddsam.com/tools/text-to-hex) — Text as hexadecimal byte values.
@@ -233,9 +235,9 @@ Need to turn a PDF into Word, shrink a photo, cut a song, clean up a noisy recor
 - [**Noise remover**](https://do-whatever-you-like.colddsam.com/tools/noise-remover) — Remove background noise, hiss, hum and clicks from audio or a video's sound.
 - [**Volume booster & normaliser**](https://do-whatever-you-like.colddsam.com/tools/audio-volume) — Make audio or a video louder or quieter, even out the loudness, or mute a video.
 - [**Screen & voice recorder**](https://do-whatever-you-like.colddsam.com/tools/screen-recorder) — Record your screen, a window or a tab with your voice, or just your voice.
-- [**Subtitle editor**](https://do-whatever-you-like.colddsam.com/tools/subtitle-editor) — Fix subtitle timing and text, sync them to a video, and save as SRT or VTT.
+- [**Subtitle editor**](https://do-whatever-you-like.colddsam.com/tools/subtitle-editor) — Fix subtitle timing and text, sync them to a video, translate captions with one click while keeping cue timestamps, and save as SRT or VTT.
 - [**Video to MP3**](https://do-whatever-you-like.colddsam.com/tools/audio) — Pull a clean MP3 out of any video file.
-- [**Audio to text**](https://do-whatever-you-like.colddsam.com/tools/audio-to-text) — Turn speech into text you can edit, copy or subtitle.
+- [**Audio to text**](https://do-whatever-you-like.colddsam.com/tools/audio-to-text) — Turn speech into text you can edit, copy, export as SRT/VTT, or translate right inline.
 
 </details>
 
@@ -296,16 +298,38 @@ Need to turn a PDF into Word, shrink a photo, cut a song, clean up a noisy recor
 </td>
 </tr>
 <tr>
-<td colspan="2">
+<td colspan="2" valign="top">
+
+**🌐 Translator (Text, Audio & Video)**: translate text, subtitles, voice recordings, and videos free — with dubbed media outputs plus copyable input and translated text.
+
+<img src="docs/assets/translator.jpg" alt="Translator workbench showing text, audio and video modes, source auto-detection, translation output and copy controls" width="100%">
+
+- **Text & subtitles**: Auto-detect language, preserve `.srt` / `.vtt` cue timestamps, listen aloud, or chain output straight back to source.
+- **Audio & video dubbing**: Whisper transcription + multi-engine translation + neural voiceover (female/male, synced or fluent timing, optional subtle background mix and soft captions), returning both the dubbed file and copyable transcripts.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+**💬 WhatsApp chat analyzer**: `.txt` & `.zip` exports in **any language**, analyzed 100% locally.
+
+<img src="docs/assets/whatsapp-analyzer.jpg" alt="WhatsApp chat analyzer dashboard showing multilingual stats, timelines, participant filters and export controls" width="100%">
+
+- Supports iOS, Android & Desktop exports in Latin, Hindi, Arabic RTL, CJK, Cyrillic & emojis.
+- Timelines, 7×24 activity heatmaps, reply speed, starters, double-texts & searchable messages.
+- Free and offline-capable in browser memory — export Excel CSV, JSON & HTML reports.
+
+</td>
+<td width="50%" valign="top">
 
 **🌸 Period tracker**: one tap to log, predictions that learn your cycle, and it never leaves your phone.
 
-<p align="center"><img src="docs/assets/period-tracker.jpg" alt="The period tracker: a cycle ring showing day 10, the next period in 19 days, and a one-tap button" width="70%"></p>
+<img src="docs/assets/period-tracker.jpg" alt="The period tracker: a cycle ring showing day 10, the next period in 19 days, and a one-tap button" width="100%">
 
-- Log a period with one tap; add flow, symptoms, mood, pain and notes for any day.
-- See the next period, fertile window and ovulation, learnt from your own cycles, with how sure the guess is.
-- Calendar, cycle ring and insights, plus gentle notes when something is worth asking a doctor about.
-- **Private by design**: saved only on your device, optional PIN lock (AES-256), backup file, calendar reminders with a discreet name, and one-tap delete. Not a method of contraception.
+- Log periods, flow, symptoms, mood, pain & notes with cycle predictions.
+- Private on-device storage with optional AES-256 PIN lock, backups & calendar reminders.
+- General cycle insights, not medical advice or contraception.
 
 </td>
 </tr>
@@ -348,14 +372,14 @@ Need to turn a PDF into Word, shrink a photo, cut a song, clean up a noisy recor
 | 🔒 **Private by default** | If a tool can run in your browser, it does. If it needs the server, the file lives in a private folder for that one request and is deleted right after. |
 | 🧑‍🤝‍🧑 **Plain words** | Buttons say what they do ("Remove the noise", "Download 3 clean photos"). Errors say what went wrong and what to try. |
 | 🛡️ **Safe by default** | Every uploaded file is checked by its real contents before anything opens it. A program renamed to `.pdf` is turned away. |
-| 🎨 **One design** | Every page follows one design system (`frontend/DESIGN.md`), so all 216 tools feel like one product. |
+| 🎨 **One design** | Every page follows one design system (`frontend/DESIGN.md`), so all 218 tools feel like one product. |
 | 🧩 **Built to grow** | One registry lists every tool; most new tools are one line plus one engine. That's how the site grew so fast. |
 
 ---
 
 ## 🚀 Our pace
 
-Do-Whatever-You-Like went from an empty repository to **216 live tools in its first week**.
+Do-Whatever-You-Like went from an empty repository to **218 live tools in its first week**.
 
 ```mermaid
 timeline
@@ -378,12 +402,14 @@ timeline
            : Search engine work (SEO)
     14 Nov : Video, image and Everyday tools
            : Charts, flowcharts and noise removal
+           : Period tracker & WhatsApp chat analyzer
+           : Translator (Text, Audio & Video)
            : AI-search readiness (AEO, GEO)
 ```
 
 | 📅 Days | 🧰 Live tools | 🗂️ Collections | 📡 API endpoints | 🧪 Check scripts |
 | :---: | :---: | :---: | :---: | :---: |
-| 7 | 216 | 9 | 70 | 7 backend suites + browser tests |
+| 7 | 218 | 9 | 75 | 8 backend suites + browser & unit tests |
 
 ---
 
@@ -441,7 +467,7 @@ sequenceDiagram
 
 | Runs in your browser (file never leaves your device) | Runs on our server (deleted after use) |
 | :--- | :--- |
-| Developer and text tools, chart maker, flowchart maker, **period tracker**, QR scanner, photo metadata remover, password generator, encrypted notes, Markdown editor, video to GIF/frames, screen recorder, subtitle editor, Morse decoder, device tests, timers and converters | PDF tools, universal converter, compress/merge/split, image AI (background removal, upscaling, face blur), audio to text, media downloads, trim/volume/noise removal, font and colour inspection, DNS and HTTP checks |
+| Developer and text converters & analyzers, **WhatsApp chat analyzer**, chart maker, flowchart maker, **period tracker**, QR scanner, photo metadata remover, password generator, encrypted notes, Markdown editor, video to GIF/frames, screen recorder, subtitle editor (with instant inline translation via API), Morse decoder, device tests and timers | PDF tools, universal converter, compress/merge/split, image AI (background removal, upscaling, face blur), audio to text, **translator (text, audio & video dubbing)**, media downloads, trim/volume/noise removal, font and colour inspection, DNS and HTTP checks |
 
 ---
 
@@ -455,7 +481,7 @@ sequenceDiagram
 | 🌐 **No snooping on your network** | Link tools only accept known hosts (YouTube, Instagram, Facebook), and network tools only reach public addresses, checked on every redirect. |
 | 🧯 **One job can't break another** | Heavy jobs run in their own child process with a time limit, so a crash or a huge file can't take the server down. |
 | 📏 **Size limits up front** | Oversized requests are refused before they're read (150 MB for files by default). |
-| 🙈 **No accounts, no tracking of files** | Nothing you process is stored or used for anything else. "What is my IP" reads your address from that one request and never stores it. |
+| 🙈 **No accounts, no private content tracking** | Nothing you upload or parse is stored or sold. Aggregate traffic analytics use Vercel Web Analytics and Google Analytics 4 (`G-GVKMN99S3N`) when configured. |
 
 ---
 
@@ -469,6 +495,7 @@ sequenceDiagram
 - **Next.js 16** (App Router, Turbopack) and **React 19**
 - **TypeScript 5**, **Tailwind CSS 4**, **motion**, **lenis**, **three**
 - **ECharts 6** (charts), **React Flow 12** + **dagre** (flowcharts)
+- **fflate** (in-browser ZIP handling), `Intl.Segmenter` (multilingual tokenization)
 - **CodeMirror**, **Prettier**, **Terser**, **marked**, **KaTeX**, **Mermaid**
 - **opentype.js**, **OpenCV.js**, **jsQR**, **exifr**, **mathjs**, **gifenc**
 - Hosted on **Vercel** (free)
@@ -480,7 +507,8 @@ sequenceDiagram
 - **FFmpeg**, **LibreOffice**, **Pandoc**, **PyMuPDF**, **pdf2docx**
 - **Tesseract** (OCR), **Ghostscript**, **Chromium** (web page to PDF)
 - **Pillow**, **OpenCV**, **ONNX Runtime** (background removal, upscaling)
-- **faster-whisper** or **Groq Whisper** (speech to text), **yt-dlp**, **instaloader**
+- **faster-whisper** or **Groq Whisper** (speech to text), **edge-tts** + **espeak-ng** & multi-engine free translation (dubbing & subtitles)
+- **yt-dlp**, **instaloader**
 - Shipped as a **Docker** image on **Render** (free plan)
 
 </td>
@@ -554,6 +582,7 @@ Every tool has its own settings with a prefix (`PDF_`, `IMAGE_`, `UNIVERSAL_`, `
 | `BACKEND_URL` | Where the server is, e.g. `http://127.0.0.1:8000`. Server-side only. |
 | `BACKEND_TOKEN` | Must equal `HEADER_TOKEN`. Never prefix it with `NEXT_PUBLIC_`. |
 | `BACKEND_PUBLIC_URL` | Production only: the server's public address, so big files go straight there (Vercel caps requests at 4.5 MB). |
+| `NEXT_PUBLIC_GA_ID` | Optional Google Analytics 4 measurement ID (`G-...`). Set as plain Config in Vercel. |
 | `GOOGLE_SITE_VERIFICATION` / `BING_SITE_VERIFICATION` | Optional search-engine ownership tags. |
 
 </details>
@@ -588,23 +617,24 @@ Everything new is checked end to end with real files before it ships.
 
 | Check | Command | What it proves |
 | :--- | :--- | :--- |
-| Website types and style | `cd frontend && npx tsc --noEmit && npm run lint` | The code compiles and follows the rules |
+| Website types and style | `cd frontend && npx tsc --noEmit && npx eslint src` | The code compiles and follows the rules |
 | Website build | `npm run build` | Every page builds (static and dynamic) |
 | Universal converter | `python scripts/check_universal.py` | Every offered conversion runs and its output opens |
 | Compress, merge, split, icons | `python scripts/check_file_tools.py` | Results are opened by independent readers |
 | Upload guard | `python scripts/check_upload_guard.py` | Disguised and wrong files are refused, good ones pass |
 | No false refusals | `python scripts/check_guard_corpus.py` | Real samples of every format are accepted |
 | Audio and video edits | `python scripts/check_media.py` | Trim, volume, mute and noise removal measured with FFmpeg |
+| Translator (text, audio, video) | `python scripts/check_translate.py` | Multilingual text, SRT cues, MP3/MP4 dubbing, upload guard and FFprobe validation |
 | Developer network tools | `python scripts/check_devtools.py` | DNS, HTTP, ports, XSD and XSLT, public addresses only |
 | Design tools | `python scripts/check_design_tools.py` | Font and colour inspection |
 
-Run the backend scripts from `backend/` with the virtual environment's Python. Browser tests (Playwright) drive every tool page with real files, check outputs, and audit layouts at phone and desktop widths.
+Run the backend scripts from `backend/` with the virtual environment's Python. Browser tests (Playwright) drive tool pages with real inputs, check outputs, and audit layouts at phone and desktop widths.
 
 ---
 
 ## 📡 API reference
 
-70 endpoints, all under `/api/v1`, all needing `Authorization: Bearer <HEADER_TOKEN>`. With `DEBUG=true`, try them at `http://127.0.0.1:8000/docs`, or import `backend/postman_collection.json` into Postman (rebuild it with `python generate_postman.py`).
+75 endpoints, all under `/api/v1`, all needing `Authorization: Bearer <HEADER_TOKEN>`. With `DEBUG=true`, try them at `http://127.0.0.1:8000/docs`, or import `backend/postman_collection.json` into Postman (rebuild it with `python generate_postman.py`).
 
 <details>
 <summary><b>Health</b> — 1 endpoint</summary>
@@ -722,6 +752,20 @@ Run the backend scripts from `backend/` with the virtual environment's Python. B
 | :--- | :--- | :--- |
 | `GET` | `/api/v1/transcribe/capabilities` | Which speech engine this server uses |
 | `POST` | `/api/v1/transcribe` | Transcribe an audio or video file (streams NDJSON events) |
+
+</details>
+
+<details>
+<summary><b>Translate</b> — 5 endpoints</summary>
+<br>
+
+| Method | Endpoint | What it does |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/translate/capabilities` | Supported languages, speech engines and free dubbing limits |
+| `POST` | `/api/v1/translate/text` | Auto-detect and translate plain text or `.srt`/`.vtt` subtitles preserving timestamps |
+| `POST` | `/api/v1/translate/batch` | Translate transcript segments or subtitle cue lines in batch |
+| `POST` | `/api/v1/translate/media` | Transcribe, translate and dub uploaded audio or video (streams NDJSON progress events) |
+| `GET` | `/api/v1/translate/result/{token}` | Download the temporary dubbed audio or video file |
 
 </details>
 
@@ -865,7 +909,7 @@ do-whatever-you-like/
 ├── start-dev.ps1 / stop-dev.ps1 # Start and stop both parts on Windows
 ├── docs/assets/                 # Images and animations for this README
 ├── backend/                     # FastAPI server
-│   ├── Dockerfile               # Image with LibreOffice, Tesseract, Ghostscript, Chromium, FFmpeg
+│   ├── Dockerfile               # Image with LibreOffice, Tesseract, Ghostscript, Chromium, FFmpeg, espeak-ng
 │   ├── requirements.txt
 │   ├── generate_postman.py      # Builds postman_collection.json from the API
 │   ├── scripts/                 # End-to-end check scripts
@@ -876,7 +920,7 @@ do-whatever-you-like/
 │       ├── exceptions/          # Clean, user-safe errors per tool
 │       ├── schemas/             # Request and response models
 │       ├── services/            # The work: pdf, universal, compress, merge_split, image, media,
-│       │                        #   transcribe, fonts, palette, icon, devtools, downloaders…
+│       │                        #   transcribe, translate, fonts, palette, icon, devtools, downloaders…
 │       └── api/v1/              # Routes, one file per tool
 └── frontend/                    # Next.js website
     ├── DESIGN.md                # The design system
@@ -885,14 +929,15 @@ do-whatever-you-like/
         ├── components/
         │   ├── layout/ sections/        # Header, footer, home page sections, directory
         │   └── tools/                   # Every tool's workspace
-        │       ├── pdf/ image/ files/ universal/ media/ transcribe/ health/
+        │       ├── pdf/ image/ files/ universal/ media/ transcribe/ health/ text/
         │       ├── design/              # Chart maker, flowchart maker, fonts, colour picker
         │       ├── dev/ utilities/      # Developer hub and one-engine-per-job utilities
         │       └── playground.tsx       # Which workspace each tool uses
         └── lib/
             ├── tools.ts                 # The registry of every tool
             ├── utilities/catalog.ts     # Developer, Text, Everyday and Design pages as data
-            ├── charts.ts flowchart.ts period.ts # Chart, flowchart and period models
+            ├── charts.ts flowchart.ts period.ts whatsapp.ts # Client tool engines
+            ├── translate.ts             # Translator API client, direct-ticket streaming & speech helpers
             ├── backend.ts files.ts      # Server proxy and upload helpers
             └── file-sniff.ts            # The in-browser upload check
 ```

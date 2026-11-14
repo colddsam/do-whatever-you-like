@@ -1,8 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
-import { AudioLines, Check, Copy, Download, Mic, PencilLine, X } from "lucide-react";
+import { AudioLines, Check, Copy, Download, Languages, Loader2, Mic, PencilLine, X } from "lucide-react";
+import {
+  FALLBACK_LANGUAGES,
+  languageLabel,
+  loadCapabilities as loadTranslateCapabilities,
+  translateBatch,
+  type TranslateLanguage,
+} from "@/lib/translate";
 import { getTool, stepsFor } from "@/lib/tools";
 import { formatBytes } from "@/lib/media";
 import { checkFile, FileToolError, saveBlob } from "@/lib/files";
@@ -119,6 +127,14 @@ export function TranscribePlayground({ toolId }: { toolId: string }) {
   const [copied, setCopied] = useState(false);
   const [delivered, setDelivered] = useState(false);
 
+  const [trLangs, setTrLangs] = useState<TranslateLanguage[]>(FALLBACK_LANGUAGES);
+  const [trLang, setTrLang] = useState("hi");
+  const [trSegments, setTrSegments] = useState<Segment[] | null>(null);
+  const [trView, setTrView] = useState<"original" | "translated">("original");
+  const [trBusy, setTrBusy] = useState(false);
+  const [trError, setTrError] = useState<string | null>(null);
+  const [trCopiedSide, setTrCopiedSide] = useState<"original" | "translated" | null>(null);
+
   const abortRef = useRef<AbortController | null>(null);
   const urlRef = useRef<string | null>(null);
   // For the time-left estimate: when recognition started, and how long the recording is.
@@ -131,6 +147,19 @@ export function TranscribePlayground({ toolId }: { toolId: string }) {
     },
     [],
   );
+
+  useEffect(() => {
+    if (!finished) return;
+    let activeReq = true;
+    loadTranslateCapabilities()
+      .then((c) => {
+        if (activeReq && c.languages?.length) setTrLangs(c.languages);
+      })
+      .catch(() => {});
+    return () => {
+      activeReq = false;
+    };
+  }, [finished]);
 
   const busy = isBusy(job);
   const maxMB = caps?.max_file_mb ?? MAX_MB;
@@ -146,6 +175,11 @@ export function TranscribePlayground({ toolId }: { toolId: string }) {
     setEditing(false);
     setStage(null);
     setCopied(false);
+    setTrSegments(null);
+    setTrView("original");
+    setTrBusy(false);
+    setTrError(null);
+    setTrCopiedSide(null);
   };
 
   const pick = (file: File, recorded = false) => {
@@ -236,12 +270,20 @@ export function TranscribePlayground({ toolId }: { toolId: string }) {
 
   const cancel = () => abortRef.current?.abort();
 
+  const shownSegments = useMemo(
+    () => (trView === "translated" && trSegments ? trSegments : segments),
+    [trView, trSegments, segments],
+  );
+
   const exported = useMemo(() => {
     if (!finished || !source) return null;
     const meta = FORMATS.find((f) => f.value === format)!;
-    const blob = new Blob([exportTranscript(format, segments, info, { timestamps })], { type: `${meta.type};charset=utf-8` });
-    return { blob, name: `${stem(source.file.name)}.${format}` };
-  }, [finished, source, format, segments, info, timestamps]);
+    const suffix = trView === "translated" && trSegments ? `-${trLang}` : "";
+    const blob = new Blob([exportTranscript(format, shownSegments, info, { timestamps })], {
+      type: `${meta.type};charset=utf-8`,
+    });
+    return { blob, name: `${stem(source.file.name)}${suffix}.${format}` };
+  }, [finished, source, format, shownSegments, trView, trSegments, trLang, info, timestamps]);
 
   const download = () => {
     if (!exported) return;
@@ -251,7 +293,7 @@ export function TranscribePlayground({ toolId }: { toolId: string }) {
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(toText(segments, timestamps).trim());
+      await navigator.clipboard.writeText(toText(shownSegments, timestamps).trim());
       setCopied(true);
       setDelivered(true);
       setTimeout(() => setCopied(false), 2000);
@@ -260,13 +302,68 @@ export function TranscribePlayground({ toolId }: { toolId: string }) {
     }
   };
 
-  const edit = (id: number, text: string) => setSegments((prev) => prev.map((s) => (s.id === id ? { ...s, text } : s)));
+  const runTranslateTranscript = async () => {
+    if (!segments.length || trBusy) return;
+    setTrBusy(true);
+    setTrError(null);
+    try {
+      if (trLangs.length <= FALLBACK_LANGUAGES.length) {
+        loadTranslateCapabilities()
+          .then((c) => {
+            if (c.languages?.length) setTrLangs(c.languages);
+          })
+          .catch(() => {});
+      }
+      const res = await translateBatch({
+        texts: segments.map((s) => s.text),
+        source: info?.language || (language === "auto" ? "auto" : language),
+        target: trLang,
+      });
+      setTrSegments(
+        segments.map((s, idx) => ({
+          id: s.id,
+          start: s.start,
+          end: s.end,
+          text: res.translated_texts[idx] ?? s.text,
+        })),
+      );
+      setTrView("translated");
+    } catch (e) {
+      setTrError(e instanceof Error ? e.message : "Could not translate that transcript.");
+    } finally {
+      setTrBusy(false);
+    }
+  };
+
+  const copySide = async (side: "original" | "translated") => {
+    const list = side === "translated" && trSegments ? trSegments : segments;
+    try {
+      await navigator.clipboard.writeText(toText(list, timestamps).trim());
+      setTrCopiedSide(side);
+      setDelivered(true);
+      setTimeout(() => setTrCopiedSide(null), 1800);
+    } catch {
+      setTrCopiedSide(null);
+    }
+  };
+
+  const edit = (id: number, text: string) => {
+    if (trView === "translated" && trSegments) {
+      setTrSegments((prev) => (prev ? prev.map((s) => (s.id === id ? { ...s, text } : s)) : prev));
+      return;
+    }
+    setSegments((prev) => prev.map((s) => (s.id === id ? { ...s, text } : s)));
+    if (trSegments) {
+      setTrSegments(null);
+      setTrView("original");
+    }
+  };
   const playFrom = (seconds: number) => setSeek({ to: seconds });
 
   // Nothing is "being heard" until the audio has been played.
-  const active = segments.length && time > 0 ? segmentAt(segments, time) : -1;
+  const active = shownSegments.length && time > 0 ? segmentAt(shownSegments, time) : -1;
   const progress = info?.duration ? Math.min(1, done / info.duration) : null;
-  const words = useMemo(() => countWords(segments), [segments]);
+  const words = useMemo(() => countWords(shownSegments), [shownSegments]);
   // add → transcribe → copy or download
   const step = !source ? 0 : !finished || !segments.length ? 1 : delivered ? 3 : 2;
 
@@ -411,7 +508,7 @@ export function TranscribePlayground({ toolId }: { toolId: string }) {
                     >
                       {segments.length > 0 && (
                         <TranscriptSheet
-                          segments={segments}
+                          segments={shownSegments}
                           active={active}
                           live={false}
                           liveAt={0}
@@ -422,6 +519,85 @@ export function TranscribePlayground({ toolId }: { toolId: string }) {
                         />
                       )}
                     </ResultPanel>
+
+                    {segments.length > 0 && (
+                      <div className="mt-3 rounded-md border border-dashed border-line bg-paper/45 p-3.5 sm:p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="label-mono flex items-center gap-1.5 text-ink-3">
+                            <Languages className="size-3.5 text-accent" aria-hidden />
+                            Translate transcript
+                          </span>
+                          <Link
+                            href="/tools/translator"
+                            className="text-xs font-medium text-ink-2 underline underline-offset-4 hover:text-ink"
+                          >
+                            Need dubbed audio or video? Open Translator
+                          </Link>
+                        </div>
+
+                        <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                          <select
+                            aria-label="Translate transcript to language"
+                            value={trLang}
+                            onChange={(e) => setTrLang(e.target.value)}
+                            disabled={trBusy}
+                            className="h-9 min-w-[180px] flex-1 rounded-sm border border-line bg-surface px-2.5 text-sm text-ink outline-none focus:border-ink sm:flex-none"
+                          >
+                            {trLangs.map((l) => (
+                              <option key={l.code} value={l.code}>
+                                {l.name}
+                                {l.native_name !== l.name ? ` (${l.native_name})` : ""}
+                              </option>
+                            ))}
+                          </select>
+
+                          <button
+                            type="button"
+                            onClick={runTranslateTranscript}
+                            disabled={trBusy}
+                            className="inline-flex h-9 items-center gap-1.5 rounded-sm bg-ink px-3.5 text-xs font-medium text-paper transition-colors hover:bg-ink/85 disabled:opacity-50"
+                          >
+                            {trBusy ? <Loader2 className="size-3.5 animate-spin" aria-hidden /> : <Languages className="size-3.5" aria-hidden />}
+                            {trBusy ? "Translating…" : "Translate"}
+                          </button>
+
+                          {trSegments && (
+                            <Chips
+                              label="Transcript language view"
+                              value={trView}
+                              onChange={setTrView}
+                              options={[
+                                { value: "original", label: "Original" },
+                                { value: "translated", label: languageLabel(trLang, trLangs) },
+                              ]}
+                            />
+                          )}
+                        </div>
+
+                        {trSegments && (
+                          <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => copySide("original")}
+                              className="inline-flex items-center gap-1.5 rounded-sm border border-line bg-surface px-2.5 py-1.5 text-xs font-medium text-ink hover:border-ink-3"
+                            >
+                              {trCopiedSide === "original" ? <Check className="size-3.5 text-accent" aria-hidden /> : <Copy className="size-3.5 text-ink-3" aria-hidden />}
+                              {trCopiedSide === "original" ? "Copied input" : "Copy input text"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => copySide("translated")}
+                              className="inline-flex items-center gap-1.5 rounded-sm border border-line bg-surface px-2.5 py-1.5 text-xs font-medium text-ink hover:border-ink-3"
+                            >
+                              {trCopiedSide === "translated" ? <Check className="size-3.5 text-accent" aria-hidden /> : <Copy className="size-3.5 text-ink-3" aria-hidden />}
+                              {trCopiedSide === "translated" ? "Copied translation" : "Copy translated text"}
+                            </button>
+                          </div>
+                        )}
+
+                        {trError && <Notice tone="danger" className="mt-2.5">{trError}</Notice>}
+                      </div>
+                    )}
 
                     {exported && segments.length > 0 && (
                       <ExportPanel

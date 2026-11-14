@@ -38,6 +38,7 @@ RUN apt-get update \
         tesseract-ocr-ita tesseract-ocr-por tesseract-ocr-rus tesseract-ocr-ara tesseract-ocr-hin \
         tesseract-ocr-ben tesseract-ocr-chi-sim tesseract-ocr-jpn \
         ghostscript \
+        espeak-ng \
         fonts-liberation2 fonts-crosextra-carlito fonts-crosextra-caladea fonts-dejavu-core fonts-noto-core \
     && rm -rf /var/lib/apt/lists/*
 

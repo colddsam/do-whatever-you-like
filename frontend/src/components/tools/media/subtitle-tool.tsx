@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
-import { Download, FolderOpen, Plus, Trash2, Video } from "lucide-react";
+import { Check, Copy, Download, FolderOpen, Languages, Loader2, Plus, RotateCcw, Trash2, Video } from "lucide-react";
 import { saveBlob } from "@/lib/files";
 import { fixOverlaps, formatTime, newId, parseSubtitles, parseTime, problems, writeSubtitles, type Cue } from "@/lib/subtitles";
 import { getTool, stepsFor } from "@/lib/tools";
+import { FALLBACK_LANGUAGES, loadCapabilities, translateBatch, type TranslateLanguage } from "@/lib/translate";
 import { cn } from "@/lib/utils";
 import { Workbench } from "../workbench";
 import { Chips, Notice, Panel, Row, TextField } from "../pdf/kit";
@@ -57,9 +59,27 @@ export function SubtitleTool({ toolId }: { toolId: string }) {
   const [fps, setFps] = useState({ from: 23.976, to: 25 });
   const [video, setVideo] = useState<string | null>(null);
   const [now, setNow] = useState(0);
+  const [trLangs, setTrLangs] = useState<TranslateLanguage[]>(FALLBACK_LANGUAGES);
+  const [trLang, setTrLang] = useState("es");
+  const [trBusy, setTrBusy] = useState(false);
+  const [trError, setTrError] = useState<string | null>(null);
+  const [sourceCues, setSourceCues] = useState<Cue[] | null>(null);
+  const [copiedSide, setCopiedSide] = useState<"source" | "translated" | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const videoInput = useRef<HTMLInputElement>(null);
   const player = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    let activeReq = true;
+    loadCapabilities()
+      .then((caps) => {
+        if (activeReq && caps.languages?.length) setTrLangs(caps.languages);
+      })
+      .catch(() => {});
+    return () => {
+      activeReq = false;
+    };
+  }, []);
 
   useEffect(() => () => {
     if (video) URL.revokeObjectURL(video);
@@ -75,8 +95,54 @@ export function SubtitleTool({ toolId }: { toolId: string }) {
     const r = parseSubtitles(text);
     if (!r.cues.length) return setNote("No subtitles found in that file. Use an .srt or .vtt file.");
     setCues(r.cues);
+    setSourceCues(null);
+    setTrError(null);
     setName(f.name.replace(/\.[^.]+$/, ""));
     setNote(`${r.cues.length} subtitles read (${r.format.toUpperCase()})${r.skipped ? `; ${r.skipped} block${r.skipped === 1 ? "" : "s"} couldn't be read and were left out` : ""}.`);
+  };
+
+  const translateCaptions = async () => {
+    if (!cues.length || trBusy) return;
+    setTrBusy(true);
+    setTrError(null);
+    const baseline = sourceCues ?? cues;
+    try {
+      const res = await translateBatch({
+        texts: baseline.map((c) => c.text),
+        source: "auto",
+        target: trLang,
+      });
+      if (!sourceCues) setSourceCues(cues);
+      const idToText = new Map<number, string>();
+      baseline.forEach((c, idx) => idToText.set(c.id, res.translated_texts[idx] ?? c.text));
+      setCues((all) => all.map((c) => ({ ...c, text: idToText.get(c.id) ?? c.text })));
+      setNote(`Translated ${baseline.length} captions from ${res.detected_language_name} to ${res.target_language_name}.`);
+    } catch (e) {
+      setTrError(e instanceof Error ? e.message : "Could not translate those captions.");
+    } finally {
+      setTrBusy(false);
+    }
+  };
+
+  const restoreSourceCaptions = () => {
+    if (!sourceCues) return;
+    const textMap = new Map(sourceCues.map((c) => [c.id, c.text]));
+    setCues((all) => all.map((c) => ({ ...c, text: textMap.get(c.id) ?? c.text })));
+    setSourceCues(null);
+    setTrError(null);
+  };
+
+  const copyCaptionText = async (side: "source" | "translated") => {
+    const list = side === "source" && sourceCues ? sourceCues : cues;
+    const plain = list.map((c) => c.text.trim()).filter(Boolean).join("\n");
+    if (!plain) return;
+    try {
+      await navigator.clipboard.writeText(plain);
+      setCopiedSide(side);
+      setTimeout(() => setCopiedSide(null), 1800);
+    } catch {
+      setCopiedSide(null);
+    }
   };
   const update = (id: number, p: Partial<Cue>) => setCues((all) => all.map((c) => (c.id === id ? { ...c, ...p } : c)));
 
@@ -101,7 +167,11 @@ export function SubtitleTool({ toolId }: { toolId: string }) {
   useEffect(() => () => URL.revokeObjectURL(vtt), [vtt]);
 
   return (
-    <Workbench steps={stepsFor(tool)} current={1} footer="Edited in your browser. Your subtitles and video are never uploaded.">
+    <Workbench
+      steps={stepsFor(tool)}
+      current={1}
+      footer="Edited and previewed in your browser; translating caption lines uses the free translation service while keeping your video local."
+    >
       <div className="@container grid gap-4 p-3 sm:p-4 md:p-5">
         <div className="flex flex-wrap items-center gap-2">
           <input ref={fileInput} type="file" accept=".srt,.vtt,text/vtt" className="sr-only" onChange={(e) => (e.target.files?.[0] && void open(e.target.files[0]), (e.target.value = ""))} />
@@ -165,6 +235,76 @@ export function SubtitleTool({ toolId }: { toolId: string }) {
               <button type="button" onClick={applyFps} disabled={fps.from === fps.to} className="h-10 rounded-md border border-line bg-surface px-3 text-sm text-ink hover:border-ink-3 disabled:opacity-40">
                 Convert
               </button>
+            </div>
+          </Row>
+          <Row
+            label="Translate captions"
+            hint={
+              <Link href="/tools/translator" className="underline underline-offset-4 hover:text-ink">
+                Need spoken video dubbing? Open Translator
+              </Link>
+            }
+          >
+            <div className="space-y-2.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  aria-label="Target subtitle language"
+                  value={trLang}
+                  onChange={(e) => setTrLang(e.target.value)}
+                  disabled={trBusy}
+                  className="h-10 min-w-[180px] rounded-md border border-line bg-surface px-2.5 text-sm text-ink outline-none focus:border-ink"
+                >
+                  {trLangs.map((l) => (
+                    <option key={l.code} value={l.code}>
+                      {l.name}
+                      {l.native_name !== l.name ? ` (${l.native_name})` : ""}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={translateCaptions}
+                  disabled={trBusy || !cues.length}
+                  className="inline-flex h-10 items-center gap-1.5 rounded-md bg-ink px-4 text-sm font-medium text-paper transition-colors hover:bg-ink/85 disabled:opacity-45"
+                >
+                  {trBusy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Languages className="size-4" aria-hidden />}
+                  {trBusy ? "Translating…" : "Translate captions"}
+                </button>
+                {sourceCues && (
+                  <button
+                    type="button"
+                    onClick={restoreSourceCaptions}
+                    disabled={trBusy}
+                    className="inline-flex h-10 items-center gap-1.5 rounded-md border border-line bg-surface px-3 text-sm text-ink-2 hover:border-ink-3 hover:text-ink"
+                  >
+                    <RotateCcw className="size-4" aria-hidden />
+                    Restore original
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {sourceCues && (
+                  <button
+                    type="button"
+                    onClick={() => copyCaptionText("source")}
+                    className="inline-flex items-center gap-1.5 rounded-sm border border-line bg-surface px-2.5 py-1.5 text-xs font-medium text-ink hover:border-ink-3"
+                  >
+                    {copiedSide === "source" ? <Check className="size-3.5 text-accent" aria-hidden /> : <Copy className="size-3.5 text-ink-3" aria-hidden />}
+                    {copiedSide === "source" ? "Copied input" : "Copy input text"}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => copyCaptionText("translated")}
+                  disabled={!cues.length}
+                  className="inline-flex items-center gap-1.5 rounded-sm border border-line bg-surface px-2.5 py-1.5 text-xs font-medium text-ink hover:border-ink-3 disabled:opacity-40"
+                >
+                  {copiedSide === "translated" ? <Check className="size-3.5 text-accent" aria-hidden /> : <Copy className="size-3.5 text-ink-3" aria-hidden />}
+                  {copiedSide === "translated" ? "Copied text" : sourceCues ? "Copy translated text" : "Copy all text"}
+                </button>
+              </div>
+              {trError && <Notice tone="danger">{trError}</Notice>}
             </div>
           </Row>
         </Panel>

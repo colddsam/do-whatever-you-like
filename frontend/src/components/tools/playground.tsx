@@ -54,6 +54,8 @@ const ColorPicker = dynamic(() => import("./design/color-picker").then((m) => m.
 const FontCreator = dynamic(() => import("./design/font-creator").then((m) => m.FontCreator), { loading });
 const ChartMaker = dynamic(() => import("./design/chart-maker").then((m) => m.ChartMaker), { loading });
 const PeriodTracker = dynamic(() => import("./health/period-tracker").then((m) => m.PeriodTracker), { loading });
+const WhatsappAnalyzer = dynamic(() => import("./text/whatsapp-analyzer").then((m) => m.WhatsappAnalyzer), { loading });
+const TranslatorPlayground = dynamic(() => import("./text/translator-playground").then((m) => m.TranslatorPlayground), { loading });
 const FlowchartMaker = dynamic(() => import("./design/flowchart-maker").then((m) => m.FlowchartMaker), { loading });
 const SoonWorkspace = dynamic(() => import("./soon-workspace").then((m) => m.SoonWorkspace), { loading });
 const UtilityTool = dynamic(() => import("./utilities/utility-tool").then((m) => m.UtilityTool), { loading });
@@ -113,6 +115,8 @@ const byId: Record<string, Workspace> = {
   "chart-maker": ChartMaker,
   "flowchart-maker": FlowchartMaker,
   "period-tracker": PeriodTracker,
+  "whatsapp-chat-analyzer": WhatsappAnalyzer,
+  translator: TranslatorPlayground,
   "compress-files": CompressFilesTool,
   "merge-files": MergeFilesTool,
   "split-files": SplitFilesTool,

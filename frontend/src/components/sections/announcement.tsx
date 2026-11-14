@@ -12,6 +12,8 @@ const ROTATE_MS = 4200;
 
 /** Short, true headlines. Each one links to the tool it's about. */
 const news = [
+  { tag: "New", text: "Translate text, audio & video free", tool: "translator" },
+  { tag: "New", text: "WhatsApp chat analyzer, in any language", tool: "whatsapp-chat-analyzer" },
   { tag: "New", text: "Private period tracker, 100% on your device", tool: "period-tracker" },
   { tag: "New", text: "Compress any file: PDF, Office, video…", tool: "compress-files" },
   { tag: "New", text: "Merge and split Word, Excel and PowerPoint", tool: "merge-files" },
@@ -52,8 +54,9 @@ export function Announcement() {
   useLayoutEffect(() => {
     const el = measure.current;
     if (!el) return;
-    setWidth(el.offsetWidth);
-    const ro = new ResizeObserver(() => setWidth(el.offsetWidth));
+    const syncWidth = () => setWidth(Math.ceil(el.getBoundingClientRect().width) + 2);
+    syncWidth();
+    const ro = new ResizeObserver(syncWidth);
     ro.observe(el);
     return () => ro.disconnect();
   }, [i]);

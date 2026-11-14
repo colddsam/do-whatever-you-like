@@ -381,6 +381,7 @@ def _policies() -> Dict[str, FrozenSet[str]]:
         "/convert/html-to-pdf": html,
         "/qrcode/generate-with-logo": frozenset(QRCodeService.ALLOWED_LOGO_EXTENSIONS),
         "/transcribe": frozenset(MEDIA),
+        "/translate/media": frozenset(MEDIA),
         "/image/watermark": frozenset(TOOL_INPUTS["watermark"] | TOOL_INPUTS["mark"]),
         "/image/faces": frozenset(TOOL_INPUTS["blur"]),
         "/image/remove-background": frozenset(TOOL_INPUTS["background"]),

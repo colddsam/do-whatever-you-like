@@ -199,15 +199,15 @@ const GUIDES: Record<string, Guide> = {
   "audio-to-text": {
     intro: [
       "Audio to text turns speech into text with Whisper speech recognition, in 99 languages detected for you. Add audio or video up to 150 MB and 3 hours long, or record straight from your microphone, and watch the text appear as it's recognised.",
-      "While it plays, the line being heard is highlighted so you can check it. Fix any line, then copy the transcript or download TXT, SRT or VTT subtitles, or JSON.",
+      "While it plays, the line being heard is highlighted so you can check it. Fix any line, translate the finished transcript into 100+ languages right inside the workspace, then copy either version or download TXT, SRT or VTT subtitles, or JSON.",
     ],
     faqs: [
-      { q: "Which languages are supported?", a: "99 languages. The language is detected automatically." },
+      { q: "Which languages are supported?", a: "99 languages for speech recognition, plus 100+ languages when translating the finished transcript." },
       { q: "Can I make subtitles?", a: "Yes. Download SRT or VTT, the subtitle formats video players and YouTube accept." },
       { q: "How long can the recording be?", a: "Up to 3 hours and 150 MB." },
       { q: "Where is my recording processed?", a: "On our own server or through Groq's Whisper service; the tool tells you which. Either way, the recording is deleted afterwards." },
     ],
-    see: ["audio", "youtube", "convert-anything"],
+    see: ["translator", "subtitle-editor", "audio", "youtube"],
   },
   qr: {
     intro: [
@@ -361,14 +361,15 @@ const GUIDES: Record<string, Guide> = {
   },
   "subtitle-editor": {
     intro: [
-      "Open an SRT or VTT subtitle file—or start from scratch—to fix typos, split or merge cues, flag overlaps, convert frame rates (23.976, 25, 29.97 fps), and shift timing earlier or later for the whole file or from one line onward.",
-      "Preview your subtitles live on top of your own video and export as SRT, VTT, or plain text without uploading anything.",
+      "Open an SRT or VTT subtitle file—or start from scratch—to fix typos, split or merge cues, translate captions into 100+ languages while keeping every timestamp intact, flag overlaps, convert frame rates (23.976, 25, 29.97 fps), and shift timing earlier or later.",
+      "Preview your subtitles live on top of your own video, copy source or translated text, and export as SRT, VTT, or plain text.",
     ],
     faqs: [
       { q: "Can I shift all subtitles by a few seconds?", a: "Yes. You can offset every line or shift timing from a chosen line onward." },
-      { q: "Does it upload my video or subtitles?", a: "No. Editing and video preview happen entirely in your browser." },
+      { q: "Can I translate captions without losing timestamps?", a: "Yes. Pick any target language to translate every cue while keeping start and end times unchanged, with one-click Restore original." },
+      { q: "Does it upload my video or subtitles?", a: "Your video and cue editing stay in your browser; only caption text lines are sent if you click Translate captions." },
     ],
-    see: ["audio-to-text", "trim-media", "video-to-frames"],
+    see: ["translator", "audio-to-text", "trim-media", "video-to-frames"],
   },
   "chart-maker": {
     intro: [
@@ -654,6 +655,30 @@ const GUIDES: Record<string, Guide> = {
       { q: "Can I back up or delete all my data?", a: "Yes. Export a JSON backup anytime to move between devices, or erase everything with one tap." },
     ],
     see: ["date-calculator", "age-calculator", "encrypt-note"],
+  },
+  translator: {
+    intro: [
+      "Translate plain text, SRT/VTT subtitle files, spoken audio recordings, microphone voice notes, and videos between 100+ languages with automatic language detection.",
+      "In Text mode you get a clean copyable source and translation view without extra media clutter. For Audio and Video, the speech is transcribed, translated, dubbed into a downloadable translated audio or video file (with optional quiet background audio and soft captions), and returned with both original and translated transcripts ready to copy.",
+    ],
+    faqs: [
+      { q: "Is this completely free with no paid API keys required?", a: "Yes. Everything runs on free endpoints, Whisper speech recognition, and free neural voices with zero paid subscriptions required." },
+      { q: "What do I get when translating audio or video?", a: "You get the dubbed translated audio or video file to preview and download, plus both the original spoken transcript and the translated text with dedicated Copy buttons and TXT/SRT/VTT downloads." },
+      { q: "What happens to uploaded files?", a: "Uploads are processed in an isolated temporary workspace that is deleted right after dubbing; the downloadable result stays cached briefly so you can save it and expires automatically." },
+    ],
+    see: ["audio-to-text", "subtitle-editor", "whatsapp-chat-analyzer"],
+  },
+  "whatsapp-chat-analyzer": {
+    intro: [
+      "Upload an exported WhatsApp .txt or .zip file (or paste chat lines directly) to explore message volume, active participants, reply speed, conversation starters, a 7×24 hour activity heatmap, top emojis, recurring words across scripts, and shared links.",
+      "Everything is parsed and analyzed locally inside your browser—nothing is sent to any server, and it works free of charge with exports from iOS, Android, and Desktop in any language or script (Latin, Hindi/Devanagari, Arabic RTL, CJK, Cyrillic, accents, and emojis).",
+    ],
+    faqs: [
+      { q: "Is my WhatsApp chat sent to your server?", a: "No. ZIP extraction, parsing, charts, search, and exports all run locally in your browser. Your messages never leave your device." },
+      { q: "Which WhatsApp export formats and languages work?", a: "Both iOS [date, time] and Android date, time - exports (as .txt or .zip with media), 12h/24h clocks, DMY/MDY/YMD date order (auto-detected with manual override), localized AM/PM and digits, RTL Arabic/Hebrew, Hindi, CJK, and emojis." },
+      { q: "Can I export the statistics?", a: "Yes. Download full JSON analytics, Excel-ready UTF-8 CSV tables, a self-contained printable HTML report, or copy a text summary." },
+    ],
+    see: ["text-summarizer", "diff-checker", "chart-maker"],
   },
 };
 

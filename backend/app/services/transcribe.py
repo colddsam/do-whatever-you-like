@@ -250,7 +250,7 @@ PCM_INPUT = ["-f", "s16le", "-ar", "16000", "-ac", "1"]
 PCM_BYTES_PER_SECOND = 16000 * 2
 
 
-def _to_pcm(source: Path, pcm: Path) -> float:
+def _to_pcm(source: Path, pcm: Path, *, keep_source: bool = False) -> float:
     """Decodes any audio or video to raw PCM. Also gives the true length (recordings may not state it)."""
     try:
         proc = _run(
@@ -263,10 +263,11 @@ def _to_pcm(source: Path, pcm: Path) -> float:
     if proc.returncode != 0 or not pcm.is_file() or pcm.stat().st_size == 0:
         logger.error("ffmpeg could not decode %s: %s", source.name, proc.stderr[-400:])
         raise InvalidAudioFileError("We couldn't read the sound in that file. Is it a working audio or video file?")
-    try:
-        source.unlink()  # The upload isn't needed any more; free the disk.
-    except OSError:
-        pass
+    if not keep_source:
+        try:
+            source.unlink()  # The upload isn't needed any more; free the disk.
+        except OSError:
+            pass
     duration = pcm.stat().st_size / PCM_BYTES_PER_SECOND
     if duration < 0.3:
         raise InvalidAudioFileError("That recording is too short to transcribe.")
