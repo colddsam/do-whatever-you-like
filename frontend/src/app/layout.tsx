@@ -6,7 +6,11 @@ import { Footer } from "@/components/layout/footer";
 import { OPERATOR, SITE_NAME, SITE_URL } from "@/lib/site";
 import { siteGraph } from "@/lib/schema";
 import { JsonLd } from "@/components/seo/json-ld";
+import { Analytics } from "@vercel/analytics/next";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
+
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID ?? "G-GVKMN99S3N";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -69,6 +73,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           </main>
           <Footer />
         </Providers>
+        <Analytics />
+        {GA_ID && <GoogleAnalytics gaId={GA_ID} />}
       </body>
     </html>
   );

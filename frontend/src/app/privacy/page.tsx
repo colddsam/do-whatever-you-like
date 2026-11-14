@@ -12,7 +12,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       current="/privacy"
-      updated="13 Nov 2026"
+      updated="14 Nov 2026"
       title={
         <>
           Privacy, in <span className="serif-em">plain words.</span>
@@ -80,6 +80,16 @@ export default function PrivacyPage() {
                 so when it does. We don&apos;t sell or share your data with advertisers.
               </p>
             </>
+          ),
+        },
+        {
+          title: "Analytics",
+          body: (
+            <p>
+              We use Vercel Web Analytics and Google Analytics (GA4) to understand overall site traffic and which tools
+              are most helpful. Google Analytics may set cookies in your browser to count visits; neither analytics
+              service ever receives the files, links, notes or period entries you work with in our tools.
+            </p>
           ),
         },
         {
