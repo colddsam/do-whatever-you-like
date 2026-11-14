@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: PageProps<"/tools/category/[i
   const cluster = clusterFor((await params).id);
   if (!cluster) return {};
   const hub = HUBS[cluster.id];
-  return pageMeta({ title: `${hub.title} — Do-Whatever`, description: hub.description, path: clusterHref(cluster.id) });
+  return pageMeta({ title: `${hub.title} — Do-Whatever-You-Like`, description: hub.description, path: clusterHref(cluster.id) });
 }
 
 /**

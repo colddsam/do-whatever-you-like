@@ -643,6 +643,18 @@ const GUIDES: Record<string, Guide> = {
     ],
     see: ["screen-resolution", "pixel-ruler", "webcam-test"],
   },
+  "period-tracker": {
+    intro: [
+      "Log your period with one tap, track flow, symptoms, mood, pain, and daily notes, and see your next period, fertile window, and ovulation predictions learnt from your own cycle history—with a confidence indicator and gentle notes when something may be worth asking a doctor about.",
+      "Everything stays strictly on your device in your browser's local storage, with an optional AES-256 PIN lock, discreet calendar reminders, JSON backups, and one-tap delete-all.",
+    ],
+    faqs: [
+      { q: "Is my period data sent to any server?", a: "No. Everything is stored locally on your device—nothing is uploaded, and there is no account." },
+      { q: "Can I lock it with a PIN?", a: "Yes. You can enable an optional PIN lock encrypted with AES-256 on your device." },
+      { q: "Can I back up or delete all my data?", a: "Yes. Export a JSON backup anytime to move between devices, or erase everything with one tap." },
+    ],
+    see: ["date-calculator", "age-calculator", "encrypt-note"],
+  },
 };
 
 /* ---------- Families that share one engine: a note specific to each variant ---------- */

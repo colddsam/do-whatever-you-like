@@ -1,11 +1,11 @@
-# Do-Whatever — Design Direction
+# Do-Whatever-You-Like — Design Direction
 
 The single source of truth for every page. New sections and routes must use these
 tokens and rules; do not introduce new colors, fonts, radii or shadows ad hoc.
 
 ## A. Concept — "The Worksheet"
 
-Do-Whatever is a growing toolbox for everyday digital chores (downloading, converting,
+Do-Whatever-You-Like is a growing toolbox for everyday digital chores (downloading, converting,
 cleaning up files, writing, developer utilities). The identity borrows from a well-kept
 paper worksheet: warm paper, black ink, hairline rules, indexed sections, and a single
 signal-orange mark that says "this is where to act".

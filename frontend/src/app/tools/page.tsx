@@ -11,9 +11,9 @@ import { pageMeta } from "@/lib/site";
 import { directoryGraph } from "@/lib/schema";
 
 export const metadata: Metadata = pageMeta({
-  title: "All Free Online Tools: PDF, Image, Video, Dev — Do-Whatever",
+  title: "All Free Online Tools: PDF, Image, Video, Dev — Do-Whatever-You-Like",
   description:
-    "Every Do-Whatever tool in one place: PDF, image, file conversion, download, audio, developer and text tools. All free, no sign-up.",
+    "Every Do-Whatever-You-Like tool in one place: PDF, image, file conversion, download, audio, developer and text tools. All free, no sign-up.",
   path: "/tools",
 });
 

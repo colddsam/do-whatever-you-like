@@ -12,7 +12,7 @@ import { homeGraph } from "@/lib/schema";
 import { liveCount } from "@/lib/tools";
 
 export const metadata: Metadata = pageMeta({
-  title: "Free Online Tools for PDF, Images, Video & Code — Do-Whatever",
+  title: "Free Online Tools for PDF, Images, Video & Code — Do-Whatever-You-Like",
   description:
     `${liveCount} free online tools with no sign-up: merge and compress PDFs, convert any file, compress images, download videos, transcribe audio and format code.`,
   path: "/",

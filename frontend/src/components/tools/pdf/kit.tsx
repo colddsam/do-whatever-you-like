@@ -155,7 +155,7 @@ export function Slider({
         aria-valuetext={shown}
         className="h-9 min-w-0 flex-1 cursor-pointer accent-ink disabled:cursor-not-allowed"
       />
-      <output htmlFor={id} className="w-14 shrink-0 text-right font-mono text-sm tabular-nums text-ink">
+      <output htmlFor={id} className="min-w-14 shrink-0 whitespace-nowrap text-right font-mono text-sm tabular-nums text-ink">
         {shown}
       </output>
     </div>

@@ -3,8 +3,8 @@ import { CONTACT_EMAIL, pageMeta } from "@/lib/site";
 import { LegalPage } from "@/components/layout/legal-page";
 
 export const metadata: Metadata = pageMeta({
-  title: "Privacy — Do-Whatever",
-  description: "What Do-Whatever does with the links and files you give it.",
+  title: "Privacy — Do-Whatever-You-Like",
+  description: "What Do-Whatever-You-Like does with the links and files you give it.",
   path: "/privacy",
 });
 
@@ -18,7 +18,7 @@ export default function PrivacyPage() {
           Privacy, in <span className="serif-em">plain words.</span>
         </>
       }
-      intro="Do-Whatever is built to do a job and forget about it. Here's exactly what that means for the links and files you hand us."
+      intro="Do-Whatever-You-Like is built to do a job and forget about it. Here's exactly what that means for the links and files you hand us."
       sections={[
         {
           title: "No accounts",

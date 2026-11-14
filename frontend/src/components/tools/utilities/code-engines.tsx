@@ -38,7 +38,7 @@ const SAMPLES: Record<string, string> = {
   sql: `select u.id,u.name,count(o.id) as orders from users u left join orders o on o.user_id=u.id where u.created_at>'2024-01-01' and u.active=1 group by u.id,u.name having count(o.id)>2 order by orders desc limit 10;`,
   yaml: `server:\n    port: 8080\n    hosts: [ "a.example.com","b.example.com" ]\ndatabase: {user: admin, pool: 10}\n# comment kept\nfeatures:\n- auth\n-   billing`,
   markdown: `# Title\nSome *text* with __bold__.\n* one\n* two\n\n|a|b|\n|-|-|\n|1|2|`,
-  json: `{"name":"Do-Whatever","tools":["format","minify"],"free":true}`,
+  json: `{"name":"Do-Whatever-You-Like","tools":["format","minify"],"free":true}`,
 };
 
 const FORMAT_LANGS: { value: FormatLang; label: string }[] = [

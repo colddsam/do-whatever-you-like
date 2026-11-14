@@ -68,7 +68,7 @@ export function ogCard({ eyebrow, title, subtitle }: { eyebrow: string; title: s
               <circle cx="24.5" cy="24.5" r="3" fill={ACCENT} />
             </svg>
             <div style={{ display: "flex", fontSize: 28, fontWeight: 600, letterSpacing: "-0.02em" }}>
-              Do<span style={{ color: INK_2 }}>-</span>Whatever
+              Do<span style={{ color: INK_2 }}>-</span>Whatever<span style={{ color: INK_2 }}>-</span>You<span style={{ color: INK_2 }}>-</span>Like
             </div>
           </div>
 

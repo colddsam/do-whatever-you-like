@@ -1,455 +1,936 @@
-# SocialHub (kinetiK) — Multi-Platform Media, Document & Utility Toolkit
+<div align="center">
 
-A full-stack, security-hardened media extraction, document processing, file conversion, and utility platform built with **Next.js 16 (App Router + Turbopack)** on the frontend and a modular **FastAPI** service layer on the backend.
+<a href="https://do-whatever-you-like.colddsam.com">
+  <img src="docs/assets/banner.svg" alt="Do-Whatever-You-Like: one place to do whatever you need" width="100%">
+</a>
 
----
+<br>
 
-## Table of Contents
+<a href="https://do-whatever-you-like.colddsam.com"><img src="https://readme-typing-svg.demolab.com?font=Inter&weight=500&size=20&duration=2600&pause=900&color=EB4A10&center=true&vCenter=true&width=640&lines=Merge+and+compress+PDFs;Convert+almost+any+file;Remove+background+noise+from+videos;Make+animated+charts+and+flowcharts;Track+your+period+privately;Download+Reels%2C+Shorts+and+videos;Free.+No+sign-up.+Nothing+to+install." alt="What you can do: merge PDFs, convert files, remove noise, make charts, download videos"></a>
 
-- [Overview](#overview)
-- [Features](#features)
-- [System Architecture](#system-architecture)
-- [Project Structure](#project-structure)
-- [Tech Stack](#tech-stack)
-- [Security, Isolation & Hardening](#security-isolation--hardening)
-- [Getting Started](#getting-started)
-  - [Quick Start (Windows PowerShell)](#quick-start-windows-powershell)
-  - [1. Backend Setup (FastAPI)](#1-backend-setup-fastapi)
-  - [2. Frontend Setup (Next.js)](#2-frontend-setup-nextjs)
-- [Environment Variables](#environment-variables)
-  - [Backend (`backend/.env`)](#backend-backendenv)
-  - [Frontend (`frontend/.env.local`)](#frontend-frontendenvlocal)
-- [Cookie Configuration (Optional — Age-Gated / Carousel Media)](#cookie-configuration-optional--age-gated--carousel-media)
-- [API Reference](#api-reference)
-- [Protocol for Adding New Tools & Endpoints](#protocol-for-adding-new-tools--endpoints)
-- [Postman Collection Generator](#postman-collection-generator)
+<br><br>
 
----
+<a href="https://do-whatever-you-like.colddsam.com"><img src="https://img.shields.io/badge/Open%20the%20site-do--whatever--you--like.colddsam.com-eb4a10?style=for-the-badge&labelColor=15140f" alt="Open the live site"></a>
 
-## Overview
+<img src="https://img.shields.io/badge/tools-216%20live-15140f?style=flat-square" alt="216 live tools">
+<img src="https://img.shields.io/badge/price-free-2f7d4f?style=flat-square" alt="Free">
+<img src="https://img.shields.io/badge/sign--up-not%20needed-57544a?style=flat-square" alt="No sign-up">
+<img src="https://img.shields.io/badge/watermarks-none-57544a?style=flat-square" alt="No watermarks">
+<img src="https://img.shields.io/badge/hosting-free%20tiers-4f6bd8?style=flat-square" alt="Runs on free hosting">
+<a href="LICENSE"><img src="https://img.shields.io/badge/license-source--available-8a867a?style=flat-square" alt="License: source-available"></a>
+<a href="https://github.com/colddsam/do-whatever-you-like/commits/main"><img src="https://img.shields.io/github/last-commit/colddsam/do-whatever-you-like?style=flat-square&color=eb4a10" alt="Last commit"></a>
 
-**SocialHub (kinetiK)** provides a unified web workspace for downloading public social media content (YouTube, Instagram, Facebook), extracting audio from video files, merging/splitting/compressing PDFs with real-time size previews, and generating custom-styled QR codes—all without storing user files permanently on disk.
+<img src="https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=nextdotjs&logoColor=white" alt="Next.js 16">
+<img src="https://img.shields.io/badge/React-19-149eca?style=flat-square&logo=react&logoColor=white" alt="React 19">
+<img src="https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript 5">
+<img src="https://img.shields.io/badge/Tailwind%20CSS-4-06b6d4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS 4">
+<img src="https://img.shields.io/badge/FastAPI-0.115+-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI">
+<img src="https://img.shields.io/badge/Python-3.13-3776ab?style=flat-square&logo=python&logoColor=white" alt="Python 3.13">
+<img src="https://img.shields.io/badge/FFmpeg-media-007808?style=flat-square&logo=ffmpeg&logoColor=white" alt="FFmpeg">
+<img src="https://img.shields.io/badge/Docker-backend-2496ed?style=flat-square&logo=docker&logoColor=white" alt="Docker">
+<img src="https://img.shields.io/badge/Vercel-frontend-000000?style=flat-square&logo=vercel&logoColor=white" alt="Frontend on Vercel">
+<img src="https://img.shields.io/badge/Render-backend-46e3b7?style=flat-square&logo=render&logoColor=white" alt="Backend on Render">
 
-Every job runs inside an isolated, per-request temporary directory (`temp/<service>/<job_id>`) that is automatically purged via FastAPI `BackgroundTasks` immediately after the response stream finishes.
+<br>
 
----
+**[Use it now](https://do-whatever-you-like.colddsam.com)** · **[See every tool](https://do-whatever-you-like.colddsam.com/tools)** · **[Run it yourself](#-run-it-on-your-computer)** · **[Report a problem](https://github.com/colddsam/do-whatever-you-like/issues)**
 
-## Features
-
-### Live Tools
-- **YouTube Video & Shorts Downloader (`/api/v1/youtube`)**
-  - Supports standard videos (`/watch?v=...`), YouTube Shorts (`/shorts/...`), `youtu.be` shortlinks, and raw 11-character video IDs up to 1 hour.
-  - Predicts exact/approximate download size before saving and merges best MP4 video + M4A audio streams via bundled `static-ffmpeg`.
-- **Instagram Downloader (`/api/v1/instagram`)**
-  - Supports Reels (`/reel/...`), Posts (`/p/...`), TV (`/tv/...`), bare shortcodes, and multi-item Carousels.
-  - Probes CDN byte sizes in parallel (`HEAD` / ranged `GET`) for instant size previews and packages carousels into a single `.zip` archive.
-- **Facebook Downloader (`/api/v1/facebook`)**
-  - Supports Facebook Watch videos, Reels (`/reel/...`), `fb.watch` shortlinks, and `/share/...` redirect links.
-  - Pre-validates and resolves share redirects hop-by-hop with strict SSRF protection.
-- **PDF Toolkit (`/api/v1/pdf`)**
-  - **Upload Once & Reuse (`/upload`)**: Caches uploaded PDFs under a 32-char hex token (30-minute sliding TTL) for instant estimates and actions without re-uploading.
-  - **Merge (`/merge`, `/merge/estimate`)**: Combines 2+ PDFs in custom order and previews the exact merged byte size.
-  - **Split (`/split`, `/split/estimate`)**: Extracts custom page ranges (`1-3, 5`) or individual pages (returned as a single PDF or `.zip`), with per-part page and size breakdowns.
-  - **Compress (`/compress`, `/compress/estimate`)**: Compresses PDFs by a target strength (`1–95%`) using `PyMuPDF` image DPI downsampling, recompression, and metadata scrubbing, with multi-strength tile sampling so the UI slider predicts output size in real time.
-  - Executes inside a dedicated `ProcessPoolExecutor` with parent-process watchdog and client-disconnect cancellation so heavy C-level PDF operations never block web workers.
-- **QR Code Generator (`/api/v1/qrcode`)**
-  - Encodes 9 content types: **URL**, **Text**, **Wi-Fi**, **vCard Contact**, **Email**, **SMS**, **Phone**, **Geo Location**, and **Calendar Event (`VEVENT`)**.
-  - Customizes module shapes (`square`, `gapped`, `circle`, `rounded`, `vertical_bars`, `horizontal_bars`), finder eye shapes (`square`, `rounded`, `circle`), custom foreground/background/eye colors, transparent backgrounds, and gradients (`radial`, `square`, `horizontal`, `vertical`).
-  - Supports center logo overlays (`/generate-with-logo`) with automatic Error Correction `H` promotion, rounded corners, and background padding, exporting to **PNG**, **SVG**, **WebP**, **JPEG**, or **300 DPI PDF**.
-- **Universal Converter (`/api/v1/universal`)** — any file to any format it can sensibly become
-  - **112 formats in 15 families, 1,827 conversions**: documents (PDF, DOCX, DOC, ODT, RTF, TXT), markup (Markdown, HTML, LaTeX, reStructuredText, Org, AsciiDoc, Textile, MediaWiki, Typst, Jupyter), ebooks (EPUB, FB2), spreadsheets (XLSX, XLS, ODS, XLSM), data (CSV, TSV, JSON, JSON Lines, XML, YAML, TOML, SQL), presentations (PPTX, PPT, ODP, PPSX), drawings (ODG), images (JPG, PNG, WebP, GIF, BMP, TIFF, ICO, AVIF, HEIC, PSD, SVG, camera RAW), audio (MP3, WAV, OGG, FLAC, M4A, AAC, Opus, WMA, AIFF, AC-3, AMR…), video (MP4, MKV, WebM, MOV, AVI, WMV, FLV, M4V, MPEG, 3GP, AVCHD, OGV), subtitles (SRT, VTT, ASS), fonts (TTF, OTF, WOFF, WOFF2), archives (ZIP, 7z, TAR, TAR.GZ/BZ2/XZ, GZ), email (EML), and source code & config files in 23 languages and formats (Python, JS/TS, Java, Go, Rust, C/C++, SQL, INI…).
-  - A **conversion graph** (`services/universal/graph.py`) treats each engine (LibreOffice, Pandoc, FFmpeg, Pillow, PyMuPDF, pdf2docx, Tesseract, Chromium, fontTools, py7zr, built-in data/text readers) as edges and plans the cheapest sensible route of up to 3 steps (e.g. `PDF → DOCX → Markdown`). Engines missing on a server are left out, so it never offers a conversion it can't run.
-  - Every job runs in its **own child process** (`app/core/isolation.py` → `python -m app.core.job_worker`), killed with everything it started on timeout or client cancel: a crash or memory spike in one conversion cannot affect the server or any other tool. The universal converter, compressor and merge/split share one "heavy" lane (`JOBS_HEAVY_CONCURRENCY`, 1 on Render); icon packs use a light lane of their own.
-  - Optional `options` (JSON) fine-tune the result: PDF→JPG/PNG resolution, pages or "the pictures inside", PDF→Excel sheet per table or page, spreadsheet→PDF one page per sheet, audio bitrate. The site's PDF to Word/Excel/PowerPoint/JPG, Word/PowerPoint/Excel to PDF and Video to MP3 pages are presets of this one converter.
-  - Hardened against hostile files: Pandoc `--sandbox`, FFmpeg restricted to local files with playlist/concat demuxers refused, YAML alias bombs and XML entities refused, SVG references stripped, archive path traversal/symlinks/zip bombs blocked, CSV formula injection neutralised in Excel output.
-  - Verify everything end to end: `backend/scripts/check_universal.py` builds a real sample of every format and runs and validates every offered conversion. After changing formats or routes, run `backend/scripts/export_universal_formats.py` to refresh the copy the frontend ships with.
-- **Compress (`/api/v1/compress`)** — any file smaller, 1 to 20 at once, Light / Recommended / Strong
-  - PDF (the Compress PDF engine), JPG/PNG/GIF/WebP/SVG (the Compress image engine), HEIC/AVIF/TIFF in their own format, BMP/PSD/RAW to JPG or PNG; DOCX/XLSX/PPTX/ODF/EPUB re-encode the pictures inside and re-zip at full strength; MP3/M4A/AAC/OGG/Opus/WMA at a lower bitrate, WAV/AIFF/FLAC to FLAC or MP3; video to H.264; fonts to WOFF2; ZIP/GZ/TAR repacked; JSON minified; anything else zipped.
-  - Each file is compressed on its own: one that fails is reported in `X-Convert-Info` and the rest still come back. A result that isn't smaller is replaced by the original.
-- **Merge & split (`/api/v1/merge-split`)** — Word, PowerPoint, Excel/CSV, PDF, audio and video
-  - Merge: Word via docxcompose (styles, numbering, pictures kept); PowerPoint by copying each slide with its layout, master, theme, media and notes (every deck keeps its design); spreadsheets as sheets side by side (with formatting) or rows stacked by column name; audio joined; video joined by stream copy when clips match, re-encoded otherwise.
-  - Split: Word at headings, page/section breaks or Word's recorded pages; PowerPoint and PDF each / every N / typed ranges; Excel by sheet, every N rows or a column's values; audio and video every N minutes, in equal parts or at typed times (no re-encoding). `/inspect` tells the UI what a file holds.
-  - DOC, ODT, RTF, PPT, ODP, XLS and ODS are opened with LibreOffice first.
-- **Scan to PDF** — a guided camera in the browser (OpenCV.js in a Web Worker, self-hosted, free): finds the page's edges live, says what to fix (light, distance, angle, focus), notices text on the page, and shoots by itself when the page is steady. Pages are straightened to their true shape (perspective-corrected aspect ratio, snapped to A4/Letter), shadows evened out, and cleaned (Auto, greyscale, black & white); corners can be dragged by hand. `/api/v1/pdf-tools/from-images` builds the PDF and, with `ocr=true`, makes it searchable in the same request.
-- **Developer utilities** — JSON (format, validate with line/column, tree, CSV), text diff, Base64 (text and files), URL encode/decode/parse, hashes (MD5, SHA-1/2/3, SHAKE, MD2/MD4, NTLM, CRC-16/32, HMAC), JWT decode and HS256/384/512 verification, regex tester with replace, timestamps, number bases, colours (HEX, RGB, HSL, HSV, CMYK, the 148 CSS names, WCAG contrast), case conversion and counts, UUID v4/v7 and Nano IDs, and passwords. All in the browser; nothing is sent anywhere.
-- **Developer collection** (`lib/utilities/catalog.ts`, one page per job over shared engines) — formatters for HTML, CSS/SCSS/Less, JavaScript, TypeScript, React/JSX, Angular, XML, PHP, Java, SQL (12 dialects), YAML and Markdown (Prettier and sql-formatter, in the browser); minifiers for HTML, CSS (csso) and JavaScript (Terser); validators for JavaScript/jQuery, CSS (css-tree, property values too), XML, YAML, JSON and card numbers (Luhn); XSD validation and XSLT 1.0 (`/api/v1/devtools/xsd`, `/xslt`, lxml, locked down); a CodeMirror editor for 140+ languages and an online notepad; a Markdown editor and viewer (`markdown-editor`, `markdown-viewer`: GitHub-flavoured Markdown with tables, task lists and footnotes, highlighted code, KaTeX maths and Mermaid diagrams, live split view with synced scrolling and an outline, open a file, drop it in or load a GitHub/GitLab/Gist link, export .md, standalone HTML or PDF, everything sanitised with DOMPurify and autosaved in the browser); HTML and XML viewers, XPath, JSONPath and URI-template testers; JSON escape, HTML entities and an IEEE-754 analyser; a hash page per algorithm, HMAC and WordPress (phpass) hashes; 21 random-data generators (numbers, primes, strings, dates, IPs, MACs, JSON/CSV/TSV/XML records, strings from a regex, bitmaps, a name picker); DNS/MX/NS lookups, website to IP, reverse DNS, HTTP headers and status with redirect chains, an open-port checker and an API tester (`/api/v1/devtools/*`, public addresses only, every hop checked, connections pinned to the checked IP); HTML link, table, redirect and share-link generators, REM↔PX, CSS to Less and an ASCII table.
-- **Text collection** — text ⇄ binary, hex, ASCII codes; number ⇄ words (international or lakh/crore); Roman numerals; Morse code with playback and WAV download; upside-down, mirror and reverse text; a text repeater; sort/shuffle/de-duplicate lines; lorem ipsum; an extractive summariser; text to PNG.
-- **Browser-only media and image tools** (nothing uploaded): **Video to frames** (a number of frames, one every N seconds or N per second, from a trimmed part; JPG/PNG/WebP at full or smaller size; pick frames, ZIP or a contact sheet; up to 500 frames), **Video to GIF** (trim up to 30 s, 5–25 fps, 240–800 px, 0.25–4× speed, boomerang, loop or play once, 64–256 colours), **Change GIF speed** (lossless retiming, fixed delay per frame, backwards, boomerang, looping, frame merging past the 20 ms floor), **Pixelate image** (block size, squares/rounded/dots/mosaic, colour limits and Game Boy/PICO-8/CGA palettes, grid lines, whole picture or a dragged area, pixel-art size) and **Emoji to image** (1,900 emoji searchable by name with skin tones; Noto, Twemoji, OpenMoji or the device's own; 16–2048 px, backgrounds, PNG/WebP/SVG or a ZIP of icon sizes).
-- **Text tools** also include **Find and replace** (highlighted matches with line numbers, match case, whole words, regex with `$1` groups, keep capitals) and **Split text** (lines, commas, spaces, sentences, words, characters, custom separator, regex or every N characters; trim, de-duplicate, sort; lines, numbered, JSON, CSV or quoted).
-- **Everyday utilities** — a scientific calculator (mathjs: degrees/radians/gradians, inverse and hyperbolic trig, logs, roots, factorials, nCr/nPr, %, mod, memory, Ans, history, fraction/hex/binary readouts, units like `5 inch to cm`), what's my IP (`/api/tools/my-ip`, from the request headers, never stored), screen resolution, browser window size, a responsive tester, a webcam test and a pixel ruler.
-  - **Calculate & convert**: a **unit converter** (12 kinds, every unit at once: length, weight, temperature, area, volume, speed, data with KB vs KiB, time, energy, pressure, angle, fuel economy) and a **currency converter** (30 currencies at the European Central Bank's daily reference rates via the free, keyless [Frankfurter](https://frankfurter.dev) API, called from the visitor's browser).
-  - **Time & dates**: a **world clock & meeting planner** (every IANA zone with daylight saving, working-hours marks), a **Pomodoro timer**, a **stopwatch with laps and a countdown** (chimes via Web Audio, time in the tab title, notifications if allowed), an **age calculator** and a **date calculator** (days and business days between dates; add or subtract days, weeks, months, years or business days).
-  - **Privacy & security**: a **password & passphrase generator with a strength checker** (unbiased crypto randomness; passphrases from the EFF's 7,776-word list, CC BY 3.0; entropy, crack time, common passwords, keyboard runs, years and dictionary words spotted), **Encrypt a note** (AES-256-GCM with a PBKDF2-SHA-256 key, 600,000 rounds; shared as text or a link whose payload sits after `#`, so no server sees it) and a **photo metadata viewer & remover** (exifr reads GPS, camera, dates, serials, XMP and IPTC; `lib/metadata.ts` strips EXIF/XMP/IPTC/comments from JPEG, PNG and WebP losslessly at the byte level, keeping the colour profile and the photo's rotation; many photos as a ZIP).
-  - **QR codes**: the generator, plus a **QR scanner** (jsQR: pictures, screenshots, pasted images or the live camera; links, Wi-Fi, contacts, email, phone and places recognised).
-  - **Device & browser**: also a **mic & speaker test** (left/right/both tones and a 20 Hz–20 kHz sweep; live waveform, level meter and a 5-second playback test) and a **dead pixel test** (full-screen black/white/red/green/blue/grey, keyboard or click to step, and a stuck-pixel flasher with a seizure warning).
-- **Chart maker** (`lib/charts.ts`, `components/tools/design/chart-maker.tsx`, ECharts 6, Apache-2.0) — 30 chart types in five groups (column, bar, line, area, pie, doughnut; stacked, 100%, smooth, step, stacked area, column + line on two axes, waterfall, radar, radial bar; funnel, rose, half doughnut, gauges, treemap, sunburst; scatter, bubble, histogram, box plot, heatmap; Sankey, candlestick, calendar heatmap). Data in an editable table (paste a block straight from Excel or Google Sheets, numbers like `₹1,23,456`, `$12`, `45%`, `(3)` understood, bad cells flagged), as CSV/TSV text, or imported from CSV/JSON; each data shape (labels + series, X/Y, label/X/Y/size, groups of values, from/to/amount, `path/to/leaf` + value, OHLC, date + value) keeps its own table, so switching chart types never loses data. Styling: 8 palettes (incl. colour-blind safe) and per-series colours, light/dark, solid/transparent/custom background, fonts and text size, title/subtitle, legend position, value labels, decimals, prefix/suffix, short numbers (1.2K), axis titles, gridlines, axis range, log scale, sorting, line width, dots, fill, corner rounding, bar width, doughnut hole, gauge maximum, histogram bins, five aspect ratios. Animation: duration, easing (smooth, overshoot, bounce, elastic, linear), stagger, replay and loop. Export: PNG/JPG up to 4K, copy image, SVG, an **animated GIF** (gifenc), a **video** (MediaRecorder, WebM), an **animated SVG** and a self-contained **web page** (ECharts' SSR keyframes, plus `animateSvg()`'s CSS entrance for bars, cells and boxes, which ECharts doesn't animate in SVG; no scripts), CSV, and a project file; autosaved in the browser.
-- **Flowchart maker** (`lib/flowchart.ts`, `components/tools/design/flowchart-maker.tsx`, React Flow 12 and dagre, both MIT) — 14 shapes (process, rounded, start/end, decision, input/output, document, database, subprocess, manual input, preparation, circle, triangle, sticky note, text): click or drag them in, double-click the canvas to add a step, double-click a shape to edit its text, resize, and drag from a dot (or drop anywhere on a shape) to connect. Every shape: fill, border colour/width/dash, text colour/size/bold/italic; every link: label, curved/rounded/square/straight, arrows (→ ↔ —), colour, thickness, dashes and **animation** (flowing dashes or moving dots). Undo/redo, copy/paste/duplicate, delete, select many, snap to grid, mini map, full screen, one-click **tidy up** (dagre, top-to-bottom or left-to-right, animated) with link sides chosen automatically (forward links bottom → top, loop-backs on the sides), an entrance animation and **Play the flow** (walks the chart step by step, lighting each shape and sending dots along the link that led there). Type or paste the chart as **Mermaid flowchart text** (read and written: shapes, `-->|labels|`, dotted and thick links), or start from 7 templates (themselves Mermaid text). Export PNG, SVG, an **animated SVG** (flowing and moving-dot links keep moving), copy image, Mermaid `.mmd`, and a project file; autosaved in the browser.
-- **Design: colour and CSS** (`lib/utilities/catalog.ts`, design cluster) — a **WCAG contrast checker** (any text/background pair, transparency blended; AA/AAA for normal and large text and 3:1 for UI; the nearest passing shade suggested) and **CSS gradient** (linear, radial, conic, up to 8 stops), **box shadow** (up to 6 layers, presets, inset) and **border radius** (per corner, px or %, organic blobs) generators with live previews.
-- **Morse code audio decoder** (`lib/utilities/morse-audio.ts`, text collection) — Morse beeps from a recording (MP3, WAV, M4A, OGG), the sound of a video, or live from the microphone (browser voice clean-up switched off so the tone survives) into text: finds the tone's pitch, follows it with a Goertzel filter every 5 ms, and learns dit/dah and letter/word gaps from the recording itself, so 5–50+ WPM, noise, hum, hand-keyed and Farnsworth timing all work; shows the Morse, pitch, speed and a loudness timeline, with manual pitch and sensitivity. Runs in the browser; linked both ways with the Morse translator.
-- **Developer extras** — a **cron expression explainer** (cronstrue + cron-parser: plain English, the next 8 runs in your time or UTC, 5/6 fields and @macros) and standalone pages for the hub's most-searched tabs — **JSON formatter**, **JWT decoder**, **Base64**, **Regex tester**, **Unix timestamp converter** and **Diff checker** — that open the developer hub on that tab (`Tool.devTab`).
-- **Noise remover** (`/api/v1/media/denoise`, FFmpeg's own filters, nothing to download) — reads the sound once with numpy to find the quietest half second that isn't digital silence (or uses a noise-only part the person picks), measures its level and checks it for 50/60 Hz mains hum; then teaches FFmpeg's `afftdn` the noise from exactly that moment (`asendcmd … sn start/stop`) with its noise floor set to the measured level (FFmpeg's default floor and its adaptive tracking barely touch real hiss), notches out the hum and its harmonics, and for speech trims rumble below 70 Hz and hiss above 12 kHz; light/medium/strong, optional click and pop smoothing. On a test recording it takes the background noise down about 24 dB with the voice within about 1 dB; video keeps its picture untouched. The page plays the result with a Before/After switch that swaps between the two in step.
-- **Audio & video editing** — a **video & audio trimmer** (`/api/v1/media/trim`: fast lossless stream copy, or a frame-exact re-encode up to 3 minutes; same format back) and a **volume booster & normaliser** (`/api/v1/media/sound`: ±30 dB with a limiter, EBU R128 normalise to −16 LUFS, or mute a video without re-encoding the picture; a live gain preview in the browser first), both on FFmpeg in the heavy/light job lanes; a **screen & voice recorder** (screen, window or tab with system sound and the microphone mixed in, or voice only; pause/resume; recorded on the device, optional MP3 via the universal converter); and a **subtitle editor** (open SRT/VTT; edit, add and delete lines; shift all or from one line on; frame-rate conversion; overlaps flagged and fixed; preview on your own video; save SRT, VTT or text).
-- **Font checker (`/api/v1/fonts`)** — `/fonts/inspect` reports everything about a TTF, OTF, WOFF, WOFF2 or TTC (fontTools): names, metrics, embedding rights, licence, tables, OpenType features, variable axes and named styles, colour formats, script and language coverage, WOFF2 size, and 20+ checks including OTS, the OpenType Sanitizer Chrome and Firefox run on web fonts. `/fonts/document` lists the fonts a PDF, Word, PowerPoint, Excel, OpenDocument, EPUB, HTML, CSS or SVG file uses, embedded or not, and recovers embedded font files (de-obfuscating Word's and EPUB's). The page adds a type tester (features, variable axes, waterfall, language samples) and a glyph browser drawn with opentype.js.
-- **Font creator** — in the browser: draw letters (pen pressure on tablets), build a pixel font, or print a handwriting template, write on it and photograph it (corner markers and a page code are found with OpenCV, every box traced into outlines). opentype.js builds a real OpenType font live for the preview; it downloads as OTF, or TTF/WOFF/WOFF2 through the universal converter.
-- **Colour picker (`/api/v1/palette`)** — pick colours from any file with a pixel magnifier; the main colours found automatically (k-means in OKLab); HEX, RGB, HSL, OKLCH, CMYK and contrast grades; exports to CSS, Tailwind, SCSS, JSON, GIMP and Adobe ASE. Images stay in the browser; `/palette/extract` renders PDFs, Office files, video frames and other formats, and reads the exact colours they declare (Office theme colours, PDF vector and text colours, CSS/SVG colours).
-- **Icon maker (`/api/v1/icon`)** — one picture → `favicon.ico`, PNG favicons, Apple touch, PWA (incl. maskable) icons and `site.webmanifest` with the HTML to paste; Windows `app.ico` (16–256) and Store tiles; macOS `app.icns` and `AppIcon.iconset`; an Xcode-ready iOS `AppIcon.appiconset`; Android mipmaps (legacy, round, adaptive) and the Play Store icon; desktop PNGs 16–1024. Or a single `.ico` with the sizes picked. Square, rounded or round, with padding and a background colour.
-  - Verify merge/split, compress and icons end to end: `backend/scripts/check_file_tools.py` (each job through the real isolated worker, every result opened by an independent reader, merged Office files round-tripped through LibreOffice).
-
-### Planned / Expandable Tool Categories
-- **Images**: Image Studio (Resize, Convert between PNG/JPG/WebP, Background Removal).
-- **Text**: Writing Helper (Summarise, Rewrite, Fix Grammar).
-- **Developers**: Developer Utilities (Format & Validate JSON, Base64 Encode/Decode, SHA-256/MD5 Hashing).
+</div>
 
 ---
 
-## System Architecture
+## 👋 What is Do-Whatever-You-Like?
 
-The project uses a **Backend-for-Frontend (BFF)** proxy pattern so browser clients never communicate directly with the FastAPI backend and never see the backend authentication token:
+**Do-Whatever-You-Like is a free website with 216 small tools for everyday digital chores.**
 
-```text
-┌──────────────────────────┐
-│   Browser Client (UI)    │
-│  React 19 + Next.js 16   │
-└────────────┬─────────────┘
-             │  POST /api/tools/...
-             ▼
-┌──────────────────────────┐
-│   Next.js BFF Route      │  ◄── Reads BACKEND_URL & BACKEND_TOKEN (server-only)
-│  src/app/api/tools/...   │  ◄── Attaches Authorization: Bearer <BACKEND_TOKEN>
-└────────────┬─────────────┘  ◄── Streams binary uploads/responses (zero RAM buffering)
-             │  POST /api/v1/...
-             ▼
-┌──────────────────────────┐
-│     FastAPI Backend      │  ◄── Timing-safe Bearer token verification (secrets.compare_digest)
-│   backend/app/main.py    │  ◄── Per-service routers, schemas, configs, & custom exceptions
-└────────────┬─────────────┘  ◄── Threadpool / ProcessPool execution + BackgroundTasks cleanup
-             │
-     ┌───────┴───────┬───────────────┬───────────────┬───────────────┬───────────────┐
-     ▼               ▼               ▼               ▼               ▼               ▼
-┌──────────┐   ┌──────────┐    ┌──────────┐   ┌────────────┐   ┌──────────┐   ┌──────────┐
-│Instagram │   │ Facebook │    │ YouTube  │   │Video2Audio │   │   PDF    │   │ QR Code  │
-│ Service  │   │ Service  │    │ Service  │   │  Service   │   │ Service  │   │ Service  │
-└──────────┘   └──────────┘    └──────────┘   └────────────┘   └──────────┘   └──────────┘
+Need to turn a PDF into Word, shrink a photo, cut a song, clean up a noisy recording, format some JSON, make a chart for a report, track your period privately, or download a Reel? Open the site, pick the tool, done.
+
+- **Free, for everyone.** No account, no sign-up, no watermark, no "pro" plan.
+- **Private by default.** Most tools run inside your browser, so your file never leaves your device. When a tool does need our server, your file is deleted as soon as you have the result.
+- **Simple.** Every tool works in three steps: add your thing, pick the options, download.
+- **For anyone.** Students, developers, business people, analysts, designers, or anyone with a file to fix.
+
+<p align="center">
+  <a href="https://do-whatever-you-like.colddsam.com"><img src="docs/assets/home.jpg" alt="The Do-Whatever-You-Like home page: a search box over every tool" width="92%"></a>
+</p>
+
+---
+
+## 📚 Contents
+
+| Start here | Understand it | Build with it |
+| :--- | :--- | :--- |
+| [👋 What is it](#-what-is-do-whatever-you-like) | [🧭 Vision and principles](#-vision-aspiration-and-principles) | [🧱 How it works](#-how-it-works) |
+| [🗂️ What's inside](#️-whats-inside) | [🚀 Our pace](#-our-pace) | [🔒 Privacy and safety](#-privacy-and-safety) |
+| [🎬 See it in action](#-see-it-in-action) | [🗺️ What's next](#️-whats-next) | [🛠️ Tech stack](#️-tech-stack) |
+| [💻 Run it yourself](#-run-it-on-your-computer) | [☁️ Deploy for free](#️-deploy-it-for-free) | [🧪 Testing](#-testing) |
+| [📡 API](#-api-reference) | [➕ Add a tool](#-adding-a-new-tool) | [🤝 Contributing](#-contributing) |
+
+---
+
+## 🗂️ What's inside
+
+216 live tools in 9 collections. Click a name to open that collection on the site.
+
+| | Collection | What you can do | Tools |
+| :---: | :--- | :--- | :---: |
+| 🔁 | [**Any file**](https://do-whatever-you-like.colddsam.com/tools/category/files) | Convert almost any file to any format, compress, merge and split | **11** |
+| 📄 | [**PDF tools**](https://do-whatever-you-like.colddsam.com/tools/category/pdf) | Merge, split, compress, edit, sign, protect, OCR and compare PDFs | **23** |
+| 🖼️ | [**Image tools**](https://do-whatever-you-like.colddsam.com/tools/category/images) | Compress, resize, crop, remove backgrounds, upscale, blur faces, make memes and icons | **18** |
+| 💻 | [**Developer tools**](https://do-whatever-you-like.colddsam.com/tools/category/developer) | Format, minify and validate code, hashes, JWT, regex, DNS and HTTP checks, cron | **100** |
+| ✍️ | [**Text tools**](https://do-whatever-you-like.colddsam.com/tools/category/text) | Binary and hex, number to words, Morse code (even from sound), find and replace, summaries | **21** |
+| 🎨 | [**Charts, fonts and colour**](https://do-whatever-you-like.colddsam.com/tools/category/design) | Animated charts, flowcharts, font checker and maker, colour picker, CSS generators | **9** |
+| ⬇️ | [**Media downloads**](https://do-whatever-you-like.colddsam.com/tools/category/downloads) | Save public YouTube, Instagram and Facebook videos, or just their sound | **3** |
+| 🎬 | [**Audio and video**](https://do-whatever-you-like.colddsam.com/tools/category/media) | Trim, remove noise, change volume, record your screen, subtitles, speech to text, GIFs | **9** |
+| 🧰 | [**Everyday utilities**](https://do-whatever-you-like.colddsam.com/tools/category/utilities) | A private period tracker, QR codes, converters, clocks and timers, passwords, encrypted notes, device tests | **22** |
+
+<details>
+<summary><b>📋 The full list of every tool</b> (click to open)</summary>
+<br>
+
+<details>
+<summary><b>🔁 Any file</b> — 11 tools</summary>
+<br>
+
+- [**Universal converter**](https://do-whatever-you-like.colddsam.com/tools/convert-anything) — Turn almost any file into the format you need: documents, data, images, audio, video, fonts and more.
+- [**PDF to Word**](https://do-whatever-you-like.colddsam.com/tools/pdf-to-word) — An editable Word document from your PDF.
+- [**PDF to Excel**](https://do-whatever-you-like.colddsam.com/tools/pdf-to-excel) — Tables from your PDF, ready in Excel.
+- [**PDF to PowerPoint**](https://do-whatever-you-like.colddsam.com/tools/pdf-to-powerpoint) — Each PDF page as an editable slide.
+- [**PDF to JPG**](https://do-whatever-you-like.colddsam.com/tools/pdf-to-jpg) — Each page as an image, or the pictures inside.
+- [**Word to PDF**](https://do-whatever-you-like.colddsam.com/tools/word-to-pdf) — Turn DOC and DOCX files into PDF.
+- [**PowerPoint to PDF**](https://do-whatever-you-like.colddsam.com/tools/powerpoint-to-pdf) — Turn slides into a PDF, one page per slide.
+- [**Excel to PDF**](https://do-whatever-you-like.colddsam.com/tools/excel-to-pdf) — Turn spreadsheets into PDF.
+- [**Compress files**](https://do-whatever-you-like.colddsam.com/tools/compress-files) — Make any file smaller: PDF, Word, PowerPoint, Excel, photos, audio, video and more.
+- [**Merge files**](https://do-whatever-you-like.colddsam.com/tools/merge-files) — Combine Word, PowerPoint, Excel, CSV, PDF, audio or video files into one.
+- [**Split files**](https://do-whatever-you-like.colddsam.com/tools/split-files) — Break Word, PowerPoint, Excel, CSV, PDF, audio or video into parts.
+
+</details>
+
+<details>
+<summary><b>📄 PDF tools</b> — 23 tools</summary>
+<br>
+
+- [**PDF toolkit**](https://do-whatever-you-like.colddsam.com/tools/pdf) — Merge, split, rearrange and compress PDFs in seconds.
+- [**Merge PDF**](https://do-whatever-you-like.colddsam.com/tools/merge-pdf) — Combine PDFs into one, in the order you set.
+- [**Split PDF**](https://do-whatever-you-like.colddsam.com/tools/split-pdf) — Break a PDF into parts, or group pages your way.
+- [**Remove pages**](https://do-whatever-you-like.colddsam.com/tools/remove-pages) — Delete the pages you don't need.
+- [**Extract pages**](https://do-whatever-you-like.colddsam.com/tools/extract-pages) — Keep just the pages you pick, as a new PDF.
+- [**Organize PDF**](https://do-whatever-you-like.colddsam.com/tools/organize-pdf) — Reorder, turn and remove pages, seeing each one.
+- [**Scan to PDF**](https://do-whatever-you-like.colddsam.com/tools/scan-to-pdf) — A guided camera finds the page, straightens it and cleans it up: a crisp, searchable PDF.
+- [**Compress PDF**](https://do-whatever-you-like.colddsam.com/tools/compress-pdf) — Make a PDF smaller, at the strength you choose.
+- [**Repair PDF**](https://do-whatever-you-like.colddsam.com/tools/repair-pdf) — Recover the pages of a damaged PDF.
+- [**OCR PDF**](https://do-whatever-you-like.colddsam.com/tools/ocr-pdf) — Make scanned PDFs searchable and selectable.
+- [**PDF to PDF/A**](https://do-whatever-you-like.colddsam.com/tools/pdf-to-pdfa) — An archive-ready PDF for long-term storage.
+- [**JPG to PDF**](https://do-whatever-you-like.colddsam.com/tools/jpg-to-pdf) — Turn photos and images into one PDF.
+- [**HTML to PDF**](https://do-whatever-you-like.colddsam.com/tools/html-to-pdf) — Save any public web page as a PDF.
+- [**Rotate PDF**](https://do-whatever-you-like.colddsam.com/tools/rotate-pdf) — Turn pages the right way up, one or all at once.
+- [**Add page numbers**](https://do-whatever-you-like.colddsam.com/tools/page-numbers) — Number pages where you want, how you want.
+- [**Add watermark**](https://do-whatever-you-like.colddsam.com/tools/watermark-pdf) — Stamp text or an image over your pages.
+- [**Crop PDF**](https://do-whatever-you-like.colddsam.com/tools/crop-pdf) — Trim margins or cut pages down to an area.
+- [**Edit PDF**](https://do-whatever-you-like.colddsam.com/tools/edit-pdf) — Add text, images, shapes and drawings.
+- [**Unlock PDF**](https://do-whatever-you-like.colddsam.com/tools/unlock-pdf) — Remove a PDF's password and restrictions.
+- [**Protect PDF**](https://do-whatever-you-like.colddsam.com/tools/protect-pdf) — Lock a PDF with a password.
+- [**Sign PDF**](https://do-whatever-you-like.colddsam.com/tools/sign-pdf) — Draw, type or upload your signature and place it.
+- [**Redact PDF**](https://do-whatever-you-like.colddsam.com/tools/redact-pdf) — Black out private details for good.
+- [**Compare PDF**](https://do-whatever-you-like.colddsam.com/tools/compare-pdf) — See exactly what changed between two versions.
+
+</details>
+
+<details>
+<summary><b>🖼️ Image tools</b> — 18 tools</summary>
+<br>
+
+- [**Image studio**](https://do-whatever-you-like.colddsam.com/tools/image) — Compress, resize, convert and cut out images in seconds.
+- [**Compress image**](https://do-whatever-you-like.colddsam.com/tools/compress-image) — Make JPG, PNG, GIF, WebP and SVG files smaller.
+- [**Upscale image**](https://do-whatever-you-like.colddsam.com/tools/upscale-image) — Enlarge a picture 2× or 4× with AI that redraws the detail.
+- [**Remove background**](https://do-whatever-you-like.colddsam.com/tools/remove-background) — Cut out the subject: transparent, a colour, or a soft blur behind.
+- [**Meme generator**](https://do-whatever-you-like.colddsam.com/tools/meme-generator) — Captions on a picture, the classic way, in seconds.
+- [**Photo editor**](https://do-whatever-you-like.colddsam.com/tools/photo-editor) — Filters, light and colour, text, stickers and frames.
+- [**Emoji to image**](https://do-whatever-you-like.colddsam.com/tools/emoji-to-image) — Any emoji as a PNG, WebP or SVG, in four styles and any size.
+- [**Pixelate image**](https://do-whatever-you-like.colddsam.com/tools/pixelate-image) — Turn a picture into pixel art, or pixelate just a part of it.
+- [**Change GIF speed**](https://do-whatever-you-like.colddsam.com/tools/gif-speed) — Speed up or slow down an animated GIF, reverse it or make a boomerang.
+- [**Resize image**](https://do-whatever-you-like.colddsam.com/tools/resize-image) — Set an exact size in pixels, or scale by percentage.
+- [**Crop image**](https://do-whatever-you-like.colddsam.com/tools/crop-image) — Drag a box on the picture, or type exact pixels.
+- [**Rotate image**](https://do-whatever-you-like.colddsam.com/tools/rotate-image) — Turn or flip many images at once, or each on its own.
+- [**Convert to JPG**](https://do-whatever-you-like.colddsam.com/tools/convert-to-jpg) — HEIC, PNG, WebP, TIFF, PSD, SVG, RAW and more, to JPG.
+- [**Convert from JPG**](https://do-whatever-you-like.colddsam.com/tools/jpg-to-image) — JPG to PNG, WebP or GIF, or several into an animated GIF.
+- [**HTML to image**](https://do-whatever-you-like.colddsam.com/tools/html-to-image) — Capture a web page, or HTML you paste, as a picture.
+- [**Icon maker**](https://do-whatever-you-like.colddsam.com/tools/icon-maker) — Favicons and app icons for websites, Windows, macOS, iOS and Android, from one picture.
+- [**Watermark image**](https://do-whatever-you-like.colddsam.com/tools/watermark-image) — Stamp text or a logo, placed, faded, turned or tiled.
+- [**Blur face**](https://do-whatever-you-like.colddsam.com/tools/blur-face) — Find faces and hide them, plus anything else you mark.
+
+</details>
+
+<details>
+<summary><b>💻 Developer tools</b> — 100 tools</summary>
+<br>
+
+[Developer utilities](https://do-whatever-you-like.colddsam.com/tools/dev) · [JSON formatter & validator](https://do-whatever-you-like.colddsam.com/tools/json-formatter) · [JWT decoder](https://do-whatever-you-like.colddsam.com/tools/jwt-decoder) · [Base64 encode & decode](https://do-whatever-you-like.colddsam.com/tools/base64-encoder) · [Regex tester](https://do-whatever-you-like.colddsam.com/tools/regex-tester) · [Unix timestamp converter](https://do-whatever-you-like.colddsam.com/tools/timestamp-converter) · [Diff checker](https://do-whatever-you-like.colddsam.com/tools/diff-checker) · [HTML formatter](https://do-whatever-you-like.colddsam.com/tools/html-formatter) · [CSS formatter](https://do-whatever-you-like.colddsam.com/tools/css-formatter) · [JavaScript formatter](https://do-whatever-you-like.colddsam.com/tools/javascript-formatter) · [TypeScript formatter](https://do-whatever-you-like.colddsam.com/tools/typescript-formatter) · [React (JSX) formatter](https://do-whatever-you-like.colddsam.com/tools/react-formatter) · [Angular template formatter](https://do-whatever-you-like.colddsam.com/tools/angular-formatter) · [XML formatter](https://do-whatever-you-like.colddsam.com/tools/xml-formatter) · [PHP formatter](https://do-whatever-you-like.colddsam.com/tools/php-formatter) · [Java formatter](https://do-whatever-you-like.colddsam.com/tools/java-formatter) · [SQL formatter](https://do-whatever-you-like.colddsam.com/tools/sql-formatter) · [YAML formatter](https://do-whatever-you-like.colddsam.com/tools/yaml-formatter) · [Markdown formatter](https://do-whatever-you-like.colddsam.com/tools/markdown-formatter) · [HTML minifier](https://do-whatever-you-like.colddsam.com/tools/html-minifier) · [CSS minifier](https://do-whatever-you-like.colddsam.com/tools/css-minifier) · [JavaScript minifier](https://do-whatever-you-like.colddsam.com/tools/javascript-minifier) · [JavaScript validator](https://do-whatever-you-like.colddsam.com/tools/javascript-validator) · [CSS validator](https://do-whatever-you-like.colddsam.com/tools/css-validator) · [XML validator](https://do-whatever-you-like.colddsam.com/tools/xml-validator) · [YAML validator](https://do-whatever-you-like.colddsam.com/tools/yaml-validator) · [Card number validator](https://do-whatever-you-like.colddsam.com/tools/card-validator) · [XSD validator](https://do-whatever-you-like.colddsam.com/tools/xsd-validator) · [Code editor](https://do-whatever-you-like.colddsam.com/tools/code-editor) · [Online text editor](https://do-whatever-you-like.colddsam.com/tools/text-editor) · [Markdown editor](https://do-whatever-you-like.colddsam.com/tools/markdown-editor) · [Markdown viewer](https://do-whatever-you-like.colddsam.com/tools/markdown-viewer) · [HTML viewer](https://do-whatever-you-like.colddsam.com/tools/html-viewer) · [XML viewer](https://do-whatever-you-like.colddsam.com/tools/xml-viewer) · [XPath tester](https://do-whatever-you-like.colddsam.com/tools/xpath-tester) · [XSLT transformer](https://do-whatever-you-like.colddsam.com/tools/xslt-transformer) · [JSONPath tester](https://do-whatever-you-like.colddsam.com/tools/jsonpath-tester) · [URI template expander](https://do-whatever-you-like.colddsam.com/tools/uri-template) · [JSON escape / unescape](https://do-whatever-you-like.colddsam.com/tools/json-escape) · [HTML entities encoder](https://do-whatever-you-like.colddsam.com/tools/html-entities) · [IEEE-754 float analyser](https://do-whatever-you-like.colddsam.com/tools/ieee-754) · [MD5 hash generator](https://do-whatever-you-like.colddsam.com/tools/md5-hash) · [SHA-1 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha1-hash) · [SHA-224 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha224-hash) · [SHA-256 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha256-hash) · [SHA-384 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha384-hash) · [SHA-512 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha512-hash) · [SHA-512/224 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha512-224-hash) · [SHA-512/256 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha512-256-hash) · [SHA3-224 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha3-224-hash) · [SHA3-256 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha3-256-hash) · [SHA3-384 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha3-384-hash) · [SHA3-512 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha3-512-hash) · [SHAKE-128 hash generator](https://do-whatever-you-like.colddsam.com/tools/shake128-hash) · [SHAKE-256 hash generator](https://do-whatever-you-like.colddsam.com/tools/shake256-hash) · [MD2 hash generator](https://do-whatever-you-like.colddsam.com/tools/md2-hash) · [MD4 hash generator](https://do-whatever-you-like.colddsam.com/tools/md4-hash) · [NTLM hash generator](https://do-whatever-you-like.colddsam.com/tools/ntlm-hash) · [CRC-16 checksum](https://do-whatever-you-like.colddsam.com/tools/crc16-hash) · [CRC-32 checksum](https://do-whatever-you-like.colddsam.com/tools/crc32-hash) · [HMAC generator](https://do-whatever-you-like.colddsam.com/tools/hmac-generator) · [WordPress password hash](https://do-whatever-you-like.colddsam.com/tools/wordpress-hash) · [Random name picker](https://do-whatever-you-like.colddsam.com/tools/random-name-picker) · [Random string generator](https://do-whatever-you-like.colddsam.com/tools/random-string) · [Random alphanumeric](https://do-whatever-you-like.colddsam.com/tools/random-alphanumeric) · [Random letter generator](https://do-whatever-you-like.colddsam.com/tools/random-letters) · [Random number generator](https://do-whatever-you-like.colddsam.com/tools/random-integer) · [Random decimal generator](https://do-whatever-you-like.colddsam.com/tools/random-decimal) · [Random fraction generator](https://do-whatever-you-like.colddsam.com/tools/random-fraction) · [Random prime generator](https://do-whatever-you-like.colddsam.com/tools/random-prime) · [Random hex generator](https://do-whatever-you-like.colddsam.com/tools/random-hex) · [Random binary generator](https://do-whatever-you-like.colddsam.com/tools/random-binary) · [Random byte generator](https://do-whatever-you-like.colddsam.com/tools/random-bytes) · [Random date generator](https://do-whatever-you-like.colddsam.com/tools/random-date) · [Random time generator](https://do-whatever-you-like.colddsam.com/tools/random-time) · [Random IP address generator](https://do-whatever-you-like.colddsam.com/tools/random-ip) · [MAC address generator](https://do-whatever-you-like.colddsam.com/tools/random-mac) · [Random JSON generator](https://do-whatever-you-like.colddsam.com/tools/random-json) · [Random CSV generator](https://do-whatever-you-like.colddsam.com/tools/random-csv) · [Random TSV generator](https://do-whatever-you-like.colddsam.com/tools/random-tsv) · [Random XML generator](https://do-whatever-you-like.colddsam.com/tools/random-xml) · [Random data from regex](https://do-whatever-you-like.colddsam.com/tools/random-from-regex) · [Random bitmap generator](https://do-whatever-you-like.colddsam.com/tools/random-bitmap) · [DNS lookup](https://do-whatever-you-like.colddsam.com/tools/dns-lookup) · [MX lookup](https://do-whatever-you-like.colddsam.com/tools/mx-lookup) · [NS lookup](https://do-whatever-you-like.colddsam.com/tools/ns-lookup) · [Website to IP](https://do-whatever-you-like.colddsam.com/tools/website-to-ip) · [IP to hostname](https://do-whatever-you-like.colddsam.com/tools/ip-to-hostname) · [HTTP header checker](https://do-whatever-you-like.colddsam.com/tools/http-headers) · [HTTP status checker](https://do-whatever-you-like.colddsam.com/tools/http-status) · [Open port checker](https://do-whatever-you-like.colddsam.com/tools/open-port-checker) · [API tester](https://do-whatever-you-like.colddsam.com/tools/api-tester) · [HTML link generator](https://do-whatever-you-like.colddsam.com/tools/html-link-generator) · [HTML table generator](https://do-whatever-you-like.colddsam.com/tools/html-table-generator) · [Redirect generator](https://do-whatever-you-like.colddsam.com/tools/redirect-generator) · [Share link generator](https://do-whatever-you-like.colddsam.com/tools/share-link-generator) · [REM to PX converter](https://do-whatever-you-like.colddsam.com/tools/rem-px-converter) · [CSS to Less](https://do-whatever-you-like.colddsam.com/tools/css-to-less) · [ASCII table](https://do-whatever-you-like.colddsam.com/tools/ascii-table) · [Cron expression explainer](https://do-whatever-you-like.colddsam.com/tools/cron-explainer)
+
+</details>
+
+<details>
+<summary><b>✍️ Text tools</b> — 21 tools</summary>
+<br>
+
+- [**Text to binary**](https://do-whatever-you-like.colddsam.com/tools/text-to-binary) — Turn text into binary code, eight bits per byte.
+- [**Binary to text**](https://do-whatever-you-like.colddsam.com/tools/binary-to-text) — Read binary code back as text (binary translator).
+- [**Text to hex**](https://do-whatever-you-like.colddsam.com/tools/text-to-hex) — Text as hexadecimal byte values.
+- [**Hex to text**](https://do-whatever-you-like.colddsam.com/tools/hex-to-text) — Hexadecimal bytes back to readable text.
+- [**Text to ASCII codes**](https://do-whatever-you-like.colddsam.com/tools/text-to-ascii) — Each character's ASCII (decimal) code.
+- [**ASCII codes to text**](https://do-whatever-you-like.colddsam.com/tools/ascii-to-text) — Decimal ASCII or Unicode codes back to characters.
+- [**Number to words**](https://do-whatever-you-like.colddsam.com/tools/number-to-words) — Spell out any number, with lakh and crore if you like.
+- [**Words to number**](https://do-whatever-you-like.colddsam.com/tools/words-to-number) — “Two thousand and five” becomes 2005.
+- [**Roman numeral converter**](https://do-whatever-you-like.colddsam.com/tools/roman-numerals) — Numbers to Roman numerals and back, 1 to 3999.
+- [**Morse code translator**](https://do-whatever-you-like.colddsam.com/tools/morse-code) — Text to Morse and back, with sound you can play.
+- [**Morse code audio decoder**](https://do-whatever-you-like.colddsam.com/tools/morse-audio-decoder) — Turn Morse beeps from a recording, a video or your microphone into text.
+- [**Upside-down text**](https://do-whatever-you-like.colddsam.com/tools/upside-down-text) — Flip text upside down for posts and bios.
+- [**Mirror text**](https://do-whatever-you-like.colddsam.com/tools/mirror-text) — Text as its mirror image.
+- [**Reverse text**](https://do-whatever-you-like.colddsam.com/tools/reverse-text) — Reverse the letters, the words, each word or the lines.
+- [**Text repeater**](https://do-whatever-you-like.colddsam.com/tools/text-repeater) — Repeat text any number of times, with a separator.
+- [**Find and replace**](https://do-whatever-you-like.colddsam.com/tools/find-and-replace) — Find words or patterns in text, see every match, and replace them.
+- [**Split text**](https://do-whatever-you-like.colddsam.com/tools/split-text) — Split text by lines, commas, words, a pattern or a length.
+- [**Sort and shuffle lines**](https://do-whatever-you-like.colddsam.com/tools/line-tools) — Shuffle, sort, de-duplicate, number or trim lines.
+- [**Lorem ipsum generator**](https://do-whatever-you-like.colddsam.com/tools/lorem-ipsum) — Placeholder text by paragraphs, sentences or words.
+- [**Text to image**](https://do-whatever-you-like.colddsam.com/tools/text-to-image) — Turn text into a PNG, with font, colours and padding.
+- [**Text summarizer**](https://do-whatever-you-like.colddsam.com/tools/text-summarizer) — The key sentences of a long text, in your browser.
+
+</details>
+
+<details>
+<summary><b>🎨 Charts, fonts and colour</b> — 9 tools</summary>
+<br>
+
+- [**Chart maker**](https://do-whatever-you-like.colddsam.com/tools/chart-maker) — Make 30 kinds of charts from your own data, animate them, and save them as pictures, GIFs, videos or web pages.
+- [**Flowchart maker**](https://do-whatever-you-like.colddsam.com/tools/flowchart-maker) — Draw flowcharts and diagrams by dragging shapes or typing text, with animated links and a play-through.
+- [**Font checker**](https://do-whatever-you-like.colddsam.com/tools/font-checker) — See, test and validate any font, or find the fonts inside a PDF or Office file.
+- [**Font creator**](https://do-whatever-you-like.colddsam.com/tools/font-creator) — Make your own font: draw letters, build a pixel font, or turn your handwriting into a font.
+- [**Colour picker**](https://do-whatever-you-like.colddsam.com/tools/color-picker) — Pick colours from any image, PDF, slide deck, document or video, and export the palette.
+- [**Contrast checker**](https://do-whatever-you-like.colddsam.com/tools/contrast-checker) — Check any text and background colours against WCAG AA and AAA, with fixes.
+- [**CSS gradient generator**](https://do-whatever-you-like.colddsam.com/tools/css-gradient-generator) — Linear, radial and conic gradients with any number of colours.
+- [**Box shadow generator**](https://do-whatever-you-like.colddsam.com/tools/box-shadow-generator) — Layered, soft or crisp CSS shadows, live.
+- [**Border radius generator**](https://do-whatever-you-like.colddsam.com/tools/border-radius-generator) — Rounded corners, one by one, or organic blob shapes.
+
+</details>
+
+<details>
+<summary><b>⬇️ Media downloads</b> — 3 tools</summary>
+<br>
+
+- [**YouTube downloader**](https://do-whatever-you-like.colddsam.com/tools/youtube) — Save videos and Shorts in the quality you pick, or just the audio as MP3 or M4A.
+- [**Instagram downloader**](https://do-whatever-you-like.colddsam.com/tools/instagram) — Reels, posts and carousels, or just a reel's audio, straight from a link.
+- [**Facebook downloader**](https://do-whatever-you-like.colddsam.com/tools/facebook) — Grab public videos and reels, or just their audio, without the hassle.
+
+</details>
+
+<details>
+<summary><b>🎬 Audio and video</b> — 9 tools</summary>
+<br>
+
+- [**Video to frames**](https://do-whatever-you-like.colddsam.com/tools/video-to-frames) — Split a video into still frames: pick how many, which part and the format.
+- [**Video to GIF**](https://do-whatever-you-like.colddsam.com/tools/video-to-gif) — Turn a clip into a GIF: trim it, set the size, smoothness, speed and loop.
+- [**Video & audio trimmer**](https://do-whatever-you-like.colddsam.com/tools/trim-media) — Cut a video or song to the part you want: fast and lossless, or frame-exact.
+- [**Noise remover**](https://do-whatever-you-like.colddsam.com/tools/noise-remover) — Remove background noise, hiss, hum and clicks from audio or a video's sound.
+- [**Volume booster & normaliser**](https://do-whatever-you-like.colddsam.com/tools/audio-volume) — Make audio or a video louder or quieter, even out the loudness, or mute a video.
+- [**Screen & voice recorder**](https://do-whatever-you-like.colddsam.com/tools/screen-recorder) — Record your screen, a window or a tab with your voice, or just your voice.
+- [**Subtitle editor**](https://do-whatever-you-like.colddsam.com/tools/subtitle-editor) — Fix subtitle timing and text, sync them to a video, and save as SRT or VTT.
+- [**Video to MP3**](https://do-whatever-you-like.colddsam.com/tools/audio) — Pull a clean MP3 out of any video file.
+- [**Audio to text**](https://do-whatever-you-like.colddsam.com/tools/audio-to-text) — Turn speech into text you can edit, copy or subtitle.
+
+</details>
+
+<details>
+<summary><b>🧰 Everyday utilities</b> — 22 tools</summary>
+<br>
+
+- [**Period tracker**](https://do-whatever-you-like.colddsam.com/tools/period-tracker) — Track your period, see when the next one is due, and log symptoms and moods. Private: it never leaves your phone.
+- [**QR generator**](https://do-whatever-you-like.colddsam.com/tools/qr) — Turn links, Wi-Fi, contacts and more into a crisp QR code.
+- [**Scientific calculator**](https://do-whatever-you-like.colddsam.com/tools/scientific-calculator) — Trig, logs, powers, factorials, memory and history, with units too.
+- [**Screen resolution**](https://do-whatever-you-like.colddsam.com/tools/screen-resolution) — Your screen's resolution, pixel ratio and colour depth.
+- [**Browser window size**](https://do-whatever-you-like.colddsam.com/tools/browser-window-size) — The browser's viewport size, live as you resize.
+- [**Responsive tester**](https://do-whatever-you-like.colddsam.com/tools/screen-resolution-tester) — See a website in 30+ real device frames, or at any custom size.
+- [**Webcam test**](https://do-whatever-you-like.colddsam.com/tools/webcam-test) — Check your camera works, and see its resolution and frame rate.
+- [**Pixel ruler**](https://do-whatever-you-like.colddsam.com/tools/pixel-ruler) — Measure anything on screen in pixels.
+- [**What is my IP**](https://do-whatever-you-like.colddsam.com/tools/my-ip) — Your public IP address and what it says about your connection.
+- [**Mic & speaker test**](https://do-whatever-you-like.colddsam.com/tools/mic-speaker-test) — Check your microphone with a live level meter, and your speakers left and right.
+- [**Dead pixel test**](https://do-whatever-you-like.colddsam.com/tools/dead-pixel-test) — Full-screen colours to spot dead or stuck pixels, and a flasher to try to fix them.
+- [**Unit converter**](https://do-whatever-you-like.colddsam.com/tools/unit-converter) — Length, weight, temperature, area, volume, speed, data and more, all at once.
+- [**Currency converter**](https://do-whatever-you-like.colddsam.com/tools/currency-converter) — 30 currencies at today's European Central Bank rates.
+- [**World clock & time zones**](https://do-whatever-you-like.colddsam.com/tools/world-clock) — The time in any city, and a meeting planner across time zones.
+- [**Pomodoro timer**](https://do-whatever-you-like.colddsam.com/tools/pomodoro-timer) — Focus in 25-minute rounds with breaks, chimes and the time in your tab.
+- [**Stopwatch & countdown**](https://do-whatever-you-like.colddsam.com/tools/stopwatch) — A stopwatch with laps, and a countdown timer with an alarm.
+- [**Age calculator**](https://do-whatever-you-like.colddsam.com/tools/age-calculator) — Your exact age in years, months and days, and your next birthday.
+- [**Date calculator**](https://do-whatever-you-like.colddsam.com/tools/date-calculator) — Days between two dates, business days, or a date plus or minus any time.
+- [**Password generator & checker**](https://do-whatever-you-like.colddsam.com/tools/password-generator) — Strong passwords and memorable passphrases, and an honest strength check.
+- [**Encrypt a note**](https://do-whatever-you-like.colddsam.com/tools/encrypt-note) — Lock a message with a password (AES-256), and share it as text or a link.
+- [**Photo metadata viewer & remover**](https://do-whatever-you-like.colddsam.com/tools/exif-remover) — See the hidden GPS, camera and date in photos, and remove it without losing quality.
+- [**QR code scanner**](https://do-whatever-you-like.colddsam.com/tools/qr-scanner) — Read a QR code from a picture, a screenshot or your camera.
+
+</details>
+
+</details>
+
+---
+
+## 🎬 See it in action
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+**📊 Chart maker**: your data, 30 chart types, animated.
+
+<img src="docs/assets/chart-maker.gif" alt="A column chart growing in, made and exported as a GIF by the chart maker itself" width="100%">
+
+<sub>This GIF was exported by the chart maker itself.</sub>
+
+</td>
+<td width="50%" valign="top">
+
+**🔀 Flowchart maker**: drag, connect, and press <i>Play the flow</i>.
+
+<img src="docs/assets/flowchart-play.gif" alt="A flowchart lighting up step by step, with dots moving along its links" width="100%">
+
+<sub>Moving-dot links and the step-by-step play mode.</sub>
+
+</td>
+</tr>
+<tr>
+<td colspan="2">
+
+**🌸 Period tracker**: one tap to log, predictions that learn your cycle, and it never leaves your phone.
+
+<p align="center"><img src="docs/assets/period-tracker.jpg" alt="The period tracker: a cycle ring showing day 10, the next period in 19 days, and a one-tap button" width="70%"></p>
+
+- Log a period with one tap; add flow, symptoms, mood, pain and notes for any day.
+- See the next period, fertile window and ovulation, learnt from your own cycles, with how sure the guess is.
+- Calendar, cycle ring and insights, plus gentle notes when something is worth asking a doctor about.
+- **Private by design**: saved only on your device, optional PIN lock (AES-256), backup file, calendar reminders with a discreet name, and one-tap delete. Not a method of contraception.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+**🗂️ Every tool, one search away**
+
+<img src="docs/assets/directory.jpg" alt="The tools directory with a filter box and collections" width="100%">
+
+</td>
+<td width="50%" valign="top">
+
+**🧩 Each tool on its own page**, with steps, a spec sheet and a guide
+
+<img src="docs/assets/tool-page.jpg" alt="The Merge PDF tool page" width="100%">
+
+</td>
+</tr>
+</table>
+
+---
+
+## 🧭 Vision, aspiration and principles
+
+> **Our vision:** one place where anyone can do any small digital job, for free, without signing up, and without worrying about where their files go.
+
+**What we're aiming for**
+
+- 🎯 **The first place you open.** When you need to convert, fix, shrink, check or make something, Do-Whatever-You-Like should already have the tool.
+- 🏆 **As good as the paid app.** Each tool should do its one job well enough that you don't need a paid, single-purpose app for it.
+- 🌍 **For every kind of person.** A student, a developer, a shop owner and a data analyst should all find what they need, explained in plain words.
+- 📱 **Works anywhere.** Phone, tablet or desktop; fast on a slow connection.
+
+**The rules we build by**
+
+| Principle | What it means in practice |
+| :--- | :--- |
+| 💸 **Free, really** | No accounts, no limits behind a paywall, no watermarks. The whole thing runs on **free hosting tiers** (Vercel + Render), which proves it can stay free. |
+| 🔒 **Private by default** | If a tool can run in your browser, it does. If it needs the server, the file lives in a private folder for that one request and is deleted right after. |
+| 🧑‍🤝‍🧑 **Plain words** | Buttons say what they do ("Remove the noise", "Download 3 clean photos"). Errors say what went wrong and what to try. |
+| 🛡️ **Safe by default** | Every uploaded file is checked by its real contents before anything opens it. A program renamed to `.pdf` is turned away. |
+| 🎨 **One design** | Every page follows one design system (`frontend/DESIGN.md`), so all 216 tools feel like one product. |
+| 🧩 **Built to grow** | One registry lists every tool; most new tools are one line plus one engine. That's how the site grew so fast. |
+
+---
+
+## 🚀 Our pace
+
+Do-Whatever-You-Like went from an empty repository to **216 live tools in its first week**.
+
+```mermaid
+timeline
+    title First week of Do-Whatever-You-Like (November 2026)
+    8 Nov : Repository started
+          : YouTube and Facebook downloaders
+          : Backend and frontend split
+    9 Nov : New frontend
+    10 Nov : Video to MP3
+           : PDF toolkit (merge, split, compress)
+           : QR code generator
+    11 Nov : Complete redesign
+           : Docker deployment on Render
+           : Audio to text
+    12 Nov : Image tools
+           : Tools grouped into collections
+    13 Nov : Developer and text utilities
+           : Colour picker, code editors, Markdown
+           : Upload guard and device frames
+           : Search engine work (SEO)
+    14 Nov : Video, image and Everyday tools
+           : Charts, flowcharts and noise removal
+           : AI-search readiness (AEO, GEO)
 ```
 
+| 📅 Days | 🧰 Live tools | 🗂️ Collections | 📡 API endpoints | 🧪 Check scripts |
+| :---: | :---: | :---: | :---: | :---: |
+| 7 | 216 | 9 | 70 | 7 backend suites + browser tests |
+
 ---
 
-## Project Structure
+## 🗺️ What's next
 
-```text
-do-whatever-you-want/
-├── README.md
-├── start-dev.ps1                    # Launches backend (4 workers) + frontend dev servers
-├── stop-dev.ps1                     # Stops background dev server processes via .dev-pids
-├── backend/
-│   ├── .env                         # Backend secrets & service settings
-│   ├── requirements.txt             # Python dependencies
-│   ├── generate_postman.py          # Generates Postman v2.1 collection JSON from OpenAPI
-│   └── app/
-│       ├── main.py                  # FastAPI app factory, CORS, security headers, & global auth
-│       ├── auth/
-│       │   └── authorization.py     # Global Bearer token authentication dependency
-│       ├── core/
-│       │   ├── config.py            # Global settings (HEADER_TOKEN, timeouts, size/duration caps)
-│       │   ├── lifespan.py          # Startup/shutdown hooks (FFmpeg, temp dirs, PDF process pool)
-│       │   ├── media_size.py        # Pre-download size estimators (yt-dlp & parallel HTTP probes)
-│       │   └── utils.py             # cleanup_folder() & cleanup_file() helpers
-│       ├── config/                  # Per-service Pydantic settings (instagram, facebook, youtube, pdf, qrcode, universal, compress, merge_split, icon…)
-│       ├── schemas/                 # Request/Response Pydantic models (common, instagram, facebook, youtube, qrcode)
-│       ├── exceptions/              # Domain-specific exception classes inheriting from AppBaseException
-│       ├── services/                # Core extraction, conversion, PDF, and QR business logic
-│       │   ├── instagram.py
-│       │   ├── facebook.py
-│       │   ├── youtube.py
-│       │   ├── Video2Audio.py
-│       │   ├── pdf.py
-│       │   ├── pdf_pool.py          # Isolated ProcessPoolExecutor for GIL-bound PyMuPDF tasks
-│       │   ├── qrcode.py
-│       │   └── ffmpeg_service.py
-│       └── api/
-│           └── v1/
-│               ├── router.py        # Aggregates all v1 endpoint routers
-│               └── endpoints/       # Route controllers (health, instagram, facebook, youtube, pdf, qrcode, universal, compress, merge_split, icon…)
-└── frontend/
-    ├── .env.local                   # Server-only BACKEND_URL and BACKEND_TOKEN
-    ├── package.json
-    └── src/
-        ├── app/
-        │   ├── page.tsx             # Landing page
-        │   ├── tools/
-        │   │   ├── page.tsx         # All tools directory
-        │   │   └── [id]/page.tsx    # Dynamic tool workspace page
-        │   └── api/
-        │       └── tools/           # Next.js BFF proxy route handlers
-        │           ├── [platform]/[action]/route.ts
-        │           ├── compress/route.ts
-        │           ├── pdf/[action]/route.ts
-        │           └── qrcode/generate/route.ts
-        ├── components/
-        │   └── tools/               # Interactive playgrounds (downloader, convert, pdf, qr, audio-preview)
-        └── lib/
-            ├── backend.ts           # Shared BFF proxy helpers (backendConfig, proxyUpload, passFile, upstreamError)
-            ├── media.ts             # Client helper for link extract & streaming download
-            ├── files.ts             # Client helper for file uploads & XHR progress tracking
-            ├── pdf.ts               # Client helper for PDF token uploads, estimates, and actions
-            ├── qrcode.ts            # Client helper & presets for QR generation
-            └── tools.ts             # Central declarative registry of all tools
+- ✍️ **Writing helper** (summarise, rewrite, fix grammar) is the one tool marked *in the works* on the site.
+- 🙋 **Your requests.** The site has a *Request a tool* button. New tools are picked from what people ask for.
+- 🔧 **Making the existing tools better**: faster on free hosting, clearer wording, and better phone layouts.
+
+Have an idea? [Open an issue](https://github.com/colddsam/do-whatever-you-like/issues) or use *Request a tool* on the site.
+
+---
+
+## 🧱 How it works
+
+The site has two parts: a **website** (Next.js, on Vercel) and a **processing server** (FastAPI, on Render). Many tools never touch the server at all.
+
+```mermaid
+flowchart LR
+    U([🧑 You, in the browser])
+    subgraph V["▲ Vercel (free) · Next.js website"]
+      P[Pages and tools]
+      B["/api/tools/* (keeps the secret token)"]
+    end
+    subgraph R["◆ Render (free) · FastAPI server in Docker"]
+      G{"Upload guard: is the file what it says?"}
+      J[Isolated job: its own folder and process]
+      E[(LibreOffice · FFmpeg · PyMuPDF · Tesseract · Pillow · Pandoc…)]
+    end
+    U -- "most tools run right here" --> P
+    U -- small jobs --> B --> G
+    U -. "big files go direct, with a short-lived signed ticket" .-> G
+    G -- ok --> J --> E
+    J -- "result, then the folder is deleted" --> U
 ```
 
----
+**What happens to a file you upload**
 
-## Tech Stack
+```mermaid
+sequenceDiagram
+    autonumber
+    participant You as 🧑 You
+    participant Web as Website (Vercel)
+    participant API as Server (Render)
+    You->>Web: Pick a file and options
+    Web->>Web: Quick check in the browser (type, size)
+    Web->>API: Send the file (with a signed ticket)
+    API->>API: Check the file's real contents (refused with 415 if wrong)
+    API->>API: Process it in its own folder and child process
+    API-->>You: Send back the result
+    API->>API: Delete the folder straight away
+```
 
-### Backend
-- **Framework**: FastAPI (`>=0.115.0`), Uvicorn (`standard`)
-- **Validation & Settings**: Pydantic v2 & `pydantic-settings`
-- **Media & Document Engines**: `yt-dlp`, `instaloader`, `ffmpeg-python`, `static-ffmpeg`, `PyMuPDF` (`pymupdf`), `qrcode[pil]`, `Pillow`
-- **HTTP Client**: `requests`
+**Where each kind of tool runs**
 
-### Frontend
-- **Framework**: Next.js `16.4.5` (App Router, Turbopack, React `19.3.0`, TypeScript `5`)
-- **Styling & Animation**: Tailwind CSS v4, `motion`, `lenis`, `three`, `lucide-react`
-- **Charts & diagrams**: `echarts` 6.1 (Apache-2.0), `@xyflow/react` 12 and `@dagrejs/dagre` (MIT), `html-to-image` (MIT) for flowchart export; all loaded only on the pages that use them
-
----
-
-## Security, Isolation & Hardening
-
-1. **Timing-Safe Bearer Authentication**: Every `/api/v1/*` route requires `Authorization: Bearer <HEADER_TOKEN>`, verified in [`authorization.py`](./backend/app/auth/authorization.py) using `secrets.compare_digest` to prevent timing side-channel attacks.
-2. **Server-Only Token Isolation (BFF)**: `BACKEND_TOKEN` lives exclusively in Next.js server memory (`frontend/.env.local` without `NEXT_PUBLIC_`), never exposed to client JavaScript or browser network tabs.
-3. **SSRF & Open-Redirect Prevention**:
-   - Strict hostname allowlists for Instagram (`.fbcdn.net`, `.cdninstagram.com`), Facebook (`facebook.com`, `fb.watch`), and YouTube (`youtube.com`, `youtu.be`).
-   - Hop-by-hop redirect resolution for `fb.watch` and `/share/` links that blocks `/l.php`, `/flx/warn`, and off-domain redirects.
-   - Extractor locking (`allowed_extractors`) in `yt-dlp` so arbitrary URLs cannot trigger generic scraping.
-4. **Fault Isolation & Non-Blocking Concurrency**:
-   - Network and subprocess tasks run in Starlette's threadpool (`run_in_threadpool`).
-   - Heavy C-bound PDF jobs (`PyMuPDF`) run in a dedicated `ProcessPoolExecutor` (`pdf_pool.py`) with a parent-alive watchdog and client-disconnect cancellation (`499 Client Closed Request`), preventing worker freezes.
-5. **Denial-of-Service (DoS) & Disk Exhaustion Guards**:
-   - Rejects live streams (`is_live` / `is_upcoming`) and videos exceeding `MAX_VIDEO_DURATION_SECONDS` (default 3600 seconds / 1 hour).
-   - Caps single-file downloads and uploads to `MAX_DOWNLOAD_SIZE_MB` (default 150 MB) and QR logos to `QRCODE_MAX_LOGO_SIZE_MB` (default 10 MB).
-   - Ephemeral per-request job directories (`temp/<service>/<uuid>`) are deleted immediately after streaming completes or on exception.
-6. **Upload Guard — file type from the bytes, before any processing** ([`file_guard.py`](./backend/app/core/file_guard.py)):
-   - A router-wide dependency checks every file sent to any of the 40 upload endpoints before the endpoint runs: the extension must be one that endpoint accepts (a policy per route, built from each service's own lists), and the content must really be that format: magic numbers for ~60 binary formats, the ZIP's internal layout for Word/Excel/PowerPoint/OpenDocument/EPUB, readable text for text and code formats, `<svg` for SVG. Programs (Windows, Linux, macOS executables) are never accepted under any name.
-   - A file that fails is refused with **415** and a plain reason ("“invoice.pdf” is named PDF, but it's actually a program"), before LibreOffice, ffmpeg, PyMuPDF or Pillow ever open it. A new upload endpoint without a policy refuses files rather than accepting anything.
-   - The browser runs a mirror of this check ([`file-sniff.ts`](./frontend/src/lib/file-sniff.ts)) before uploading, so a renamed file is turned away without spending the upload; the server check is the one that counts.
-   - Tests: `scripts/check_upload_guard.py` (disguised files, wrong types per endpoint, batches, size limits) and `scripts/check_guard_corpus.py` (no false refusals across the real samples and outputs of every format).
-7. **Request Size Limits Before the Body Is Read** ([`limits.py`](./backend/app/core/limits.py)): a declared `Content-Length` over `MAX_DOWNLOAD_SIZE_MB` + 5 MB (multipart) or 6 MB (anything else) is refused with **413** without reading the body; bodies without a length are counted as they stream and cut off at the limit.
-8. **Sanitized Error Responses**: Internal stack traces and upstream errors are logged server-side while returning clean, user-safe HTTP status codes (`400`, `410`, `422`, `502`).
+| Runs in your browser (file never leaves your device) | Runs on our server (deleted after use) |
+| :--- | :--- |
+| Developer and text tools, chart maker, flowchart maker, **period tracker**, QR scanner, photo metadata remover, password generator, encrypted notes, Markdown editor, video to GIF/frames, screen recorder, subtitle editor, Morse decoder, device tests, timers and converters | PDF tools, universal converter, compress/merge/split, image AI (background removal, upscaling, face blur), audio to text, media downloads, trim/volume/noise removal, font and colour inspection, DNS and HTTP checks |
 
 ---
 
-## Getting Started
+## 🔒 Privacy and safety
 
-### Prerequisites
-- **Python** `3.11+`
-- **Node.js** `20+` and `npm`
+| Promise | How it's kept |
+| :--- | :--- |
+| 🗑️ **Files are temporary** | Each server job gets its own folder, deleted right after the result is sent (multi-step PDF tools keep an upload for up to 30 minutes so you can try several options). |
+| 🛡️ **Upload guard** | Every upload is checked by its real contents (magic numbers, Office file layout, text checks) **before** any program opens it. Programs are never accepted, whatever their name. |
+| 🔑 **Secret token stays secret** | The browser never sees the server's token; the website adds it on its own server. Large uploads use short-lived signed tickets instead. |
+| 🌐 **No snooping on your network** | Link tools only accept known hosts (YouTube, Instagram, Facebook), and network tools only reach public addresses, checked on every redirect. |
+| 🧯 **One job can't break another** | Heavy jobs run in their own child process with a time limit, so a crash or a huge file can't take the server down. |
+| 📏 **Size limits up front** | Oversized requests are refused before they're read (150 MB for files by default). |
+| 🙈 **No accounts, no tracking of files** | Nothing you process is stored or used for anything else. "What is my IP" reads your address from that one request and never stores it. |
 
-### Quick Start (Windows PowerShell)
-Once `backend/venv`, `frontend/node_modules`, and `.env` files are configured, you can start and stop both servers from the repository root:
+---
+
+## 🛠️ Tech stack
+
+<table>
+<tr><th align="left">Website</th><th align="left">Server</th></tr>
+<tr>
+<td valign="top">
+
+- **Next.js 16** (App Router, Turbopack) and **React 19**
+- **TypeScript 5**, **Tailwind CSS 4**, **motion**, **lenis**, **three**
+- **ECharts 6** (charts), **React Flow 12** + **dagre** (flowcharts)
+- **CodeMirror**, **Prettier**, **Terser**, **marked**, **KaTeX**, **Mermaid**
+- **opentype.js**, **OpenCV.js**, **jsQR**, **exifr**, **mathjs**, **gifenc**
+- Hosted on **Vercel** (free)
+
+</td>
+<td valign="top">
+
+- **FastAPI** + **Uvicorn**, **Pydantic v2**, Python **3.13**
+- **FFmpeg**, **LibreOffice**, **Pandoc**, **PyMuPDF**, **pdf2docx**
+- **Tesseract** (OCR), **Ghostscript**, **Chromium** (web page to PDF)
+- **Pillow**, **OpenCV**, **ONNX Runtime** (background removal, upscaling)
+- **faster-whisper** or **Groq Whisper** (speech to text), **yt-dlp**, **instaloader**
+- Shipped as a **Docker** image on **Render** (free plan)
+
+</td>
+</tr>
+</table>
+
+---
+
+## 💻 Run it on your computer
+
+**You need:** Python **3.11+**, Node.js **20+** and npm. On Windows, two scripts start and stop everything.
 
 ```powershell
-# Start FastAPI (port 8000, 4 workers) and Next.js (port 3000)
-.\start-dev.ps1
+# 1. Get the code
+git clone https://github.com/colddsam/do-whatever-you-like.git
+cd do-whatever-you-like
 
-# Stop both servers and close their terminal windows
-.\stop-dev.ps1
-```
-
----
-
-### 1. Backend Setup (FastAPI)
-
-```powershell
+# 2. Backend (FastAPI)
 cd backend
-
-# Create and activate virtual environment
 python -m venv venv
-.\venv\Scripts\Activate.ps1
-
-# Install dependencies
+.\venv\Scripts\Activate.ps1          # macOS/Linux: source venv/bin/activate
 pip install -r requirements.txt
-```
+# create backend/.env with at least this line (see "Settings" below):
+#   HEADER_TOKEN=any-long-random-secret
 
-Create `backend/.env` (see [Environment Variables](#backend-backendenv) below), then start the server:
-
-```powershell
-# Development (with auto-reload)
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
-
-# Production (multi-worker behind reverse proxy)
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4 --proxy-headers
-```
-
-Once running in debug mode (`DEBUG=true`), interactive docs are available at:
-- **Swagger UI**: `http://127.0.0.1:8000/docs`
-- **ReDoc**: `http://127.0.0.1:8000/redoc`
-
----
-
-### 2. Frontend Setup (Next.js)
-
-```powershell
-cd frontend
-
-# Install dependencies
+# 3. Frontend (Next.js)
+cd ..\frontend
 npm install
+copy .env.example .env.local         # set BACKEND_TOKEN to the same value as HEADER_TOKEN
 
-# Run development server (Turbopack)
-npm run dev
+# 4. Start both (from the repository root)
+cd ..
+.\start-dev.ps1                       # stop with .\stop-dev.ps1
 ```
 
-Open `http://localhost:3000` in your browser.
+Then open **http://localhost:3000**. Prefer to start them yourself?
+
+```bash
+# Terminal 1: the server
+cd backend && python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+# Terminal 2: the website
+cd frontend && npm run dev
+```
+
+<details>
+<summary><b>⚙️ Settings (environment variables)</b></summary>
+<br>
+
+**Server: `backend/.env`**
+
+| Name | What it's for | Default |
+| :--- | :--- | :--- |
+| `HEADER_TOKEN` | The secret the website uses to talk to the server. Make it long and random. | (required) |
+| `ALLOWED_ORIGINS` | Website addresses allowed to call the server, as a JSON list. | `["http://localhost:3000"]` |
+| `DEBUG` | `true` shows the interactive API docs at `/docs`. | `false` |
+| `MAX_DOWNLOAD_SIZE_MB` | Largest file accepted or downloaded. | `150` |
+| `MAX_VIDEO_DURATION_SECONDS` | Longest video the downloaders accept. | `3600` |
+| `AUDIO_MP3_MAX_SECONDS` | Longest download that can be turned into MP3. | `1800` |
+| `YOUTUBE_MAX_DOWNLOAD_MB` / `YOUTUBE_MAX_DURATION_SECONDS` / `YOUTUBE_MAX_HEIGHT` | YouTube limits; only qualities under the cap are offered. | `500` / `14400` / `1080` |
+| `INSTAGRAM_COOKIE_FILE_PATH` | Signed-in session for Instagram (see [cookies](#-instagram-and-cookies)). | `cookies_instagram.txt` |
+| `TRANSCRIBE_GROQ_API_KEY` | Optional free Groq key: fast, accurate speech to text. Without it, Whisper runs on the server. | (empty) |
+| `MEDIA_EXACT_TRIM_MAX_SECONDS` / `MEDIA_VIDEO_REENCODE_MAX_SECONDS` | Caps for slow re-encoding jobs on a small server. | `180` / `1800` |
+| `PDF_CACHE_TTL_SECONDS` | How long a PDF upload is kept for multi-step PDF tools. | `1800` |
+
+Every tool has its own settings with a prefix (`PDF_`, `IMAGE_`, `UNIVERSAL_`, `COMPRESS_`, `MEDIA_`, `TRANSCRIBE_`…) in `backend/app/config/`. `render.yaml` shows the values tuned for the free plan.
+
+**Website: `frontend/.env.local`**
+
+| Name | What it's for |
+| :--- | :--- |
+| `BACKEND_URL` | Where the server is, e.g. `http://127.0.0.1:8000`. Server-side only. |
+| `BACKEND_TOKEN` | Must equal `HEADER_TOKEN`. Never prefix it with `NEXT_PUBLIC_`. |
+| `BACKEND_PUBLIC_URL` | Production only: the server's public address, so big files go straight there (Vercel caps requests at 4.5 MB). |
+| `GOOGLE_SITE_VERIFICATION` / `BING_SITE_VERIFICATION` | Optional search-engine ownership tags. |
+
+</details>
 
 ---
 
-## Environment Variables
+## ☁️ Deploy it for free
 
-### Backend (`backend/.env`)
+| Part | Where | How |
+| :--- | :--- | :--- |
+| 🖥️ **Website** | **Vercel** (Hobby, free) | Import the repo, set **Root directory** to `frontend`, add `BACKEND_URL`, `BACKEND_TOKEN` and `BACKEND_PUBLIC_URL`. |
+| ⚙️ **Server** | **Render** (free web service) | *New → Blueprint* and pick this repo. `render.yaml` builds `backend/Dockerfile` with every engine included. Copy the generated `HEADER_TOKEN` to Vercel's `BACKEND_TOKEN`, and set `ALLOWED_ORIGINS` to your Vercel address. |
 
-```env
-# Global Core Settings (app/core/config.py)
-APP_NAME="SocialHub Multi-Service API"
-APP_VERSION="1.0.0"
-DEBUG=false
-HEADER_TOKEN="replace-with-a-strong-random-secret-token"
-ALLOWED_ORIGINS=["http://localhost:3000","http://127.0.0.1:3000"]
+> **Good to know about free plans.** Render's free server has 512 MB of memory and a small slice of CPU, and it goes to sleep when nobody uses it, so the first request after a quiet spell can take a minute. That's why slow jobs (video re-encoding, OCR on huge PDFs) have caps in `render.yaml`, and why everything that can run in the browser does.
 
-# Resource & Safety Limits
-TEMP_ROOT_DIR="./temp"
-REQUEST_TIMEOUT=25
-MAX_DOWNLOAD_SIZE_MB=150
-MAX_VIDEO_DURATION_SECONDS=3600
-# Downloaders can save only the sound: M4A copies the original track (instant, any length);
-# MP3 is encoded, which runs at about real time on a small instance, so it is capped by length.
-AUDIO_MP3_MAX_SECONDS=1800
+### 🍪 Instagram and cookies
 
-# Optional Per-Service Cookie Paths (Netscape format)
-INSTAGRAM_COOKIE_FILE_PATH="cookies_instagram.txt"
-FACEBOOK_COOKIE_FILE_PATH="cookies_facebook.txt"
-YOUTUBE_COOKIE_FILE_PATH=""
+Public YouTube and Facebook videos work without anything extra. **Instagram only shares posts with a signed-in session**, so the server needs a cookie file:
 
-# YouTube: the page offers each quality (up to 1080p, plus audio only) with its size; only those
-# under the cap can be downloaded, so long videos still work at a lower quality or as audio.
-YOUTUBE_MAX_DOWNLOAD_MB=500
-YOUTUBE_MAX_DURATION_SECONDS=14400
-YOUTUBE_MAX_HEIGHT=1080
+1. Use a **spare account**, never your personal one.
+2. Log in from a private browser window and export cookies in **Netscape format** (for example with the *Get cookies.txt LOCALLY* extension).
+3. Close the window **without logging out** (logging out ends the session).
+4. Locally, save it as `backend/cookies_instagram.txt`. On Render, add it under **Environment → Secret Files** with the same name; `render.yaml` already points to `/etc/secrets/`.
 
-# Optional PDF & QR Service Settings
-PDF_CACHE_TTL_SECONDS=1800
-PDF_PROCESS_WORKERS=1
-QRCODE_MAX_DATA_LENGTH=4096
-QRCODE_MAX_LOGO_SIZE_MB=10
-
-# Trim and volume (app/config/media.py). Fast trims and mutes copy streams, so any length works;
-# frame-exact trims and volume changes re-encode, so they are capped to stay quick on a free instance.
-MEDIA_TIMEOUT_SECONDS=900
-MEDIA_EXACT_TRIM_MAX_SECONDS=180
-MEDIA_VIDEO_REENCODE_MAX_SECONDS=1800
-MEDIA_AUDIO_MAX_SECONDS=21600
-```
-
-### Frontend (`frontend/.env.local`)
-
-```env
-BACKEND_URL=http://127.0.0.1:8000
-BACKEND_TOKEN=replace-with-a-strong-random-secret-token
-```
-
-> **Important**: `BACKEND_TOKEN` in `frontend/.env.local` must match `HEADER_TOKEN` in `backend/.env`. Do **not** prefix these variables with `NEXT_PUBLIC_`.
+Cookie files are git-ignored and never committed. Without one, the Instagram page simply says downloads aren't set up.
 
 ---
 
-## Cookie Configuration (Optional — Age-Gated / Carousel Media)
+## 🧪 Testing
 
-Public YouTube and Facebook videos work without cookies. **Instagram needs a signed-in session for every post** (reels, photos and carousels alike): its `/api/v1/media/{id}/info/` endpoint answers only authenticated sessions. Without `cookies_instagram.txt` the Instagram page says downloads aren't set up, and the backend logs a warning at startup. Cookies are also needed for:
-- Extracting **age-restricted (18+) or sensitive content** on Instagram, Facebook, or YouTube.
-- Bypassing datacenter IP bot challenges on cloud VPS hosts.
+Everything new is checked end to end with real files before it ships.
 
-### How to Export Cookies Safely
-1. **Always use a dedicated secondary/burner account** (never use your personal account).
-2. Open an **Incognito / Private browsing window** and log in to the platform.
-3. Use a browser extension such as **Get cookies.txt LOCALLY** to export cookies in **Netscape HTTP Cookie File** format.
-4. **Close the Incognito window without clicking "Log Out"** (clicking Log Out immediately invalidates the `sessionid` / `xs` token on the server).
-5. Save the file as `backend/cookies_instagram.txt` or `backend/cookies_facebook.txt` (or configure `*_COOKIE_FILE_PATH` in `backend/.env`).
+| Check | Command | What it proves |
+| :--- | :--- | :--- |
+| Website types and style | `cd frontend && npx tsc --noEmit && npm run lint` | The code compiles and follows the rules |
+| Website build | `npm run build` | Every page builds (static and dynamic) |
+| Universal converter | `python scripts/check_universal.py` | Every offered conversion runs and its output opens |
+| Compress, merge, split, icons | `python scripts/check_file_tools.py` | Results are opened by independent readers |
+| Upload guard | `python scripts/check_upload_guard.py` | Disguised and wrong files are refused, good ones pass |
+| No false refusals | `python scripts/check_guard_corpus.py` | Real samples of every format are accepted |
+| Audio and video edits | `python scripts/check_media.py` | Trim, volume, mute and noise removal measured with FFmpeg |
+| Developer network tools | `python scripts/check_devtools.py` | DNS, HTTP, ports, XSD and XSLT, public addresses only |
+| Design tools | `python scripts/check_design_tools.py` | Font and colour inspection |
 
-### On Render (production)
-`cookies*.txt` are gitignored, so they never reach the server with the code. Add each one in the Render dashboard under **Environment → Secret Files** with the same file name (`cookies_instagram.txt`, and optionally `cookies_facebook.txt` / `cookies_youtube.txt`). Render mounts them in `/etc/secrets/`, which `render.yaml` already points `*_COOKIE_FILE_PATH` at; redeploy after adding one. The files are read-only there, so yt-dlp works on a private copy. When the Instagram page reports that the session expired, export a fresh file and replace the secret.
+Run the backend scripts from `backend/` with the virtual environment's Python. Browser tests (Playwright) drive every tool page with real files, check outputs, and audit layouts at phone and desktop widths.
 
 ---
 
-## API Reference
+## 📡 API reference
 
-All endpoints are prefixed with `/api/v1` and require the header:
-```http
-Authorization: Bearer <HEADER_TOKEN>
+70 endpoints, all under `/api/v1`, all needing `Authorization: Bearer <HEADER_TOKEN>`. With `DEBUG=true`, try them at `http://127.0.0.1:8000/docs`, or import `backend/postman_collection.json` into Postman (rebuild it with `python generate_postman.py`).
+
+<details>
+<summary><b>Health</b> — 1 endpoint</summary>
+<br>
+
+| Method | Endpoint | What it does |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/health` | Service health and version check |
+
+</details>
+
+<details>
+<summary><b>Instagram</b> — 2 endpoints</summary>
+<br>
+
+| Method | Endpoint | What it does |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/instagram/extract` | Get direct Instagram media URLs without saving to disk |
+| `POST` | `/api/v1/instagram/download` | Download Instagram media directly (single file or packaged ZIP for carousels) |
+
+</details>
+
+<details>
+<summary><b>Facebook</b> — 2 endpoints</summary>
+<br>
+
+| Method | Endpoint | What it does |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/facebook/extract` | Get direct Facebook video or reel URLs and metadata without saving to disk |
+| `POST` | `/api/v1/facebook/download` | Download public Facebook video or reel directly as an MP4 file |
+
+</details>
+
+<details>
+<summary><b>YouTube</b> — 2 endpoints</summary>
+<br>
+
+| Method | Endpoint | What it does |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/youtube/extract` | Get direct YouTube video or Shorts URLs and metadata without saving to disk |
+| `POST` | `/api/v1/youtube/download` | Download public YouTube video or Short directly as an MP4 file |
+
+</details>
+
+<details>
+<summary><b>PDF</b> — 10 endpoints</summary>
+<br>
+
+| Method | Endpoint | What it does |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/pdf/upload` | Upload a PDF once and get a token to reuse for estimates and actions |
+| `POST` | `/api/v1/pdf/merge` | Merge multiple PDFs (uploaded files or tokens) into a single PDF |
+| `POST` | `/api/v1/pdf/merge/estimate` | Size of the merged PDF for these uploaded tokens, without returning it |
+| `POST` | `/api/v1/pdf/split` | Split a PDF by page ranges (e.g. '1-3, 5') or into individual pages |
+| `POST` | `/api/v1/pdf/split/estimate` | The parts (pages and sizes) a split would produce, without returning them |
+| `POST` | `/api/v1/pdf/organize` | Reorder, rotate and remove pages (e.g. '3, 1:90, 2') |
+| `POST` | `/api/v1/pdf/organize/estimate` | Size of the rearranged PDF, without returning it |
+| `GET` | `/api/v1/pdf/thumbnail` | One page of an uploaded PDF as a PNG thumbnail |
+| `POST` | `/api/v1/pdf/compress` | Compress a PDF by a target percentage (1-95) |
+| `POST` | `/api/v1/pdf/compress/estimate` | Compressed size at several strengths, so a UI can predict any strength |
+
+</details>
+
+<details>
+<summary><b>PDF tools</b> — 15 endpoints</summary>
+<br>
+
+| Method | Endpoint | What it does |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/pdf/page-numbers` | Add page numbers |
+| `POST` | `/api/v1/pdf/watermark` | Stamp text or an image over (or under) pages |
+| `POST` | `/api/v1/pdf/crop` | Crop pages to a box |
+| `POST` | `/api/v1/pdf/edit` | Add text, images, shapes, drawings and signatures to pages |
+| `POST` | `/api/v1/pdf/redact/find` | Find text to redact: words, phrases or kinds of detail (emails, phones…) |
+| `POST` | `/api/v1/pdf/redact` | Permanently black out areas (text, images and drawings under them are removed) |
+| `POST` | `/api/v1/pdf/protect` | Encrypt with a password (AES-256) |
+| `POST` | `/api/v1/pdf/unlock` | Remove a PDF's password and restrictions |
+| `POST` | `/api/v1/pdf/repair` | Rebuild a damaged PDF and keep every page that can be read |
+| `GET` | `/api/v1/pdf/ocr/languages` | Languages text recognition can read on this server |
+| `POST` | `/api/v1/pdf/ocr` | Make scanned pages searchable and selectable |
+| `POST` | `/api/v1/pdf/from-images` | Images (or phone scans) to one PDF, in order |
+| `POST` | `/api/v1/pdf/pdfa` | Convert to PDF/A for long-term archiving |
+| `POST` | `/api/v1/pdf/compare` | What changed between two versions: every insertion, deletion and edit, with where it is |
+| `POST` | `/api/v1/pdf/compare/report` | Side-by-side PDF with every change marked |
+
+</details>
+
+<details>
+<summary><b>Convert</b> — 2 endpoints</summary>
+<br>
+
+| Method | Endpoint | What it does |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/convert/capabilities` | Which converters this server has installed |
+| `POST` | `/api/v1/convert/html-to-pdf` | A public web page (url) or an .html file → PDF |
+
+</details>
+
+<details>
+<summary><b>QRCode</b> — 2 endpoints</summary>
+<br>
+
+| Method | Endpoint | What it does |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/qrcode/generate` | Generate a customizable QR code from text, URL, Wi-Fi, vCard, Email, SMS, Phone, Geo, or Event |
+| `POST` | `/api/v1/qrcode/generate-with-logo` | Generate a customizable QR code with an optional center logo image upload |
+
+</details>
+
+<details>
+<summary><b>Transcribe</b> — 2 endpoints</summary>
+<br>
+
+| Method | Endpoint | What it does |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/transcribe/capabilities` | Which speech engine this server uses |
+| `POST` | `/api/v1/transcribe` | Transcribe an audio or video file (streams NDJSON events) |
+
+</details>
+
+<details>
+<summary><b>Image tools</b> — 13 endpoints</summary>
+<br>
+
+| Method | Endpoint | What it does |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/image/capabilities` | Which image formats and AI tools this server has |
+| `POST` | `/api/v1/image/compress` | Compress JPG, PNG, WebP, GIF and SVG images |
+| `POST` | `/api/v1/image/resize` | Resize images by pixels or percentage |
+| `POST` | `/api/v1/image/crop` | Crop one image to a rectangle (pixels, as seen) |
+| `POST` | `/api/v1/image/convert` | Convert images (incl. HEIC, RAW, PSD, SVG, TIFF) to JPG, PNG, WebP or GIF |
+| `POST` | `/api/v1/image/gif` | Several images → one animated GIF |
+| `POST` | `/api/v1/image/rotate` | Rotate and flip images (pixel-exact) |
+| `POST` | `/api/v1/image/watermark` | Stamp text or an image over images |
+| `POST` | `/api/v1/image/faces` | Find faces (boxes as fractions of the image) |
+| `POST` | `/api/v1/image/blur` | Blur or pixelate areas (faces, plates, text) |
+| `POST` | `/api/v1/image/remove-background` | Cut out the subject (transparent, colour or blurred background) |
+| `POST` | `/api/v1/image/upscale` | Enlarge an image 2× or 4× with Real-ESRGAN |
+| `POST` | `/api/v1/image/html` | Capture a web page (url), pasted HTML or an .html file as an image |
+
+</details>
+
+<details>
+<summary><b>Universal converter</b> — 2 endpoints</summary>
+<br>
+
+| Method | Endpoint | What it does |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/universal/formats` | Every format, and what each can be converted to |
+| `POST` | `/api/v1/universal/convert` | Convert any supported file to another format |
+
+</details>
+
+<details>
+<summary><b>Compress</b> — 1 endpoint</summary>
+<br>
+
+| Method | Endpoint | What it does |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/compress` | Make any file smaller (PDF, Office, images, audio, video, fonts, archives…) |
+
+</details>
+
+<details>
+<summary><b>Merge and split</b> — 3 endpoints</summary>
+<br>
+
+| Method | Endpoint | What it does |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/merge-split/inspect` | What a file holds: pages, slides, headings, sheets or length |
+| `POST` | `/api/v1/merge-split/split` | Split one file into parts (a ZIP) |
+| `POST` | `/api/v1/merge-split/merge` | Merge 2 or more files of one kind, in the order sent |
+
+</details>
+
+<details>
+<summary><b>Icon maker</b> — 1 endpoint</summary>
+<br>
+
+| Method | Endpoint | What it does |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/icon` | Icons for websites, Windows, macOS, iOS, Android and desktop apps |
+
+</details>
+
+<details>
+<summary><b>Fonts</b> — 2 endpoints</summary>
+<br>
+
+| Method | Endpoint | What it does |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/fonts/inspect` | Everything about a font, and whether browsers accept it |
+| `POST` | `/api/v1/fonts/document` | Fonts a document uses, embedded or not, with the embedded files |
+
+</details>
+
+<details>
+<summary><b>Colour picker</b> — 1 endpoint</summary>
+<br>
+
+| Method | Endpoint | What it does |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/palette/extract` | Pictures and exact colours of any file, for picking colours |
+
+</details>
+
+<details>
+<summary><b>Developer tools</b> — 6 endpoints</summary>
+<br>
+
+| Method | Endpoint | What it does |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/devtools/dns` | DNS records for a domain |
+| `POST` | `/api/v1/devtools/reverse` | The hostname behind an IP address (PTR) |
+| `POST` | `/api/v1/devtools/port` | Is this TCP port open on a public host |
+| `POST` | `/api/v1/devtools/http` | Send one HTTP request to a public address |
+| `POST` | `/api/v1/devtools/xsd` | Validate XML against an XSD schema |
+| `POST` | `/api/v1/devtools/xslt` | Transform XML with an XSLT 1.0 stylesheet |
+
+</details>
+
+<details>
+<summary><b>Audio & video</b> — 3 endpoints</summary>
+<br>
+
+| Method | Endpoint | What it does |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/media/trim` | Cut a part out of an audio or video file |
+| `POST` | `/api/v1/media/sound` | Change the volume, normalise loudness, or mute a video |
+| `POST` | `/api/v1/media/denoise` | Remove background noise, hiss and hum from audio or video |
+
+</details>
+
+---
+
+## ➕ Adding a new tool
+
+Most tools are small. The usual path:
+
+1. **Register it** in `frontend/src/lib/tools.ts` (name, what it takes and gives, steps, keywords, features). A Developer, Text, Everyday or Design utility is **one line** in `frontend/src/lib/utilities/catalog.ts` instead.
+2. **Give it a workspace** in `frontend/src/components/tools/` and map it in `playground.tsx` (or reuse an engine with a preset).
+3. **If it needs the server**, add a slice in `backend/app/`: `config/`, `exceptions/`, `services/`, `api/v1/endpoints/`, then include the router in `api/v1/router.py`.
+4. **If it accepts files**, add its allowed types to `backend/app/core/file_guard.py` (uploads to a route without a policy are refused) and a case to `scripts/check_upload_guard.py`.
+5. **Follow the design**: `frontend/DESIGN.md` for the look, and `.agents/skills/backend-architecture` for the server rules (isolation, clean-up, timeouts).
+6. **Test it** with real files, then update this README.
+
+---
+
+## 📁 Project structure
+
+<details>
+<summary><b>Show the folders</b></summary>
+<br>
+
+```text
+do-whatever-you-like/
+├── render.yaml                  # Render blueprint for the server (free plan)
+├── start-dev.ps1 / stop-dev.ps1 # Start and stop both parts on Windows
+├── docs/assets/                 # Images and animations for this README
+├── backend/                     # FastAPI server
+│   ├── Dockerfile               # Image with LibreOffice, Tesseract, Ghostscript, Chromium, FFmpeg
+│   ├── requirements.txt
+│   ├── generate_postman.py      # Builds postman_collection.json from the API
+│   ├── scripts/                 # End-to-end check scripts
+│   └── app/
+│       ├── main.py              # App, CORS, security headers, auth
+│       ├── core/                # Settings, upload guard, size limits, isolated job runner, clean-up
+│       ├── config/              # Settings per tool (env prefixes)
+│       ├── exceptions/          # Clean, user-safe errors per tool
+│       ├── schemas/             # Request and response models
+│       ├── services/            # The work: pdf, universal, compress, merge_split, image, media,
+│       │                        #   transcribe, fonts, palette, icon, devtools, downloaders…
+│       └── api/v1/              # Routes, one file per tool
+└── frontend/                    # Next.js website
+    ├── DESIGN.md                # The design system
+    └── src/
+        ├── app/                 # Pages, /tools/[id], collections, /api/tools/* proxies, SEO files
+        ├── components/
+        │   ├── layout/ sections/        # Header, footer, home page sections, directory
+        │   └── tools/                   # Every tool's workspace
+        │       ├── pdf/ image/ files/ universal/ media/ transcribe/ health/
+        │       ├── design/              # Chart maker, flowchart maker, fonts, colour picker
+        │       ├── dev/ utilities/      # Developer hub and one-engine-per-job utilities
+        │       └── playground.tsx       # Which workspace each tool uses
+        └── lib/
+            ├── tools.ts                 # The registry of every tool
+            ├── utilities/catalog.ts     # Developer, Text, Everyday and Design pages as data
+            ├── charts.ts flowchart.ts period.ts # Chart, flowchart and period models
+            ├── backend.ts files.ts      # Server proxy and upload helpers
+            └── file-sniff.ts            # The in-browser upload check
 ```
 
-| Method | Endpoint | Description | Request Body / Form | Response |
-| :--- | :--- | :--- | :--- | :--- |
-| `GET` | `/api/v1/health` | Service health and version check | — | `200 OK` JSON status |
-| `POST` | `/api/v1/instagram/extract` | Fetch Instagram post/reel/carousel metadata & size | `{"url_or_shortcode": "..."}` | `200 OK` JSON metadata & direct URLs |
-| `POST` | `/api/v1/instagram/download` | Download Instagram media to client, or only the sound | `{"url_or_shortcode": "...", "audio": "m4a" \| "mp3" (optional)}` | Binary stream (`.mp4`, `.jpg`, or `.zip`) |
-| `POST` | `/api/v1/facebook/extract` | Fetch Facebook video/reel metadata & estimated size | `{"url": "https://www.facebook.com/reel/..."}` | `200 OK` JSON metadata & stream info |
-| `POST` | `/api/v1/facebook/download` | Download Facebook video/reel to client, or only the sound | `{"url": "https://www.facebook.com/reel/...", "audio": "m4a" \| "mp3" (optional)}` | Binary `.mp4` (or `.zip`) stream |
-| `POST` | `/api/v1/youtube/extract` | Fetch YouTube video/Short metadata & estimated size | `{"url": "https://www.youtube.com/watch?v=..."}` | `200 OK` JSON metadata (`is_short`, `view_count`, etc.) |
-| `POST` | `/api/v1/youtube/download` | Download YouTube video/Short at a chosen quality, or only the sound | `{"url": "https://youtu.be/...", "quality": "auto" \| "720" \| …, "audio": "m4a" \| "mp3" (optional)}` | Binary `.mp4` stream |
-| `POST` | `/api/v1/pdf/upload` | Cache a PDF and return a reusable token + page count | `multipart/form-data` (`file`) | `200 OK` JSON (`token`, `filename`, `size`, `page_count`) |
-| `POST` | `/api/v1/pdf/merge` | Merge 2+ PDFs (via uploaded `files` or `tokens`) | `multipart/form-data` (`files` or `tokens`) | Binary `.pdf` stream |
-| `POST` | `/api/v1/pdf/merge/estimate` | Estimate merged PDF byte size from tokens | `multipart/form-data` (`tokens`) | `200 OK` JSON (`output`, `total_size`) |
-| `POST` | `/api/v1/pdf/split` | Split PDF by `page_ranges` (`1-3, 5`) or all pages | `multipart/form-data` (`file`/`token`, `page_ranges`) | Binary `.pdf` (single part) or `.zip` (multiple parts) |
-| `POST` | `/api/v1/pdf/split/estimate` | Preview parts, page ranges, and byte sizes for a split | `multipart/form-data` (`token`, `page_ranges`) | `200 OK` JSON (`output`, `total_size`, `parts`) |
-| `POST` | `/api/v1/pdf/compress` | Compress PDF by `compression_percentage` (`1–95`) | `multipart/form-data` (`file`/`token`, `compression_percentage`) | Binary `.pdf` stream |
-| `POST` | `/api/v1/pdf/compress/estimate` | Sample compressed sizes across strength percentages | `multipart/form-data` (`token`, `percentages`) | `200 OK` JSON (`original_size`, `exact`, `samples`) |
-| `POST` | `/api/v1/qrcode/generate` | Generate customized QR code (JSON payload, no logo) | `application/json` (`QRCodeGenerateRequest`) | Binary `.png`, `.svg`, `.webp`, `.jpeg`, or `.pdf` |
-| `POST` | `/api/v1/qrcode/generate-with-logo` | Generate customized QR code with optional center logo | `multipart/form-data` (style fields + optional `logo` file) | Binary `.png`, `.webp`, `.jpeg`, or `.pdf` |
-| `GET` | `/api/v1/universal/formats` | Every format, and every route this server can run | — | `200 OK` JSON (`categories`, `formats`, `routes`, `engines`, `max_mb`) |
-| `POST` | `/api/v1/universal/convert` | Convert any supported file to a target format | `multipart/form-data` (`file`, `target`, optional `source`, optional `options` JSON) | Binary file (or `.zip` for multi-page results) + `X-Convert-Info` JSON header (route, notes) |
-| `POST` | `/api/v1/compress` | Compress 1–20 files of any kind | `multipart/form-data` (`files`, `level`: light/recommended/strong) | The file, or a `.zip` of several + `X-Convert-Info` (sizes before/after per file) |
-| `POST` | `/api/v1/merge-split/inspect` | What a file holds: pages, slides, headings, sheets/columns, length | `multipart/form-data` (`file`) | `200 OK` JSON |
-| `POST` | `/api/v1/merge-split/split` | Split one file into parts | `multipart/form-data` (`file`, `plan` JSON) | `.zip` of parts + `X-Convert-Info` |
-| `POST` | `/api/v1/merge-split/merge` | Merge 2–20 files of one kind, in order | `multipart/form-data` (`files`, optional `options` JSON) | The merged file + `X-Convert-Info` |
-| `POST` | `/api/v1/pdf-tools/from-images` | Images (or scanned pages) to one PDF; optionally searchable | `multipart/form-data` (`images`, `page_size`, `orientation`, `margin`, `enhance`, `ocr`, `languages`) | Binary `.pdf` (+ `X-PDF-Info` OCR report) |
-| `POST` | `/api/v1/fonts/inspect` | Everything about a font, incl. the browsers' sanitizer verdict | `multipart/form-data` (`file`, optional `index` for collections) | `200 OK` JSON report (+ base64 sfnt for WOFF2/TTC) |
-| `POST` | `/api/v1/fonts/document` | Fonts a document uses, embedded or not | `multipart/form-data` (`file`) | `200 OK` JSON (`fonts`, embedded `files` base64) |
-| `POST` | `/api/v1/palette/extract` | Pictures and exact colours of any file | `multipart/form-data` (`file`) | `200 OK` JSON (`pages` PNG base64, `declared`, `theme`) |
-| `POST` | `/api/v1/icon` | Icons for web, Windows, macOS, iOS, Android, desktop | `multipart/form-data` (`file`, `options` JSON) | `.zip` of icon packs, or one `.ico` |
-| `POST` | `/api/v1/devtools/dns` | DNS records (A, AAAA, CNAME, MX, NS, TXT, SOA, CAA, SRV) via public resolvers | `{"host": "example.com", "types": ["A", "MX"]}` | `200 OK` JSON (`records`, `ms`) |
-| `POST` | `/api/v1/devtools/reverse` | Hostnames behind an IP (PTR) | `{"ip": "8.8.8.8"}` | `200 OK` JSON (`hostnames`) |
-| `POST` | `/api/v1/devtools/port` | Is a TCP port open on a public host | `{"host": "example.com", "port": 443}` | `200 OK` JSON (`state`: open/closed/filtered) |
-| `POST` | `/api/v1/devtools/http` | One HTTP request to a public address, redirects followed hop by hop | `{"url", "method", "headers": [[k, v]], "body", "follow"}` | `200 OK` JSON (`status`, `headers`, `body` ≤1 MB, `hops`) |
-| `POST` | `/api/v1/devtools/xsd` | Validate XML against an XSD | `{"xml", "xsd"}` | `200 OK` JSON (`valid`, `errors` with lines) |
-| `POST` | `/api/v1/devtools/xslt` | XSLT 1.0 transform (no file/network access) | `{"xml", "xsl"}` | `200 OK` JSON (`ok`, `output`, `html`) |
-| `POST` | `/api/v1/media/trim` | Trim a video or audio file (stream copy, or frame-exact re-encode up to 3 min) | multipart `file`, `start`, `end` (seconds), `exact` | `200 OK` file, same format (`X-Convert-Info`) |
-| `POST` | `/api/v1/media/sound` | Change volume (±30 dB, limited), normalise to −16 LUFS, or mute a video | multipart `file`, `mode` (`volume`/`normalize`/`mute`), `gain_db` | `200 OK` file, same format (`X-Convert-Info`) |
-| `POST` | `/api/v1/media/denoise` | Remove background noise, hiss and mains hum (learnt from the quietest moment or a picked part) | multipart `file`, `strength` (`light`/`medium`/`strong`), `voice`, `hum` (`auto`/`off`/`50`/`60`), `clicks`, optional `noise_start`/`noise_end` | `200 OK` file, same format (`X-Convert-Info`: notes, `noise_db`, `hum`, `sample`) |
+</details>
 
 ---
 
-## Protocol for Adding New Tools & Endpoints
+## 🤝 Contributing
 
-Adding a new feature follows a standard 4-step protocol across the stack:
+Ideas, bug reports and pull requests are welcome.
 
-1. **Backend Service & Endpoint (`backend/app/`)**:
-   - Add config in `app/config/<tool>.py`, register `TEMP_DIR` in `app/core/lifespan.py`, add exceptions in `app/exceptions/<tool>.py`, schemas in `app/schemas/<tool>.py`, and service logic in `app/services/<tool>.py`.
-   - Create the router in `app/api/v1/endpoints/<tool>.py` and include it in `app/api/v1/router.py`.
-2. **Frontend BFF Proxy (`frontend/src/app/api/tools/`)**:
-   - **Social link downloader** (`/extract` + `/download`): Add the platform ID to `PLATFORMS` in `frontend/src/app/api/tools/[platform]/[action]/route.ts`.
-   - **File converter / custom route**: Create `frontend/src/app/api/tools/<tool>/route.ts` using `backendConfig()`, `notConfigured()`, `proxyUpload()`, `upstreamError()`, and `passFile()` from `frontend/src/lib/backend.ts`.
-3. **Tool Registry (`frontend/src/lib/tools.ts`)**:
-   - Change `status: "soon"` to `status: "live"` and attach the `downloader` (`kind: "link"`) or `converter` (`kind: "file"`) configuration object.
-4. **Custom Workspace UI (Optional — `frontend/src/components/tools/playground.tsx`)**:
-   - Link downloaders and single-file converters work automatically with `DownloaderPlayground` and `ConvertPlayground`.
-   - For bespoke UIs (e.g., `pdf`, `qr`, `text`, or multi-file tools), map the tool in `byKind` or `byId` inside `playground.tsx`.
+1. [Open an issue](https://github.com/colddsam/do-whatever-you-like/issues) to suggest a tool or report a problem. Screenshots and sample files help a lot.
+2. For code: fork, create a branch from `main`, make your change, run the checks in [Testing](#-testing), and open a pull request that says what changed and how you checked it.
+3. Keep to the principles above: free, private, plain words, one design.
 
----
+## 📜 License
 
-## Postman Collection Generator
+Do-Whatever-You-Like is **source-available** under its own [license](LICENSE). In short:
 
-To regenerate `backend/postman_collection.json` for testing all API routes in Postman:
+| ✅ You can, for free | ✋ Ask first (written permission) |
+| :--- | :--- |
+| Read the code, learn from it and run it for personal, educational or non-commercial use | Use it commercially or in a paid product |
+| Change it for those uses, and send improvements back | Run it as a public website or service of your own |
+| Quote short parts with a link back | Publish or share copies, or train a commercial AI model on it |
+| Keep everything you **make** with the tools: it's yours | Use the name or logo |
 
-```powershell
-cd backend
-.\venv\Scripts\python.exe generate_postman.py
-```
+Open-source parts inside (Next.js, FFmpeg, ECharts and the rest) keep their own licenses. The health, money and security tools give general information, not professional advice. To ask for permission, [open an issue](https://github.com/colddsam/do-whatever-you-like/issues).
 
-Import the generated `backend/postman_collection.json` file into Postman and verify the collection variables `base_url` (`http://127.0.0.1:8000`) and `bearer_token` (automatically populated from `HEADER_TOKEN` in `backend/.env`).
+## 🙏 Thanks
+
+Do-Whatever-You-Like stands on great open-source work, including Next.js, React, FastAPI, FFmpeg, LibreOffice, Pandoc, PyMuPDF, Tesseract, Pillow, OpenCV, ECharts, React Flow, dagre, yt-dlp, Whisper, Tailwind CSS and many more. Currency rates come from the free [Frankfurter](https://frankfurter.dev) API (European Central Bank data), and passphrases use the [EFF word list](https://www.eff.org/dice) (CC BY 3.0).
+
+<div align="center">
+<br>
+
+**[Open Do-Whatever-You-Like →](https://do-whatever-you-like.colddsam.com)**
+
+<sub>Made with care, one small tool at a time.</sub>
+
+</div>

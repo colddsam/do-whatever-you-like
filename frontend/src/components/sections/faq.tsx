@@ -5,7 +5,7 @@ import { liveCount, toolsIn } from "@/lib/tools";
 
 export const faqs = [
   {
-    q: "What is Do-Whatever?",
+    q: "What is Do-Whatever-You-Like?",
     a: "A single home for small digital jobs that usually send you hunting across a dozen sketchy websites: downloading media, converting files, tidying documents and more. New tools are added over time.",
   },
   {
@@ -19,7 +19,7 @@ export const faqs = [
   {
     q: "Which tools are available right now?",
     // Worked out from the registry, so it never goes stale.
-    a: `${liveCount} tools, in nine collections: a universal converter for 112 formats (PDF, Word, Excel, PowerPoint, images, audio, video, data…) with compress, merge and split for any file; ${toolsIn("pdf").length} PDF tools (merge, split, edit, sign, protect, OCR…), ${toolsIn("images").length} image tools (compress, resize, convert HEIC, remove backgrounds, upscale, blur faces, pixelate, emoji images, GIF speed, icons…), ${toolsIn("design").length} design tools (charts, flowcharts, font checker, font creator, colour picker, WCAG contrast checker, CSS generators), downloaders for YouTube, Instagram and Facebook, ${toolsIn("media").length} audio and video tools (trimmer, noise remover, volume booster, screen & voice recorder, subtitle editor, video to MP3, speech to text, video to frames, video to GIF), ${toolsIn("developer").length} developer tools (formatters and minifiers for 12 languages, JSON formatter, JWT decoder, Base64, regex tester, diff checker, cron explainer, hashes, DNS, HTTP and port checks, API tester…), ${toolsIn("text").length} text tools (binary, hex, Morse with audio decoder, find and replace, split text, summariser…), and ${toolsIn("utilities").length} everyday utilities (unit & currency converters, world clock, timers, password generator, encrypted notes, photo EXIF remover, QR maker & scanner, scientific calculator, what's my IP, screen, mic and webcam tests). The Tools page lists them all.`,
+    a: `${liveCount} tools, in nine collections: a universal converter for 112 formats (PDF, Word, Excel, PowerPoint, images, audio, video, data…) with compress, merge and split for any file; ${toolsIn("pdf").length} PDF tools (merge, split, edit, sign, protect, OCR…), ${toolsIn("images").length} image tools (compress, resize, convert HEIC, remove backgrounds, upscale, blur faces, pixelate, emoji images, GIF speed, icons…), ${toolsIn("design").length} design tools (charts, flowcharts, font checker, font creator, colour picker, WCAG contrast checker, CSS generators), downloaders for YouTube, Instagram and Facebook, ${toolsIn("media").length} audio and video tools (trimmer, noise remover, volume booster, screen & voice recorder, subtitle editor, video to MP3, speech to text, video to frames, video to GIF), ${toolsIn("developer").length} developer tools (formatters and minifiers for 12 languages, JSON formatter, JWT decoder, Base64, regex tester, diff checker, cron explainer, hashes, DNS, HTTP and port checks, API tester…), ${toolsIn("text").length} text tools (binary, hex, Morse with audio decoder, find and replace, split text, summariser…), and ${toolsIn("utilities").length} everyday utilities (period tracker, unit & currency converters, world clock, timers, password generator, encrypted notes, photo EXIF remover, QR maker & scanner, scientific calculator, what's my IP, screen, mic and webcam tests). The Tools page lists them all.`,
   },
   {
     q: "What happens to my files and links?",

@@ -166,7 +166,7 @@ export function DevUtilities({ toolId, start }: { toolId: string; start?: string
 
 /* ---------------------------------------------------------------------------------------------- */
 
-const SAMPLE_JSON = '{"name":"Do-Whatever","tools":58,"free":true,"tags":["pdf","images","dev"],"owner":{"team":"core","since":2026}}';
+const SAMPLE_JSON = '{"name":"Do-Whatever-You-Like","tools":58,"free":true,"tags":["pdf","images","dev"],"owner":{"team":"core","since":2026}}';
 
 function JsonUtil() {
   const [input, setInput] = useState(SAMPLE_JSON);

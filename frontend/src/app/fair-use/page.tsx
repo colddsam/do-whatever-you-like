@@ -3,8 +3,8 @@ import { CONTACT_EMAIL, pageMeta } from "@/lib/site";
 import { LegalPage } from "@/components/layout/legal-page";
 
 export const metadata: Metadata = pageMeta({
-  title: "Fair use — Do-Whatever",
-  description: "How to use Do-Whatever's downloaders responsibly.",
+  title: "Fair use — Do-Whatever-You-Like",
+  description: "How to use Do-Whatever-You-Like's downloaders responsibly.",
   path: "/fair-use",
 });
 

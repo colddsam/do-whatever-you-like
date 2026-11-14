@@ -438,9 +438,9 @@ function Pomodoro() {
     });
   }, [remaining, endsAt, phase, done, len, sound]);
   useEffect(() => {
-    document.title = endsAt !== null ? `${clock(remaining)} · ${phase === "focus" ? "Focus" : "Break"}` : "Pomodoro timer · Do-Whatever";
+    document.title = endsAt !== null ? `${clock(remaining)} · ${phase === "focus" ? "Focus" : "Break"}` : "Pomodoro timer · Do-Whatever-You-Like";
   }, [remaining, endsAt, phase]);
-  useEffect(() => () => void (document.title = "Do-Whatever"), []);
+  useEffect(() => () => void (document.title = "Do-Whatever-You-Like"), []);
 
   const toggle = () => {
     if (endsAt !== null) {

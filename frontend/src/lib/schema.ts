@@ -13,7 +13,7 @@ export const siteGraph = {
       "@type": "Organization",
       "@id": ORG_ID,
       name: SITE_NAME,
-      alternateName: ["Do-Whatever Tools", "do-whatever-you-like"],
+      alternateName: ["Do-Whatever-You-Like Tools", "do-whatever-you-like"],
       url: SITE_URL,
       logo: absUrl("/icon.svg"),
       description: `${SITE_NAME} is a free, no-sign-up web toolbox with ${liveCount} online utilities for PDFs, images, file conversion, video/audio, design, and software development.`,

@@ -64,7 +64,7 @@ import {
 
 export const DEV_GROUPS = ["Format", "Minify", "Validate", "Edit & view", "XML & JSON", "Encode", "Hash", "Random data", "Web & network", "HTML & CSS"] as const;
 export const TEXT_GROUPS = ["Convert", "Transform", "Generate", "Analyze"] as const;
-export const EVERYDAY_GROUPS = ["Calculate & convert", "Time & dates", "Privacy & security", "QR codes", "Device & browser"] as const;
+export const EVERYDAY_GROUPS = ["Health", "Calculate & convert", "Time & dates", "Privacy & security", "QR codes", "Device & browser"] as const;
 export const DESIGN_GROUPS = ["Charts & diagrams", "Fonts", "Colour", "CSS"] as const;
 
 export type Engine =

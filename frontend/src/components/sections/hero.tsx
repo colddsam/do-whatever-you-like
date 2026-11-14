@@ -135,7 +135,7 @@ export function Hero() {
               Not faded in: on phones this paragraph is the largest thing on screen (the LCP element).
             */}
             <p className="max-w-md text-lg leading-relaxed text-ink-2 text-pretty lg:-mt-[0.4em]">
-              Do-Whatever is a growing toolbox for everyday digital chores. Download media, convert
+              Do-Whatever-You-Like is a growing toolbox for everyday digital chores. Download media, convert
               files, tidy documents and more, without installing a thing.
             </p>
 

@@ -5,8 +5,8 @@ import { CONTACT_EMAIL, OPERATOR, pageMeta } from "@/lib/site";
 import { liveCount } from "@/lib/tools";
 
 export const metadata: Metadata = pageMeta({
-  title: "About — Do-Whatever",
-  description: "Who builds Do-Whatever, how its free tools work, and how to get in touch about bugs, privacy or takedowns.",
+  title: "About — Do-Whatever-You-Like",
+  description: "Who builds Do-Whatever-You-Like, how its free tools work, and how to get in touch about bugs, privacy or takedowns.",
   path: "/about",
 });
 
@@ -19,16 +19,16 @@ export default function AboutPage() {
       updated="13 Nov 2026"
       title={
         <>
-          Who&apos;s behind <span className="serif-em">Do-Whatever.</span>
+          Who&apos;s behind <span className="serif-em">Do-Whatever-You-Like.</span>
         </>
       }
-      intro={`Do-Whatever is ${liveCount} free tools for everyday digital chores, built and run by one independent developer. Nothing to install and no account to make.`}
+      intro={`Do-Whatever-You-Like is ${liveCount} free tools for everyday digital chores, built and run by one independent developer. Nothing to install and no account to make.`}
       sections={[
         {
           title: "Who runs it",
           body: (
             <p>
-              Do-Whatever is built and maintained by{" "}
+              Do-Whatever-You-Like is built and maintained by{" "}
               <a href={OPERATOR.url} className={link} rel="me noopener" target="_blank">
                 {OPERATOR.name}
               </a>

@@ -61,15 +61,15 @@ export function Footer() {
         </div>
 
         <div className="mt-16 flex flex-col gap-2 border-t border-line py-6 text-sm text-ink-3 sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2026 Do-Whatever. All rights reserved.</p>
+          <p>© 2026 Do-Whatever-You-Like. All rights reserved.</p>
           <p>Only download content you have the right to use.</p>
         </div>
 
         <p
           aria-hidden
-          className="pointer-events-none -mb-[0.2em] select-none overflow-hidden whitespace-nowrap text-center text-[clamp(3rem,15vw,11.5rem)] font-semibold leading-none tracking-[-0.06em] text-paper-2"
+          className="pointer-events-none -mb-[0.2em] select-none overflow-hidden whitespace-nowrap text-center text-[clamp(2rem,8.4vw,7rem)] font-semibold leading-none tracking-[-0.06em] text-paper-2"
         >
-          Do-Whatever
+          Do-Whatever-You-Like
         </p>
       </Container>
     </footer>

@@ -85,7 +85,7 @@ export function HowItWorks() {
                 Paste. Pick. <span className="serif-em text-accent">Done.</span>
               </span>
             }
-            description="Every tool on Do-Whatever follows the same three steps. Learn it once and every task feels familiar."
+            description="Every tool on Do-Whatever-You-Like follows the same three steps. Learn it once and every task feels familiar."
           />
         </Reveal>
 

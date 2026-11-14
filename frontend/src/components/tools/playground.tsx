@@ -53,6 +53,7 @@ const FontChecker = dynamic(() => import("./design/font-checker").then((m) => m.
 const ColorPicker = dynamic(() => import("./design/color-picker").then((m) => m.ColorPicker), { loading });
 const FontCreator = dynamic(() => import("./design/font-creator").then((m) => m.FontCreator), { loading });
 const ChartMaker = dynamic(() => import("./design/chart-maker").then((m) => m.ChartMaker), { loading });
+const PeriodTracker = dynamic(() => import("./health/period-tracker").then((m) => m.PeriodTracker), { loading });
 const FlowchartMaker = dynamic(() => import("./design/flowchart-maker").then((m) => m.FlowchartMaker), { loading });
 const SoonWorkspace = dynamic(() => import("./soon-workspace").then((m) => m.SoonWorkspace), { loading });
 const UtilityTool = dynamic(() => import("./utilities/utility-tool").then((m) => m.UtilityTool), { loading });
@@ -111,6 +112,7 @@ const byId: Record<string, Workspace> = {
   "font-creator": FontCreator,
   "chart-maker": ChartMaker,
   "flowchart-maker": FlowchartMaker,
+  "period-tracker": PeriodTracker,
   "compress-files": CompressFilesTool,
   "merge-files": MergeFilesTool,
   "split-files": SplitFilesTool,

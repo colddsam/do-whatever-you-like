@@ -30,7 +30,7 @@ export function Cta() {
             </h2>
             <p className="mt-6 max-w-lg text-lg leading-relaxed text-ink-2">
               Describe the task in a sentence. If enough people need it, it becomes the next tool on
-              Do-Whatever.
+              Do-Whatever-You-Like.
             </p>
 
             <form onSubmit={onSubmit} className="mt-10 max-w-2xl">

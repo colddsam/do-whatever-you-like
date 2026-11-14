@@ -3,8 +3,8 @@ import { pageMeta } from "@/lib/site";
 import { LegalPage } from "@/components/layout/legal-page";
 
 export const metadata: Metadata = pageMeta({
-  title: "Terms — Do-Whatever",
-  description: "The terms for using Do-Whatever's tools.",
+  title: "Terms — Do-Whatever-You-Like",
+  description: "The terms for using Do-Whatever-You-Like's tools.",
   path: "/terms",
 });
 
@@ -18,7 +18,7 @@ export default function TermsPage() {
           The <span className="serif-em">ground rules.</span>
         </>
       }
-      intro="By using Do-Whatever you agree to these terms. They're short on purpose."
+      intro="By using Do-Whatever-You-Like you agree to these terms. They're short on purpose."
       sections={[
         {
           title: "Using the tools",

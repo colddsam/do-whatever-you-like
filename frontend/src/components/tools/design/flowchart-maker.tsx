@@ -17,6 +17,7 @@ import {
   Position,
   ReactFlow,
   ReactFlowProvider,
+  SelectionMode,
   addEdge,
   getBezierPath,
   getNodesBounds,
@@ -42,10 +43,12 @@ import {
   Download,
   FileCode,
   FolderOpen,
+  Hand,
   Italic,
   LayoutTemplate,
   Maximize,
   Minimize,
+  MousePointer2,
   Play,
   Redo2,
   Save,
@@ -180,11 +183,10 @@ const ShapeNode = memo(function ShapeNode({ id, data, selected }: NodeProps<RFNo
   const delay = (play.index.get(id) ?? 0) * 70;
   return (
     <div className={cn("group relative size-full transition-opacity duration-300", dim && "opacity-25")} onDoubleClick={() => setEditing(true)}>
-      <NodeResizer isVisible={selected && !editing} minWidth={40} minHeight={28} keepAspectRatio={data.shape === "circle"} lineClassName="!border-accent" handleClassName="!size-2 !rounded-[2px] !border-accent !bg-surface" />
       <div key={play.reveal} className="absolute inset-0" style={{ animation: `dwpop .5s cubic-bezier(.2,.8,.2,1.2) ${delay}ms both` }}>
         <motion.div className="absolute inset-0" animate={active ? { scale: [1, 1.08, 1] } : { scale: 1 }} transition={active ? { duration: 0.6, ease: "easeOut" } : { duration: 0.2 }}>
           <ShapeView d={data} className={cn(active && "drop-shadow-[0_0_12px_rgba(235,74,16,.55)]")} />
-          {(selected || active) && <span aria-hidden className={cn("absolute -inset-1.5 rounded-[10px] border-2", active ? "border-accent" : "border-accent/50 border-dashed")} />}
+          {(selected || active) && <span aria-hidden className={cn("pointer-events-none absolute -inset-1.5 rounded-[10px] border-2", active ? "border-accent" : "border-accent/50 border-dashed")} />}
           <div className={cn("absolute inset-0 flex items-center justify-center overflow-hidden px-3 text-center leading-tight", LABEL_PAD[data.shape])}>
             {editing ? (
               <textarea
@@ -212,6 +214,7 @@ const ShapeNode = memo(function ShapeNode({ id, data, selected }: NodeProps<RFNo
           </div>
         </motion.div>
       </div>
+      <NodeResizer isVisible={selected && !editing} minWidth={40} minHeight={28} keepAspectRatio={data.shape === "circle"} lineClassName="!z-10 !border-accent" handleClassName="!z-20 !size-2.5 !rounded-[2px] !border-accent !bg-surface" />
       {HANDLES.map(([pos, hid]) => (
         <Handle key={hid} id={hid} type="source" position={pos} className={cn("!size-3 !border-2 !border-surface !bg-accent transition-opacity", selected ? "opacity-100" : "opacity-0 group-hover:opacity-100")} />
       ))}
@@ -292,6 +295,7 @@ function Editor() {
   const rf = useReactFlow<RFNode, RFEdge>();
   const wrap = useRef<HTMLDivElement>(null);
   const [full, setFull] = useState(false);
+  const [toolMode, setToolMode] = useState<"select" | "pan">("select");
   const [panel, setPanel] = useState<"none" | "templates" | "text" | "export">("none");
   const [text, setText] = useState("");
   const [textErr, setTextErr] = useState<string[]>([]);
@@ -325,7 +329,7 @@ function Editor() {
   useEffect(() => {
     const t = setTimeout(() => {
       const h = hist.current;
-      if (nodes.some((n) => n.dragging)) return;
+      if (nodes.some((n) => n.dragging || n.resizing)) return;
       const snap = strip(nodes, edges);
       if (h.restoring) {
         h.restoring = false;
@@ -448,6 +452,11 @@ function Editor() {
       } else if (mod && e.key.toLowerCase() === "a") {
         e.preventDefault();
         setNodes((ns) => ns.map((n) => ({ ...n, selected: true })));
+        setEdges((es) => es.map((edge) => ({ ...edge, selected: true })));
+      } else if (!mod && e.key.toLowerCase() === "v") {
+        setToolMode("select");
+      } else if (!mod && e.key.toLowerCase() === "h") {
+        setToolMode("pan");
       } else if (e.key === "Escape") setPlayState({ on: false, step: 0 });
     };
     window.addEventListener("keydown", onKey);
@@ -579,6 +588,9 @@ function Editor() {
       <div className="grid min-w-0 content-start gap-2">
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-0.5 rounded-md border border-line bg-surface p-1">
+          <ToolBtn icon={<MousePointer2 aria-hidden className="size-4" />} label={"Select & drag box (V)"} onClick={() => setToolMode("select")} on={toolMode === "select"} />
+          <ToolBtn icon={<Hand aria-hidden className="size-4" />} label={"Pan canvas (H)"} onClick={() => setToolMode("pan")} on={toolMode === "pan"} />
+          <span className="mx-1 h-6 w-px bg-line" />
           <ToolBtn icon={<Undo2 aria-hidden className="size-4" />} label={"Undo (Ctrl+Z)"} onClick={undo} disabled={!histLen.past} />
           <ToolBtn icon={<Redo2 aria-hidden className="size-4" />} label={"Redo (Ctrl+Y)"} onClick={redo} disabled={!histLen.future} />
           <span className="mx-1 h-6 w-px bg-line" />
@@ -664,6 +676,10 @@ function Editor() {
               connectionLineType={settings.path === "bezier" ? ConnectionLineType.Bezier : settings.path === "straight" ? ConnectionLineType.Straight : settings.path === "step" ? ConnectionLineType.Step : ConnectionLineType.SmoothStep}
               snapToGrid={settings.snap}
               snapGrid={[10, 10]}
+              selectionOnDrag={toolMode === "select"}
+              panOnDrag={toolMode === "pan" ? true : [1, 2]}
+              selectionMode={SelectionMode.Partial}
+              multiSelectionKeyCode={["Shift", "Meta", "Control"]}
               deleteKeyCode={["Backspace", "Delete"]}
               zoomOnDoubleClick={false}
               minZoom={0.15}
@@ -701,7 +717,7 @@ function Editor() {
           {nodes.length === 0 && <p className="pointer-events-none absolute inset-0 grid place-items-center text-sm text-ink-3">Drag a shape in, double-click the canvas, or pick a template.</p>}
         </div>
         <p className="text-xs text-ink-3">
-          Drag from a shape&apos;s dot to connect · double-click a shape to edit its text · double-click the canvas to add a step · Shift-drag to select many · Ctrl+Z / Ctrl+Y · Ctrl+C / Ctrl+V / Ctrl+D · Del to delete
+          Drag on canvas to select many · Shift/Ctrl-click to add · drag a corner to resize · drag from a dot to connect · double-click a shape to edit text · Space+drag or Hand tool (H) to pan · Ctrl+Z / Ctrl+Y · Ctrl+C / Ctrl+V / Ctrl+D · Del
         </p>
       </div>
 

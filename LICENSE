@@ -1,0 +1,115 @@
+Do-Whatever-You-Like Source-Available License
+Version 1.0, November 2026
+
+Copyright (c) 2026 colddsam (https://github.com/colddsam). All rights reserved,
+except as granted below.
+
+This license covers the source code, design, documentation and other material in
+this repository (together, the "Software"). It is written in plain words on purpose.
+If anything here is unclear, ask before you rely on your own reading of it.
+
+
+1. WHAT YOU MAY DO, FREE OF CHARGE
+
+   You may, without asking:
+
+   a) Read and study the Software, and learn from it.
+   b) Download it and run it on your own computer or server, for your own personal,
+      educational or non-commercial use, or to evaluate it.
+   c) Change it for those same purposes.
+   d) Send changes back to this repository as issues or pull requests.
+   e) Quote short parts of it (for example in an article, a tutorial or an answer
+      on a forum), if you name "Do-Whatever-You-Like" and link to this repository.
+
+
+2. WHAT NEEDS WRITTEN PERMISSION FIRST
+
+   You must have written permission from the copyright holder before you:
+
+   a) Use the Software, or a substantial part of it, for any commercial purpose,
+      including selling it, selling access to it, or using it to provide a paid
+      product or service.
+   b) Run the Software, or a modified version of it, as a public website, app or
+      service that other people can use, other than the official site at
+      https://do-whatever-you-like.colddsam.com.
+   c) Publish, share or distribute copies of the Software or of modified versions,
+      in whole or in substantial part, other than a fork on GitHub made only to
+      send changes back under section 1(d).
+   d) Use the Software to train, or as data for, a commercial machine-learning
+      model.
+
+   To ask, open an issue at https://github.com/colddsam/do-whatever-you-like/issues
+   or write to colddsam@gmail.com.
+
+
+3. NAMES AND LOGOS
+
+   "Do-Whatever-You-Like", its logo and its look are not licensed to you. You may
+   not use them for your own product, or in a way that suggests the copyright
+   holder made or approves something they did not. You may use the name only to
+   say truthfully where something came from.
+
+
+4. WHAT YOU MAKE WITH THE TOOLS IS YOURS
+
+   This license is about the code. Files you put into the tools, and everything you
+   make with them (converted files, charts, flowcharts, fonts, QR codes, images and
+   so on), belong to you, and you may use them however you like, including
+   commercially, as far as you have the rights to what you put in.
+
+
+5. OTHER PEOPLE'S WORK INSIDE THE SOFTWARE
+
+   The Software uses open-source libraries, programs, models, fonts and data made by
+   others (for example Next.js, React, FastAPI, FFmpeg, LibreOffice, Pandoc,
+   PyMuPDF, Tesseract, ECharts, React Flow, and the EFF word list, CC BY 3.0). Each
+   of those keeps its own license, which applies to that part and comes first. The
+   dependency lists are in frontend/package.json and backend/requirements.txt.
+   Nothing in this license limits the rights those licenses give you.
+
+
+6. CONTRIBUTIONS
+
+   If you send a contribution (code, text, images or anything else), you confirm
+   that you have the right to send it, and you agree that it may be used, changed
+   and published as part of the Software under this license or any later license
+   the copyright holder chooses. You keep the copyright in your contribution.
+
+
+7. NO WARRANTY
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+   FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. Keep your own copies of anything
+   important before you process it.
+
+
+8. NOT PROFESSIONAL ADVICE
+
+   Some tools give information about health (such as the period tracker), money
+   (such as the currency converter) or security (such as the password checker).
+   That information is general and may be wrong or out of date. It is not medical,
+   financial, legal or security advice, and the period tracker must not be used as
+   a method of contraception. Ask a qualified professional about your situation.
+
+
+9. LIMITATION OF LIABILITY
+
+   TO THE FULLEST EXTENT THE LAW ALLOWS, THE COPYRIGHT HOLDER AND CONTRIBUTORS ARE
+   NOT LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT
+   OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR ITS USE,
+   INCLUDING LOSS OF DATA OR FILES.
+
+
+10. ENDING THIS LICENSE
+
+   If you break this license, your rights under it end automatically. They come
+   back if you fix the problem within 30 days of being told about it, unless you
+   have broken it before.
+
+
+11. CHANGES TO THIS LICENSE
+
+   The copyright holder may publish new versions of this license. Each copy of the
+   Software is covered by the version that came with it, unless you choose to use a
+   later one.

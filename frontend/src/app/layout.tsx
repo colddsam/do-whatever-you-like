@@ -43,9 +43,9 @@ export const metadata: Metadata = {
     google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
     other: process.env.BING_SITE_VERIFICATION ? { "msvalidate.01": process.env.BING_SITE_VERIFICATION } : undefined,
   },
-  title: "Do-Whatever — One place to get any task done",
+  title: "Do-Whatever-You-Like — One place to get any task done",
   description:
-    "Do-Whatever is a growing toolbox for everyday digital chores. Download media, convert files, tidy documents and more. Paste a link, pick a task, done.",
+    "Do-Whatever-You-Like is a growing toolbox for everyday digital chores. Download media, convert files, tidy documents and more. Paste a link, pick a task, done.",
 };
 
 export const viewport: Viewport = {

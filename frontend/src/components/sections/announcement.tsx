@@ -12,6 +12,7 @@ const ROTATE_MS = 4200;
 
 /** Short, true headlines. Each one links to the tool it's about. */
 const news = [
+  { tag: "New", text: "Private period tracker, 100% on your device", tool: "period-tracker" },
   { tag: "New", text: "Compress any file: PDF, Office, video…", tool: "compress-files" },
   { tag: "New", text: "Merge and split Word, Excel and PowerPoint", tool: "merge-files" },
   { tag: "New", text: "Favicons and app icons for every platform", tool: "icon-maker" },

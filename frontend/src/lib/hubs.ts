@@ -54,9 +54,9 @@ export const HUBS: Record<ClusterId, { title: string; description: string; intro
       "Tools for audio and video: trim clips losslessly or frame-exact, clean up background hiss and hum, boost or normalise loudness, record your screen or voice, edit and sync SRT/VTT subtitles, extract MP3 audio, transcribe speech in 99 languages, or turn videos into still frames and animated GIFs.",
   },
   utilities: {
-    title: "Free Everyday Tools: Converters, Passwords, QR, Clocks & Device Checks",
-    description: "Convert units and currencies, generate strong passwords, encrypt notes, strip photo EXIF data, scan or make QR codes, use timers and test your device. Free, no sign-up.",
+    title: "Free Everyday Tools: Period Tracker, Converters, Passwords & QR",
+    description: "Private period tracker, unit and currency converters, strong password generator, encrypted notes, photo EXIF remover, QR tools and device tests. Free, no sign-up.",
     intro:
-      "Handy everyday tools: convert units and 30 currencies, check world time zones, run a Pomodoro or stopwatch, calculate ages and dates, generate passphrases, encrypt private notes with AES-256, view or strip photo EXIF metadata, scan or create QR codes, crunch maths in a scientific calculator, and test your screen, webcam, mic and IP.",
+      "Handy everyday tools: track your period privately on your own device, convert units and 30 currencies, check world time zones, run a Pomodoro or stopwatch, calculate ages and dates, generate passphrases, encrypt private notes with AES-256, view or strip photo EXIF metadata, scan or create QR codes, crunch maths in a scientific calculator, and test your screen, webcam, mic and IP.",
   },
 };

@@ -28,9 +28,9 @@ export async function generateMetadata({ params }: PageProps<"/tools/[id]">): Pr
   };
 }
 
-/** "Merge PDF — Free Online, No Sign-up | Do-Whatever": the name people search, then the promise. */
+/** "Merge PDF — Free Online, No Sign-up | Do-Whatever-You-Like": the name people search, then the promise. */
 function toolTitle(tool: Tool) {
-  return `${tool.name} — Free Online, No Sign-up | Do-Whatever`;
+  return `${tool.name} — Free Online, No Sign-up | Do-Whatever-You-Like`;
 }
 
 /** The tool's one line, then what every result snippet should answer: cost, limits, privacy. */

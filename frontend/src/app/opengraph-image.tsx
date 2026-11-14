@@ -1,7 +1,7 @@
 import { OG_SIZE, ogCard } from "@/lib/og";
 import { liveCount } from "@/lib/tools";
 
-export const alt = "Do-Whatever: free online tools for PDFs, images, video, audio and code";
+export const alt = "Do-Whatever-You-Like: free online tools for PDFs, images, video, audio and code";
 export const size = OG_SIZE;
 export const contentType = "image/png";
 

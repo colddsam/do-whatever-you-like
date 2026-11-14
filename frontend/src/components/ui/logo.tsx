@@ -20,10 +20,10 @@ export function LogoMark({ className, inverted = false }: { className?: string; 
 
 export function Logo({ inverted = false }: { inverted?: boolean }) {
   return (
-    <Link href="/" aria-label="Do-Whatever home" className="inline-flex min-h-11 shrink-0 items-center gap-2.5">
+    <Link href="/" aria-label="Do-Whatever-You-Like home" className="inline-flex min-h-11 shrink-0 items-center gap-2.5">
       <LogoMark inverted={inverted} />
       <span className="whitespace-nowrap text-[17px] font-semibold tracking-[-0.02em]">
-        Do<span className={inverted ? "text-paper-dim" : "text-ink-3"}>-</span>Whatever
+        Do<span className={inverted ? "text-paper-dim" : "text-ink-3"}>-</span>Whatever<span className={inverted ? "text-paper-dim" : "text-ink-3"}>-</span>You<span className={inverted ? "text-paper-dim" : "text-ink-3"}>-</span>Like
       </span>
     </Link>
   );

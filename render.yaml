@@ -12,7 +12,7 @@ services:
       # Same value as BACKEND_TOKEN on Vercel. Render can generate one; copy it across.
       - key: HEADER_TOKEN
         generateValue: true
-      # Your Vercel address as a JSON list, e.g. ["https://do-whatever.vercel.app"].
+      # Your Vercel address as a JSON list, e.g. ["https://do-whatever-you-like.colddsam.com"].
       # Browsers send files straight here, so only your site may call it.
       - key: ALLOWED_ORIGINS
         sync: false

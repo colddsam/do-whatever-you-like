@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 
 /** The public origin. Used for canonical URLs, the sitemap, robots.txt and structured data. */
 export const SITE_URL = "https://do-whatever-you-like.colddsam.com";
-export const SITE_NAME = "Do-Whatever";
+export const SITE_NAME = "Do-Whatever-You-Like";
 
 /** Who runs the site, shown on /about and in the Organization schema. */
 export const OPERATOR = { name: "colddsam", url: "https://github.com/colddsam" } as const;
 /** Questions, bug reports and takedown requests. */
 export const CONTACT_EMAIL = "colddsam@gmail.com";
 
-const DEFAULT_IMAGE = { url: "/opengraph-image", width: 1200, height: 630, alt: "Do-Whatever: free online tools" };
+const DEFAULT_IMAGE = { url: "/opengraph-image", width: 1200, height: 630, alt: "Do-Whatever-You-Like: free online tools" };
 
 /**
  * A page's title, description, canonical and social cards in one place. Next replaces (not merges)

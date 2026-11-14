@@ -205,7 +205,7 @@ export async function buildFont(glyphs: Record<string, GlyphData>, o: BuildOptio
     descender: DESC,
     designer: o.designer,
     version: "Version 1.000",
-    license: "Made with Do-Whatever's Font creator. The maker of this font owns it.",
+    license: "Made with Do-Whatever-You-Like's Font creator. The maker of this font owns it.",
     glyphs: list,
   });
   return { bytes: font.toArrayBuffer(), count: made.length };
