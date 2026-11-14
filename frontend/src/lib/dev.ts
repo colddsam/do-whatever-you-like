@@ -280,6 +280,32 @@ export function nanoid(size = 21): string {
   return Array.from(crypto.getRandomValues(new Uint8Array(size)), (b) => NANO[b & 63]).join("");
 }
 
+const CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+/** ULID: 26-character Crockford Base32 lexicographically sortable unique ID. */
+export function ulid(ms = Date.now()): string {
+  let t = Math.max(0, Math.floor(ms));
+  let timePart = "";
+  for (let i = 0; i < 10; i++) {
+    timePart = CROCKFORD[t % 32] + timePart;
+    t = Math.floor(t / 32);
+  }
+  const r = crypto.getRandomValues(new Uint8Array(10));
+  let randPart = "";
+  for (let g = 0; g < 10; g += 5) {
+    const b0 = r[g], b1 = r[g + 1], b2 = r[g + 2], b3 = r[g + 3], b4 = r[g + 4];
+    randPart +=
+      CROCKFORD[(b0 >> 3) & 31] +
+      CROCKFORD[((b0 & 7) << 2) | (b1 >> 6)] +
+      CROCKFORD[(b1 >> 1) & 31] +
+      CROCKFORD[((b1 & 1) << 4) | (b2 >> 4)] +
+      CROCKFORD[((b2 & 15) << 1) | (b3 >> 7)] +
+      CROCKFORD[(b3 >> 2) & 31] +
+      CROCKFORD[((b3 & 3) << 3) | (b4 >> 5)] +
+      CROCKFORD[b4 & 31];
+  }
+  return timePart + randPart;
+}
+
 export type PasswordOptions = { length: number; lower: boolean; upper: boolean; digits: boolean; symbols: boolean; noLookalikes: boolean };
 
 /** Uniform, unbiased picks from crypto.getRandomValues, with at least one of each chosen kind. */

@@ -14,9 +14,11 @@ import {
   Link2,
   Lock,
   Palette,
+  Plus,
   RefreshCw,
   Regex,
   ShieldCheck,
+  Trash2,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -39,6 +41,7 @@ import {
   sortKeys,
   toBase64,
   toHex,
+  ulid,
   utf8,
   uuidV4,
   uuidV7,
@@ -72,7 +75,7 @@ const UTILS: { id: UtilId; label: string; blurb: string; group: string; icon: Lu
   { id: "base", label: "Number base", blurb: "Binary, octal, decimal, hex", group: "Convert", icon: Hash },
   { id: "color", label: "Colour", blurb: "HEX, RGB, HSL, HSV, CMYK, names and contrast", group: "Convert", icon: Palette },
   { id: "case", label: "Case & count", blurb: "camelCase, snake_case, word count", group: "Convert", icon: CaseSensitive },
-  { id: "uuid", label: "UUID & IDs", blurb: "UUID v4, v7 and Nano IDs", group: "Generate", icon: Fingerprint },
+  { id: "uuid", label: "UUID & IDs", blurb: "UUID v4, v7, ULID and Nano IDs", group: "Generate", icon: Fingerprint },
   { id: "password", label: "Password", blurb: "Strong, random, made here", group: "Generate", icon: KeyRound },
 ];
 const isUtil = (v: string): v is UtilId => UTILS.some((u) => u.id === v);
@@ -348,8 +351,20 @@ function Base64Util() {
   );
 }
 
+function parseRawQuery(raw: string): [string, string][] | null {
+  const t = raw.trim();
+  if (!t || t.includes("\n")) return null;
+  const q = t.startsWith("?") ? t.slice(1) : t;
+  if (!q.includes("=")) return null;
+  return [...new URLSearchParams(q).entries()];
+}
+
+function buildQuery(pairs: [string, string][]): string {
+  return pairs.map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join("&");
+}
+
 function UrlUtil() {
-  const [input, setInput] = useState("https://example.com/search?q=caf%C3%A9 latte&page=2#results");
+  const [input, setInput] = useState("https://example.com/search?q=caf%C3%A9%20latte&page=2&utm_source=newsletter#results");
   const [mode, setMode] = useState<"decode" | "encode" | "component">("decode");
   const out = useMemo(() => {
     try {
@@ -367,9 +382,39 @@ function UrlUtil() {
       return null;
     }
   }, [input]);
+  const params = useMemo<[string, string][]>(() => {
+    if (parts) return [...parts.searchParams.entries()];
+    return parseRawQuery(input) ?? [];
+  }, [parts, input]);
+
+  const commitParams = (next: [string, string][]) => {
+    const qs = buildQuery(next);
+    if (parts) {
+      const base = `${parts.origin !== "null" ? parts.origin : `${parts.protocol}//${parts.host}`}${parts.pathname}`;
+      setInput(`${base}${qs ? `?${qs}` : ""}${parts.hash}`);
+    } else {
+      const prefix = input.trim().startsWith("?") ? "?" : "";
+      setInput(qs ? `${prefix}${qs}` : "");
+    }
+  };
+
+  const queryJson = useMemo(() => {
+    if (params.length === 0) return "";
+    const obj: Record<string, string | string[]> = {};
+    for (const [k, v] of params) {
+      const cur = obj[k];
+      if (cur === undefined) obj[k] = v;
+      else if (Array.isArray(cur)) cur.push(v);
+      else obj[k] = [cur, v];
+    }
+    return JSON.stringify(obj, null, 2);
+  }, [params]);
+
+  const showBuilder = parts !== null || params.length > 0;
+
   return (
     <>
-      <Editor value={input} onChange={setInput} name="input.url" rows={3} placeholder="A URL, or text to encode" />
+      <Editor value={input} onChange={setInput} name="input.url" rows={3} placeholder="A URL, query string (?a=1&b=2), or text to encode" />
       <Panel>
         <Row label="Do">
           <Chips value={mode} onChange={setMode} options={[{ value: "decode", label: "Decode" }, { value: "encode", label: "Encode a whole URL" }, { value: "component", label: "Encode a value (component)" }]} />
@@ -384,12 +429,86 @@ function UrlUtil() {
           <ValueRow label="Protocol" value={parts.protocol.replace(":", "")} />
           <ValueRow label="Host" value={parts.host} />
           <ValueRow label="Path" value={decodeURIComponent(parts.pathname)} />
-          {[...parts.searchParams.entries()].map(([k, v], i) => (
-            <ValueRow key={`${k}-${i}`} label={`?${k}`} value={v} />
-          ))}
           {parts.hash && <ValueRow label="Fragment" value={decodeURIComponent(parts.hash.slice(1))} />}
         </ValueList>
       )}
+      {showBuilder && (
+        <div className="overflow-hidden rounded-md border border-line bg-surface">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-paper px-3.5 py-2.5">
+            <div className="flex items-center gap-2">
+              <span className="label-mono text-ink-2">Query parameters</span>
+              <span className="font-mono text-[12px] text-ink-3">{params.length}</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => commitParams([...params, ["param", "value"]])}
+                className="inline-flex h-7 items-center gap-1 rounded-[6px] border border-line bg-surface px-2.5 text-[12px] font-medium text-ink transition-colors hover:border-ink-3"
+              >
+                <Plus aria-hidden className="size-3.5" /> Add
+              </button>
+              {params.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => commitParams([...params].sort((a, b) => a[0].localeCompare(b[0])))}
+                  className="inline-flex h-7 items-center rounded-[6px] border border-line bg-surface px-2.5 text-[12px] text-ink-2 transition-colors hover:border-ink-3 hover:text-ink"
+                >
+                  Sort A–Z
+                </button>
+              )}
+              {params.some(([, v]) => !v.trim()) && (
+                <button
+                  type="button"
+                  onClick={() => commitParams(params.filter(([k, v]) => k.trim() && v.trim()))}
+                  className="inline-flex h-7 items-center rounded-[6px] border border-line bg-surface px-2.5 text-[12px] text-ink-2 transition-colors hover:border-ink-3 hover:text-ink"
+                >
+                  Drop empty
+                </button>
+              )}
+              {queryJson && <CopyButton text={queryJson} label="Copy JSON" />}
+            </div>
+          </div>
+          {params.length === 0 ? (
+            <p className="px-3.5 py-3 text-xs text-ink-3">No query parameters yet. Click Add to append ?key=value.</p>
+          ) : (
+            <div className="divide-y divide-line/60">
+              {params.map(([k, v], i) => (
+                <div key={i} className="grid grid-cols-1 gap-2 px-3.5 py-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_auto] sm:items-center">
+                  <input
+                    value={k}
+                    aria-label={`Parameter ${i + 1} key`}
+                    placeholder="key"
+                    onChange={(e) => {
+                      const next = params.map((pair, idx) => (idx === i ? [e.target.value, pair[1]] as [string, string] : pair));
+                      commitParams(next);
+                    }}
+                    className="h-8 min-w-0 rounded-[7px] border border-line bg-paper px-2.5 font-mono text-[13px] text-ink outline-none focus:border-ink"
+                  />
+                  <input
+                    value={v}
+                    aria-label={`Parameter ${i + 1} value`}
+                    placeholder="value"
+                    onChange={(e) => {
+                      const next = params.map((pair, idx) => (idx === i ? [pair[0], e.target.value] as [string, string] : pair));
+                      commitParams(next);
+                    }}
+                    className="h-8 min-w-0 rounded-[7px] border border-line bg-surface px-2.5 font-mono text-[13px] text-ink outline-none focus:border-ink"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => commitParams(params.filter((_, idx) => idx !== i))}
+                    aria-label={`Remove parameter ${k || i + 1}`}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-[7px] border border-line bg-surface text-ink-3 transition-colors hover:border-danger/50 hover:text-danger"
+                  >
+                    <Trash2 aria-hidden className="size-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {queryJson && <Output value={queryJson} name="query-params.json" lang="Query JSON" />}
     </>
   );
 }
@@ -741,31 +860,104 @@ function CaseUtil() {
   );
 }
 
+type IdKind = "v4" | "v7" | "ulid" | "nano";
+type IdFormat = "lines" | "json" | "csv" | "sql" | "quoted";
+
 function UuidUtil() {
-  const [kind, setKind] = useState<"v4" | "v7" | "nano">("v4");
+  const [kind, setKind] = useState<IdKind>("v4");
   const [count, setCount] = useState(5);
+  const [nanoLen, setNanoLen] = useState(21);
   const [upper, setUpper] = useState(false);
   const [hyphens, setHyphens] = useState(true);
-  const make = (k = kind, n = count) => Array.from({ length: n }, () => (k === "v4" ? uuidV4() : k === "v7" ? uuidV7() : nanoid()));
-  const [ids, setIds] = useState<string[]>(() => make());
-  const shown = ids.map((id) => {
-    let v = kind === "nano" || hyphens ? id : id.replace(/-/g, "");
-    if (upper && kind !== "nano") v = v.toUpperCase();
-    return v;
-  });
+  const [ulidLower, setUlidLower] = useState(false);
+  const [outFmt, setOutFmt] = useState<IdFormat>("lines");
+
+  const make = (k = kind, n = count, nLen = nanoLen) => {
+    const baseMs = Date.now();
+    return Array.from({ length: n }, (_, i) => {
+      if (k === "v4") return uuidV4();
+      if (k === "v7") return uuidV7();
+      if (k === "ulid") return ulid(baseMs + i);
+      return nanoid(nLen);
+    });
+  };
+  const [ids, setIds] = useState<string[]>(() => make("v4", 5, 21));
+
+  const shown = useMemo(
+    () =>
+      ids.map((id) => {
+        if (kind === "nano") return id;
+        if (kind === "ulid") return ulidLower ? id.toLowerCase() : id;
+        let v = hyphens ? id : id.replace(/-/g, "");
+        if (upper) v = v.toUpperCase();
+        return v;
+      }),
+    [ids, kind, upper, hyphens, ulidLower],
+  );
+
+  const formatted = useMemo(() => {
+    if (outFmt === "json") return JSON.stringify(shown, null, 2);
+    if (outFmt === "csv") return `id\n${shown.join("\n")}`;
+    if (outFmt === "sql") return `VALUES\n  ${shown.map((s) => `('${s}')`).join(",\n  ")};`;
+    if (outFmt === "quoted") return shown.map((s) => `"${s}"`).join(", ");
+    return shown.join("\n");
+  }, [shown, outFmt]);
+
+  const ext = outFmt === "json" ? "json" : outFmt === "csv" ? "csv" : outFmt === "sql" ? "sql" : "txt";
+
   return (
     <>
       <Panel>
         <Row label="Kind">
-          <Chips value={kind} onChange={(k) => (setKind(k), setIds(make(k)))} options={[{ value: "v4", label: "UUID v4 · random" }, { value: "v7", label: "UUID v7 · time-ordered" }, { value: "nano", label: "Nano ID" }]} />
+          <Chips
+            value={kind}
+            onChange={(k) => (setKind(k), setIds(make(k, count, nanoLen)))}
+            options={[
+              { value: "v4", label: "UUID v4 · random" },
+              { value: "v7", label: "UUID v7 · time-ordered" },
+              { value: "ulid", label: "ULID · sortable" },
+              { value: "nano", label: "Nano ID" },
+            ]}
+          />
           <p className="mt-2 text-xs text-ink-3">
-            {kind === "v7" ? "Sorts by creation time: the better choice for database keys." : kind === "nano" ? "21 URL-safe characters, as unique as a UUID and shorter." : "122 random bits: the everyday unique ID."}
+            {kind === "v7"
+              ? "48-bit timestamp + randomness: sorts by creation time cleanly in SQL primary keys."
+              : kind === "ulid"
+                ? "26-character Crockford Base32 string: compact, URL-safe, case-insensitive, and time-sortable."
+                : kind === "nano"
+                  ? `${nanoLen} URL-safe characters with cryptographic randomness.`
+                  : "122 random bits: standard RFC 4122 unique identifier."}
           </p>
         </Row>
         <Row label="How many">
-          <Slider value={count} min={1} max={100} onChange={(n) => (setCount(n), setIds(make(kind, n)))} label="How many" />
+          <div className="space-y-2.5">
+            <div className="flex flex-wrap gap-1.5">
+              {[1, 5, 10, 25, 50, 100, 500].map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => (setCount(preset), setIds(make(kind, preset, nanoLen)))}
+                  className={cn(
+                    "h-7 rounded-[7px] border px-2.5 font-mono text-[12px] transition-colors",
+                    count === preset ? "border-ink bg-ink text-paper" : "border-line bg-surface text-ink-2 hover:border-ink-3 hover:text-ink",
+                  )}
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
+            <Slider value={count} min={1} max={500} onChange={(n) => (setCount(n), setIds(make(kind, n, nanoLen)))} label="How many" />
+          </div>
         </Row>
-        {kind !== "nano" && (
+        {kind === "nano" ? (
+          <Row label="Length">
+            <Slider value={nanoLen} min={6} max={64} onChange={(len) => (setNanoLen(len), setIds(make(kind, count, len)))} label="Nano ID length" />
+          </Row>
+        ) : kind === "ulid" ? (
+          <Row label="Case">
+            <Toggle checked={ulidLower} onChange={setUlidLower} label="lower case (Crockford is case-insensitive)" />
+          </Row>
+        ) : (
           <Row label="Format">
             <div className="space-y-2.5">
               <Toggle checked={upper} onChange={setUpper} label="UPPER CASE" />
@@ -773,11 +965,31 @@ function UuidUtil() {
             </div>
           </Row>
         )}
+        <Row label="Output as">
+          <Chips
+            value={outFmt}
+            onChange={setOutFmt}
+            options={[
+              { value: "lines", label: "Lines" },
+              { value: "json", label: "JSON array" },
+              { value: "csv", label: "CSV" },
+              { value: "sql", label: "SQL VALUES" },
+              { value: "quoted", label: "Comma list" },
+            ]}
+          />
+        </Row>
       </Panel>
       <div className="flex justify-end">
-        <RegenerateButton onClick={() => setIds(make())} />
+        <RegenerateButton onClick={() => setIds(make(kind, count, nanoLen))} />
       </div>
-      <Output value={shown.join("\n")} name={`${kind}.txt`} lang={`${shown.length} ID${shown.length === 1 ? "" : "s"}`} download="ids.txt" wrap={false} />
+      <Output value={formatted} name={`${kind}.${ext}`} lang={`${shown.length} ${kind.toUpperCase()}${shown.length === 1 ? "" : "s"}`} download={`${kind}-ids.${ext}`} wrap={outFmt === "quoted"} />
+      {outFmt === "lines" && shown.length > 1 && shown.length <= 10 && (
+        <ValueList>
+          {shown.map((id, i) => (
+            <ValueRow key={`${id}-${i}`} label={`#${i + 1}`} value={id} />
+          ))}
+        </ValueList>
+      )}
     </>
   );
 }

@@ -12,7 +12,7 @@
 
 <a href="https://do-whatever-you-like.colddsam.com"><img src="https://img.shields.io/badge/Open%20the%20site-do--whatever--you--like.colddsam.com-eb4a10?style=for-the-badge&labelColor=15140f" alt="Open the live site"></a>
 
-<img src="https://img.shields.io/badge/tools-218%20live-15140f?style=flat-square" alt="218 live tools">
+<img src="https://img.shields.io/badge/tools-251%20live-15140f?style=flat-square" alt="251 live tools">
 <img src="https://img.shields.io/badge/price-free-2f7d4f?style=flat-square" alt="Free">
 <img src="https://img.shields.io/badge/sign--up-not%20needed-57544a?style=flat-square" alt="No sign-up">
 <img src="https://img.shields.io/badge/watermarks-none-57544a?style=flat-square" alt="No watermarks">
@@ -41,9 +41,9 @@
 
 ## 👋 What is Do-Whatever-You-Like?
 
-**Do-Whatever-You-Like is a free website with 218 small tools for everyday digital chores.**
+**Do-Whatever-You-Like is a free website with 251 small tools for everyday digital chores.**
 
-Need to turn a PDF into Word, translate text, audio recordings or videos into another language, analyze an exported WhatsApp chat, shrink a photo, cut a song, clean up a noisy recording, format JSON, make a chart, track your period privately, or download a Reel? Open the site, pick the tool, done.
+Need to turn a PDF into Word, translate text, audio recordings or videos into another language, analyze an exported WhatsApp chat, shrink a photo, vectorise a logo to SVG, cut a song, clean up a noisy recording, format JSON, query a local SQLite or Parquet file, make a chart, split a trip bill, track your period privately, or download a Reel? Open the site, pick the tool, done.
 
 - **Free, for everyone.** No account, no sign-up, no watermark, no "pro" plan.
 - **Private by default.** Most tools run inside your browser, so your file never leaves your device. When a tool does need our server, your file is deleted as soon as you have the result.
@@ -70,26 +70,26 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 
 ## 🗂️ What's inside
 
-218 live tools in 9 collections. Click a name to open that collection on the site.
+251 live tools in 9 collections. Click a name to open that collection on the site.
 
 | | Collection | What you can do | Tools |
 | :---: | :--- | :--- | :---: |
-| 🔁 | [**Any file**](https://do-whatever-you-like.colddsam.com/tools/category/files) | Convert almost any file to any format, compress, merge and split | **11** |
+| 🔁 | [**Any file**](https://do-whatever-you-like.colddsam.com/tools/category/files) | Convert almost any file to any format, compress, merge, split and inspect or build archives | **12** |
 | 📄 | [**PDF tools**](https://do-whatever-you-like.colddsam.com/tools/category/pdf) | Merge, split, compress, edit, sign, protect, OCR and compare PDFs | **23** |
-| 🖼️ | [**Image tools**](https://do-whatever-you-like.colddsam.com/tools/category/images) | Compress, resize, crop, remove backgrounds, upscale, blur faces, make memes and icons | **18** |
-| 💻 | [**Developer tools**](https://do-whatever-you-like.colddsam.com/tools/category/developer) | Format, minify and validate code, hashes, JWT, regex, DNS and HTTP checks, cron | **100** |
-| ✍️ | [**Text tools**](https://do-whatever-you-like.colddsam.com/tools/category/text) | Translator (text, audio & video), WhatsApp chat analyzer, binary and hex, Morse code, find and replace, summaries | **23** |
-| 🎨 | [**Charts, fonts and colour**](https://do-whatever-you-like.colddsam.com/tools/category/design) | Animated charts, flowcharts, font checker and maker, colour picker, CSS generators | **9** |
+| 🖼️ | [**Image tools**](https://do-whatever-you-like.colddsam.com/tools/category/images) | Compress, resize, crop, remove backgrounds, upscale, vectorise to SVG, frame mockups, blur faces, make memes and icons | **20** |
+| 💻 | [**Developer tools**](https://do-whatever-you-like.colddsam.com/tools/category/developer) | Format, minify and validate code, convert JSON/CSV/YAML/XML/SQL/types, query SQLite & Parquet, hashes, JWT, UUID/ULID, regex, DNS and HTTP checks, cron | **114** |
+| ✍️ | [**Text tools**](https://do-whatever-you-like.colddsam.com/tools/category/text) | Writing helper, translator (text, audio & video), WhatsApp chat analyzer, word counter, case & list tools, binary and hex, Morse code, summaries | **28** |
+| 🎨 | [**Charts, fonts and colour**](https://do-whatever-you-like.colddsam.com/tools/category/design) | Animated charts, flowcharts, font checker and maker, colour picker & 50–950 scales, SVG optimizer, CSS Grid/Flexbox & UI generators | **14** |
 | ⬇️ | [**Media downloads**](https://do-whatever-you-like.colddsam.com/tools/category/downloads) | Save public YouTube, Instagram and Facebook videos, or just their sound | **3** |
-| 🎬 | [**Audio and video**](https://do-whatever-you-like.colddsam.com/tools/category/media) | Trim, remove noise, change volume, record your screen, subtitles & caption translation, speech to text, GIFs | **9** |
-| 🧰 | [**Everyday utilities**](https://do-whatever-you-like.colddsam.com/tools/category/utilities) | Private period tracker, QR codes, converters, clocks and timers, passwords, encrypted notes, device tests | **22** |
+| 🎬 | [**Audio and video**](https://do-whatever-you-like.colddsam.com/tools/category/media) | Trim, remove noise, change volume, waveforms & spectrograms, record your screen, subtitles & caption translation, speech to text, GIFs | **10** |
+| 🧰 | [**Everyday utilities**](https://do-whatever-you-like.colddsam.com/tools/category/utilities) | Private period tracker, EMI/SIP/GST calculators, bill splitter, invoice & signature maker, QR codes, converters, clocks, passwords, device tests | **27** |
 
 <details>
 <summary><b>📋 The full list of every tool</b> (click to open)</summary>
 <br>
 
 <details>
-<summary><b>🔁 Any file</b> — 11 tools</summary>
+<summary><b>🔁 Any file</b> — 12 tools</summary>
 <br>
 
 - [**Universal converter**](https://do-whatever-you-like.colddsam.com/tools/convert-anything) — Turn almost any file into the format you need: documents, data, images, audio, video, fonts and more.
@@ -101,6 +101,7 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 - [**PowerPoint to PDF**](https://do-whatever-you-like.colddsam.com/tools/powerpoint-to-pdf) — Turn slides into a PDF, one page per slide.
 - [**Excel to PDF**](https://do-whatever-you-like.colddsam.com/tools/excel-to-pdf) — Turn spreadsheets into PDF.
 - [**Compress files**](https://do-whatever-you-like.colddsam.com/tools/compress-files) — Make any file smaller: PDF, Word, PowerPoint, Excel, photos, audio, video and more.
+- [**ZIP, TAR & GZ archive tool**](https://do-whatever-you-like.colddsam.com/tools/archive-extractor-creator) — Inspect archive contents, preview files inside or bundle multiple files into .zip, .tar, .tar.gz or .gz in your browser.
 - [**Merge files**](https://do-whatever-you-like.colddsam.com/tools/merge-files) — Combine Word, PowerPoint, Excel, CSV, PDF, audio or video files into one.
 - [**Split files**](https://do-whatever-you-like.colddsam.com/tools/split-files) — Break Word, PowerPoint, Excel, CSV, PDF, audio or video into parts.
 
@@ -137,7 +138,7 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 </details>
 
 <details>
-<summary><b>🖼️ Image tools</b> — 18 tools</summary>
+<summary><b>🖼️ Image tools</b> — 20 tools</summary>
 <br>
 
 - [**Image studio**](https://do-whatever-you-like.colddsam.com/tools/image) — Compress, resize, convert and cut out images in seconds.
@@ -158,21 +159,24 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 - [**Icon maker**](https://do-whatever-you-like.colddsam.com/tools/icon-maker) — Favicons and app icons for websites, Windows, macOS, iOS and Android, from one picture.
 - [**Watermark image**](https://do-whatever-you-like.colddsam.com/tools/watermark-image) — Stamp text or a logo, placed, faded, turned or tiled.
 - [**Blur face**](https://do-whatever-you-like.colddsam.com/tools/blur-face) — Find faces and hide them, plus anything else you mark.
+- [**Image to SVG vectoriser**](https://do-whatever-you-like.colddsam.com/tools/image-to-svg) — Trace PNG or JPG logos, sketches and icons into crisp scalable SVG vectors in your browser.
+- [**Mockup & safe-zone frame**](https://do-whatever-you-like.colddsam.com/tools/mockup-frame-generator) — Frame screenshots inside browser windows or phones, or preview YouTube/Reels/TikTok safe zones.
 
 </details>
 
 <details>
-<summary><b>💻 Developer tools</b> — 100 tools</summary>
+<summary><b>💻 Developer tools</b> — 114 tools</summary>
 <br>
 
-[Developer utilities](https://do-whatever-you-like.colddsam.com/tools/dev) · [JSON formatter & validator](https://do-whatever-you-like.colddsam.com/tools/json-formatter) · [JWT decoder](https://do-whatever-you-like.colddsam.com/tools/jwt-decoder) · [Base64 encode & decode](https://do-whatever-you-like.colddsam.com/tools/base64-encoder) · [Regex tester](https://do-whatever-you-like.colddsam.com/tools/regex-tester) · [Unix timestamp converter](https://do-whatever-you-like.colddsam.com/tools/timestamp-converter) · [Diff checker](https://do-whatever-you-like.colddsam.com/tools/diff-checker) · [HTML formatter](https://do-whatever-you-like.colddsam.com/tools/html-formatter) · [CSS formatter](https://do-whatever-you-like.colddsam.com/tools/css-formatter) · [JavaScript formatter](https://do-whatever-you-like.colddsam.com/tools/javascript-formatter) · [TypeScript formatter](https://do-whatever-you-like.colddsam.com/tools/typescript-formatter) · [React (JSX) formatter](https://do-whatever-you-like.colddsam.com/tools/react-formatter) · [Angular template formatter](https://do-whatever-you-like.colddsam.com/tools/angular-formatter) · [XML formatter](https://do-whatever-you-like.colddsam.com/tools/xml-formatter) · [PHP formatter](https://do-whatever-you-like.colddsam.com/tools/php-formatter) · [Java formatter](https://do-whatever-you-like.colddsam.com/tools/java-formatter) · [SQL formatter](https://do-whatever-you-like.colddsam.com/tools/sql-formatter) · [YAML formatter](https://do-whatever-you-like.colddsam.com/tools/yaml-formatter) · [Markdown formatter](https://do-whatever-you-like.colddsam.com/tools/markdown-formatter) · [HTML minifier](https://do-whatever-you-like.colddsam.com/tools/html-minifier) · [CSS minifier](https://do-whatever-you-like.colddsam.com/tools/css-minifier) · [JavaScript minifier](https://do-whatever-you-like.colddsam.com/tools/javascript-minifier) · [JavaScript validator](https://do-whatever-you-like.colddsam.com/tools/javascript-validator) · [CSS validator](https://do-whatever-you-like.colddsam.com/tools/css-validator) · [XML validator](https://do-whatever-you-like.colddsam.com/tools/xml-validator) · [YAML validator](https://do-whatever-you-like.colddsam.com/tools/yaml-validator) · [Card number validator](https://do-whatever-you-like.colddsam.com/tools/card-validator) · [XSD validator](https://do-whatever-you-like.colddsam.com/tools/xsd-validator) · [Code editor](https://do-whatever-you-like.colddsam.com/tools/code-editor) · [Online text editor](https://do-whatever-you-like.colddsam.com/tools/text-editor) · [Markdown editor](https://do-whatever-you-like.colddsam.com/tools/markdown-editor) · [Markdown viewer](https://do-whatever-you-like.colddsam.com/tools/markdown-viewer) · [HTML viewer](https://do-whatever-you-like.colddsam.com/tools/html-viewer) · [XML viewer](https://do-whatever-you-like.colddsam.com/tools/xml-viewer) · [XPath tester](https://do-whatever-you-like.colddsam.com/tools/xpath-tester) · [XSLT transformer](https://do-whatever-you-like.colddsam.com/tools/xslt-transformer) · [JSONPath tester](https://do-whatever-you-like.colddsam.com/tools/jsonpath-tester) · [URI template expander](https://do-whatever-you-like.colddsam.com/tools/uri-template) · [JSON escape / unescape](https://do-whatever-you-like.colddsam.com/tools/json-escape) · [HTML entities encoder](https://do-whatever-you-like.colddsam.com/tools/html-entities) · [IEEE-754 float analyser](https://do-whatever-you-like.colddsam.com/tools/ieee-754) · [MD5 hash generator](https://do-whatever-you-like.colddsam.com/tools/md5-hash) · [SHA-1 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha1-hash) · [SHA-224 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha224-hash) · [SHA-256 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha256-hash) · [SHA-384 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha384-hash) · [SHA-512 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha512-hash) · [SHA-512/224 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha512-224-hash) · [SHA-512/256 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha512-256-hash) · [SHA3-224 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha3-224-hash) · [SHA3-256 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha3-256-hash) · [SHA3-384 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha3-384-hash) · [SHA3-512 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha3-512-hash) · [SHAKE-128 hash generator](https://do-whatever-you-like.colddsam.com/tools/shake128-hash) · [SHAKE-256 hash generator](https://do-whatever-you-like.colddsam.com/tools/shake256-hash) · [MD2 hash generator](https://do-whatever-you-like.colddsam.com/tools/md2-hash) · [MD4 hash generator](https://do-whatever-you-like.colddsam.com/tools/md4-hash) · [NTLM hash generator](https://do-whatever-you-like.colddsam.com/tools/ntlm-hash) · [CRC-16 checksum](https://do-whatever-you-like.colddsam.com/tools/crc16-hash) · [CRC-32 checksum](https://do-whatever-you-like.colddsam.com/tools/crc32-hash) · [HMAC generator](https://do-whatever-you-like.colddsam.com/tools/hmac-generator) · [WordPress password hash](https://do-whatever-you-like.colddsam.com/tools/wordpress-hash) · [Random name picker](https://do-whatever-you-like.colddsam.com/tools/random-name-picker) · [Random string generator](https://do-whatever-you-like.colddsam.com/tools/random-string) · [Random alphanumeric](https://do-whatever-you-like.colddsam.com/tools/random-alphanumeric) · [Random letter generator](https://do-whatever-you-like.colddsam.com/tools/random-letters) · [Random number generator](https://do-whatever-you-like.colddsam.com/tools/random-integer) · [Random decimal generator](https://do-whatever-you-like.colddsam.com/tools/random-decimal) · [Random fraction generator](https://do-whatever-you-like.colddsam.com/tools/random-fraction) · [Random prime generator](https://do-whatever-you-like.colddsam.com/tools/random-prime) · [Random hex generator](https://do-whatever-you-like.colddsam.com/tools/random-hex) · [Random binary generator](https://do-whatever-you-like.colddsam.com/tools/random-binary) · [Random byte generator](https://do-whatever-you-like.colddsam.com/tools/random-bytes) · [Random date generator](https://do-whatever-you-like.colddsam.com/tools/random-date) · [Random time generator](https://do-whatever-you-like.colddsam.com/tools/random-time) · [Random IP address generator](https://do-whatever-you-like.colddsam.com/tools/random-ip) · [MAC address generator](https://do-whatever-you-like.colddsam.com/tools/random-mac) · [Random JSON generator](https://do-whatever-you-like.colddsam.com/tools/random-json) · [Random CSV generator](https://do-whatever-you-like.colddsam.com/tools/random-csv) · [Random TSV generator](https://do-whatever-you-like.colddsam.com/tools/random-tsv) · [Random XML generator](https://do-whatever-you-like.colddsam.com/tools/random-xml) · [Random data from regex](https://do-whatever-you-like.colddsam.com/tools/random-from-regex) · [Random bitmap generator](https://do-whatever-you-like.colddsam.com/tools/random-bitmap) · [DNS lookup](https://do-whatever-you-like.colddsam.com/tools/dns-lookup) · [MX lookup](https://do-whatever-you-like.colddsam.com/tools/mx-lookup) · [NS lookup](https://do-whatever-you-like.colddsam.com/tools/ns-lookup) · [Website to IP](https://do-whatever-you-like.colddsam.com/tools/website-to-ip) · [IP to hostname](https://do-whatever-you-like.colddsam.com/tools/ip-to-hostname) · [HTTP header checker](https://do-whatever-you-like.colddsam.com/tools/http-headers) · [HTTP status checker](https://do-whatever-you-like.colddsam.com/tools/http-status) · [Open port checker](https://do-whatever-you-like.colddsam.com/tools/open-port-checker) · [API tester](https://do-whatever-you-like.colddsam.com/tools/api-tester) · [HTML link generator](https://do-whatever-you-like.colddsam.com/tools/html-link-generator) · [HTML table generator](https://do-whatever-you-like.colddsam.com/tools/html-table-generator) · [Redirect generator](https://do-whatever-you-like.colddsam.com/tools/redirect-generator) · [Share link generator](https://do-whatever-you-like.colddsam.com/tools/share-link-generator) · [REM to PX converter](https://do-whatever-you-like.colddsam.com/tools/rem-px-converter) · [CSS to Less](https://do-whatever-you-like.colddsam.com/tools/css-to-less) · [ASCII table](https://do-whatever-you-like.colddsam.com/tools/ascii-table) · [Cron expression explainer](https://do-whatever-you-like.colddsam.com/tools/cron-explainer)
+[Developer utilities](https://do-whatever-you-like.colddsam.com/tools/dev) · [JSON formatter & validator](https://do-whatever-you-like.colddsam.com/tools/json-formatter) · [JWT decoder](https://do-whatever-you-like.colddsam.com/tools/jwt-decoder) · [Base64 encode & decode](https://do-whatever-you-like.colddsam.com/tools/base64-encoder) · [Regex tester](https://do-whatever-you-like.colddsam.com/tools/regex-tester) · [Unix timestamp converter](https://do-whatever-you-like.colddsam.com/tools/timestamp-converter) · [Diff checker](https://do-whatever-you-like.colddsam.com/tools/diff-checker) · [UUID, ULID & NanoID generator](https://do-whatever-you-like.colddsam.com/tools/uuid-generator) · [URL encoder & query parser](https://do-whatever-you-like.colddsam.com/tools/url-encoder) · [HTML formatter](https://do-whatever-you-like.colddsam.com/tools/html-formatter) · [CSS formatter](https://do-whatever-you-like.colddsam.com/tools/css-formatter) · [JavaScript formatter](https://do-whatever-you-like.colddsam.com/tools/javascript-formatter) · [TypeScript formatter](https://do-whatever-you-like.colddsam.com/tools/typescript-formatter) · [React (JSX) formatter](https://do-whatever-you-like.colddsam.com/tools/react-formatter) · [Angular template formatter](https://do-whatever-you-like.colddsam.com/tools/angular-formatter) · [XML formatter](https://do-whatever-you-like.colddsam.com/tools/xml-formatter) · [PHP formatter](https://do-whatever-you-like.colddsam.com/tools/php-formatter) · [Java formatter](https://do-whatever-you-like.colddsam.com/tools/java-formatter) · [SQL formatter](https://do-whatever-you-like.colddsam.com/tools/sql-formatter) · [YAML formatter](https://do-whatever-you-like.colddsam.com/tools/yaml-formatter) · [Markdown formatter](https://do-whatever-you-like.colddsam.com/tools/markdown-formatter) · [HTML minifier](https://do-whatever-you-like.colddsam.com/tools/html-minifier) · [CSS minifier](https://do-whatever-you-like.colddsam.com/tools/css-minifier) · [JavaScript minifier](https://do-whatever-you-like.colddsam.com/tools/javascript-minifier) · [JavaScript validator](https://do-whatever-you-like.colddsam.com/tools/javascript-validator) · [CSS validator](https://do-whatever-you-like.colddsam.com/tools/css-validator) · [XML validator](https://do-whatever-you-like.colddsam.com/tools/xml-validator) · [YAML validator](https://do-whatever-you-like.colddsam.com/tools/yaml-validator) · [Card number validator](https://do-whatever-you-like.colddsam.com/tools/card-validator) · [XSD validator](https://do-whatever-you-like.colddsam.com/tools/xsd-validator) · [Code editor](https://do-whatever-you-like.colddsam.com/tools/code-editor) · [Online text editor](https://do-whatever-you-like.colddsam.com/tools/text-editor) · [Markdown editor](https://do-whatever-you-like.colddsam.com/tools/markdown-editor) · [Markdown viewer](https://do-whatever-you-like.colddsam.com/tools/markdown-viewer) · [HTML viewer](https://do-whatever-you-like.colddsam.com/tools/html-viewer) · [XML viewer](https://do-whatever-you-like.colddsam.com/tools/xml-viewer) · [XPath tester](https://do-whatever-you-like.colddsam.com/tools/xpath-tester) · [XSLT transformer](https://do-whatever-you-like.colddsam.com/tools/xslt-transformer) · [JSONPath tester](https://do-whatever-you-like.colddsam.com/tools/jsonpath-tester) · [URI template expander](https://do-whatever-you-like.colddsam.com/tools/uri-template) · [JSON escape / unescape](https://do-whatever-you-like.colddsam.com/tools/json-escape) · [HTML entities encoder](https://do-whatever-you-like.colddsam.com/tools/html-entities) · [IEEE-754 float analyser](https://do-whatever-you-like.colddsam.com/tools/ieee-754) · [MD5 hash generator](https://do-whatever-you-like.colddsam.com/tools/md5-hash) · [SHA-1 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha1-hash) · [SHA-224 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha224-hash) · [SHA-256 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha256-hash) · [SHA-384 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha384-hash) · [SHA-512 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha512-hash) · [SHA-512/224 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha512-224-hash) · [SHA-512/256 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha512-256-hash) · [SHA3-224 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha3-224-hash) · [SHA3-256 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha3-256-hash) · [SHA3-384 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha3-384-hash) · [SHA3-512 hash generator](https://do-whatever-you-like.colddsam.com/tools/sha3-512-hash) · [SHAKE-128 hash generator](https://do-whatever-you-like.colddsam.com/tools/shake128-hash) · [SHAKE-256 hash generator](https://do-whatever-you-like.colddsam.com/tools/shake256-hash) · [MD2 hash generator](https://do-whatever-you-like.colddsam.com/tools/md2-hash) · [MD4 hash generator](https://do-whatever-you-like.colddsam.com/tools/md4-hash) · [NTLM hash generator](https://do-whatever-you-like.colddsam.com/tools/ntlm-hash) · [CRC-16 checksum](https://do-whatever-you-like.colddsam.com/tools/crc16-hash) · [CRC-32 checksum](https://do-whatever-you-like.colddsam.com/tools/crc32-hash) · [HMAC generator](https://do-whatever-you-like.colddsam.com/tools/hmac-generator) · [WordPress password hash](https://do-whatever-you-like.colddsam.com/tools/wordpress-hash) · [Random name picker](https://do-whatever-you-like.colddsam.com/tools/random-name-picker) · [Random string generator](https://do-whatever-you-like.colddsam.com/tools/random-string) · [Random alphanumeric](https://do-whatever-you-like.colddsam.com/tools/random-alphanumeric) · [Random letter generator](https://do-whatever-you-like.colddsam.com/tools/random-letters) · [Random number generator](https://do-whatever-you-like.colddsam.com/tools/random-integer) · [Random decimal generator](https://do-whatever-you-like.colddsam.com/tools/random-decimal) · [Random fraction generator](https://do-whatever-you-like.colddsam.com/tools/random-fraction) · [Random prime generator](https://do-whatever-you-like.colddsam.com/tools/random-prime) · [Random hex generator](https://do-whatever-you-like.colddsam.com/tools/random-hex) · [Random binary generator](https://do-whatever-you-like.colddsam.com/tools/random-binary) · [Random byte generator](https://do-whatever-you-like.colddsam.com/tools/random-bytes) · [Random date generator](https://do-whatever-you-like.colddsam.com/tools/random-date) · [Random time generator](https://do-whatever-you-like.colddsam.com/tools/random-time) · [Random IP address generator](https://do-whatever-you-like.colddsam.com/tools/random-ip) · [MAC address generator](https://do-whatever-you-like.colddsam.com/tools/random-mac) · [Random JSON generator](https://do-whatever-you-like.colddsam.com/tools/random-json) · [Random CSV generator](https://do-whatever-you-like.colddsam.com/tools/random-csv) · [Random TSV generator](https://do-whatever-you-like.colddsam.com/tools/random-tsv) · [Random XML generator](https://do-whatever-you-like.colddsam.com/tools/random-xml) · [Random data from regex](https://do-whatever-you-like.colddsam.com/tools/random-from-regex) · [Random bitmap generator](https://do-whatever-you-like.colddsam.com/tools/random-bitmap) · [DNS lookup](https://do-whatever-you-like.colddsam.com/tools/dns-lookup) · [MX lookup](https://do-whatever-you-like.colddsam.com/tools/mx-lookup) · [NS lookup](https://do-whatever-you-like.colddsam.com/tools/ns-lookup) · [Website to IP](https://do-whatever-you-like.colddsam.com/tools/website-to-ip) · [IP to hostname](https://do-whatever-you-like.colddsam.com/tools/ip-to-hostname) · [HTTP header checker](https://do-whatever-you-like.colddsam.com/tools/http-headers) · [HTTP status checker](https://do-whatever-you-like.colddsam.com/tools/http-status) · [Open port checker](https://do-whatever-you-like.colddsam.com/tools/open-port-checker) · [API tester](https://do-whatever-you-like.colddsam.com/tools/api-tester) · [HTML link generator](https://do-whatever-you-like.colddsam.com/tools/html-link-generator) · [HTML table generator](https://do-whatever-you-like.colddsam.com/tools/html-table-generator) · [Redirect generator](https://do-whatever-you-like.colddsam.com/tools/redirect-generator) · [Share link generator](https://do-whatever-you-like.colddsam.com/tools/share-link-generator) · [REM to PX converter](https://do-whatever-you-like.colddsam.com/tools/rem-px-converter) · [CSS to Less](https://do-whatever-you-like.colddsam.com/tools/css-to-less) · [ASCII table](https://do-whatever-you-like.colddsam.com/tools/ascii-table) · [Data format converter](https://do-whatever-you-like.colddsam.com/tools/data-format-converter) · [JSON to CSV converter](https://do-whatever-you-like.colddsam.com/tools/json-to-csv) · [CSV to JSON converter](https://do-whatever-you-like.colddsam.com/tools/csv-to-json) · [JSON to YAML converter](https://do-whatever-you-like.colddsam.com/tools/json-to-yaml) · [YAML to JSON converter](https://do-whatever-you-like.colddsam.com/tools/yaml-to-json) · [JSON to XML converter](https://do-whatever-you-like.colddsam.com/tools/json-to-xml) · [XML to JSON converter](https://do-whatever-you-like.colddsam.com/tools/xml-to-json) · [HTML to Markdown converter](https://do-whatever-you-like.colddsam.com/tools/html-to-markdown) · [Markdown to HTML converter](https://do-whatever-you-like.colddsam.com/tools/markdown-to-html) · [JSON / SQL to code types](https://do-whatever-you-like.colddsam.com/tools/json-sql-to-types) · [Chmod permissions calculator](https://do-whatever-you-like.colddsam.com/tools/chmod-calculator) · [SQLite, CSV & Parquet viewer](https://do-whatever-you-like.colddsam.com/tools/sqlite-csv-parquet-viewer) · [Cron expression explainer](https://do-whatever-you-like.colddsam.com/tools/cron-explainer)
 
 </details>
 
 <details>
-<summary><b>✍️ Text tools</b> — 23 live tools</summary>
+<summary><b>✍️ Text tools</b> — 28 tools</summary>
 <br>
 
+- [**Writing helper**](https://do-whatever-you-like.colddsam.com/tools/writing) — Summarise long passages, rewrite tone and fix grammar right in your browser.
 - [**Translator**](https://do-whatever-you-like.colddsam.com/tools/translator) — Translate plain text, subtitles (`.srt`/`.vtt`), audio recordings, voice notes or videos — returning dubbed audio/video files plus copyable input and translated transcripts.
 - [**WhatsApp chat analyzer**](https://do-whatever-you-like.colddsam.com/tools/whatsapp-chat-analyzer) — Turn any exported WhatsApp chat into stats, timelines, activity heatmaps, reply speed, top emojis and searchable messages — in your browser.
 - [**Text to binary**](https://do-whatever-you-like.colddsam.com/tools/text-to-binary) — Turn text into binary code, eight bits per byte.
@@ -196,11 +200,15 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 - [**Lorem ipsum generator**](https://do-whatever-you-like.colddsam.com/tools/lorem-ipsum) — Placeholder text by paragraphs, sentences or words.
 - [**Text to image**](https://do-whatever-you-like.colddsam.com/tools/text-to-image) — Turn text into a PNG, with font, colours and padding.
 - [**Text summarizer**](https://do-whatever-you-like.colddsam.com/tools/text-summarizer) — The key sentences of a long text, in your browser.
+- [**Word, character & reading time counter**](https://do-whatever-you-like.colddsam.com/tools/word-counter) — Live word, character, sentence, paragraph counts, reading time and Flesch score.
+- [**Case converter**](https://do-whatever-you-like.colddsam.com/tools/case-converter) — Convert text across camelCase, snake_case, kebab-case, PascalCase, Title Case and more.
+- [**List comparator (set operations)**](https://do-whatever-you-like.colddsam.com/tools/list-comparator) — Compare two lists to find A only, B only, intersection, union and symmetric difference.
+- [**Invisible character & smart quote cleaner**](https://do-whatever-you-like.colddsam.com/tools/invisible-character-cleaner) — Inspect and strip zero-width spaces, non-breaking spaces, soft hyphens and curly quotes.
 
 </details>
 
 <details>
-<summary><b>🎨 Charts, fonts and colour</b> — 9 tools</summary>
+<summary><b>🎨 Charts, fonts and colour</b> — 14 tools</summary>
 <br>
 
 - [**Chart maker**](https://do-whatever-you-like.colddsam.com/tools/chart-maker) — Make 30 kinds of charts from your own data, animate them, and save them as pictures, GIFs, videos or web pages.
@@ -212,6 +220,11 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 - [**CSS gradient generator**](https://do-whatever-you-like.colddsam.com/tools/css-gradient-generator) — Linear, radial and conic gradients with any number of colours.
 - [**Box shadow generator**](https://do-whatever-you-like.colddsam.com/tools/box-shadow-generator) — Layered, soft or crisp CSS shadows, live.
 - [**Border radius generator**](https://do-whatever-you-like.colddsam.com/tools/border-radius-generator) — Rounded corners, one by one, or organic blob shapes.
+- [**Glassmorphism CSS generator**](https://do-whatever-you-like.colddsam.com/tools/glassmorphism-generator) — Frosted glass cards with backdrop blur, translucency, saturation and crisp borders.
+- [**Neumorphism CSS generator**](https://do-whatever-you-like.colddsam.com/tools/neumorphism-generator) — Soft extruded UI surfaces with directional highlights and soft shadows.
+- [**SVG optimizer & JSX converter**](https://do-whatever-you-like.colddsam.com/tools/svg-optimizer-jsx) — Minify raw SVG paths, strip bloat and convert attributes for React JSX/TSX or CSS Data URIs.
+- [**CSS Grid & Flexbox playground**](https://do-whatever-you-like.colddsam.com/tools/css-grid-flexbox-playground) — Visual layout builder with live cells that outputs Tailwind classes, CSS and HTML.
+- [**Color palette & 50–950 scale generator**](https://do-whatever-you-like.colddsam.com/tools/color-palette-scale-generator) — Generate full Tailwind 50–950 colour scales, WCAG badges and harmonious palettes from one hex colour.
 
 </details>
 
@@ -226,7 +239,7 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 </details>
 
 <details>
-<summary><b>🎬 Audio and video</b> — 9 tools</summary>
+<summary><b>🎬 Audio and video</b> — 10 tools</summary>
 <br>
 
 - [**Video to frames**](https://do-whatever-you-like.colddsam.com/tools/video-to-frames) — Split a video into still frames: pick how many, which part and the format.
@@ -236,13 +249,14 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 - [**Volume booster & normaliser**](https://do-whatever-you-like.colddsam.com/tools/audio-volume) — Make audio or a video louder or quieter, even out the loudness, or mute a video.
 - [**Screen & voice recorder**](https://do-whatever-you-like.colddsam.com/tools/screen-recorder) — Record your screen, a window or a tab with your voice, or just your voice.
 - [**Subtitle editor**](https://do-whatever-you-like.colddsam.com/tools/subtitle-editor) — Fix subtitle timing and text, sync them to a video, translate captions with one click while keeping cue timestamps, and save as SRT or VTT.
+- [**Audio waveform & spectrogram**](https://do-whatever-you-like.colddsam.com/tools/audio-waveform-generator) — Turn any audio clip into a downloadable SVG/PNG waveform or STFT frequency spectrogram.
 - [**Video to MP3**](https://do-whatever-you-like.colddsam.com/tools/audio) — Pull a clean MP3 out of any video file.
 - [**Audio to text**](https://do-whatever-you-like.colddsam.com/tools/audio-to-text) — Turn speech into text you can edit, copy, export as SRT/VTT, or translate right inline.
 
 </details>
 
 <details>
-<summary><b>🧰 Everyday utilities</b> — 22 tools</summary>
+<summary><b>🧰 Everyday utilities</b> — 27 tools</summary>
 <br>
 
 - [**Period tracker**](https://do-whatever-you-like.colddsam.com/tools/period-tracker) — Track your period, see when the next one is due, and log symptoms and moods. Private: it never leaves your phone.
@@ -267,6 +281,11 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 - [**Encrypt a note**](https://do-whatever-you-like.colddsam.com/tools/encrypt-note) — Lock a message with a password (AES-256), and share it as text or a link.
 - [**Photo metadata viewer & remover**](https://do-whatever-you-like.colddsam.com/tools/exif-remover) — See the hidden GPS, camera and date in photos, and remove it without losing quality.
 - [**QR code scanner**](https://do-whatever-you-like.colddsam.com/tools/qr-scanner) — Read a QR code from a picture, a screenshot or your camera.
+- [**EMI & Compound Interest calculator**](https://do-whatever-you-like.colddsam.com/tools/emi-sip-calculator) — Calculate loan EMIs with prepayments, SIP growth and compound interest with INR schedules.
+- [**SIP & Step-Up Wealth calculator**](https://do-whatever-you-like.colddsam.com/tools/sip-calculator) — Estimate mutual fund SIP returns with annual step-up and inflation adjustment.
+- [**GST & Discount calculator**](https://do-whatever-you-like.colddsam.com/tools/gst-percentage-calculator) — Inclusive and exclusive Indian GST (CGST+SGST or IGST), coupon discounts and percentage math.
+- [**Trip & Bill splitter**](https://do-whatever-you-like.colddsam.com/tools/bill-splitter) — Settle group trip expenses with minimum transfers or split dinner bills for WhatsApp.
+- [**Invoice & Signature generator**](https://do-whatever-you-like.colddsam.com/tools/invoice-signature-generator) — Build GST-ready A4 printable invoices and draw transparent-background PNG signatures.
 
 </details>
 
@@ -372,14 +391,14 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 | 🔒 **Private by default** | If a tool can run in your browser, it does. If it needs the server, the file lives in a private folder for that one request and is deleted right after. |
 | 🧑‍🤝‍🧑 **Plain words** | Buttons say what they do ("Remove the noise", "Download 3 clean photos"). Errors say what went wrong and what to try. |
 | 🛡️ **Safe by default** | Every uploaded file is checked by its real contents before anything opens it. A program renamed to `.pdf` is turned away. |
-| 🎨 **One design** | Every page follows one design system (`frontend/DESIGN.md`), so all 218 tools feel like one product. |
+| 🎨 **One design** | Every page follows one design system (`frontend/DESIGN.md`), so all 251 tools feel like one product. |
 | 🧩 **Built to grow** | One registry lists every tool; most new tools are one line plus one engine. That's how the site grew so fast. |
 
 ---
 
 ## 🚀 Our pace
 
-Do-Whatever-You-Like went from an empty repository to **218 live tools in its first week**.
+Do-Whatever-You-Like went from an empty repository to **251 live tools in its first week**.
 
 ```mermaid
 timeline
@@ -404,18 +423,19 @@ timeline
            : Charts, flowcharts and noise removal
            : Period tracker & WhatsApp chat analyzer
            : Translator (Text, Audio & Video)
+           : Archive, SVG/mockup, waveform, SQLite/Parquet, writing & finance tools
            : AI-search readiness (AEO, GEO)
 ```
 
 | 📅 Days | 🧰 Live tools | 🗂️ Collections | 📡 API endpoints | 🧪 Check scripts |
 | :---: | :---: | :---: | :---: | :---: |
-| 7 | 218 | 9 | 77 | 9 backend suites + browser & unit tests |
+| 7 | 251 | 9 | 77 | 9 backend suites + browser & unit tests |
 
 ---
 
 ## 🗺️ What's next
 
-- ✍️ **Writing helper** (summarise, rewrite, fix grammar) is the one tool marked *in the works* on the site.
+- ✅ **Every listed tool is live.** All 251 tools in the directory — including the Writing helper — are now live and ready to use.
 - 🙋 **Your requests.** The site has a *Request a tool* button. New tools are picked from what people ask for.
 - 🔧 **Making the existing tools better**: faster on free hosting, clearer wording, and better phone layouts.
 
@@ -467,7 +487,7 @@ sequenceDiagram
 
 | Runs in your browser (file never leaves your device) | Runs on our server (deleted after use) |
 | :--- | :--- |
-| Developer and text converters & analyzers, **WhatsApp chat analyzer**, chart maker, flowchart maker, **period tracker**, QR scanner, photo metadata remover, password generator, encrypted notes, Markdown editor, video to GIF/frames, screen recorder, subtitle editor (with instant inline translation via API), Morse decoder, device tests and timers | PDF tools, universal converter, compress/merge/split, image AI (background removal, upscaling, face blur), audio to text, **translator (text, audio & video dubbing)**, media downloads, trim/volume/noise removal, font and colour inspection, DNS and HTTP checks |
+| Developer and text converters & analyzers, **SQLite/CSV/Parquet viewer**, **writing helper**, **WhatsApp chat analyzer**, **ZIP/TAR/GZ archive tool**, **image to SVG vectoriser**, **mockup & safe-zone frame**, **audio waveform & spectrogram**, chart maker, flowchart maker, SVG optimizer & CSS playgrounds, **period tracker**, EMI/SIP/GST calculators, bill splitter & invoice generator, QR scanner, photo metadata remover, password generator, encrypted notes, Markdown editor, video to GIF/frames, screen recorder, subtitle editor (with instant inline translation via API), Morse decoder, device tests and timers | PDF tools, universal converter, compress/merge/split, image AI (background removal, upscaling, face blur), audio to text, **translator (text, audio & video dubbing)**, media downloads, trim/volume/noise removal, font and colour inspection, DNS and HTTP checks |
 
 ---
 
@@ -519,39 +539,39 @@ sequenceDiagram
 
 ## 💻 Run it on your computer
 
-**You need:** Python **3.11+**, Node.js **20+** and npm. On Windows, two scripts start and stop everything.
+**You need:** Python **3.11+**, Node.js **20+** and npm. On Windows, two scripts start and stop everything — `.\start-dev.ps1` automatically creates `backend\venv` + installs `requirements.txt` and runs `npm install` in `frontend` on first run if either is missing, then starts both servers.
 
 ```powershell
 # 1. Get the code
 git clone https://github.com/colddsam/do-whatever-you-like.git
 cd do-whatever-you-like
 
-# 2. Backend (FastAPI)
+# 2. Configure environment files
+# create backend/.env with at least this line (see "Settings" below):
+#   HEADER_TOKEN=any-long-random-secret
+copy frontend\.env.example frontend\.env.local  # set BACKEND_TOKEN to the same value as HEADER_TOKEN
+
+# 3. Start both (auto-installs backend venv + frontend node_modules if missing)
+.\start-dev.ps1                       # stop with .\stop-dev.ps1
+```
+
+Prefer to install and start them manually (or on macOS/Linux)?
+
+```bash
+# Terminal 1: the server
 cd backend
 python -m venv venv
 .\venv\Scripts\Activate.ps1          # macOS/Linux: source venv/bin/activate
 pip install -r requirements.txt
-# create backend/.env with at least this line (see "Settings" below):
-#   HEADER_TOKEN=any-long-random-secret
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 
-# 3. Frontend (Next.js)
-cd ..\frontend
-npm install
-copy .env.example .env.local         # set BACKEND_TOKEN to the same value as HEADER_TOKEN
-
-# 4. Start both (from the repository root)
-cd ..
-.\start-dev.ps1                       # stop with .\stop-dev.ps1
-```
-
-Then open **http://localhost:3000**. Prefer to start them yourself?
-
-```bash
-# Terminal 1: the server
-cd backend && python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 # Terminal 2: the website
-cd frontend && npm run dev
+cd frontend
+npm install
+npm run dev
 ```
+
+Then open **http://localhost:3000**.
 
 <details>
 <summary><b>⚙️ Settings (environment variables)</b></summary>

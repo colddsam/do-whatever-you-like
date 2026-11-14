@@ -10,7 +10,7 @@ import type { EngineProps } from "./text-engines";
 
 /* ================= Shared colour field ================= */
 
-function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+export function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   const parsed = parseColor(value);
   return (
     <label className="flex min-w-0 items-center gap-2 rounded-md border border-line bg-surface p-1.5 focus-within:border-ink">
@@ -333,12 +333,262 @@ function BorderRadius() {
   );
 }
 
+function shiftHex(hex: string, delta: number): string {
+  const c = parseColor(hex);
+  if (!c) return delta >= 0 ? "#ffffff" : "#b8c2cc";
+  const clamp = (n: number) => Math.max(0, Math.min(255, Math.round(n)));
+  return toHex({ r: clamp(c.r + delta), g: clamp(c.g + delta), b: clamp(c.b + delta), a: 1 });
+}
+
+function Glassmorphism() {
+  const [blur, setBlur] = useState(16);
+  const [opacity, setOpacity] = useState(24);
+  const [saturate, setSaturate] = useState(140);
+  const [borderOpacity, setBorderOpacity] = useState(35);
+  const [radius, setRadius] = useState(18);
+  const [tint, setTint] = useState("#ffffff");
+  const [backdrop, setBackdrop] = useState<"mesh" | "sunset" | "obsidian">("mesh");
+
+  const rgb = parseColor(tint) ?? { r: 255, g: 255, b: 255, a: 1 };
+  const alpha = (opacity / 100).toFixed(2);
+  const bAlpha = (borderOpacity / 100).toFixed(2);
+  const darkTint = rgb.r * 0.299 + rgb.g * 0.587 + rgb.b * 0.114 < 128;
+
+  const css = [
+    `background: rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha});`,
+    `backdrop-filter: blur(${blur}px) saturate(${saturate}%);`,
+    `-webkit-backdrop-filter: blur(${blur}px) saturate(${saturate}%);`,
+    `border-radius: ${radius}px;`,
+    `border: 1px solid rgba(255, 255, 255, ${bAlpha});`,
+    `box-shadow: 0 12px 36px rgba(15, 23, 42, 0.16);`,
+  ].join("\n");
+
+  const tw = `rounded-[${radius}px] border border-white/${borderOpacity} bg-[rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})] backdrop-blur-[${blur}px] backdrop-saturate-[${saturate}%] shadow-lg`;
+
+  const sceneBg =
+    backdrop === "mesh"
+      ? "radial-gradient(at 15% 20%, #ff7a59 0%, transparent 45%), radial-gradient(at 85% 25%, #38bdf8 0%, transparent 50%), radial-gradient(at 55% 85%, #a855f7 0%, transparent 55%), #0f172a"
+      : backdrop === "sunset"
+        ? "linear-gradient(135deg, #f97316 0%, #ec4899 52%, #6366f1 100%)"
+        : "radial-gradient(circle at 20% 25%, #1e293b 0%, #090d16 70%)";
+
+  return (
+    <>
+      <Panel>
+        <Row label="Frosted glass">
+          <div className="grid gap-3 @xl:grid-cols-2">
+            <Slider label="Backdrop blur" value={blur} min={0} max={40} onChange={setBlur} format={(v) => `${v} px`} />
+            <Slider label="Fill transparency" value={opacity} min={0} max={85} onChange={setOpacity} format={(v) => `${v}%`} />
+            <Slider label="Saturation" value={saturate} min={100} max={220} onChange={setSaturate} format={(v) => `${v}%`} />
+            <Slider label="Border opacity" value={borderOpacity} min={0} max={80} onChange={setBorderOpacity} format={(v) => `${v}%`} />
+            <Slider label="Border radius" value={radius} min={0} max={44} onChange={setRadius} format={(v) => `${v} px`} />
+            <ColorField label="Glass tint" value={tint} onChange={setTint} />
+          </div>
+        </Row>
+        <Row label="Backdrop">
+          <Chips
+            value={backdrop}
+            onChange={setBackdrop}
+            options={[
+              { value: "mesh", label: "Aurora mesh" },
+              { value: "sunset", label: "Warm sunset" },
+              { value: "obsidian", label: "Dark studio" },
+            ]}
+          />
+        </Row>
+      </Panel>
+
+      <div className="relative grid min-h-64 place-items-center overflow-hidden rounded-md border border-line p-6 sm:p-10" style={{ background: sceneBg }}>
+        <div aria-hidden className="pointer-events-none absolute left-8 top-6 size-24 rounded-full bg-white/30 blur-[2px]" />
+        <div aria-hidden className="pointer-events-none absolute bottom-6 right-10 size-28 rounded-full bg-amber-300/45" />
+        <div
+          className="relative w-full max-w-sm p-6"
+          style={{
+            backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`,
+            backdropFilter: `blur(${blur}px) saturate(${saturate}%)`,
+            WebkitBackdropFilter: `blur(${blur}px) saturate(${saturate}%)`,
+            borderRadius: `${radius}px`,
+            border: `1px solid rgba(255, 255, 255, ${bAlpha})`,
+            boxShadow: "0 12px 36px rgba(15, 23, 42, 0.18)",
+            color: darkTint || opacity < 22 ? "#ffffff" : "#0f172a",
+          }}
+        >
+          <p className="font-mono text-[12px] uppercase tracking-wider opacity-80">Glass card</p>
+          <p className="mt-1.5 text-lg font-semibold">Frosted surface preview</p>
+          <p className="mt-1 text-sm opacity-85">
+            blur({blur}px) · saturate({saturate}%) · alpha {alpha}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-3">
+        <div className="overflow-hidden rounded-md border border-line bg-surface">
+          <div className="flex items-center justify-between border-b border-line bg-paper px-3 py-1.5">
+            <span className="font-mono text-[12px] text-ink">CSS</span>
+            <CopyButton text={css} />
+          </div>
+          <pre className="overflow-auto whitespace-pre-wrap break-all px-3 py-2.5 font-mono text-[13px] text-ink">{css}</pre>
+        </div>
+        <div className="overflow-hidden rounded-md border border-line bg-surface">
+          <div className="flex items-center justify-between border-b border-line bg-paper px-3 py-1.5">
+            <span className="font-mono text-[12px] text-ink">Tailwind classes</span>
+            <CopyButton text={tw} />
+          </div>
+          <pre className="overflow-auto whitespace-pre-wrap break-all px-3 py-2.5 font-mono text-[13px] text-ink">{tw}</pre>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function Neumorphism() {
+  const [base, setBase] = useState("#e6ebf0");
+  const [shape, setShape] = useState<"flat" | "concave" | "convex" | "inset">("flat");
+  const [distance, setDistance] = useState(12);
+  const [blur, setBlur] = useState(24);
+  const [intensity, setIntensity] = useState(16);
+  const [radius, setRadius] = useState(24);
+  const [angle, setAngle] = useState<135 | 225 | 315 | 45>(135);
+
+  const parsed = parseColor(base) ?? { r: 230, g: 235, b: 240, a: 1 };
+  const baseHex = toHex({ ...parsed, a: 1 });
+  const delta = Math.round(intensity * 2.5);
+  const lightHex = shiftHex(baseHex, delta);
+  const darkHex = shiftHex(baseHex, -delta);
+  const isDark = parsed.r * 0.299 + parsed.g * 0.587 + parsed.b * 0.114 < 128;
+
+  const dx = angle === 135 || angle === 45 ? distance : -distance;
+  const dy = angle === 135 || angle === 225 ? distance : -distance;
+  const insetPrefix = shape === "inset" ? "inset " : "";
+  const shadowValue = `${insetPrefix}${dx}px ${dy}px ${blur}px ${darkHex}, ${insetPrefix}${-dx}px ${-dy}px ${blur}px ${lightHex}`;
+
+  const backgroundValue =
+    shape === "concave"
+      ? `linear-gradient(${angle}deg, ${shiftHex(baseHex, -Math.round(delta * 0.35))}, ${shiftHex(baseHex, Math.round(delta * 0.35))})`
+      : shape === "convex"
+        ? `linear-gradient(${angle}deg, ${shiftHex(baseHex, Math.round(delta * 0.35))}, ${shiftHex(baseHex, -Math.round(delta * 0.35))})`
+        : baseHex;
+
+  const css = [
+    `border-radius: ${radius}px;`,
+    `background: ${backgroundValue};`,
+    `box-shadow: ${shadowValue};`,
+  ].join("\n");
+
+  return (
+    <>
+      <Panel>
+        <Row label="Base surface">
+          <div className="grid gap-3 @xl:grid-cols-[minmax(0,1fr)_auto] @xl:items-center">
+            <ColorField label="Background & card colour" value={base} onChange={setBase} />
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { name: "Soft silver", hex: "#e6ebf0" },
+                { name: "Warm paper", hex: "#ede8e1" },
+                { name: "Sage tint", hex: "#dde7e2" },
+                { name: "Dark slate", hex: "#262b34" },
+              ].map((p) => (
+                <button
+                  key={p.hex}
+                  type="button"
+                  onClick={() => setBase(p.hex)}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-[7px] border border-line bg-surface px-2.5 text-[12px] text-ink hover:border-ink-3"
+                >
+                  <span className="size-3.5 rounded-full border border-line" style={{ background: p.hex }} />
+                  {p.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </Row>
+        <Row label="Shape">
+          <Chips
+            value={shape}
+            onChange={setShape}
+            options={[
+              { value: "flat", label: "Flat" },
+              { value: "convex", label: "Convex" },
+              { value: "concave", label: "Concave" },
+              { value: "inset", label: "Pressed / inset" },
+            ]}
+          />
+        </Row>
+        <Row label="Light & depth">
+          <div className="grid gap-3 @xl:grid-cols-2">
+            <Slider label="Distance" value={distance} min={2} max={36} onChange={setDistance} format={(v) => `${v} px`} />
+            <Slider label="Blur" value={blur} min={4} max={72} onChange={setBlur} format={(v) => `${v} px`} />
+            <Slider label="Intensity" value={intensity} min={5} max={45} onChange={setIntensity} format={(v) => `${v}%`} />
+            <Slider label="Border radius" value={radius} min={0} max={56} onChange={setRadius} format={(v) => `${v} px`} />
+          </div>
+        </Row>
+        <Row label="Light source">
+          <Chips
+            value={angle}
+            onChange={setAngle}
+            options={[
+              { value: 135, label: "Top-left (135°)" },
+              { value: 225, label: "Top-right (225°)" },
+              { value: 315, label: "Bottom-right (315°)" },
+              { value: 45, label: "Bottom-left (45°)" },
+            ]}
+          />
+        </Row>
+      </Panel>
+
+      <div className="grid min-h-64 place-items-center rounded-md border border-line p-8" style={{ background: baseHex }}>
+        <div
+          className="flex h-44 w-full max-w-xs flex-col items-center justify-center p-6 text-center transition-all"
+          style={{
+            borderRadius: `${radius}px`,
+            background: backgroundValue,
+            boxShadow: shadowValue,
+            color: isDark ? "#f1f5f9" : "#1e293b",
+          }}
+        >
+          <p className="font-mono text-[12px] uppercase tracking-wider opacity-70">{shape}</p>
+          <p className="mt-1 text-base font-semibold">Soft UI element</p>
+          <p className="mt-1 font-mono text-[12px] opacity-75">{baseHex}</p>
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-md border border-line bg-surface">
+        <div className="flex items-center justify-between border-b border-line bg-paper px-3 py-1.5">
+          <span className="font-mono text-[12px] text-ink">CSS</span>
+          <CopyButton text={css} />
+        </div>
+        <pre className="overflow-auto whitespace-pre-wrap break-all px-3 py-2.5 font-mono text-[13px] text-ink">{css}</pre>
+      </div>
+    </>
+  );
+}
+
 export function CssGenEngine({ preset }: EngineProps) {
   const [kind, setKind] = useState(preset.kind ?? "gradient");
   return (
     <>
-      <Chips value={kind} options={[{ value: "gradient", label: "Gradient" }, { value: "shadow", label: "Box shadow" }, { value: "radius", label: "Border radius" }]} onChange={setKind} label="Generator" />
-      {kind === "gradient" ? <Gradient /> : kind === "shadow" ? <BoxShadow /> : <BorderRadius />}
+      <Chips
+        value={kind}
+        options={[
+          { value: "gradient", label: "Gradient" },
+          { value: "shadow", label: "Box shadow" },
+          { value: "radius", label: "Border radius" },
+          { value: "glass", label: "Glassmorphism" },
+          { value: "neumorphism", label: "Neumorphism" },
+        ]}
+        onChange={setKind}
+        label="Generator"
+      />
+      {kind === "gradient" ? (
+        <Gradient />
+      ) : kind === "shadow" ? (
+        <BoxShadow />
+      ) : kind === "glass" ? (
+        <Glassmorphism />
+      ) : kind === "neumorphism" ? (
+        <Neumorphism />
+      ) : (
+        <BorderRadius />
+      )}
     </>
   );
 }

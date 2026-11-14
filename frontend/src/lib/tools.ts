@@ -10,7 +10,9 @@ import {
   Clock,
   Regex,
   Binary,
+  Fingerprint,
   KeySquare,
+  Link2,
   FileJson,
   Volume2,
   MonitorPlay,
@@ -327,6 +329,20 @@ const imageTools: Tool[] = [
     keywords: ["blur face", "anonymize", "anonymise", "pixelate", "hide face", "privacy", "censor", "license plate", "number plate", "blur"],
     features: ["Finds faces on its own, even small ones", "Keep any face sharp, or add areas by hand", "Blur or pixelate, oval or rectangle", "Baked in: can't be undone from the file"],
   }),
+  imageTool({
+    id: "image-to-svg", name: "Image to SVG vectoriser", group: "Convert", icon: PenTool,
+    description: "Trace PNG or JPG logos, sketches and icons into crisp scalable SVG vectors in your browser.",
+    takes: "A PNG, JPG or WebP image", gives: "A scalable SVG file", steps: ["Drop an image", "Tune threshold or colours", "Copy or download SVG"],
+    keywords: ["image to svg", "png to svg", "jpg to svg", "vectorize image", "svg tracer", "raster to vector", "logo vectorizer"],
+    features: ["Monochrome B&W tracing and multi-colour k-means quantization", "Smooth quadratic Bézier curve fitting with noise speckle filter", "Includes a sample badge so you can test immediately", "Runs 100% locally on an HTML canvas"],
+  }),
+  imageTool({
+    id: "mockup-frame-generator", name: "Mockup & safe-zone frame", group: "Create", icon: AppWindow,
+    description: "Frame screenshots inside browser windows or phones, or preview YouTube/Reels/TikTok safe zones.",
+    takes: "A screenshot or thumbnail", gives: "A framed PNG", steps: ["Drop a screenshot", "Choose frame or safe-zone HUD", "Download PNG"],
+    keywords: ["mockup generator", "browser frame screenshot", "phone frame mockup", "youtube thumbnail safe zone", "reels safe zone overlay", "tiktok safe zone"],
+    features: ["macOS Safari browser, dark phone and floating glass card frames", "Live YouTube, Shorts, Reels, TikTok and Instagram 4:5 safe-zone overlays", "Gradient, solid or transparent backgrounds with custom padding", "One-click 2x HD PNG export"],
+  }),
 ];
 const pdfTool = (t: Omit<Tool, "category" | "status" | "kind" | "family" | "accept"> & Partial<Tool>): Tool => ({
   category: "Documents",
@@ -617,6 +633,15 @@ const fileTools: Tool[] = [
       "Before and after size for every file; nothing ever grows",
     ],
   }),
+  fileTool({
+    id: "archive-extractor-creator", name: "ZIP, TAR & GZ archive tool", group: "Compress", icon: Archive,
+    description: "Inspect archive contents, preview files inside or bundle multiple files into .zip, .tar, .tar.gz or .gz in your browser.",
+    takes: "Archives or multiple files", gives: "Extracted files or a .zip / .tar.gz bundle",
+    steps: ["Drop an archive or files", "Inspect or build your bundle", "Extract or download"],
+    accept: { label: "Archives (.zip, .tar, .tar.gz, .gz)", types: ".zip,.tar,.tgz,.gz" },
+    keywords: ["zip extractor", "unzip online", "create zip", "tar gz extractor", "untar in browser", "gzip online"],
+    features: ["Inspect entries, sizes and folders inside .zip, .tar, .tar.gz and .gz", "Text preview and single-file download without extracting everything", "Bundle files cleanly into standard .zip, .tar, .tar.gz or .gz archives"],
+  }),
   // Merge & split
   fileTool({
     id: "merge-files", name: "Merge files", group: "Merge & split", icon: Merge,
@@ -707,6 +732,8 @@ const devTabTools: Tool[] = [
   devTab("regex-tester", "regex", "Regex tester", "Validate", Regex, "Test a regular expression and see every match and group, live.", ["regex tester", "regular expression tester", "regex101", "regex match", "test regex online", "javascript regex"], ["Every match and capture group highlighted", "Flags: global, case, multiline, dotall, unicode", "Replace preview with $1 groups", "Live as you type"]),
   devTab("timestamp-converter", "time", "Unix timestamp converter", "Encode", Clock, "Unix time to a date and back, in seconds or milliseconds, any time zone.", ["unix timestamp", "epoch converter", "timestamp to date", "date to timestamp", "unix time", "epoch time", "milliseconds to date"], ["Seconds or milliseconds, detected", "Local, UTC and ISO 8601", "Relative time (3 days ago)", "Live current timestamp"]),
   devTab("diff-checker", "diff", "Diff checker", "Edit & view", GitCompare, "Compare two texts and see exactly what was added, removed or changed.", ["diff checker", "text compare", "compare two texts", "diff tool", "find differences", "text diff online", "code compare"], ["Line and word differences highlighted", "Side by side or inline", "Ignore whitespace or case", "Nothing leaves your browser"]),
+  devTab("uuid-generator", "uuid", "UUID, ULID & NanoID generator", "Random data", Fingerprint, "Generate sortable UUID v7, ULID, UUID v4 or custom NanoIDs in bulk (up to 500).", ["uuid generator", "uuid v7", "ulid generator", "nanoid generator", "bulk uuid"], ["UUID v4, UUID v7, ULID and customizable NanoID", "Generate up to 500 IDs in one click", "Export as Lines, JSON array, CSV or SQL values", "Cryptographically random in your browser"]),
+  devTab("url-encoder", "url", "URL encoder & query parser", "Encode", Link2, "Encode/decode URLs and edit URL query parameters in a live key-value table.", ["url encoder", "url decoder", "query string parser", "url params builder", "percent encoding"], ["Interactive key-value query parameter editor", "One-click sort, trim or remove empty parameters", "Full URL encode, decode and Query JSON preview", "Everything stays in your browser"]),
 ];
 
 export const toolHref = (id: string) => `/tools/${id}`;
@@ -721,6 +748,21 @@ const ON_DEVICE = new Set([
   "css-gradient-generator",
   "box-shadow-generator",
   "border-radius-generator",
+  "glassmorphism-generator",
+  "neumorphism-generator",
+  "svg-optimizer-jsx",
+  "css-grid-flexbox-playground",
+  "color-palette-scale-generator",
+  "glassmorphism-generator",
+  "neumorphism-generator",
+  "svg-optimizer-jsx",
+  "css-grid-flexbox-playground",
+  "color-palette-scale-generator",
+  "image-to-svg",
+  "mockup-frame-generator",
+  "archive-extractor-creator",
+  "audio-waveform-generator",
+  "writing",
 ]);
 
 /**
@@ -930,6 +972,26 @@ export const tools: Tool[] = [
     ],
   },
   {
+    id: "audio-waveform-generator",
+    name: "Audio waveform & spectrogram",
+    category: "Create",
+    description: "Turn any audio clip into a downloadable SVG/PNG waveform or STFT frequency spectrogram.",
+    status: "live",
+    icon: AudioWaveform,
+    kind: "file",
+    takes: "An audio or video file",
+    gives: "SVG or high-res PNG graphic",
+    steps: ["Drop an audio file", "Pick waveform or spectrogram", "Export SVG or PNG"],
+    limit: "Runs in your browser",
+    keywords: ["audio waveform generator", "spectrogram generator", "podcast visualizer", "audio spectrum png", "svg waveform"],
+    features: [
+      "Bars, smooth curve, mirror and radial circular waveforms",
+      "Real Radix-2 FFT STFT frequency spectrogram heatmap",
+      "Transparent or custom-coloured crisp SVG and 4K PNG download",
+      "Includes a built-in synth sample so you can preview immediately",
+    ],
+  },
+  {
     id: "audio",
     name: "Video to MP3",
     category: "Convert",
@@ -1026,16 +1088,24 @@ export const tools: Tool[] = [
     id: "writing",
     name: "Writing helper",
     category: "Text",
-    description: "Summarise, rewrite and fix grammar.",
-    status: "soon",
+    family: "text",
+    group: "Analyze",
+    description: "Summarise long passages, rewrite tone and fix grammar right in your browser.",
+    status: "live",
     icon: PenLine,
     kind: "text",
     options: ["Summarise", "Rewrite", "Fix grammar"],
     takes: "Any text",
     gives: "Edited text",
+    limit: "Runs in your browser",
     steps: ["Paste your text", "Summarise, rewrite or fix", "Copy the result"],
-    keywords: ["summary", "summarize", "rewrite", "grammar", "text"],
-    features: ["Summaries in a few bullet points", "Rewrite in a different tone", "Grammar and spelling fixes"],
+    keywords: ["summary", "summarize", "rewrite", "grammar checker", "writing helper", "proofreader"],
+    features: [
+      "Extractive key-sentence summaries with adjustable ratio",
+      "Concise, Plain English, Formal and Sentence-Split rewrites",
+      "Deterministic grammar, spacing, capitalisation and typo fixes",
+      "Runs 100% in your browser — nothing you type is sent anywhere",
+    ],
   },
   {
     id: "dev",
@@ -1511,6 +1581,7 @@ const CLUSTER_OF: Record<string, ClusterId> = {
   "noise-remover": "media",
   "screen-recorder": "media",
   "subtitle-editor": "media",
+  "audio-waveform-generator": "media",
   ...Object.fromEntries(UTILITIES.filter((u) => u.cluster === "design").map((u) => [u.id, "design" as ClusterId])),
 };
 

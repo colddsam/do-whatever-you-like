@@ -680,6 +680,306 @@ const GUIDES: Record<string, Guide> = {
     ],
     see: ["text-summarizer", "diff-checker", "chart-maker"],
   },
+  "image-to-svg": {
+    intro: [
+      "Trace PNG, JPG, or WebP logos, sketches, and icons into crisp scalable SVG vector paths right in your browser. Choose monochrome black-and-white tracing or multi-colour k-means quantization with smooth quadratic Bézier curve fitting and a noise speckle filter.",
+    ],
+    faqs: [
+      { q: "Does it support multi-colour logos?", a: "Yes. Use multi-colour k-means quantization or monochrome tracing depending on your image." },
+      { q: "Is my image uploaded?", a: "No. Tracing runs 100% locally on an HTML canvas in your browser." },
+    ],
+    see: ["svg-optimizer-jsx", "icon-maker", "compress-image"],
+  },
+  "mockup-frame-generator": {
+    intro: [
+      "Wrap screenshots inside macOS Safari browser windows, dark phone frames, or floating glass cards with gradient, solid, or transparent backgrounds—or overlay live YouTube, Shorts, Reels, TikTok, and Instagram 4:5 safe-zone guides before exporting a 2× HD PNG.",
+    ],
+    faqs: [
+      { q: "Which social safe-zone overlays are included?", a: "YouTube thumbnails, Shorts, Instagram Reels, TikTok, and Instagram 4:5 feed crops." },
+      { q: "Are my screenshots uploaded?", a: "No. Framing and 2× HD PNG export run locally in your browser." },
+    ],
+    see: ["crop-image", "pixelate-image", "compress-image"],
+  },
+  "archive-extractor-creator": {
+    intro: [
+      "Inspect entries, sizes, and folders inside `.zip`, `.tar`, `.tar.gz`, and `.gz` archives, preview text files or download individual items without extracting everything, or bundle multiple files into a new `.zip`, `.tar`, `.tar.gz`, or `.gz` archive—all in your browser.",
+    ],
+    faqs: [
+      { q: "Can I extract a single file from a large ZIP?", a: "Yes. Browse the archive tree, preview text files, and download individual entries without unpacking the whole archive." },
+      { q: "Are my files uploaded to a server?", a: "No. Inspection, extraction, and archive creation run locally in your browser." },
+    ],
+    see: ["compress-files", "merge-files", "split-files"],
+  },
+  "audio-waveform-generator": {
+    intro: [
+      "Turn any audio or video file's sound into a downloadable SVG or high-resolution PNG waveform or STFT frequency spectrogram right in your browser.",
+    ],
+    faqs: [
+      { q: "Which export formats are supported?", a: "Scalable SVG and high-resolution PNG graphics." },
+      { q: "Is my audio uploaded?", a: "No. Decoding and rendering happen locally in your browser." },
+    ],
+    see: ["audio", "noise-remover", "audio-volume"],
+  },
+  "word-counter": {
+    intro: [
+      "Count words, characters (with and without spaces), sentences, and paragraphs live as you type or paste, alongside estimated reading time and a Flesch readability score—all in your browser.",
+    ],
+    faqs: [
+      { q: "Does it show reading time and readability?", a: "Yes. It calculates estimated reading time and the Flesch readability score live." },
+      { q: "Is my text stored anywhere?", a: "No. Counting runs locally in your browser." },
+    ],
+    see: ["text-summarizer", "case-converter", "find-and-replace"],
+  },
+  "case-converter": {
+    intro: [
+      "Convert text or identifiers cleanly between `camelCase`, `snake_case`, `kebab-case`, `PascalCase`, `Title Case`, `UPPERCASE`, and `lowercase` in your browser.",
+    ],
+    faqs: [
+      { q: "Which case styles are supported?", a: "camelCase, snake_case, kebab-case, PascalCase, Title Case, UPPERCASE, and lowercase." },
+      { q: "Does it run locally?", a: "Yes, 100% in your browser." },
+    ],
+    see: ["word-counter", "split-text", "find-and-replace"],
+  },
+  "list-comparator": {
+    intro: [
+      "Compare two lists in your browser to find items only in A, only in B, their intersection, union, or symmetric difference—useful for comparing tags, emails, keywords, or IDs.",
+    ],
+    faqs: [
+      { q: "Which set operations are included?", a: "A only, B only, intersection (common items), union (combined), and symmetric difference." },
+      { q: "Are my lists sent to a server?", a: "No. Comparison runs locally in your browser." },
+    ],
+    see: ["diff-checker", "line-tools", "split-text"],
+  },
+  "invisible-character-cleaner": {
+    intro: [
+      "Detect and strip hidden zero-width spaces, non-breaking spaces, soft hyphens, and curly smart quotes from pasted AI, PDF, or word-processor text right in your browser.",
+    ],
+    faqs: [
+      { q: "What characters does it remove?", a: "Zero-width spaces, non-breaking spaces, soft hyphens, and curly quotes (converted to straight quotes)." },
+      { q: "Is my text uploaded?", a: "No. Cleaning runs locally in your browser." },
+    ],
+    see: ["find-and-replace", "word-counter", "markdown-editor"],
+  },
+  "data-format-converter": {
+    intro: [
+      "Convert cleanly between JSON, CSV, YAML, XML, HTML, and Markdown in your browser with instant preview and copy/download.",
+    ],
+    faqs: [
+      { q: "Which formats can I convert between?", a: "JSON, CSV, YAML, XML, HTML, and Markdown." },
+      { q: "Is my data sent to a server?", a: "No. Conversion runs locally in your browser." },
+    ],
+    see: ["json-to-csv", "json-to-yaml", "sqlite-csv-parquet-viewer"],
+  },
+  "json-to-csv": {
+    intro: [
+      "Flatten JSON arrays into clean RFC 4180 CSV tables with a live table preview right in your browser.",
+    ],
+    faqs: [
+      { q: "Does it handle nested JSON fields?", a: "Yes. JSON arrays are flattened into clean RFC 4180 CSV columns." },
+      { q: "Is my JSON uploaded?", a: "No. Everything runs in your browser." },
+    ],
+    see: ["csv-to-json", "json-formatter", "sqlite-csv-parquet-viewer"],
+  },
+  "csv-to-json": {
+    intro: [
+      "Parse CSV spreadsheets—including quoted fields and commas inside cells—into structured JSON right in your browser.",
+    ],
+    faqs: [
+      { q: "Does it handle quoted CSV fields?", a: "Yes. Standard RFC 4180 quoted fields and line breaks are parsed cleanly." },
+      { q: "Is my CSV uploaded?", a: "No. Parsing runs locally in your browser." },
+    ],
+    see: ["json-to-csv", "json-formatter", "sqlite-csv-parquet-viewer"],
+  },
+  "json-to-yaml": {
+    intro: [
+      "Convert JSON objects and arrays into clean, properly indented YAML in your browser.",
+    ],
+    faqs: [
+      { q: "Is my JSON sent anywhere?", a: "No. Conversion happens locally in your browser." },
+      { q: "Can I convert YAML back to JSON?", a: "Yes. Use the YAML to JSON converter." },
+    ],
+    see: ["yaml-to-json", "json-formatter", "data-format-converter"],
+  },
+  "yaml-to-json": {
+    intro: [
+      "Parse YAML configs, Docker Compose files, and Kubernetes manifests into formatted JSON right in your browser.",
+    ],
+    faqs: [
+      { q: "Is it safe for config files?", a: "Yes. Parsing runs locally in your browser and nothing is sent to a server." },
+      { q: "Can I convert JSON back to YAML?", a: "Yes. Use the JSON to YAML converter." },
+    ],
+    see: ["json-to-yaml", "json-formatter", "diff-checker"],
+  },
+  "json-to-xml": {
+    intro: [
+      "Serialise JSON objects and arrays into formatted XML trees right in your browser.",
+    ],
+    faqs: [
+      { q: "Is my JSON uploaded?", a: "No. Conversion runs locally in your browser." },
+      { q: "Can I convert XML back to JSON?", a: "Yes. Use the XML to JSON converter." },
+    ],
+    see: ["xml-to-json", "xml-viewer", "json-formatter"],
+  },
+  "xml-to-json": {
+    intro: [
+      "Convert XML elements and attributes into clean, structured JSON right in your browser.",
+    ],
+    faqs: [
+      { q: "Are XML attributes preserved?", a: "Yes. Elements and attributes are mapped cleanly into JSON." },
+      { q: "Is my XML uploaded?", a: "No. Parsing runs locally in your browser." },
+    ],
+    see: ["json-to-xml", "xml-viewer", "xpath-tester"],
+  },
+  "html-to-markdown": {
+    intro: [
+      "Convert pasted HTML markup into clean CommonMark Markdown right in your browser.",
+    ],
+    faqs: [
+      { q: "Does it keep headings, links, and lists?", a: "Yes. Standard HTML headings, links, lists, code blocks, and emphasis convert cleanly to CommonMark Markdown." },
+      { q: "Is my HTML uploaded?", a: "No. Conversion runs locally in your browser." },
+    ],
+    see: ["markdown-to-html", "markdown-editor", "html-viewer"],
+  },
+  "markdown-to-html": {
+    intro: [
+      "Render CommonMark and GitHub-flavoured Markdown into sanitised, semantic HTML right in your browser.",
+    ],
+    faqs: [
+      { q: "Is the output HTML sanitised?", a: "Yes. It produces clean, sanitised semantic HTML." },
+      { q: "Is my Markdown uploaded?", a: "No. Rendering runs locally in your browser." },
+    ],
+    see: ["html-to-markdown", "markdown-editor", "html-viewer"],
+  },
+  "json-sql-to-types": {
+    intro: [
+      "Generate TypeScript interfaces, Zod schemas, Python Pydantic models, or Go structs directly from sample JSON or `CREATE TABLE` SQL statements in your browser.",
+    ],
+    faqs: [
+      { q: "Which target languages and schemas are supported?", a: "TypeScript interfaces, Zod schemas, Python Pydantic models, and Go structs." },
+      { q: "Can I paste a SQL CREATE TABLE statement?", a: "Yes. Both sample JSON and SQL CREATE TABLE inputs are supported." },
+    ],
+    see: ["json-formatter", "sql-formatter", "diff-checker"],
+  },
+  "chmod-calculator": {
+    intro: [
+      "Calculate Linux/Unix file permissions interactively with owner, group, and public checkboxes to get octal (`755`, `644`), symbolic (`-rwxr-xr-x`), and ready-to-run `chmod` commands.",
+    ],
+    faqs: [
+      { q: "What does chmod 755 mean?", a: "Owner has read, write, and execute (7), while group and public have read and execute (5)." },
+      { q: "Does it show symbolic notation too?", a: "Yes. It updates octal, symbolic (`-rwxr-xr-x`), and the `chmod` command live." },
+    ],
+    see: ["cron-explainer", "base64-encoder", "sha256-hash"],
+  },
+  "sqlite-csv-parquet-viewer": {
+    intro: [
+      "Drop a local `.sqlite`, `.db`, `.parquet`, `.csv`, `.tsv`, or `.json` file to inspect its schema, browse rows, and run SQL queries entirely in your browser—nothing is uploaded.",
+    ],
+    faqs: [
+      { q: "Which file formats can I query with SQL?", a: "SQLite (.sqlite, .db), Parquet, CSV, TSV, and JSON files." },
+      { q: "Is my database file uploaded?", a: "No. Schema inspection and SQL queries run locally in your browser." },
+    ],
+    see: ["json-to-csv", "csv-to-json", "json-sql-to-types"],
+  },
+  "emi-sip-calculator": {
+    intro: [
+      "Calculate monthly loan EMIs with optional prepayments, total interest payable, amortisation schedules, SIP growth, and compound interest in your browser.",
+    ],
+    faqs: [
+      { q: "Can I include loan prepayments?", a: "Yes. You can model prepayments to see how much interest and tenure you save." },
+      { q: "Is any financial data saved on a server?", a: "No. Calculations run locally in your browser." },
+    ],
+    see: ["sip-calculator", "gst-percentage-calculator", "scientific-calculator"],
+  },
+  "sip-calculator": {
+    intro: [
+      "Estimate mutual fund SIP returns with optional annual step-up percentages and inflation adjustment right in your browser.",
+    ],
+    faqs: [
+      { q: "Does it support annual SIP step-up?", a: "Yes. You can model yearly step-up increases and inflation-adjusted real value." },
+      { q: "Is my data sent anywhere?", a: "No. Everything is calculated locally in your browser." },
+    ],
+    see: ["emi-sip-calculator", "gst-percentage-calculator", "scientific-calculator"],
+  },
+  "gst-percentage-calculator": {
+    intro: [
+      "Calculate inclusive and exclusive Indian GST (broken down into CGST + SGST or IGST), coupon discounts, and everyday percentage math in your browser.",
+    ],
+    faqs: [
+      { q: "Does it support both inclusive and exclusive GST?", a: "Yes. Switch between adding GST to a base price and extracting GST from a total." },
+      { q: "Does it show CGST/SGST and IGST?", a: "Yes. Both intra-state (CGST + SGST) and inter-state (IGST) breakdowns are shown." },
+    ],
+    see: ["invoice-signature-generator", "emi-sip-calculator", "bill-splitter"],
+  },
+  "bill-splitter": {
+    intro: [
+      "Settle group trip expenses with minimum transfers or split dinner bills cleanly with a copyable WhatsApp-ready summary—all in your browser with no sign-up.",
+    ],
+    faqs: [
+      { q: "How does it minimise group transfers?", a: "It calculates net balances for everyone and settles debts in the fewest possible payments." },
+      { q: "Can I share the split on WhatsApp?", a: "Yes. Copy a clean formatted breakdown ready to paste into WhatsApp." },
+    ],
+    see: ["gst-percentage-calculator", "currency-converter", "scientific-calculator"],
+  },
+  "invoice-signature-generator": {
+    intro: [
+      "Create GST-ready A4 printable invoices and draw clean transparent-background PNG signatures directly in your browser with no account or watermark.",
+    ],
+    faqs: [
+      { q: "Can I download a transparent signature PNG?", a: "Yes. Draw your signature and export it as a transparent-background PNG." },
+      { q: "Are my invoice details stored on a server?", a: "No. Invoice generation and signature drawing run locally in your browser." },
+    ],
+    see: ["gst-percentage-calculator", "sign-pdf", "qr"],
+  },
+  "glassmorphism-generator": {
+    intro: [
+      "Design frosted-glass CSS cards visually with live controls for backdrop blur, translucency, saturation, and crisp borders, then copy clean CSS in one click.",
+    ],
+    faqs: [
+      { q: "Which CSS properties does it generate?", a: "Standard `backdrop-filter: blur(...) saturate(...)`, translucent `rgba()` background, and border styles." },
+      { q: "Is there a live preview?", a: "Yes, over a colourful backdrop so you can see the frosted glass effect immediately." },
+    ],
+    see: ["neumorphism-generator", "box-shadow-generator", "css-gradient-generator"],
+  },
+  "neumorphism-generator": {
+    intro: [
+      "Generate soft extruded Neumorphism UI surfaces with directional highlights, soft shadows, and colour pickers right in your browser.",
+    ],
+    faqs: [
+      { q: "What is Neumorphism?", a: "A soft UI style that uses matching background colours with light and dark directional box shadows to make elements look extruded or inset." },
+      { q: "Can I copy the CSS directly?", a: "Yes, one click copies the generated CSS rules." },
+    ],
+    see: ["glassmorphism-generator", "box-shadow-generator", "border-radius-generator"],
+  },
+  "svg-optimizer-jsx": {
+    intro: [
+      "Minify raw SVG markup, strip editor bloat, and convert SVG attributes (`class`, `stroke-width`, `fill-opacity`, etc.) into valid React JSX/TSX components or CSS Data URIs in your browser.",
+    ],
+    faqs: [
+      { q: "Does it convert SVG attributes to React camelCase?", a: "Yes. Attributes like `stroke-width` and `class` are converted to `strokeWidth` and `className` for JSX/TSX." },
+      { q: "Can I export an SVG Data URI for CSS?", a: "Yes. Copy optimised SVG, React JSX/TSX, or a CSS `url(...)` Data URI." },
+    ],
+    see: ["image-to-svg", "html-minify", "css-grid-flexbox-playground"],
+  },
+  "css-grid-flexbox-playground": {
+    intro: [
+      "Build CSS Grid and Flexbox layouts visually with live cells, gap, alignment, and track controls, and export ready-to-use Tailwind classes, CSS, and HTML.",
+    ],
+    faqs: [
+      { q: "Does it output Tailwind CSS classes too?", a: "Yes. You can copy Tailwind utility classes as well as standard CSS and HTML." },
+      { q: "Does it support both Grid and Flexbox?", a: "Yes. Switch between CSS Grid and Flexbox modes." },
+    ],
+    see: ["box-shadow-generator", "border-radius-generator", "contrast-checker"],
+  },
+  "color-palette-scale-generator": {
+    intro: [
+      "Generate full Tailwind-style 50–950 colour scales, WCAG contrast badges, and harmonious colour palettes (analogous, complementary, triadic, split-complementary) from any hex colour.",
+    ],
+    faqs: [
+      { q: "Does it check accessibility contrast for the scale?", a: "Yes. Each shade in the 50–950 scale shows WCAG contrast badges." },
+      { q: "Can I export the palette for Tailwind?", a: "Yes. Copy CSS variables or Tailwind colour scale configs directly." },
+    ],
+    see: ["contrast-checker", "color-picker", "css-gradient-generator"],
+  },
 };
 
 /* ---------- Families that share one engine: a note specific to each variant ---------- */

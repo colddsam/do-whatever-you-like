@@ -69,6 +69,11 @@ const SoundTool = dynamic(() => import("./media/media-edit-tools").then((m) => m
 const DenoiseTool = dynamic(() => import("./media/media-edit-tools").then((m) => m.DenoiseTool), { loading });
 const RecorderTool = dynamic(() => import("./media/recorder-tool").then((m) => m.RecorderTool), { loading });
 const SubtitleTool = dynamic(() => import("./media/subtitle-tool").then((m) => m.SubtitleTool), { loading });
+const WritingHelperTool = dynamic(() => import("./text/writing-helper").then((m) => m.WritingHelperTool), { loading });
+const ImageToSvgTool = dynamic(() => import("./image/vectorize-tool").then((m) => m.ImageToSvgTool), { loading });
+const MockupSafeZoneTool = dynamic(() => import("./image/mockup-tool").then((m) => m.MockupSafeZoneTool), { loading });
+const AudioWaveformTool = dynamic(() => import("./media/waveform-tool").then((m) => m.AudioWaveformTool), { loading });
+const ArchiveTool = dynamic(() => import("./files/archive-tool").then((m) => m.ArchiveTool), { loading });
 
 type Workspace = ComponentType<{ toolId: string }>;
 
@@ -175,6 +180,11 @@ const byId: Record<string, Workspace> = {
   "noise-remover": DenoiseTool,
   "screen-recorder": RecorderTool,
   "subtitle-editor": SubtitleTool,
+  writing: WritingHelperTool,
+  "image-to-svg": ImageToSvgTool,
+  "mockup-frame-generator": MockupSafeZoneTool,
+  "audio-waveform-generator": AudioWaveformTool,
+  "archive-extractor-creator": ArchiveTool,
 };
 
 /** A standalone page for one tab of the developer hub (JSON formatter, JWT decoder…). */

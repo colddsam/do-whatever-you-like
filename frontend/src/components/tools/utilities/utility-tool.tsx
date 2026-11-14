@@ -58,6 +58,29 @@ import {
 import { ContrastEngine, CssGenEngine } from "./design-engines";
 import { CronEngine } from "./cron-engine";
 import { MorseAudioEngine } from "./morse-audio-engine";
+import {
+  ChmodEngine,
+  CodeTypesEngine,
+  DataConvertEngine,
+} from "./dev-data-engines";
+import { DataViewerEngine } from "./data-viewer-engine";
+import {
+  LayoutPlaygroundEngine,
+  PaletteScaleEngine,
+  SvgOptimizerEngine,
+} from "./design-extra-engines";
+import {
+  CaseConvertEngine,
+  ListCompareEngine,
+  TextCleanerEngine,
+  WordCountEngine,
+} from "./text-extra-engines";
+import {
+  BillSplitEngine,
+  FinanceCalcEngine,
+  GstPercentEngine,
+  InvoiceSignEngine,
+} from "./finance-engines";
 
 const ENGINES: Record<Engine, ComponentType<EngineProps>> = {
   codes: CodesEngine,
@@ -105,6 +128,21 @@ const ENGINES: Record<Engine, ComponentType<EngineProps>> = {
   cron: CronEngine,
   contrast: ContrastEngine,
   cssgen: CssGenEngine,
+  "data-convert": DataConvertEngine,
+  "code-types": CodeTypesEngine,
+  chmod: ChmodEngine,
+  "data-viewer": DataViewerEngine,
+  "svg-opt": SvgOptimizerEngine,
+  "layout-play": LayoutPlaygroundEngine,
+  "palette-scale": PaletteScaleEngine,
+  "word-count": WordCountEngine,
+  "case-convert": CaseConvertEngine,
+  "list-compare": ListCompareEngine,
+  "text-cleaner": TextCleanerEngine,
+  "finance-calc": FinanceCalcEngine,
+  "gst-percent": GstPercentEngine,
+  "bill-split": BillSplitEngine,
+  "invoice-sign": InvoiceSignEngine,
 };
 
 /**
@@ -136,8 +174,9 @@ export function UtilityTool({ toolId }: { toolId: string }) {
           ? "Your recordings and microphone are decoded on this device. Nothing is uploaded."
           : def.engine === "exif" ||
               def.engine === "qrscan" ||
+              def.engine === "data-viewer" ||
               def.preset?.kind === "mic"
-            ? "Your photos, camera and microphone stay on this device. Nothing is uploaded."
+            ? "Your files, photos, camera and microphone stay on this device. Nothing is uploaded."
             : "Everything here runs in your browser. Nothing you type is sent anywhere.";
   return (
     <Workbench steps={info.steps} current={1} footer={footer}>

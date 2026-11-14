@@ -55,10 +55,23 @@ import {
   ScrollText,
   Shuffle,
   Sigma,
+  ArrowLeftRight,
+  CaseSensitive,
+  Database,
+  FileSpreadsheet,
+  GitCompare,
+  Grid2x2,
+  IndianRupee,
+  Percent,
+  Receipt,
+  Shield,
+  Sparkles,
   SquareTerminal,
   TextCursorInput,
   Type,
+  Users,
   Webcam,
+  WholeWord,
   type LucideIcon,
 } from "lucide-react";
 
@@ -72,7 +85,11 @@ export type Engine =
   | "format" | "minify" | "validate" | "card" | "editor" | "html-viewer" | "markdown"
   | "xpath" | "xslt" | "xsd" | "xml-viewer" | "jsonpath" | "uritemplate" | "escape" | "ieee"
   | "hash" | "random" | "network" | "device" | "webgen" | "calculator" | "find-replace" | "split"
-  | "units" | "worldclock" | "timer" | "date" | "password" | "encrypt" | "qrscan" | "exif" | "cron" | "contrast" | "cssgen";
+  | "units" | "worldclock" | "timer" | "date" | "password" | "encrypt" | "qrscan" | "exif" | "cron" | "contrast" | "cssgen"
+  | "data-convert" | "code-types" | "chmod" | "data-viewer"
+  | "svg-opt" | "layout-play" | "palette-scale"
+  | "word-count" | "case-convert" | "list-compare" | "text-cleaner"
+  | "finance-calc" | "gst-percent" | "bill-split" | "invoice-sign";
 
 export type UtilityDef = {
   id: string;
@@ -116,6 +133,10 @@ const TEXT: UtilityDef[] = [
   d("text", "Generate", "lorem", ScrollText)("lorem-ipsum", "Lorem ipsum generator", "Placeholder text by paragraphs, sentences or words.", ["lorem ipsum", "dummy text", "placeholder text", "filler text"]),
   d("text", "Generate", "text-image", Type)("text-to-image", "Text to image", "Turn text into a PNG, with font, colours and padding.", ["text to image", "text to png", "quote image", "caption image"]),
   d("text", "Analyze", "summarize", ListChecks)("text-summarizer", "Text summarizer", "The key sentences of a long text, in your browser.", ["summarizer", "summarize text", "summary generator", "tldr", "key points"]),
+  d("text", "Analyze", "word-count", WholeWord)("word-counter", "Word, character & reading time counter", "Live word, character, sentence, paragraph counts, reading time and Flesch score.", ["word counter", "character counter", "reading time calculator", "flesch readability"], { mode: "all" }),
+  d("text", "Convert", "case-convert", CaseSensitive)("case-converter", "Case converter", "Convert text across camelCase, snake_case, kebab-case, PascalCase, Title Case and more.", ["case converter", "camel case", "snake case", "kebab case", "title case"], { case: "camel" }),
+  d("text", "Analyze", "list-compare", GitCompare)("list-comparator", "List comparator (set operations)", "Compare two lists to find A only, B only, intersection, union and symmetric difference.", ["list comparator", "compare two lists", "set intersection", "diff lists", "unique items"], { op: "intersection" }),
+  d("text", "Transform", "text-cleaner", Sparkles)("invisible-character-cleaner", "Invisible character & smart quote cleaner", "Inspect and strip zero-width spaces, non-breaking spaces, soft hyphens and curly quotes.", ["invisible character remover", "zero width space remover", "smart quote cleaner", "strip formatting"], { mode: "clean" }),
 ];
 
 /* ---------- Developer ---------- */
@@ -225,6 +246,18 @@ const DEV: UtilityDef[] = [
   web("rem-px-converter", "REM to PX converter", "REM, EM, PX, PT and % at any base font size.", ["rem to px", "px to rem", "em to px", "pt to px", "css units"], { kind: "units" }),
   web("css-to-less", "CSS to Less", "Nest flat CSS rules into Less.", ["css to less", "css to scss", "nest css"], { kind: "less" }),
   web("ascii-table", "ASCII table", "Every ASCII character with decimal, hex, octal, binary and HTML codes.", ["ascii table", "ascii chart", "ascii codes"], { kind: "ascii" }),
+  d("dev", "XML & JSON", "data-convert", ArrowLeftRight)("data-format-converter", "Data format converter", "Convert cleanly between JSON, CSV, YAML, XML, HTML and Markdown.", ["json csv yaml xml markdown", "data converter", "format converter", "json converter"], { pair: "json-csv", dir: "a2b" }),
+  d("dev", "XML & JSON", "data-convert", ArrowLeftRight)("json-to-csv", "JSON to CSV converter", "Flatten JSON arrays into clean RFC 4180 CSV tables with preview.", ["json to csv", "export json to csv", "json array to csv"], { pair: "json-csv", dir: "a2b" }),
+  d("dev", "XML & JSON", "data-convert", ArrowLeftRight)("csv-to-json", "CSV to JSON converter", "Parse CSV spreadsheets with quoted fields into structured JSON.", ["csv to json", "csv parser", "csv converter"], { pair: "json-csv", dir: "b2a" }),
+  d("dev", "XML & JSON", "data-convert", ArrowLeftRight)("json-to-yaml", "JSON to YAML converter", "Convert JSON objects into clean, readable YAML.", ["json to yaml", "json2yaml"], { pair: "json-yaml", dir: "a2b" }),
+  d("dev", "XML & JSON", "data-convert", ArrowLeftRight)("yaml-to-json", "YAML to JSON converter", "Parse YAML configs and Kubernetes manifests into JSON.", ["yaml to json", "yaml2json", "yaml parser"], { pair: "json-yaml", dir: "b2a" }),
+  d("dev", "XML & JSON", "data-convert", ArrowLeftRight)("json-to-xml", "JSON to XML converter", "Serialise JSON objects into formatted XML trees.", ["json to xml", "json2xml"], { pair: "json-xml", dir: "a2b" }),
+  d("dev", "XML & JSON", "data-convert", ArrowLeftRight)("xml-to-json", "XML to JSON converter", "Convert XML elements and attributes into clean JSON.", ["xml to json", "xml2json", "xml parser"], { pair: "json-xml", dir: "b2a" }),
+  d("dev", "HTML & CSS", "data-convert", ArrowLeftRight)("html-to-markdown", "HTML to Markdown converter", "Convert HTML markup into clean CommonMark Markdown.", ["html to markdown", "html2md", "html to md"], { pair: "html-md", dir: "a2b" }),
+  d("dev", "HTML & CSS", "data-convert", ArrowLeftRight)("markdown-to-html", "Markdown to HTML converter", "Render Markdown into sanitised, semantic HTML.", ["markdown to html", "md to html"], { pair: "html-md", dir: "b2a" }),
+  d("dev", "XML & JSON", "code-types", FileSpreadsheet)("json-sql-to-types", "JSON / SQL to code types", "Generate TypeScript interfaces, Zod schemas, Python Pydantic models or Go structs from JSON or SQL CREATE TABLE.", ["json to typescript", "sql to pydantic", "json to go struct", "json to zod", "create table to typescript"], { lang: "ts" }),
+  d("dev", "Encode", "chmod", Shield)("chmod-calculator", "Chmod permissions calculator", "Interactive owner/group/public checkboxes for octal (755), symbolic (-rwxr-xr-x) and chmod commands.", ["chmod calculator", "linux permissions", "755 permissions", "rwxr-xr-x", "umask calculator"], { mode: "755" }),
+  d("dev", "Edit & view", "data-viewer", Database)("sqlite-csv-parquet-viewer", "SQLite, CSV & Parquet viewer", "Drop a local .sqlite, .db, .parquet, .csv, .tsv or .json file, inspect schemas and run SQL queries locally.", ["sqlite viewer online", "parquet viewer", "csv sql query", "db browser", "duckdb sqlite browser viewer"], { tab: "sql" }),
 ];
 
 /* ---------- Everyday: device and browser ---------- */
@@ -251,6 +284,11 @@ const EVERYDAY: UtilityDef[] = [
   d("everyday", "Privacy & security", "encrypt", FileLock2)("encrypt-note", "Encrypt a note", "Lock a message with a password (AES-256), and share it as text or a link.", ["encrypt text", "encrypt message", "password protect text", "secret note", "aes encryption online", "decrypt text", "private message"]),
   d("everyday", "Privacy & security", "exif", ImageOff)("exif-remover", "Photo metadata viewer & remover", "See the hidden GPS, camera and date in photos, and remove it without losing quality.", ["exif viewer", "exif remover", "remove metadata from photo", "remove gps from photo", "photo location", "image metadata", "strip exif", "exif data"]),
   d("everyday", "QR codes", "qrscan", ScanQrCode)("qr-scanner", "QR code scanner", "Read a QR code from a picture, a screenshot or your camera.", ["qr scanner", "qr code reader", "scan qr code", "read qr from image", "qr decoder", "scan qr online", "wifi qr"]),
+  d("everyday", "Calculate & convert", "finance-calc", IndianRupee)("emi-sip-calculator", "EMI & Compound Interest calculator", "Calculate loan EMIs with prepayments, SIP growth and compound interest with INR schedules.", ["emi calculator", "loan emi calculator", "compound interest calculator", "home loan emi india"], { mode: "emi" }),
+  d("everyday", "Calculate & convert", "finance-calc", IndianRupee)("sip-calculator", "SIP & Step-Up Wealth calculator", "Estimate mutual fund SIP returns with annual step-up and inflation adjustment.", ["sip calculator", "step up sip", "mutual fund calculator", "inflation adjusted sip"], { mode: "sip" }),
+  d("everyday", "Calculate & convert", "gst-percent", Percent)("gst-percentage-calculator", "GST & Discount calculator", "Inclusive and exclusive Indian GST (CGST+SGST or IGST), coupon discounts and percentage math.", ["gst calculator", "gst calculator india", "percentage calculator", "discount calculator", "cgst sgst"], { mode: "gst" }),
+  d("everyday", "Calculate & convert", "bill-split", Users)("bill-splitter", "Trip & Bill splitter", "Settle group trip expenses with minimum transfers or split dinner bills for WhatsApp.", ["bill splitter", "splitwise alternative", "trip expense splitter", "whatsapp bill split", "dinner split"], { mode: "group" }),
+  d("everyday", "Calculate & convert", "invoice-sign", Receipt)("invoice-signature-generator", "Invoice & Signature generator", "Build GST-ready A4 printable invoices and draw transparent-background PNG signatures.", ["invoice generator", "gst invoice maker", "signature generator", "transparent png signature"], { mode: "invoice" }),
 ];
 
 /* ---------- Design: colour and CSS ---------- */
@@ -260,6 +298,11 @@ const DESIGN: UtilityDef[] = [
   d("design", "CSS", "cssgen", Palette)("css-gradient-generator", "CSS gradient generator", "Linear, radial and conic gradients with any number of colours.", ["css gradient generator", "gradient maker", "linear gradient", "radial gradient", "background gradient", "color gradient"], { kind: "gradient" }),
   d("design", "CSS", "cssgen", Square)("box-shadow-generator", "Box shadow generator", "Layered, soft or crisp CSS shadows, live.", ["box shadow generator", "css shadow", "drop shadow css", "shadow maker", "inset shadow"], { kind: "shadow" }),
   d("design", "CSS", "cssgen", ScanLine)("border-radius-generator", "Border radius generator", "Rounded corners, one by one, or organic blob shapes.", ["border radius generator", "rounded corners css", "css blob", "border-radius"], { kind: "radius" }),
+  d("design", "CSS", "cssgen", Sparkles)("glassmorphism-generator", "Glassmorphism CSS generator", "Frosted glass cards with backdrop blur, translucency, saturation and crisp borders.", ["glassmorphism generator", "frosted glass css", "backdrop blur css", "glass card css"], { kind: "glass" }),
+  d("design", "CSS", "cssgen", Square)("neumorphism-generator", "Neumorphism CSS generator", "Soft extruded UI surfaces with directional highlights and soft shadows.", ["neumorphism generator", "soft ui css", "neumorphic shadow", "soft ui generator"], { kind: "neumorphism" }),
+  d("design", "CSS", "svg-opt", Sparkles)("svg-optimizer-jsx", "SVG optimizer & JSX converter", "Minify raw SVG paths, strip bloat and convert attributes for React JSX/TSX or CSS Data URIs.", ["svg optimizer", "svgo online", "svg to jsx", "svg to react component", "svg data uri"], { mode: "jsx" }),
+  d("design", "CSS", "layout-play", Grid2x2)("css-grid-flexbox-playground", "CSS Grid & Flexbox playground", "Visual layout builder with live cells that outputs Tailwind classes, CSS and HTML.", ["css grid generator", "flexbox playground", "tailwind grid builder", "css layout generator"], { mode: "grid" }),
+  d("design", "Colour", "palette-scale", Palette)("color-palette-scale-generator", "Color palette & 50–950 scale generator", "Generate full Tailwind 50–950 colour scales, WCAG badges and harmonious palettes from one hex colour.", ["tailwind color scale", "50 950 palette generator", "tint shade generator", "color harmony palette"], { harmony: "analogous" }),
 ];
 
 /* ---------- Developer: scheduling ---------- */
@@ -317,6 +360,21 @@ export const ENGINE_INFO: Record<Engine, { takes: string; gives: string; steps: 
   exif: { takes: "Photos", gives: "Their metadata, or clean copies", steps: ["Add photos", "See what's hidden", "Download clean copies"], features: ["GPS location shown on a map", "Camera, lens, dates, software and serial numbers", "Removed losslessly from JPG, PNG and WebP: no re-compression", "Rotation and colour profile kept", "Many photos at once, as a ZIP"] },
   cron: { takes: "A cron expression", gives: "Plain English and the next runs", steps: ["Type the expression", "Read it in English", "Check the next runs"], features: ["Explains every field", "The next 8 run times, in your time or UTC", "5 or 6 fields, names (MON, JAN) and macros (@daily)", "Common examples to start from"] },
   contrast: { takes: "Two colours", gives: "WCAG contrast results", steps: ["Pick text and background", "See the ratio", "Use a passing fix"], features: ["AA and AAA for normal and large text", "UI components and icons (3:1)", "Nearest passing colour suggested", "Hex, rgb() and hsl(), with transparency"] },
-  cssgen: { takes: "A few settings", gives: "CSS to paste", steps: ["Adjust it", "Preview it live", "Copy the CSS"], features: ["Live preview", "Clean, standard CSS that works in every browser", "Gradients, layered shadows and blob shapes", "Copy with one tap"] },
+  cssgen: { takes: "A few settings", gives: "CSS to paste", steps: ["Adjust it", "Preview it live", "Copy the CSS"], features: ["Live preview", "Clean, standard CSS that works in every browser", "Gradients, layered shadows, glassmorphism, neumorphism and blob shapes", "Copy with one tap"] },
+  "data-convert": { takes: "JSON, CSV, YAML, XML, HTML or Markdown", gives: "Converted structured data", steps: ["Choose format pair", "Paste or upload input", "Copy or download output"], features: ["JSON ↔ CSV, JSON ↔ YAML, JSON ↔ XML and HTML ↔ Markdown", "One-click swap direction", "Downloads clean converted files", "Runs 100% locally in your browser"] },
+  "code-types": { takes: "JSON payload or SQL CREATE TABLE", gives: "Typed models & schemas", steps: ["Paste JSON or SQL", "Pick target language", "Copy types"], features: ["TypeScript interfaces, Zod schemas, Python Pydantic, dataclasses & Go structs", "Handles nested objects, arrays and nullable SQL columns", "Configurable root model name", "Zero server roundtrips"] },
+  chmod: { takes: "Checkboxes, octal or symbolic string", gives: "Octal, symbolic & chmod CLI command", steps: ["Toggle permissions or type 755", "Review special bits", "Copy command"], features: ["Interactive Owner / Group / Public matrix", "Supports setuid, setgid and sticky bit", "Bidirectional sync between checkboxes, octal (755) and symbolic (-rwxr-xr-x)", "One-click chmod command presets"] },
+  "data-viewer": { takes: "A local .sqlite, .db, .parquet, .csv, .tsv or .json file", gives: "Interactive tables & SQL results", steps: ["Drop a file or load a sample", "Inspect schema", "Filter or run SQL"], features: ["Pure WebAssembly-free in-browser SQLite 3 and Apache Parquet readers", "Query tables locally with SELECT, WHERE, GROUP BY, ORDER BY and LIMIT", "Export results as CSV, JSON or Markdown tables", "Your datasets never leave your machine"] },
+  "svg-opt": { takes: "Raw SVG markup", gives: "Optimised SVG, React JSX/TSX or Data URI", steps: ["Paste or upload SVG", "Pick cleanup toggles", "Copy SVG or JSX"], features: ["Removes comments, editor metadata, empty groups and excess decimals", "Converts SVG attributes to React camelCase JSX/TSX components", "Generates URL-encoded CSS Data URIs", "Live checkerboard preview with byte savings badge"] },
+  "layout-play": { takes: "Grid or Flexbox settings", gives: "Tailwind classes, CSS and HTML", steps: ["Pick Grid or Flex", "Adjust tracks and alignment", "Copy Tailwind or CSS"], features: ["Live interactive multi-cell preview", "Supports columns, rows, gaps, wrap, justify and align controls", "Outputs clean Tailwind utility markup alongside standard CSS", "Customise child count and container preview"] },
+  "palette-scale": { takes: "A base hex colour", gives: "50–950 Tailwind scale & harmonies", steps: ["Pick a hex colour", "Check WCAG contrast", "Export Tailwind or CSS variables"], features: ["Generates 11-stop 50–950 scales tuned for UI surfaces and text", "Shows WCAG AA/AAA badges per shade against white and dark text", "Complementary, analogous, triadic and split harmonies", "Exports Tailwind v4 @theme, v3 config, CSS custom properties, SCSS or JSON"] },
+  "word-count": { takes: "Any text", gives: "Live writing metrics & readability", steps: ["Paste or type text", "Inspect metrics & limits", "Copy top keywords"], features: ["Accurate word boundaries via Intl.Segmenter", "Characters with & without spaces, sentences, paragraphs and line count", "Reading time, speaking time and Flesch readability score", "Platform limit bars (X/Twitter, meta description, LinkedIn) & keyword density"] },
+  "case-convert": { takes: "Text or identifier list", gives: "14 naming conventions", steps: ["Paste text", "Pick camelCase, snake_case, etc.", "Copy converted output"], features: ["Instant conversion across 14 developer & prose cases", "Optional line-by-line conversion for bulk variable lists", "Preserves acronyms and word boundaries accurately", "One-click copy for any card"] },
+  "list-compare": { takes: "Two lists (A and B)", gives: "Set operations & unique items", steps: ["Paste List A and List B", "Toggle trim/case options", "Copy A∩B, A−B, B−A or A∪B"], features: ["Computes intersection, difference, symmetric difference and union", "Detects duplicates within each list", "Case-sensitive and whitespace-trimming toggles", "Download or copy any result set"] },
+  "text-cleaner": { takes: "Text copied from PDFs or AI chats", gives: "Clean ASCII-friendly plain text", steps: ["Paste messy text", "Inspect invisible markers", "Copy cleaned text"], features: ["Highlights hidden U+200B, NBSP, soft hyphens and BOM markers", "Replaces curly quotes, em-dashes and ligatures cleanly", "Shows exact count of stripped or normalised characters", "Nothing leaves your browser"] },
+  "finance-calc": { takes: "Amount, rate and tenure", gives: "EMI, SIP or compound projections", steps: ["Pick EMI, SIP or Compound", "Adjust sliders", "Review schedule or export CSV"], features: ["Indian lakh/crore formatting (₹) with toggleable currency", "Loan EMI prepayment simulator showing interest saved & tenure cut", "Step-up mutual fund SIP with optional inflation adjustment", "Year-by-year amortisation & growth CSV export"] },
+  "gst-percent": { takes: "Price, GST slab or percentage", gives: "Tax breakdown & discount totals", steps: ["Pick GST, Discount or Percentage", "Enter numbers", "Copy the breakdown"], features: ["Indian GST slabs (0%, 3%, 5%, 12%, 18%, 28%) inclusive & exclusive", "Shows CGST + SGST (intra-state) or IGST (inter-state) + words", "Coupon & stacked discount calculator", "Three-in-one everyday percentage solver"] },
+  "bill-split": { takes: "Group expenses or restaurant bill", gives: "Minimal settlement plan", steps: ["Add people and expenses", "Review balances", "Copy summary to WhatsApp"], features: ["Greedy minimum-transaction settlement for group trips", "Equal split or weighted shares plus restaurant tip & tax split", "One-click formatted WhatsApp summary & deep link", "100% private in your browser"] },
+  "invoice-sign": { takes: "Invoice details or drawn signature", gives: "Printable A4 GST PDF or PNG signature", steps: ["Fill seller, buyer & line items", "Sign if needed", "Print PDF or download PNG"], features: ["A4 GST-ready invoice template with auto CGST/SGST/IGST totals", "Amount-in-words in Indian numbering system", "Built-in transparent PNG signature pad", "Print cleanly to PDF straight from your browser"] },
 };
 

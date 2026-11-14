@@ -300,3 +300,35 @@ export function FilePick({ label, onFile, file }: { label: string; onFile: (f: F
     </div>
   );
 }
+
+/** Compact toolbar file picker that reads a UTF-8 text file into an Editor. */
+export function TextFilePick({
+  accept,
+  onText,
+  label = "Load file",
+}: {
+  accept?: string;
+  onText: (text: string) => void;
+  label?: string;
+}) {
+  const id = useId();
+  return (
+    <label
+      htmlFor={id}
+      className="inline-flex h-8 cursor-pointer items-center rounded-[8px] border border-line bg-surface px-2.5 text-[12px] text-ink-2 transition-colors hover:border-ink-3 hover:text-ink has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-accent/15"
+    >
+      <input
+        id={id}
+        type="file"
+        accept={accept}
+        className="sr-only"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = "";
+          if (f) void f.text().then(onText);
+        }}
+      />
+      {label}
+    </label>
+  );
+}
