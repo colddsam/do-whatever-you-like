@@ -67,7 +67,17 @@ type InstagramRes = SizeFields & {
   owner_username: string;
   is_carousel: boolean;
   media_count: number;
-  items: { type: string; url: string; width?: number | null; height?: number | null; size?: number | null }[];
+  thumbnail?: string | null;
+  duration?: number | null;
+  items: {
+    type: string;
+    url: string;
+    thumbnail?: string | null;
+    width?: number | null;
+    height?: number | null;
+    duration?: number | null;
+    size?: number | null;
+  }[];
 };
 
 const dims = (w?: number | null, h?: number | null) => (w && h ? `${w}×${h}` : undefined);
@@ -78,10 +88,12 @@ function normalize(platform: Platform, raw: unknown): MediaPreview {
     const r = raw as InstagramRes;
     const first = r.items[0];
     const image = r.items.find((i) => i.type === "image");
+    const duration = r.duration ?? r.items.find((i) => typeof i.duration === "number")?.duration ?? undefined;
     return {
       title: r.title?.split("\n")[0] || `Post by @${r.owner_username}`,
       author: `@${r.owner_username}`,
-      thumbnail: image?.url,
+      duration,
+      thumbnail: r.thumbnail || first?.thumbnail || image?.url || undefined,
       vertical: first ? isVertical(first.width, first.height) || first.type === "video" : false,
       items: r.items.map((i, n) => ({
         type: i.type === "video" ? "video" : "image",

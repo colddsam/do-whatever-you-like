@@ -13,6 +13,7 @@ from app.config.youtube import settings
 from app.core.config import app_settings
 from app.core.utils import writable_cookie_copy
 from app.core.media_size import estimate_ydl_entry_size
+from app.core.media_thumbnail import collect_ydl_thumbnails, resolve_media_thumbnail
 from app.exceptions.youtube import InvalidYoutubeURLError, YoutubeExtractionError
 
 logger = logging.getLogger(__name__)
@@ -254,14 +255,28 @@ class YoutubeDownloaderService:
             or "/shorts/" in (info.get("webpage_url") or "").lower()
             or bool(aspect_ratio and aspect_ratio < 1.0 and duration and duration <= 180)
         )
+        video_id = str(info.get("id") or items[0]["id"])
+        thumb_candidates = collect_ydl_thumbnails(info, youtube_id=video_id if self.VIDEO_ID_PATTERN.match(video_id) else None)
+        first_video_url = next((i.get("url") for i in items if i.get("url")), None)
+        thumbnail = resolve_media_thumbnail(
+            thumb_candidates,
+            allowed_suffixes=(".ytimg.com", "i.ytimg.com", "img.youtube.com", ".ggpht.com", ".googleusercontent.com", ".googlevideo.com"),
+            user_agent=(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/128.0.0.0 Safari/537.36"
+            ),
+            video_url=first_video_url,
+            referer="https://www.youtube.com/",
+        )
 
         return {
-            "id": str(info.get("id") or items[0]["id"]),
+            "id": video_id,
             "title": info.get("title"),
             "uploader": info.get("uploader") or info.get("channel"),
             "duration": duration,
             "view_count": info.get("view_count"),
-            "thumbnail": info.get("thumbnail"),
+            "thumbnail": thumbnail,
             "is_short": is_short,
             "estimated_size": default["size"] if default else None,
             "size_is_exact": bool(default and default["size_is_exact"]),

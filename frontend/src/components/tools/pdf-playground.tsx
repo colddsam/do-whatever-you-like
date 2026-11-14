@@ -53,7 +53,6 @@ import { Workbench } from "./workbench";
 import {
   Chip,
   DocRow,
-  EASE,
   IconButton,
   isAbort,
   isReady,
@@ -62,6 +61,7 @@ import {
   messageOf,
   nextId,
   PartsList,
+  PdfPreview,
   plural,
   RetryLink,
   Sheet,
@@ -1290,7 +1290,7 @@ function CompressOptions({
 /* ---------- Result ---------- */
 
 function ResultPanel({ result, onSave, onBack }: { result: Result; onSave: () => void; onBack: () => void }) {
-  const [preview, setPreview] = useState(false);
+  const [preview, setPreview] = useState(true);
   const panel = useRef<HTMLDivElement>(null);
   // A tall input (the page grid) collapsing into this panel can leave it above the viewport.
   useEffect(() => {
@@ -1336,7 +1336,7 @@ function ResultPanel({ result, onSave, onBack }: { result: Result; onSave: () =>
         </>
       )}
 
-      {zip && result.parts && <PartsList parts={result.parts} />}
+      {zip && result.parts && <PartsList parts={result.parts} zipBlob={result.blob} />}
 
       {!zip && (
         <div className="mt-3">
@@ -1349,25 +1349,7 @@ function ResultPanel({ result, onSave, onBack }: { result: Result; onSave: () =>
             {preview ? <EyeOff aria-hidden className="size-4" /> : <Eye aria-hidden className="size-4" />}
             {preview ? "Hide preview" : "Preview the PDF"}
           </button>
-          <AnimatePresence initial={false}>
-            {preview && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1, transition: { duration: 0.4, ease: EASE } }}
-                exit={{ height: 0, opacity: 0, transition: { duration: 0.2 } }}
-                className="overflow-hidden"
-              >
-                <object
-                  data={`${result.url}#toolbar=0&navpanes=0&view=FitH`}
-                  type="application/pdf"
-                  aria-label={`Preview of ${result.name}`}
-                  className="mt-3 block h-[min(60vh,520px)] w-full rounded-sm border border-line bg-paper-2"
-                >
-                  <p className="p-4 text-sm text-ink-2">This browser can&apos;t show PDFs inline. Download it to take a look.</p>
-                </object>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {preview && <PdfPreview url={result.url} name={result.name} onClose={() => setPreview(false)} />}
         </div>
       )}
 

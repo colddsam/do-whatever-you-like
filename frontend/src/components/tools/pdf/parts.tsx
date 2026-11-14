@@ -1,11 +1,11 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { Loader2, RotateCcw, X } from "lucide-react";
+import { Download, ExternalLink, Eye, EyeOff, Loader2, RotateCcw, X } from "lucide-react";
 import { formatBytes, formatSize } from "@/lib/media";
-import { FileToolError, type Converted } from "@/lib/files";
-import { describePart, type ZipEntry } from "@/lib/pdf";
+import { FileToolError, saveBlob, type Converted } from "@/lib/files";
+import { describePart, extractZipEntry, type ZipEntry } from "@/lib/pdf";
 import { cn } from "@/lib/utils";
 
 /*
@@ -312,24 +312,211 @@ export function SizeBars({
   );
 }
 
-/** Split: what's inside the ZIP, read from the archive itself. */
-export function PartsList({ parts }: { parts: ZipEntry[] }) {
+const isPdfName = (name: string) => /\.pdf$/i.test(name);
+const isImageName = (name: string) => /\.(jpe?g|png|webp|gif|bmp)$/i.test(name);
+
+/** Inline PDF viewer using an iframe with a guaranteed application/pdf blob URL plus a new-tab fallback. */
+export function PdfPreview({
+  url,
+  name,
+  onClose,
+  className,
+}: {
+  url: string;
+  name: string;
+  onClose?: () => void;
+  className?: string;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: EASE }}
+      className={cn("mt-3 overflow-hidden rounded-sm border border-line bg-paper-2", className)}
+      data-lenis-prevent
+    >
+      <div className="flex items-center justify-between gap-3 border-b border-line bg-paper px-3 py-1.5">
+        <span className="min-w-0 truncate font-mono text-xs text-ink-2" title={name}>
+          {name}
+        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <a
+            href={url}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="inline-flex items-center gap-1 rounded-[6px] px-2 py-1 text-xs text-ink-2 transition-colors hover:bg-paper-2 hover:text-ink"
+          >
+            <ExternalLink aria-hidden className="size-3.5" />
+            Open in new tab
+          </a>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close preview"
+              className="inline-flex size-6 items-center justify-center rounded-[6px] text-ink-3 transition-colors hover:bg-paper-2 hover:text-ink"
+            >
+              <X aria-hidden className="size-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+      <iframe
+        key={url}
+        src={`${url}#toolbar=1&navpanes=0&view=FitH`}
+        title={`Preview of ${name}`}
+        className="block h-[min(58vh,500px)] w-full border-0 bg-paper-2"
+      />
+    </motion.div>
+  );
+}
+
+type SelectedPart = { name: string; url: string; kind: "pdf" | "image" };
+
+/** Split: what's inside the ZIP, read from the archive itself, with per-part preview & save when zipBlob is provided. */
+export function PartsList({
+  parts,
+  zipBlob,
+  autoPreview = true,
+}: {
+  parts: ZipEntry[];
+  zipBlob?: Blob;
+  autoPreview?: boolean;
+}) {
   const scroll = parts.length > 6;
+  const [selected, setSelected] = useState<SelectedPart | null>(null);
+  const [busyName, setBusyName] = useState<string | null>(null);
+  const [partError, setPartError] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (selected?.url) URL.revokeObjectURL(selected.url);
+    };
+  }, [selected]);
+
+  useEffect(() => {
+    if (!autoPreview || !zipBlob || !parts.length) return;
+    const first = parts[0];
+    if (!isPdfName(first.name) || first.size > 15 * 1024 * 1024) return;
+    let cancelled = false;
+    (async () => {
+      const extracted = await extractZipEntry(zipBlob, first.name);
+      if (cancelled || !extracted) return;
+      const pdfBlob = extracted.type === "application/pdf" ? extracted : new Blob([extracted], { type: "application/pdf" });
+      const url = URL.createObjectURL(pdfBlob);
+      if (cancelled) {
+        URL.revokeObjectURL(url);
+        return;
+      }
+      setSelected({ name: first.name, url, kind: "pdf" });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [autoPreview, zipBlob, parts]);
+
+  const togglePreview = async (entry: ZipEntry) => {
+    if (!zipBlob) return;
+    if (selected?.name === entry.name) {
+      setSelected(null);
+      setPartError(null);
+      return;
+    }
+    setPartError(null);
+    setBusyName(entry.name);
+    const extracted = await extractZipEntry(zipBlob, entry.name);
+    setBusyName((cur) => (cur === entry.name ? null : cur));
+    if (!extracted) {
+      setPartError(`Couldn't open ${entry.name} from the archive.`);
+      return;
+    }
+    const kind = isPdfName(entry.name) ? "pdf" : "image";
+    const typed = kind === "pdf" && extracted.type !== "application/pdf" ? new Blob([extracted], { type: "application/pdf" }) : extracted;
+    setSelected({ name: entry.name, url: URL.createObjectURL(typed), kind });
+  };
+
+  const savePart = async (entry: ZipEntry) => {
+    if (!zipBlob) return;
+    setPartError(null);
+    const extracted = await extractZipEntry(zipBlob, entry.name);
+    if (!extracted) {
+      setPartError(`Couldn't extract ${entry.name} from the archive.`);
+      return;
+    }
+    const filename = entry.name.split("/").pop() || entry.name;
+    saveBlob(extracted, filename);
+  };
+
   return (
     <div className="mt-4">
       <p className="label-mono text-ink-3">Inside · {plural(parts.length, zipNoun(parts))}</p>
       <div className={cn("relative mt-2", scroll && "max-h-[248px] overflow-y-auto overscroll-contain")} data-lenis-prevent>
         <ol className="divide-y divide-line border-y border-line">
-          {parts.map((p, i) => (
-            <li key={p.name} className="flex items-center gap-3 py-2">
-              <span className="w-6 shrink-0 font-mono text-[12px] text-ink-3">{String(i + 1).padStart(2, "0")}</span>
-              <span className="w-24 shrink-0 text-sm font-medium text-ink">{describePart(p.name)}</span>
-              <span className="min-w-0 flex-1 truncate font-mono text-xs text-ink-3">{p.name}</span>
-              <span className="shrink-0 font-mono text-xs text-ink-2">{formatBytes(p.size)}</span>
-            </li>
-          ))}
+          {parts.map((p, i) => {
+            const canPreview = Boolean(zipBlob && (isPdfName(p.name) || isImageName(p.name)));
+            const active = selected?.name === p.name;
+            const loading = busyName === p.name;
+            return (
+              <li key={p.name} className="flex items-center gap-2 py-2 sm:gap-3">
+                <span className="w-6 shrink-0 font-mono text-[12px] text-ink-3">{String(i + 1).padStart(2, "0")}</span>
+                <span className="w-20 shrink-0 truncate text-sm font-medium text-ink sm:w-24">{describePart(p.name)}</span>
+                <span className="min-w-0 flex-1 truncate font-mono text-xs text-ink-3" title={p.name}>
+                  {p.name}
+                </span>
+                <span className="shrink-0 font-mono text-xs text-ink-2">{formatBytes(p.size)}</span>
+                {canPreview && (
+                  <button
+                    type="button"
+                    onClick={() => togglePreview(p)}
+                    aria-expanded={active}
+                    className={cn(
+                      "inline-flex h-7 shrink-0 items-center gap-1 rounded-[6px] border px-2 text-xs transition-colors",
+                      active
+                        ? "border-ink bg-ink text-paper"
+                        : "border-line bg-paper text-ink-2 hover:border-ink-3 hover:text-ink",
+                    )}
+                  >
+                    {loading ? (
+                      <Loader2 aria-hidden className="size-3 animate-spin" />
+                    ) : active ? (
+                      <EyeOff aria-hidden className="size-3" />
+                    ) : (
+                      <Eye aria-hidden className="size-3" />
+                    )}
+                    <span className="hidden sm:inline">{active ? "Hide" : "Preview"}</span>
+                  </button>
+                )}
+                {zipBlob && (
+                  <IconButton label={`Download ${p.name}`} onClick={() => savePart(p)} className="size-7 sm:size-7">
+                    <Download aria-hidden className="size-3.5" />
+                  </IconButton>
+                )}
+              </li>
+            );
+          })}
         </ol>
       </div>
+      {partError && <p className="mt-2 text-xs text-danger">{partError}</p>}
+      {selected && selected.kind === "pdf" && (
+        <PdfPreview url={selected.url} name={selected.name} onClose={() => setSelected(null)} />
+      )}
+      {selected && selected.kind === "image" && (
+        <div className="mt-3 overflow-hidden rounded-sm border border-line bg-paper-2">
+          <div className="flex items-center justify-between gap-3 border-b border-line bg-paper px-3 py-1.5">
+            <span className="min-w-0 truncate font-mono text-xs text-ink-2">{selected.name}</span>
+            <button
+              type="button"
+              onClick={() => setSelected(null)}
+              aria-label="Close preview"
+              className="inline-flex size-6 items-center justify-center rounded-[6px] text-ink-3 transition-colors hover:bg-paper-2 hover:text-ink"
+            >
+              <X aria-hidden className="size-3.5" />
+            </button>
+          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={selected.url} alt={`Preview of ${selected.name}`} className="max-h-[min(58vh,500px)] w-full object-contain" />
+        </div>
+      )}
     </div>
   );
 }

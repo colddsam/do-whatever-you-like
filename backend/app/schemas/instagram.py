@@ -18,8 +18,10 @@ class DownloadRequest(BaseModel):
 class MediaItem(BaseModel):
     type: str
     url: str
+    thumbnail: Optional[str] = None
     width: Optional[int] = None
     height: Optional[int] = None
+    duration: Optional[float] = None
     size: Optional[int] = None
 
 
@@ -29,6 +31,8 @@ class MediaResponse(BaseModel):
     owner_username: str
     is_carousel: bool
     media_count: int
+    thumbnail: Optional[str] = None
+    duration: Optional[float] = None
     estimated_size: Optional[int] = Field(
         default=None, description="Predicted size in bytes of what the download endpoint returns"
     )

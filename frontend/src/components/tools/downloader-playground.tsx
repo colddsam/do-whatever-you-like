@@ -364,6 +364,8 @@ function Result({
   audio: AudioFormat | null;
   onAudio: (a: AudioFormat | null) => void;
 }) {
+  const [failedThumb, setFailedThumb] = useState<string | null>(null);
+  const showThumb = Boolean(preview.thumbnail && failedThumb !== preview.thumbnail);
   const videoQualities = preview.qualities?.filter((q) => q.id !== "audio");
   const audioTrack = preview.qualities?.find((q) => q.id === "audio");
   const chosen = audio ? undefined : videoQualities?.find((q) => q.id === quality);
@@ -403,12 +405,13 @@ function Result({
           preview.vertical ? "mx-auto aspect-[9/16] w-40 sm:w-full" : "aspect-video sm:aspect-[4/5]",
         )}
       >
-        {preview.thumbnail ? (
-          // eslint-disable-next-line @next/next/no-img-element -- remote CDN thumbnails with short-lived URLs
+        {showThumb ? (
+          // eslint-disable-next-line @next/next/no-img-element -- remote CDN thumbnails or server-resolved data URIs
           <img
             src={preview.thumbnail}
             alt=""
             referrerPolicy="no-referrer"
+            onError={() => setFailedThumb(preview.thumbnail ?? null)}
             className="absolute inset-0 size-full object-cover"
           />
         ) : (

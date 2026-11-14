@@ -13,7 +13,7 @@ import { FileDrop } from "../file-drop";
 import { isBusy, ProgressButton, type Job } from "../progress-button";
 import { Workbench } from "../workbench";
 import { Notice } from "./kit";
-import { DocRow, EASE, expired, isAbort, isReady, isZip, messageOf, nextId, PartsList, stem, swap, type Doc, type Ready } from "./parts";
+import { DocRow, expired, isAbort, isReady, isZip, messageOf, nextId, PartsList, PdfPreview, stem, swap, type Doc, type Ready } from "./parts";
 
 /*
  * The shell every single-purpose PDF tool runs in: one input, the tool's options, one action,
@@ -406,7 +406,7 @@ export function ResultPanel({
   /** Previews the shared ones don't cover (audio, video, text), shown above the buttons. */
   children?: React.ReactNode;
 }) {
-  const [preview, setPreview] = useState(false);
+  const [preview, setPreview] = useState(true);
   const panel = useRef<HTMLDivElement>(null);
   const kind =
     (result.name.toLowerCase().endsWith(".zip") ? "ZIP" : kindLabel) ??
@@ -444,7 +444,7 @@ export function ResultPanel({
       </p>
       {infoLine && <p className="mt-1.5 text-sm text-ink-2">{infoLine}</p>}
 
-      {result.parts && <PartsList parts={result.parts} />}
+      {result.parts && <PartsList parts={result.parts} zipBlob={result.blob} />}
 
       {isImage && (
         // eslint-disable-next-line @next/next/no-img-element
@@ -466,25 +466,7 @@ export function ResultPanel({
             {preview ? <EyeOff aria-hidden className="size-4" /> : <Eye aria-hidden className="size-4" />}
             {preview ? "Hide preview" : "Preview the PDF"}
           </button>
-          <AnimatePresence initial={false}>
-            {preview && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1, transition: { duration: 0.4, ease: EASE } }}
-                exit={{ height: 0, opacity: 0, transition: { duration: 0.2 } }}
-                className="overflow-hidden"
-              >
-                <object
-                  data={`${result.url}#toolbar=0&navpanes=0&view=FitH`}
-                  type="application/pdf"
-                  aria-label={`Preview of ${result.name}`}
-                  className="mt-3 block h-[min(60vh,520px)] w-full rounded-sm border border-line bg-paper-2"
-                >
-                  <p className="p-4 text-sm text-ink-2">This browser can&apos;t show PDFs inline. Download it to take a look.</p>
-                </object>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {preview && <PdfPreview url={result.url} name={result.name} onClose={() => setPreview(false)} />}
         </div>
       )}
 

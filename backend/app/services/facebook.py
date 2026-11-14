@@ -10,6 +10,7 @@ from app.config.facebook import settings
 from app.core.config import app_settings
 from app.core.utils import writable_cookie_copy
 from app.core.media_size import estimate_ydl_entry_size, sum_estimates
+from app.core.media_thumbnail import collect_ydl_thumbnails, resolve_media_thumbnail
 from app.exceptions.facebook import FacebookExtractionError, InvalidFacebookURLError
 from app.services.ffmpeg_service import init_ffmpeg
 
@@ -212,19 +213,31 @@ class FacebookDownloaderService:
         entries = info.get("entries")
         if entries:
             items = [self._parse_entry(e) for e in entries if e]
+            first_entry = next((e for e in entries if isinstance(e, dict)), {})
         else:
             items = [self._parse_entry(info)]
+            first_entry = info
 
         items = [item for item in items if item.get("url")]
         if not items:
             raise FacebookExtractionError("No downloadable video streams found for this Facebook post.")
 
+        thumb_candidates = collect_ydl_thumbnails(info)
+        first_video_url = next((i.get("url") for i in items if i.get("url")), None)
+        thumbnail = resolve_media_thumbnail(
+            thumb_candidates,
+            allowed_suffixes=(".fbcdn.net", ".cdninstagram.com", ".facebook.com", ".fbsbx.com"),
+            user_agent=self.USER_AGENT,
+            video_url=first_video_url,
+            referer="https://www.facebook.com/",
+        )
+
         return {
             "id": str(info.get("id") or items[0]["id"]),
-            "title": info.get("title") or info.get("description"),
-            "uploader": info.get("uploader"),
-            "duration": info.get("duration"),
-            "thumbnail": info.get("thumbnail"),
+            "title": info.get("title") or info.get("description") or first_entry.get("title") or first_entry.get("description"),
+            "uploader": info.get("uploader") or first_entry.get("uploader"),
+            "duration": info.get("duration") or first_entry.get("duration"),
+            "thumbnail": thumbnail,
             "estimated_size": estimated_size,
             "size_is_exact": size_exact,
             "items": items,

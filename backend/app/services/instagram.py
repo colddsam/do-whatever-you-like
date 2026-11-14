@@ -10,6 +10,7 @@ import instaloader
 from app.config.instagram import settings
 from app.core.config import app_settings
 from app.core.media_size import remote_sizes
+from app.core.media_thumbnail import resolve_media_thumbnail
 from app.exceptions.instagram import InvalidInstagramURLError, MediaExtractionError
 
 logger = logging.getLogger(__name__)
@@ -100,7 +101,41 @@ class InstagramDownloaderService:
         return instaloader.Post.shortcode_to_mediaid(base_shortcode)
 
     @staticmethod
-    def _parse_media_node(node: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract_node_thumbnails(node: Dict[str, Any]) -> List[str]:
+        urls: List[str] = []
+
+        def push(candidate: Any) -> None:
+            if isinstance(candidate, str):
+                cleaned = candidate.strip()
+                if cleaned.startswith("https://") and cleaned not in urls:
+                    urls.append(cleaned)
+
+        image_versions = node.get("image_versions2") or {}
+        candidates = sorted(
+            image_versions.get("candidates") or [],
+            key=lambda c: (c.get("width") or 0) * (c.get("height") or 0),
+            reverse=True,
+        )
+        for cand in candidates:
+            if isinstance(cand, dict):
+                push(cand.get("url"))
+
+        additional = image_versions.get("additional_candidates") or {}
+        if isinstance(additional, dict):
+            for key in ("first_frame", "igtv_first_frame", "smart_frame"):
+                frame = additional.get(key)
+                if isinstance(frame, dict):
+                    push(frame.get("url"))
+
+        push(node.get("display_url"))
+        push(node.get("thumbnail_src"))
+        push(node.get("thumbnail_url"))
+        return urls
+
+    @classmethod
+    def _parse_media_node(cls, node: Dict[str, Any]) -> Dict[str, Any]:
+        thumb_candidates = cls._extract_node_thumbnails(node)
+        best_thumb = thumb_candidates[0] if thumb_candidates else None
         video_versions = node.get("video_versions") or []
         if video_versions:
             best_video = max(
@@ -110,8 +145,11 @@ class InstagramDownloaderService:
             return {
                 "type": "video",
                 "url": best_video.get("url", ""),
+                "thumbnail": best_thumb,
+                "thumbnail_candidates": thumb_candidates,
                 "width": best_video.get("width"),
                 "height": best_video.get("height"),
+                "duration": node.get("video_duration"),
             }
 
         candidates = (node.get("image_versions2") or {}).get("candidates") or []
@@ -123,11 +161,15 @@ class InstagramDownloaderService:
             if candidates
             else {}
         )
+        img_url = best_image.get("url", "") or (best_thumb or "")
         return {
             "type": "image",
-            "url": best_image.get("url", ""),
-            "width": best_image.get("width"),
-            "height": best_image.get("height"),
+            "url": img_url,
+            "thumbnail": best_thumb or (img_url or None),
+            "thumbnail_candidates": thumb_candidates,
+            "width": best_image.get("width") or node.get("original_width"),
+            "height": best_image.get("height") or node.get("original_height"),
+            "duration": None,
         }
 
     NOT_SET_UP = (
@@ -178,7 +220,7 @@ class InstagramDownloaderService:
             logger.error("Failed to retrieve Instagram post %s: %s", shortcode, exc)
             raise MediaExtractionError("Failed to retrieve post metadata from Instagram.")
 
-    def fetch_media_metadata(self, url_or_shortcode: str) -> Dict[str, Any]:
+    def fetch_media_metadata(self, url_or_shortcode: str, *, resolve_thumbnail: bool = True) -> Dict[str, Any]:
         shortcode = self.extract_shortcode(url_or_shortcode=url_or_shortcode)
         product_info = self._fetch_product_info(shortcode)
 
@@ -189,6 +231,15 @@ class InstagramDownloaderService:
         media_items: List[Dict[str, Any]] = [
             self._parse_media_node(node) for node in nodes
         ]
+
+        all_thumb_candidates: List[str] = []
+        for item in media_items:
+            for cand in item.pop("thumbnail_candidates", []):
+                if cand not in all_thumb_candidates:
+                    all_thumb_candidates.append(cand)
+        for cand in self._extract_node_thumbnails(product_info):
+            if cand not in all_thumb_candidates:
+                all_thumb_candidates.append(cand)
 
         caption_dict = product_info.get("caption") or {}
         caption_text = caption_dict.get("text") or ""
@@ -205,12 +256,37 @@ class InstagramDownloaderService:
         known = [i["size"] for i in media_items]
         estimated_size = sum(known) if known and all(s is not None for s in known) else None
 
+        first_video_url = next(
+            (i["url"] for i in media_items if i.get("type") == "video" and i.get("url")),
+            None,
+        )
+        resolved_thumb = (
+            resolve_media_thumbnail(
+                all_thumb_candidates,
+                allowed_suffixes=self.ALLOWED_CDN_SUFFIXES,
+                user_agent=self.USER_AGENT,
+                video_url=first_video_url,
+                referer="https://www.instagram.com/",
+            )
+            if resolve_thumbnail
+            else (all_thumb_candidates[0] if all_thumb_candidates else None)
+        )
+        if media_items and resolved_thumb:
+            media_items[0]["thumbnail"] = resolved_thumb
+
+        duration = product_info.get("video_duration") or next(
+            (i.get("duration") for i in media_items if i.get("duration")),
+            None,
+        )
+
         return {
             "shortcode": shortcode,
             "title": caption_text[:120] if caption_text else "",
             "owner_username": owner_username,
             "is_carousel": is_carousel,
             "media_count": len(media_items),
+            "thumbnail": resolved_thumb,
+            "duration": duration,
             "estimated_size": estimated_size,
             "size_is_exact": estimated_size is not None,
             "items": media_items,
@@ -218,7 +294,7 @@ class InstagramDownloaderService:
 
     def download_to_disk(self, url_or_shortcode: str, target_dir: Path) -> List[Path]:
         target_dir.mkdir(parents=True, exist_ok=True)
-        metadata = self.fetch_media_metadata(url_or_shortcode)
+        metadata = self.fetch_media_metadata(url_or_shortcode, resolve_thumbnail=False)
         shortcode = metadata["shortcode"]
         saved_files: List[Path] = []
         max_bytes = app_settings.MAX_DOWNLOAD_SIZE_MB * 1024 * 1024

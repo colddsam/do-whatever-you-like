@@ -131,20 +131,30 @@ function sendForm(
     xhr.onerror = () => reject(new FileToolError("The upload was interrupted. Check your connection and try again."));
     xhr.onabort = () => reject(new DOMException("Aborted", "AbortError"));
     xhr.onload = async () => {
-      const blob = xhr.response as Blob;
+      const rawBlob = xhr.response as Blob;
       if (xhr.status < 200 || xhr.status >= 300) {
-        const body = await blob
+        const body = await rawBlob
           .text()
           .then((t) => JSON.parse(t) as { detail?: unknown })
           .catch(() => null);
         const detail = typeof body?.detail === "string" ? body.detail : `Request failed (${xhr.status}).`;
         return reject(new FileToolError(detail, xhr.status));
       }
+      const name = filenameFrom(xhr.getResponseHeader("content-disposition"), fallbackName);
+      const headerType = xhr.getResponseHeader("content-type")?.split(";")[0].trim().toLowerCase() ?? "";
+      const rawType = rawBlob.type.split(";")[0].trim().toLowerCase();
+      let type = rawType && rawType !== "application/octet-stream" ? rawType : headerType || rawType || "application/octet-stream";
+      if (name.toLowerCase().endsWith(".pdf") || headerType === "application/pdf") {
+        type = "application/pdf";
+      } else if (name.toLowerCase().endsWith(".zip") || headerType === "application/zip") {
+        type = "application/zip";
+      }
+      const blob = rawBlob.type === type ? rawBlob : new Blob([rawBlob], { type });
       resolve({
         blob,
         size: blob.size,
-        type: blob.type || xhr.getResponseHeader("content-type") || "application/octet-stream",
-        name: filenameFrom(xhr.getResponseHeader("content-disposition"), fallbackName),
+        type,
+        name,
         info: xhr.getResponseHeader("x-pdf-info") ?? xhr.getResponseHeader("x-image-info") ?? xhr.getResponseHeader("x-convert-info") ?? undefined,
       });
     };

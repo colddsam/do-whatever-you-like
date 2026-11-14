@@ -1,3 +1,5 @@
+import { unzipSync } from "fflate";
+
 /** Client helpers for the PDF toolkit. The rules here mirror backend/app/services/pdf.py. */
 
 export type PdfMode = "merge" | "split" | "organize" | "compress";
@@ -160,6 +162,39 @@ export function describePart(name: string) {
     return { from: Number(a), to: Number(b ?? a) };
   });
   return partLabel(runs);
+}
+
+const MIME_BY_EXT: Record<string, string> = {
+  ".pdf": "application/pdf",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+  ".svg": "image/svg+xml",
+  ".txt": "text/plain;charset=utf-8",
+  ".md": "text/markdown;charset=utf-8",
+  ".json": "application/json;charset=utf-8",
+  ".csv": "text/csv;charset=utf-8",
+  ".html": "text/html;charset=utf-8",
+};
+
+/** Extracts one named entry from a ZIP blob on demand (used to preview individual split PDFs/images). */
+export async function extractZipEntry(zipBlob: Blob, entryName: string): Promise<Blob | null> {
+  try {
+    const buf = new Uint8Array(await zipBlob.arrayBuffer());
+    const files = unzipSync(buf, {
+      filter: (file) => file.name === entryName || file.name.endsWith(`/${entryName}`),
+    });
+    const bytes = files[entryName] ?? Object.values(files)[0];
+    if (!bytes) return null;
+    const dot = entryName.lastIndexOf(".");
+    const ext = dot >= 0 ? entryName.slice(dot).toLowerCase() : "";
+    const mime = MIME_BY_EXT[ext] ?? "application/octet-stream";
+    return new Blob([new Uint8Array(bytes)], { type: mime });
+  } catch {
+    return null;
+  }
 }
 
 /* ---------- Server answers (see backend/app/api/v1/endpoints/pdf.py) ---------- */
