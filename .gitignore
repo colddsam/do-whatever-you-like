@@ -23,3 +23,6 @@ frontend/.env*
 .agents/
 # Speech models (downloaded on first use)
 **/models/
+
+# Website listing & asset sheets
+website-assets-and-details.xlsx

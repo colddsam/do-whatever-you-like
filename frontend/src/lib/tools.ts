@@ -43,6 +43,7 @@ import {
   Crop,
   Download,
   Eraser,
+  Eye,
   FileDiff,
   FileImage,
   FileMinus,
@@ -110,7 +111,7 @@ export type ImageGroup = (typeof IMAGE_GROUPS)[number];
  * The sections of the file family: the universal converter (and the popular pairs it powers),
  * compression for any file, and merge/split for every format where they make sense.
  */
-export const FILE_GROUPS = ["Convert", "Compress", "Merge & split"] as const;
+export const FILE_GROUPS = ["View", "Convert", "Compress", "Merge & split"] as const;
 export type FileGroup = (typeof FILE_GROUPS)[number];
 
 /** The Developer and Text collections' sections (lib/utilities/catalog.ts). */
@@ -554,6 +555,125 @@ const dotted = (list: string[]) => list.map((e) => "." + e).join(",");
  * workspace, the pair fixed), so there's one converter in the codebase, not one per pair.
  */
 const fileTools: Tool[] = [
+  // View: instant in-browser readers for Office docs, spreadsheets, presentations, CSV and PDFs
+  fileTool({
+    id: "document-viewer", name: "Document viewer", group: "View", icon: Eye,
+    description: "Open Word, Excel, PowerPoint, CSV, ODF and PDF files right in your browser.",
+    takes: "DOCX, XLSX, PPTX, CSV, ODT, ODP, ODS, RTF or PDF",
+    gives: "Interactive preview, search & clean exports",
+    steps: ["Drop any document or pick a sample", "Read, inspect sheets or slides, or search", "Export clean CSV, JSON, Markdown or print"],
+    accept: {
+      label: "Office, CSV & PDF documents",
+      types: ".xlsx,.xlsm,.xltx,.ods,.csv,.tsv,.docx,.docm,.dotx,.odt,.rtf,.pptx,.ppsx,.pptm,.odp,.pdf,.xls,.doc,.ppt,.md,.txt",
+    },
+    limit: "Runs in your browser",
+    keywords: [
+      "document viewer", "office viewer", "microsoft 365", "m365", "office 365", "open docx",
+      "open xlsx", "open pptx", "open odt", "excel viewer", "word viewer", "powerpoint viewer",
+      "csv viewer", "pdf viewer", "rtf", "viewer",
+    ],
+    features: [
+      "Reads Word (.docx, .odt, .rtf), Excel (.xlsx, .ods), CSV/TSV, PowerPoint (.pptx, .odp) and PDFs",
+      "Multi-sheet grid with formula bar, column statistics, sorting and filtering",
+      "16:9 slide stage with speaker notes, filmstrip and slide images",
+      "100% client-side — your files never leave your browser",
+    ],
+  }),
+  fileTool({
+    id: "excel-viewer", name: "Excel viewer", group: "View", icon: FileSpreadsheet,
+    description: "Inspect XLSX, XLSM, ODS, CSV and TSV workbooks with sheets, formulas and stats.",
+    takes: "XLSX, XLSM, XLTX, ODS, CSV or TSV",
+    gives: "Interactive spreadsheet grid, stats & CSV/JSON/Markdown export",
+    steps: ["Drop a workbook or load sample XLSX", "Switch sheets, sort or inspect formulas", "Export cleaned CSV, JSON or Markdown"],
+    accept: { label: "Spreadsheets", types: ".xlsx,.xlsm,.xltx,.ods,.csv,.tsv,.xls" },
+    limit: "Runs in your browser",
+    keywords: [
+      "excel", "excel viewer", "xlsx", "xlsx viewer", "xlsm", "ods", "spreadsheet viewer",
+      "workbook", "open excel online", "formulas", "excel reader",
+    ],
+    features: [
+      "Switch between worksheets with sheet row/column counts",
+      "Inspect raw Excel formulas (`fx` bar) alongside evaluated values and cell comments",
+      "Sort, filter and compute instant column Sum / Average / Min / Max",
+      "Export any sheet to CSV, JSON or Markdown table locally",
+    ],
+  }),
+  fileTool({
+    id: "word-viewer", name: "Word viewer", group: "View", icon: FileText,
+    description: "Read DOCX, ODT, RTF and Markdown documents with clean typography and an outline.",
+    takes: "DOCX, DOCM, DOTX, ODT, RTF or Markdown",
+    gives: "Formatted reader, heading outline & search",
+    steps: ["Drop a Word file or load sample DOCX", "Browse the heading outline and tables", "Search text, copy or print to PDF"],
+    accept: { label: "Word documents", types: ".docx,.docm,.dotx,.odt,.rtf,.md,.txt,.doc" },
+    limit: "Runs in your browser",
+    keywords: [
+      "word", "word viewer", "docx", "docx viewer", "odt viewer", "rtf viewer",
+      "open word online", "microsoft word", "document reader", "docx reader",
+    ],
+    features: [
+      "Preserves headings, bold/italic/code runs, lists, tables, footnotes and embedded images",
+      "Clickable heading outline sidebar with live reading stats",
+      "Full-text search with match count and highlighted snippets",
+      "Export cleanly to Markdown or print straight to PDF",
+    ],
+  }),
+  fileTool({
+    id: "powerpoint-viewer", name: "PowerPoint viewer", group: "View", icon: Presentation,
+    description: "Step through PPTX, PPSX and ODP slide decks with speaker notes and filmstrip.",
+    takes: "PPTX, PPSX, PPTM or ODP",
+    gives: "16:9 slide viewer, thumbnails & speaker notes",
+    steps: ["Drop a deck or load sample PPTX", "Step through slides or browse filmstrip", "Read speaker notes or export Markdown"],
+    accept: { label: "Presentations", types: ".pptx,.ppsx,.pptm,.odp,.ppt" },
+    limit: "Runs in your browser",
+    keywords: [
+      "powerpoint", "powerpoint viewer", "pptx", "pptx viewer", "odp viewer", "ppsx",
+      "slides viewer", "presentation reader", "open pptx online", "speaker notes",
+    ],
+    features: [
+      "Renders slide frames, titles, bullets, positioned shapes, tables and embedded images",
+      "Thumbnail filmstrip strip plus Previous / Next keyboard & button controls",
+      "Side panel with slide speaker notes and full outline",
+      "Export slides and notes into a structured Markdown deck",
+    ],
+  }),
+  fileTool({
+    id: "pdf-viewer", name: "PDF viewer", group: "View", icon: FileStack,
+    description: "View PDF pages in-browser and inspect metadata, embedded fonts and extracted text.",
+    takes: "PDF",
+    gives: "Visual PDF reader, fonts/metadata inspector & text extract",
+    steps: ["Drop a PDF document", "Read pages and inspect PDF fonts & info", "Copy or search extracted text"],
+    accept: PDF_ACCEPT,
+    limit: "Runs in your browser",
+    keywords: [
+      "pdf viewer", "open pdf", "pdf reader", "pdf inspector", "pdf fonts",
+      "pdf metadata", "pdf text", "view pdf",
+    ],
+    features: [
+      "Embedded native PDF reader with zoom, scroll and print controls",
+      "Automatic inspection of PDF version, page count, dimensions, title/author & embedded fonts",
+      "Decompresses text streams to extract searchable text right in your browser",
+      "Stays 100% on your device with zero uploads",
+    ],
+  }),
+  fileTool({
+    id: "csv-viewer", name: "CSV & TSV viewer", group: "View", icon: FileSpreadsheet,
+    description: "Filter, sort, search and summarize CSV and TSV tables cleanly in your browser.",
+    takes: "CSV or TSV",
+    gives: "Sortable data grid, column stats & JSON/Markdown export",
+    steps: ["Drop a CSV/TSV file or load sample", "Filter rows, sort columns or inspect cells", "Export JSON, Markdown or clean CSV"],
+    accept: { label: "CSV & TSV", types: ".csv,.tsv,.tab,.txt" },
+    limit: "Runs in your browser",
+    keywords: [
+      "csv", "csv viewer", "tsv viewer", "open csv online", "csv reader",
+      "csv to json", "csv table", "delimiter", "tabular viewer",
+    ],
+    features: [
+      "Auto-detects comma, tab, semicolon or pipe delimiters plus quoted multiline cells",
+      "Instant text filter, one-click column sorting and numeric column statistics",
+      "Handles large files fast by slicing the visible grid window cleanly",
+      "One-click export to cleaned CSV, JSON array or Markdown table",
+    ],
+  }),
   // Convert: the popular pairs
   fileTool({
     id: "pdf-to-word", name: "PDF to Word", group: "Convert", icon: FileText,
@@ -754,16 +874,17 @@ const ON_DEVICE = new Set([
   "svg-optimizer-jsx",
   "css-grid-flexbox-playground",
   "color-palette-scale-generator",
-  "glassmorphism-generator",
-  "neumorphism-generator",
-  "svg-optimizer-jsx",
-  "css-grid-flexbox-playground",
-  "color-palette-scale-generator",
   "image-to-svg",
   "mockup-frame-generator",
   "archive-extractor-creator",
   "audio-waveform-generator",
   "writing",
+  "document-viewer",
+  "excel-viewer",
+  "word-viewer",
+  "powerpoint-viewer",
+  "pdf-viewer",
+  "csv-viewer",
 ]);
 
 /**
@@ -1470,11 +1591,11 @@ export const CLUSTERS: Cluster[] = [
     name: "Any file",
     title: "Any file",
     noun: "file",
-    blurb: "Convert any file to any format, compress it, merge or split it.",
+    blurb: "View Word, Excel, PowerPoint, CSV and PDF files in your browser, convert formats, compress, merge or split.",
     icon: ArrowRightLeft,
     hub: "convert-anything",
     groups: FILE_GROUPS,
-    featured: ["convert-anything", "compress-files", "merge-files", "split-files", "pdf-to-word", "word-to-pdf"],
+    featured: ["document-viewer", "convert-anything", "compress-files", "merge-files", "split-files", "pdf-to-word", "word-to-pdf"],
   },
   {
     id: "pdf",

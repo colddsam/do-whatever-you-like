@@ -74,6 +74,7 @@ const ImageToSvgTool = dynamic(() => import("./image/vectorize-tool").then((m) =
 const MockupSafeZoneTool = dynamic(() => import("./image/mockup-tool").then((m) => m.MockupSafeZoneTool), { loading });
 const AudioWaveformTool = dynamic(() => import("./media/waveform-tool").then((m) => m.AudioWaveformTool), { loading });
 const ArchiveTool = dynamic(() => import("./files/archive-tool").then((m) => m.ArchiveTool), { loading });
+const DocumentViewerTool = dynamic(() => import("./files/document-viewer").then((m) => m.DocumentViewerTool), { loading });
 
 type Workspace = ComponentType<{ toolId: string }>;
 
@@ -185,6 +186,12 @@ const byId: Record<string, Workspace> = {
   "mockup-frame-generator": MockupSafeZoneTool,
   "audio-waveform-generator": AudioWaveformTool,
   "archive-extractor-creator": ArchiveTool,
+  "document-viewer": DocumentViewerTool,
+  "excel-viewer": DocumentViewerTool,
+  "word-viewer": DocumentViewerTool,
+  "powerpoint-viewer": DocumentViewerTool,
+  "pdf-viewer": DocumentViewerTool,
+  "csv-viewer": DocumentViewerTool,
 };
 
 /** A standalone page for one tab of the developer hub (JSON formatter, JWT decoder…). */
