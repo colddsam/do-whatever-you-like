@@ -149,12 +149,31 @@ async function ToolDetails({ params }: Pick<PageProps<"/tools/[id]">, "params">)
           <Icon aria-hidden className="size-5 md:size-6" />
         </span>
         <div className="min-w-0">
-          <h1 className="text-[clamp(1.875rem,3.4vw,2.75rem)] font-semibold leading-[1.05] tracking-[-0.03em] text-balance">
-            <ToolTitle name={tool.name} />
-          </h1>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="text-[clamp(1.875rem,3.4vw,2.75rem)] font-semibold leading-[1.05] tracking-[-0.03em] text-balance">
+              <ToolTitle name={tool.name} />
+            </h1>
+            {live && tool.beta && (
+              <Badge variant="beta" className="mt-0.5">
+                Beta
+              </Badge>
+            )}
+          </div>
           <p className="mt-2 max-w-xl text-base leading-relaxed text-ink-2 text-pretty md:text-lg">{tool.description}</p>
         </div>
       </div>
+
+      {live && tool.beta && (
+        <div
+          role="note"
+          className="mt-6 flex flex-wrap items-start gap-2.5 rounded-lg border border-warning/35 bg-warning/10 px-4 py-3 text-sm leading-relaxed text-ink-2"
+        >
+          <span className="label-mono mt-0.5 shrink-0 text-[11px] font-semibold text-warning">Beta phase</span>
+          <p className="min-w-0 flex-1">
+            This server-heavy tool runs on a shared free-tier instance (<span className="font-mono text-ink">512 MB RAM</span>) and queues heavy jobs one at a time to prevent overload. Keep files compact and wait a moment if another job is running.
+          </p>
+        </div>
+      )}
 
       <div className="mt-8 grid grid-cols-1 gap-12 md:mt-10 lg:grid-cols-12 lg:gap-10 [&>*]:min-w-0">
         <div className={tool.wide ? "lg:col-span-12" : "lg:col-span-8"}>
@@ -331,7 +350,7 @@ function RelatedCard({ tool }: { tool: Tool }) {
         <span className="flex size-9 items-center justify-center rounded-md border border-line bg-surface text-ink transition-colors duration-150 group-hover:border-ink group-hover:bg-ink group-hover:text-paper">
           <Icon aria-hidden className="size-4" />
         </span>
-        {live ? <Badge variant="live">Live</Badge> : <Badge>Soon</Badge>}
+        {live ? (tool.beta ? <Badge variant="beta">Beta</Badge> : <Badge variant="live">Live</Badge>) : <Badge>Soon</Badge>}
       </div>
       <h3 className="mt-5 flex items-center gap-1.5 text-[17px] sm:mt-8 font-semibold tracking-[-0.015em] text-ink">
         {tool.name}

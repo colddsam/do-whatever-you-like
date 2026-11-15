@@ -13,8 +13,141 @@ export const maxDuration = 30;
 
 const UA = "Mozilla/5.0 (compatible; DoWhateverYouLike-HandleCheck/1.0; +https://do-whatever-you-like.colddsam.com)";
 const PROBE_TIMEOUT_MS = 3500;
-const BACKEND_PROBE_TIMEOUT_MS = 20_000;
-const BACKEND_META_SERVICES = new Set(["instagram", "facebook", "tiktok"]);
+const BACKEND_IG_TIMEOUT_MS = 24_000;
+const BACKEND_META_TIMEOUT_MS = 24_000;
+const BACKEND_META_SERVICES = new Set(["facebook"]);
+
+let igFallbackCanary = {
+  ok: false,
+  checkedAt: 0,
+  cooldownUntil: 0,
+};
+let igCanaryInFlight: Promise<boolean> | null = null;
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+async function fetchInstagramHtmlSignals(username: string): Promise<"occupied" | "empty_200" | "blocked"> {
+  const lower = username.toLowerCase();
+  const targetUrl = `https://www.instagram.com/${encodeURIComponent(username)}/`;
+  const userRegex = new RegExp(`"username"\\s*:\\s*"${escapeRegex(lower)}"`, "i");
+  const ogRegex = /<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']*)["']/i;
+
+  const headerProfiles: Record<string, string>[] = [
+    {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9",
+      "Sec-Fetch-Dest": "document",
+      "Sec-Fetch-Mode": "navigate",
+      "Sec-Fetch-Site": "none",
+      "Sec-Fetch-User": "?1",
+    },
+    {
+      "User-Agent": "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.9",
+    },
+  ];
+
+  for (const headers of headerProfiles) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 6500);
+      let res: Response;
+      try {
+        res = await fetch(targetUrl, {
+          headers,
+          redirect: "manual",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timer);
+      }
+      const location = (res.headers.get("location") ?? "").toLowerCase();
+      if (res.status === 403 || res.status === 429 || (res.status >= 300 && res.status < 400) || location.includes("login")) {
+        continue;
+      }
+      if (res.status !== 200) {
+        continue;
+      }
+      const html = await res.text();
+      const ogText = (html.match(ogRegex)?.[1] ?? "").toLowerCase();
+      if (
+        html.includes("xig_user_by_username") ||
+        userRegex.test(html) ||
+        ogText.includes(`@${lower}`) ||
+        ogText.includes(`&#064;${lower}`)
+      ) {
+        return "occupied";
+      }
+      if (html.length > 0) {
+        return "empty_200";
+      }
+    } catch {
+      // Try next header profile.
+    }
+  }
+  return "blocked";
+}
+
+async function verifyInstagramPublicCanary(): Promise<boolean> {
+  const now = Date.now();
+  if (now < igFallbackCanary.cooldownUntil) {
+    return false;
+  }
+  if (igFallbackCanary.ok && now - igFallbackCanary.checkedAt < 30_000) {
+    return true;
+  }
+  if (igCanaryInFlight) {
+    return igCanaryInFlight;
+  }
+  igCanaryInFlight = (async () => {
+    try {
+      const res = await fetchInstagramHtmlSignals("instagram");
+      const ok = res === "occupied";
+      const ts = Date.now();
+      igFallbackCanary = ok
+        ? { ok: true, checkedAt: ts, cooldownUntil: 0 }
+        : { ok: false, checkedAt: ts, cooldownUntil: ts + 12_000 };
+      return ok;
+    } finally {
+      igCanaryInFlight = null;
+    }
+  })();
+  return igCanaryInFlight;
+}
+
+async function probeInstagramPublicFallback(
+  username: string,
+): Promise<{ status: AvailabilityStatus; detail: string }> {
+  const signal = await fetchInstagramHtmlSignals(username);
+  if (signal === "occupied") {
+    return {
+      status: "occupied",
+      detail: `@${username} is occupied on Instagram (cookie-free public profile check)`,
+    };
+  }
+  if (signal === "empty_200" && username.toLowerCase() !== "instagram" && (await verifyInstagramPublicCanary())) {
+    return {
+      status: "available",
+      detail: "No active public Instagram profile found (cookie-free check) — click link to confirm signup",
+    };
+  }
+  if (signal === "empty_200") {
+    return {
+      status: "unverified",
+      detail: "Instagram rate-limited anonymous lookups without cookies — click link to confirm",
+    };
+  }
+  return {
+    status: "unverified",
+    detail: "Could not confirm Instagram anonymously right now — click link to verify",
+  };
+}
 let tiktokUnreachableUntil = 0;
 let redditAvailCooldownUntil = 0;
 let redditRssCooldownUntil = 0;
@@ -390,18 +523,20 @@ async function probeRedditHandle(
   };
 }
 
-async function fetchBackendMetaProbes(
+async function fetchBackendServiceProbes(
   usernames: string[],
   services: string[],
+  targetServices: string[],
+  timeoutMs: number,
 ): Promise<{ attempted: boolean; map: Map<string, ServiceCheckResult> }> {
   const map = new Map<string, ServiceCheckResult>();
   const backend = backendConfig();
-  const metaServices = services.filter((id) => BACKEND_META_SERVICES.has(id));
-  if (!backend || metaServices.length === 0) {
+  const wanted = services.filter((id) => targetServices.includes(id));
+  if (!backend || wanted.length === 0) {
     return { attempted: false, map };
   }
 
-  const validPairs = metaServices.filter((svcId) =>
+  const validPairs = wanted.filter((svcId) =>
     usernames.some((u) => SERVICE_MAP.get(svcId)?.validate(u).valid),
   );
   const validUsernames = usernames.filter((u) =>
@@ -421,7 +556,7 @@ async function fetchBackendMetaProbes(
       },
       body: JSON.stringify({ usernames: validUsernames, services: validPairs }),
       cache: "no-store",
-      signal: AbortSignal.timeout(BACKEND_PROBE_TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     });
 
     if (res.ok) {
@@ -446,6 +581,7 @@ async function probeService(
   serviceId: string,
   username: string,
   metaBackendPromise?: Promise<{ attempted: boolean; map: Map<string, ServiceCheckResult> }>,
+  igBackendPromise?: Promise<{ attempted: boolean; map: Map<string, ServiceCheckResult> }>,
 ): Promise<ServiceCheckResult> {
   const svc = SERVICE_MAP.get(serviceId);
   const started = Date.now();
@@ -628,24 +764,19 @@ async function probeService(
         return finish(rd.status, rd.detail);
       }
       case "instagram": {
-        if (metaBackendPromise) {
-          const { attempted, map } = await metaBackendPromise;
+        if (igBackendPromise) {
+          const { map } = await igBackendPromise;
           const backendHit = map.get(`instagram::${username}`);
-          if (backendHit) {
+          if (backendHit && (backendHit.status === "occupied" || backendHit.status === "available")) {
             return {
               ...backendHit,
               url: backendHit.url || url,
               latencyMs: backendHit.latencyMs ?? Date.now() - started,
             };
           }
-          if (attempted) {
-            return finish(
-              "unverified",
-              "Instagram backend probe timed out or is waking — click link to confirm directly",
-            );
-          }
         }
-        return finish("unverified", `Passes ${svc.name} handle rules — click link to verify availability directly`);
+        const fb = await probeInstagramPublicFallback(username);
+        return finish(fb.status, fb.detail);
       }
       case "facebook": {
         if (metaBackendPromise) {
@@ -674,18 +805,19 @@ async function probeService(
         return finish(xRes.status, xRes.detail);
       }
       case "tiktok": {
-        if (metaBackendPromise) {
-          const { map } = await metaBackendPromise;
-          const backendHit = map.get(`tiktok::${username}`);
-          if (backendHit) {
-            return {
-              ...backendHit,
-              url: backendHit.url || url,
-              latencyMs: backendHit.latencyMs ?? Date.now() - started,
-            };
-          }
-        }
         const tt = await probeTikTokPublicFallback(url);
+        if (tt.status === "occupied" || tt.status === "available") {
+          return finish(tt.status, tt.detail);
+        }
+        const ttBackend = await fetchBackendServiceProbes([username], ["tiktok"], ["tiktok"], 14_000);
+        const backendHit = ttBackend.map.get(`tiktok::${username}`);
+        if (backendHit && (backendHit.status === "occupied" || backendHit.status === "available")) {
+          return {
+            ...backendHit,
+            url: backendHit.url || url,
+            latencyMs: backendHit.latencyMs ?? Date.now() - started,
+          };
+        }
         return finish(tt.status, tt.detail);
       }
       default:
@@ -730,14 +862,15 @@ export async function POST(req: NextRequest) {
     return Response.json({ detail: "Provide at least one username and one service." }, { status: 400 });
   }
 
-  // Run Instagram (cookie-free Instaloader) & Facebook (cookie-free yt-dlp) batch on FastAPI concurrently.
-  const metaBackendPromise = fetchBackendMetaProbes(usernames, services);
+  // Run Instagram (cookie-free Instaloader) & Facebook (cookie-free yt-dlp) independently so slow yt-dlp batches never time out Instagram.
+  const metaBackendPromise = fetchBackendServiceProbes(usernames, services, Array.from(BACKEND_META_SERVICES), BACKEND_META_TIMEOUT_MS);
+  const igBackendPromise = fetchBackendServiceProbes(usernames, services, ["instagram"], BACKEND_IG_TIMEOUT_MS);
 
   // Run all (username, service) probes concurrently with bounded per-probe timeouts.
   const jobs: Array<Promise<ServiceCheckResult>> = [];
   for (const username of usernames) {
     for (const serviceId of services) {
-      jobs.push(probeService(serviceId, username, metaBackendPromise));
+      jobs.push(probeService(serviceId, username, metaBackendPromise, igBackendPromise));
     }
   }
 

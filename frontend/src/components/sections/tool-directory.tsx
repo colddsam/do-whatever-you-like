@@ -287,7 +287,7 @@ function ToolCell({ tool, hub }: { tool: Tool; hub?: boolean }) {
           </span>
           <span className="mt-0.5 block text-sm leading-relaxed text-ink-2">{tool.description}</span>
         </span>
-        {!live && <Badge className="shrink-0">Soon</Badge>}
+        {live ? tool.beta && <Badge variant="beta" className="shrink-0">Beta</Badge> : <Badge className="shrink-0">Soon</Badge>}
       </Link>
     </li>
   );

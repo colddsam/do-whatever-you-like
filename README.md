@@ -12,7 +12,7 @@
 
 <a href="https://do-whatever-you-like.colddsam.com"><img src="https://img.shields.io/badge/Open%20the%20site-do--whatever--you--like.colddsam.com-eb4a10?style=for-the-badge&labelColor=15140f" alt="Open the live site"></a>
 
-<img src="https://img.shields.io/badge/tools-251%20live-15140f?style=flat-square" alt="251 live tools">
+<img src="https://img.shields.io/badge/tools-258%20live-15140f?style=flat-square" alt="258 live tools">
 <img src="https://img.shields.io/badge/price-free-2f7d4f?style=flat-square" alt="Free">
 <img src="https://img.shields.io/badge/sign--up-not%20needed-57544a?style=flat-square" alt="No sign-up">
 <img src="https://img.shields.io/badge/watermarks-none-57544a?style=flat-square" alt="No watermarks">
@@ -41,7 +41,7 @@
 
 ## 👋 What is Do-Whatever-You-Like?
 
-**Do-Whatever-You-Like is a free website with 251 small tools for everyday digital chores.**
+**Do-Whatever-You-Like is a free website with 258 small tools for everyday digital chores.**
 
 Need to turn a PDF into Word, translate text, audio recordings or videos into another language, analyze an exported WhatsApp chat, shrink a photo, vectorise a logo to SVG, cut a song, clean up a noisy recording, format JSON, query a local SQLite or Parquet file, make a chart, split a trip bill, track your period privately, or download a Reel? Open the site, pick the tool, done.
 
@@ -70,15 +70,15 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 
 ## 🗂️ What's inside
 
-251 live tools in 9 collections. Click a name to open that collection on the site.
+258 live tools in 9 collections. Click a name to open that collection on the site.
 
 | | Collection | What you can do | Tools |
 | :---: | :--- | :--- | :---: |
-| 🔁 | [**Any file**](https://do-whatever-you-like.colddsam.com/tools/category/files) | Convert almost any file to any format, compress, merge, split and inspect or build archives | **12** |
+| 🔁 | [**Any file**](https://do-whatever-you-like.colddsam.com/tools/category/files) | View Word, Excel, PowerPoint, CSV & PDF in-browser, convert almost any file, compress, merge, split and inspect or build archives | **18** |
 | 📄 | [**PDF tools**](https://do-whatever-you-like.colddsam.com/tools/category/pdf) | Merge, split, compress, edit, sign, protect, OCR and compare PDFs | **23** |
 | 🖼️ | [**Image tools**](https://do-whatever-you-like.colddsam.com/tools/category/images) | Compress, resize, crop, remove backgrounds, upscale, vectorise to SVG, frame mockups, blur faces, make memes and icons | **20** |
 | 💻 | [**Developer tools**](https://do-whatever-you-like.colddsam.com/tools/category/developer) | Format, minify and validate code, convert JSON/CSV/YAML/XML/SQL/types, query SQLite & Parquet, hashes, JWT, UUID/ULID, regex, DNS and HTTP checks, cron | **114** |
-| ✍️ | [**Text tools**](https://do-whatever-you-like.colddsam.com/tools/category/text) | Writing helper, translator (text, audio & video), WhatsApp chat analyzer, word counter, case & list tools, binary and hex, Morse code, summaries | **28** |
+| ✍️ | [**Text tools**](https://do-whatever-you-like.colddsam.com/tools/category/text) | Writing helper, username & handle generator, translator (text, audio & video), WhatsApp chat analyzer, word counter, case & list tools, binary and hex, Morse code, summaries | **29** |
 | 🎨 | [**Charts, fonts and colour**](https://do-whatever-you-like.colddsam.com/tools/category/design) | Animated charts, flowcharts, font checker and maker, colour picker & 50–950 scales, SVG optimizer, CSS Grid/Flexbox & UI generators | **14** |
 | ⬇️ | [**Media downloads**](https://do-whatever-you-like.colddsam.com/tools/category/downloads) | Save public YouTube, Instagram and Facebook videos, or just their sound | **3** |
 | 🎬 | [**Audio and video**](https://do-whatever-you-like.colddsam.com/tools/category/media) | Trim, remove noise, change volume, waveforms & spectrograms, record your screen, subtitles & caption translation, speech to text, GIFs | **10** |
@@ -89,9 +89,15 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 <br>
 
 <details>
-<summary><b>🔁 Any file</b> — 12 tools</summary>
+<summary><b>🔁 Any file</b> — 18 tools</summary>
 <br>
 
+- [**Document viewer**](https://do-whatever-you-like.colddsam.com/tools/document-viewer) — Open Word, Excel, PowerPoint, CSV, ODF and PDF files right in your browser.
+- [**Excel viewer**](https://do-whatever-you-like.colddsam.com/tools/excel-viewer) — Inspect XLSX, XLSM, ODS, CSV and TSV workbooks with sheets, formulas and stats.
+- [**Word viewer**](https://do-whatever-you-like.colddsam.com/tools/word-viewer) — Read DOCX, ODT, RTF and Markdown documents with clean typography and an outline.
+- [**PowerPoint viewer**](https://do-whatever-you-like.colddsam.com/tools/powerpoint-viewer) — Step through PPTX, PPSX and ODP slide decks with speaker notes and filmstrip.
+- [**PDF viewer**](https://do-whatever-you-like.colddsam.com/tools/pdf-viewer) — View PDF pages in-browser and inspect metadata, embedded fonts and extracted text.
+- [**CSV & TSV viewer**](https://do-whatever-you-like.colddsam.com/tools/csv-viewer) — Filter, sort, search and summarize CSV and TSV tables cleanly in your browser.
 - [**Universal converter**](https://do-whatever-you-like.colddsam.com/tools/convert-anything) — Turn almost any file into the format you need: documents, data, images, audio, video, fonts and more.
 - [**PDF to Word**](https://do-whatever-you-like.colddsam.com/tools/pdf-to-word) — An editable Word document from your PDF.
 - [**PDF to Excel**](https://do-whatever-you-like.colddsam.com/tools/pdf-to-excel) — Tables from your PDF, ready in Excel.
@@ -173,10 +179,11 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 </details>
 
 <details>
-<summary><b>✍️ Text tools</b> — 28 tools</summary>
+<summary><b>✍️ Text tools</b> — 29 tools</summary>
 <br>
 
 - [**Writing helper**](https://do-whatever-you-like.colddsam.com/tools/writing) — Summarise long passages, rewrite tone and fix grammar right in your browser.
+- [**Username & handle generator**](https://do-whatever-you-like.colddsam.com/tools/username-generator) — Generate brandable usernames and check handle availability across social platforms.
 - [**Translator**](https://do-whatever-you-like.colddsam.com/tools/translator) — Translate plain text, subtitles (`.srt`/`.vtt`), audio recordings, voice notes or videos — returning dubbed audio/video files plus copyable input and translated transcripts.
 - [**WhatsApp chat analyzer**](https://do-whatever-you-like.colddsam.com/tools/whatsapp-chat-analyzer) — Turn any exported WhatsApp chat into stats, timelines, activity heatmaps, reply speed, top emojis and searchable messages — in your browser.
 - [**Text to binary**](https://do-whatever-you-like.colddsam.com/tools/text-to-binary) — Turn text into binary code, eight bits per byte.
@@ -395,14 +402,14 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 | 🔒 **Private by default** | If a tool can run in your browser, it does. If it needs the server, the file lives in a private folder for that one request and is deleted right after. |
 | 🧑‍🤝‍🧑 **Plain words** | Buttons say what they do ("Remove the noise", "Download 3 clean photos"). Errors say what went wrong and what to try. |
 | 🛡️ **Safe by default** | Every uploaded file is checked by its real contents before anything opens it. A program renamed to `.pdf` is turned away. |
-| 🎨 **One design** | Every page follows one design system (`frontend/DESIGN.md`), so all 251 tools feel like one product. |
+| 🎨 **One design** | Every page follows one design system (`frontend/DESIGN.md`), so all 258 tools feel like one product. |
 | 🧩 **Built to grow** | One registry lists every tool; most new tools are one line plus one engine. That's how the site grew so fast. |
 
 ---
 
 ## 🚀 Our pace
 
-Do-Whatever-You-Like went from an empty repository to **251 live tools in its first week**.
+Do-Whatever-You-Like went from an empty repository to **258 live tools in its first week**.
 
 ```mermaid
 timeline
@@ -432,17 +439,19 @@ timeline
     15 Nov : Task-intent search and animated tool hopper
            : Inline PDF viewer and per-part split-ZIP previews
            : Server-resolved Reel, Short & video cover thumbnails
+           : In-browser Office & document viewers (Word, Excel, PowerPoint, CSV, PDF)
+           : Beta badges & shared heavy-job concurrency lanes for free-tier stability
 ```
 
 | 📅 Days | 🧰 Live tools | 🗂️ Collections | 📡 API endpoints | 🧪 Check scripts |
 | :---: | :---: | :---: | :---: | :---: |
-| 8 | 251 | 9 | 77 | 9 backend suites + browser & unit tests |
+| 8 | 258 | 9 | 77 | 9 backend suites + browser & unit tests |
 
 ---
 
 ## 🗺️ What's next
 
-- ✅ **Every listed tool is live.** All 251 tools in the directory — including the Writing helper — are now live and ready to use.
+- ✅ **Every listed tool is live.** All 258 tools in the directory — including the Writing helper and Office & document viewers — are now live and ready to use.
 - 🙋 **Your requests.** The site has a *Request a tool* button. New tools are picked from what people ask for.
 - 🔧 **Making the existing tools better**: faster on free hosting, clearer wording, and better phone layouts.
 
@@ -623,7 +632,7 @@ Every tool has its own settings with a prefix (`PDF_`, `IMAGE_`, `UNIVERSAL_`, `
 | 🖥️ **Website** | **Vercel** (Hobby, free) | Import the repo, set **Root directory** to `frontend`, add `BACKEND_URL`, `BACKEND_TOKEN` and `BACKEND_PUBLIC_URL`. |
 | ⚙️ **Server** | **Render** (free web service) | *New → Blueprint* and pick this repo. `render.yaml` builds `backend/Dockerfile` with every engine included. Copy the generated `HEADER_TOKEN` to Vercel's `BACKEND_TOKEN`, and set `ALLOWED_ORIGINS` to your Vercel address. |
 
-> **Good to know about free plans.** Render's free server has 512 MB of memory and a small slice of CPU, and it goes to sleep when nobody uses it, so the first request after a quiet spell can take a minute. That's why slow jobs (video re-encoding, OCR on huge PDFs) have caps in `render.yaml`, and why everything that can run in the browser does.
+> **Good to know about free plans.** Render's free server has 512 MB of memory and a small slice of CPU, and it goes to sleep when nobody uses it, so the first request after a quiet spell can take a minute. That's why slow or memory-heavy jobs (video re-encoding, Whisper, OCR, headless Chromium, LibreOffice) carry a **Beta** badge, run behind a shared heavy-job concurrency lane (`backend/app/core/lanes.py`) so concurrent requests queue safely without crashing, and why everything that can run in the browser does.
 
 ### 🍪 Instagram and cookies
 
@@ -954,7 +963,7 @@ do-whatever-you-like/
 │   ├── scripts/                 # End-to-end check scripts
 │   └── app/
 │       ├── main.py              # App, CORS, security headers, auth
-│       ├── core/                # Settings, upload guard, size limits, isolated job runner, thumbnail resolver, clean-up
+│       ├── core/                # Settings, upload guard, size limits, isolated job runner, concurrency lanes, thumbnail resolver, clean-up
 │       ├── config/              # Settings per tool (env prefixes)
 │       ├── exceptions/          # Clean, user-safe errors per tool
 │       ├── schemas/             # Request and response models
@@ -968,14 +977,14 @@ do-whatever-you-like/
         ├── components/
         │   ├── layout/ sections/        # Header, footer, command palette, home page sections, directory
         │   └── tools/                   # Every tool's workspace
-        │       ├── pdf/ image/ files/ universal/ media/ transcribe/ health/ text/
+        │       ├── pdf/ image/ files/ universal/ media/ transcribe/ health/ text/ # Incl. in-browser Office & document viewer (files/)
         │       ├── design/              # Chart maker, flowchart maker, fonts, colour picker
         │       ├── dev/ utilities/      # Developer hub and one-engine-per-job utilities
         │       ├── tool-hopper-search.tsx # Morphing, non-obstructive floating search bar for tool pages
         │       └── playground.tsx       # Which workspace each tool uses
         └── lib/
-            ├── tools.ts                 # The registry of every tool
-            ├── tool-search.ts           # Natural-language task & intent search engine across all 251 tools
+            ├── tools.ts                 # The registry of every tool (and SERVER_HEAVY_TOOL_IDS Beta markers)
+            ├── tool-search.ts           # Natural-language task & intent search engine across all 258 tools
             ├── utilities/catalog.ts     # Developer, Text, Everyday and Design pages as data
             ├── charts.ts flowchart.ts period.ts whatsapp.ts # Client tool engines
             ├── translate.ts             # Translator API client, direct-ticket streaming & speech helpers

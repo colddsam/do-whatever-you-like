@@ -8,6 +8,7 @@ when there are several. An `X-Image-Info` header describes each result (name, si
 pixel size), so the page can show exact numbers before anything is downloaded.
 """
 
+import asyncio
 import json
 import shutil
 import uuid
@@ -20,8 +21,11 @@ from pydantic import ValidationError
 from starlette.concurrency import run_in_threadpool
 
 from app.config.image import settings
+from app.config.jobs import settings as job_settings
 from app.core.config import app_settings
+from app.core.lanes import heavy_lane
 from app.core.utils import cleanup_folder
+from app.exceptions.base import AppBaseException
 from app.exceptions.image import ImageProcessingError, InvalidImageError
 from app.exceptions.pdf import PDFProcessingError
 from app.schemas.image import Area, Capabilities, FaceDetection, WatermarkOptions
@@ -353,7 +357,18 @@ async def html_to_image(
             html = target.read_text(encoding="utf-8", errors="replace")
             name = Path(file.filename).stem or "page"
         out = job_dir / f"{name}.{format}"
-        info = await run_in_threadpool(capture, out, url, html, screen, full_page, block_ads, remove_popups, format)
+        slots = heavy_lane.semaphore()
+        try:
+            await asyncio.wait_for(slots.acquire(), timeout=job_settings.QUEUE_WAIT_SECONDS)
+        except asyncio.TimeoutError:
+            raise AppBaseException(
+                detail="The server is busy with other heavy files. Try again in a minute.",
+                status_code=503,
+            )
+        try:
+            info = await run_in_threadpool(capture, out, url, html, screen, full_page, block_ads, remove_popups, format)
+        finally:
+            slots.release()
         background_tasks.add_task(cleanup_folder, job_dir)
         result = {"files": [{"name": out.name, "source": name, "before": None, "after": out.stat().st_size, **info}]}
         return FileResponse(out, filename=out.name, media_type=MEDIA[out.suffix], headers={"X-Image-Info": json_info(result)})

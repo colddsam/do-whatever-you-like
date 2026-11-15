@@ -107,7 +107,10 @@ export default async function CategoryPage({ params }: PageProps<"/tools/categor
           className="group mt-10 flex items-center justify-between gap-4 rounded-lg border border-line bg-surface p-5 transition-colors hover:border-ink-3 md:p-6"
         >
           <span>
-            <span className="label-mono text-ink-3">All-in-one</span>
+            <span className="flex flex-wrap items-center gap-2">
+              <span className="label-mono text-ink-3">All-in-one</span>
+              {hub.beta && <Badge variant="beta">Beta</Badge>}
+            </span>
             <span className="mt-1 block text-lg font-semibold tracking-[-0.015em] text-ink">{hub.name}</span>
             <span className="mt-0.5 block text-[15px] text-ink-2">{hub.description}</span>
           </span>
@@ -134,7 +137,11 @@ export default async function CategoryPage({ params }: PageProps<"/tools/categor
                       <span className="block text-[15px] font-semibold tracking-[-0.01em] text-ink">{t.name}</span>
                       <span className="mt-0.5 block text-sm leading-relaxed text-ink-2">{t.description}</span>
                     </span>
-                    {t.status !== "live" && <Badge className="shrink-0">Soon</Badge>}
+                    {t.status === "live" ? (
+                      t.beta && <Badge variant="beta" className="shrink-0">Beta</Badge>
+                    ) : (
+                      <Badge className="shrink-0">Soon</Badge>
+                    )}
                   </Link>
                 </li>
               ))}

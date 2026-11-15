@@ -1,6 +1,6 @@
 fastapi>=0.115.0
 uvicorn[standard]>=0.30.0
-instaloader>=4.13.0
+instaloader>=4.16.0
 # [default] brings yt-dlp-ejs, the solver YouTube now needs; Deno (a wheel, no system install)
 # runs it. Without them YouTube hides most formats or refuses downloads.
 yt-dlp[default]>=2026.10.26

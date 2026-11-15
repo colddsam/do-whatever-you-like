@@ -396,9 +396,15 @@ export function CommandPalette({
                 </span>
               </span>
               {tool.status === "live" ? (
-                <span className="label-mono relative flex items-center gap-1.5 text-ink">
-                  <SignalDot /> Live
-                </span>
+                tool.beta ? (
+                  <span className="label-mono relative inline-flex items-center gap-1.5 rounded-sm border border-warning/35 bg-warning/10 px-1.5 py-0.5 text-[10px] text-warning">
+                    <span aria-hidden className="inline-flex size-1.5 rounded-full bg-warning" /> Beta
+                  </span>
+                ) : (
+                  <span className="label-mono relative flex items-center gap-1.5 text-ink">
+                    <SignalDot /> Live
+                  </span>
+                )
               ) : (
                 <span className="label-mono relative text-ink-3">Soon</span>
               )}

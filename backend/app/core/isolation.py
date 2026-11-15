@@ -24,6 +24,7 @@ from typing import Optional, Tuple, Type
 from fastapi import Request
 
 from app.config.jobs import settings
+from app.core.lanes import Lane, heavy_lane, light_lane
 from app.exceptions.base import AppBaseException
 from app.services.pdf_pool import ClientDisconnected
 
@@ -31,25 +32,6 @@ logger = logging.getLogger(__name__)
 
 # The folder that holds the `app` package, so `python -m app.core.job_worker` resolves.
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
-
-
-class Lane:
-    """A queue of slots. Tools that compete for the same memory share a lane."""
-
-    def __init__(self, name: str, size: int) -> None:
-        self.name = name
-        self.size = max(1, size)
-        self._slots: Optional[asyncio.Semaphore] = None
-
-    def semaphore(self) -> asyncio.Semaphore:
-        # Created lazily, inside the running event loop.
-        if self._slots is None:
-            self._slots = asyncio.Semaphore(self.size)
-        return self._slots
-
-
-heavy_lane = Lane("heavy", settings.HEAVY_CONCURRENCY)
-light_lane = Lane("light", settings.LIGHT_CONCURRENCY)
 
 # (bad input → 400, processing failed → 422, unavailable → 503) for the tool that's asking.
 Errors = Tuple[Type[AppBaseException], Type[AppBaseException], Type[AppBaseException]]

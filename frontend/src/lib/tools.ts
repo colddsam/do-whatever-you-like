@@ -127,6 +127,8 @@ export type Tool = {
   category: string;
   description: string;
   status: ToolStatus;
+  /** True for server-heavy workloads (FFmpeg, AI/ONNX/Whisper, Chromium, LibreOffice, yt-dlp, PyMuPDF) in Beta on the free backend. */
+  beta?: boolean;
   icon: LucideIcon;
   kind: ToolKind;
   /** The spec sheet: what goes in, what comes out, and any limit worth knowing. */
@@ -906,7 +908,71 @@ export function wherePrivacy(tool: Tool): string | undefined {
 export const getTool = (id: string) => tools.find((t) => t.id === id);
 export const stepsFor = (tool: Tool) => tool.steps ?? defaultSteps[tool.kind];
 
-export const tools: Tool[] = [
+/**
+ * Tools that execute heavy media, document, OCR, AI/ML, headless Chromium, LibreOffice or yt-dlp
+ * workloads on the free-tier backend (`512 MB RAM`). Marked Beta across the UI and serialized
+ * behind the backend heavy lane so concurrent requests never overload or crash the server.
+ */
+export const SERVER_HEAVY_TOOL_IDS = new Set<string>([
+  "youtube",
+  "instagram",
+  "facebook",
+  "audio",
+  "audio-to-text",
+  "translator",
+  "trim-media",
+  "noise-remover",
+  "audio-volume",
+  "color-picker",
+  "convert-anything",
+  "compress-files",
+  "merge-files",
+  "split-files",
+  "pdf-to-word",
+  "pdf-to-excel",
+  "pdf-to-powerpoint",
+  "pdf-to-jpg",
+  "word-to-pdf",
+  "powerpoint-to-pdf",
+  "excel-to-pdf",
+  "pdf",
+  "merge-pdf",
+  "split-pdf",
+  "remove-pages",
+  "extract-pages",
+  "organize-pdf",
+  "scan-to-pdf",
+  "compress-pdf",
+  "repair-pdf",
+  "ocr-pdf",
+  "pdf-to-pdfa",
+  "jpg-to-pdf",
+  "html-to-pdf",
+  "rotate-pdf",
+  "page-numbers",
+  "watermark-pdf",
+  "crop-pdf",
+  "edit-pdf",
+  "unlock-pdf",
+  "protect-pdf",
+  "sign-pdf",
+  "redact-pdf",
+  "compare-pdf",
+  "image",
+  "compress-image",
+  "upscale-image",
+  "remove-background",
+  "resize-image",
+  "crop-image",
+  "rotate-image",
+  "convert-to-jpg",
+  "jpg-to-image",
+  "html-to-image",
+  "watermark-image",
+  "blur-face",
+]);
+
+const rawTools: Tool[] = [
   {
     id: "youtube",
     name: "YouTube downloader",
@@ -1571,6 +1637,10 @@ export const tools: Tool[] = [
   ...devTabTools,
   ...utilityTools,
 ];
+
+export const tools: Tool[] = rawTools.map((tool) =>
+  SERVER_HEAVY_TOOL_IDS.has(tool.id) ? { ...tool, beta: true } : tool,
+);
 
 export const exampleTasks = [
   "download this instagram reel",

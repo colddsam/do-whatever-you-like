@@ -86,7 +86,14 @@ def html_to_image(
     try:
         with sync_playwright() as p:
             try:
-                browser = p.chromium.launch(args=["--disable-dev-shm-usage"])
+                browser = p.chromium.launch(
+                    args=[
+                        "--disable-dev-shm-usage",
+                        "--disable-gpu",
+                        "--disable-extensions",
+                        "--renderer-process-limit=1",
+                    ]
+                )
             except PlaywrightError as exc:
                 logger.error("Chromium failed to start: %s", exc)
                 raise ImageToolUnavailableError("Web page capture isn't available on this server yet.")

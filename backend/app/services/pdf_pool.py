@@ -8,6 +8,7 @@ A process pool keeps the web workers responsive no matter how heavy the PDF is.
 """
 
 import asyncio
+import gc
 import logging
 import multiprocessing
 import os
@@ -19,7 +20,9 @@ from typing import Any, Optional
 
 from fastapi import Request
 
+from app.config.jobs import settings as job_settings
 from app.config.pdf import settings
+from app.core.lanes import heavy_lane
 from app.exceptions.base import AppBaseException
 from app.exceptions.pdf import PDFProcessingError
 
@@ -58,7 +61,7 @@ def _get_pool() -> ProcessPoolExecutor:
             max_workers=settings.PROCESS_WORKERS,
             mp_context=multiprocessing.get_context("spawn"),
             initializer=_exit_with_parent,
-
+            max_tasks_per_child=20,
         )
     return _pool
 
@@ -109,6 +112,8 @@ def _invoke(method: str, args: tuple) -> tuple:
         return ("ok", getattr(_service(service or "pdf"), name)(*args))
     except AppBaseException as exc:
         return ("error", exc.status_code, exc.detail)
+    finally:
+        gc.collect()
 
 
 async def run_pdf(method: str, *args: Any, request: Optional[Request] = None) -> Any:
@@ -119,6 +124,15 @@ async def run_pdf(method: str, *args: Any, request: Optional[Request] = None) ->
     With `request`, gives up as soon as the client disconnects (a moved slider, a closed tab):
     work that hasn't started yet is cancelled, so abandoned estimates don't queue up.
     """
+    slots = heavy_lane.semaphore()
+    try:
+        await asyncio.wait_for(slots.acquire(), timeout=job_settings.QUEUE_WAIT_SECONDS)
+    except asyncio.TimeoutError:
+        raise AppBaseException(
+            detail="The server is busy with other heavy files. Try again in a minute.",
+            status_code=503,
+        )
+
     loop = asyncio.get_running_loop()
     try:
         fut = loop.run_in_executor(_get_pool(), _invoke, method, args)
@@ -135,6 +149,8 @@ async def run_pdf(method: str, *args: Any, request: Optional[Request] = None) ->
         logger.error("PDF worker process died while running %s", method)
         shutdown_pool()
         raise PDFProcessingError("The PDF couldn't be processed. It may be damaged.")
+    finally:
+        slots.release()
 
     if result[0] == "error":
         raise AppBaseException(detail=result[2], status_code=result[1])

@@ -20,7 +20,9 @@ from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from starlette.concurrency import run_in_threadpool
 
+from app.config.jobs import settings as job_settings
 from app.config.translate import settings
+from app.core.lanes import heavy_lane
 from app.core.utils import cleanup_folder
 from app.exceptions.translate import TranslatorUnavailableError
 from app.schemas.translate import (
@@ -131,9 +133,17 @@ async def _media_events(
     proc = None
     token = ""
     completed = False
+    heavy_slots = heavy_lane.semaphore()
+    heavy_acquired = False
     try:
-        if _slots.locked():
+        if _slots.locked() or heavy_slots.locked():
             yield _line({"type": "status", "stage": "queued"})
+        try:
+            await asyncio.wait_for(heavy_slots.acquire(), timeout=job_settings.QUEUE_WAIT_SECONDS)
+            heavy_acquired = True
+        except asyncio.TimeoutError:
+            yield _line({"type": "error", "detail": "The server is busy with other heavy files. Try again in a minute."})
+            return
         async with _slots:
             if await request.is_disconnected():
                 return
@@ -207,7 +217,12 @@ async def _media_events(
     finally:
         if proc is not None and proc.is_alive():
             proc.terminate()
-            proc.join(5)
+            proc.join(3)
+            if proc.is_alive():
+                proc.kill()
+                proc.join(2)
+        if heavy_acquired:
+            heavy_slots.release()
         if token and not completed:
             translate_service.discard_result(token)
         cleanup_folder(job_dir)

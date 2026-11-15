@@ -12,6 +12,7 @@ These run inside the PDF process pool. Sessions are created per job and dropped 
 idle server holds none of them in memory (important on a 512 MB instance).
 """
 
+import gc
 import hashlib
 import logging
 import os
@@ -77,15 +78,19 @@ def background_model() -> Path:
 def subject_mask(img: Image.Image) -> Image.Image:
     """An L-mode mask the size of `img`: 255 where the subject is, 0 for background."""
     session = _session(background_model())
-    small = img.convert("RGB").resize((320, 320), Image.Resampling.LANCZOS)
-    arr = np.asarray(small, dtype=np.float32)
-    arr = arr / max(float(arr.max()), 1e-6)
-    arr = (arr - np.array([0.485, 0.456, 0.406], dtype=np.float32)) / np.array([0.229, 0.224, 0.225], dtype=np.float32)
-    tensor = arr.transpose(2, 0, 1)[None].astype(np.float32)
-    pred = session.run(None, {session.get_inputs()[0].name: tensor})[0][0, 0]
-    lo, hi = float(pred.min()), float(pred.max())
-    pred = (pred - lo) / max(hi - lo, 1e-6)
-    mask = Image.fromarray((pred * 255).astype(np.uint8), "L").resize(img.size, Image.Resampling.LANCZOS)
+    try:
+        small = img.convert("RGB").resize((320, 320), Image.Resampling.LANCZOS)
+        arr = np.asarray(small, dtype=np.float32)
+        arr = arr / max(float(arr.max()), 1e-6)
+        arr = (arr - np.array([0.485, 0.456, 0.406], dtype=np.float32)) / np.array([0.229, 0.224, 0.225], dtype=np.float32)
+        tensor = arr.transpose(2, 0, 1)[None].astype(np.float32)
+        pred = session.run(None, {session.get_inputs()[0].name: tensor})[0][0, 0]
+        lo, hi = float(pred.min()), float(pred.max())
+        pred = (pred - lo) / max(hi - lo, 1e-6)
+        mask = Image.fromarray((pred * 255).astype(np.uint8), "L").resize(img.size, Image.Resampling.LANCZOS)
+    finally:
+        del session
+        gc.collect()
     # Firm up the edges: faint haze becomes background, near-certain pixels become fully solid.
     return mask.point(lambda v: 0 if v < 20 else 255 if v > 235 else int((v - 20) * 255 / 215))
 
@@ -133,6 +138,8 @@ def super_resolve(img: Image.Image, factor: int) -> Image.Image:
             th, tw = (min(y + tile, h) - y) * scale, (min(x + tile, w) - x) * scale
             out[y * scale : y * scale + th, x * scale : x * scale + tw] = np.clip(res[ty : ty + th, tx : tx + tw] * 255.0 + 0.5, 0, 255).astype(np.uint8)
     result = Image.fromarray(out, "RGB")
+    del session, rgb, out
+    gc.collect()
     if factor == 2:
         result = result.resize((w * 2, h * 2), Image.Resampling.LANCZOS)
     if alpha is not None:

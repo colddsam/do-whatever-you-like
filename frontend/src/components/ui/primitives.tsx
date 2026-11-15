@@ -95,7 +95,7 @@ export function Badge({
   className,
   children,
 }: {
-  variant?: "default" | "live" | "dark";
+  variant?: "default" | "live" | "beta" | "dark";
   className?: string;
   children: React.ReactNode;
 }) {
@@ -103,12 +103,17 @@ export function Badge({
     <span
       className={cn(
         "label-mono inline-flex h-6 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-sm border px-2",
-        variant === "dark" ? "border-line-dark text-paper-dim" : "border-line text-ink-2",
+        variant === "dark"
+          ? "border-line-dark text-paper-dim"
+          : variant === "beta"
+            ? "border-warning/35 bg-warning/10 text-warning"
+            : "border-line text-ink-2",
         variant === "live" && "bg-surface text-ink",
         className,
       )}
     >
       {variant === "live" && <SignalDot />}
+      {variant === "beta" && <span aria-hidden className="inline-flex size-1.5 rounded-full bg-warning" />}
       {children}
     </span>
   );

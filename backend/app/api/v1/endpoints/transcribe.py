@@ -18,7 +18,9 @@ from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from starlette.concurrency import run_in_threadpool
 
+from app.config.jobs import settings as job_settings
 from app.config.transcribe import settings
+from app.core.lanes import heavy_lane
 from app.core.utils import cleanup_folder
 from app.exceptions.transcribe import TranscriberUnavailableError
 from app.schemas.transcribe import TranscribeCapabilities
@@ -84,9 +86,17 @@ async def _events(
 ) -> AsyncIterator[bytes]:
     started = time.monotonic()
     proc = None
+    heavy_slots = heavy_lane.semaphore()
+    heavy_acquired = False
     try:
-        if _slots.locked():
+        if _slots.locked() or heavy_slots.locked():
             yield _line({"type": "status", "stage": "queued"})
+        try:
+            await asyncio.wait_for(heavy_slots.acquire(), timeout=job_settings.QUEUE_WAIT_SECONDS)
+            heavy_acquired = True
+        except asyncio.TimeoutError:
+            yield _line({"type": "error", "detail": "The server is busy with other heavy files. Try again in a minute."})
+            return
         async with _slots:
             if await request.is_disconnected():
                 return
@@ -130,5 +140,10 @@ async def _events(
         # cancelled). Kept synchronous: awaiting here could be cancelled again before it finishes.
         if proc is not None and proc.is_alive():
             proc.terminate()
-            proc.join(5)
+            proc.join(3)
+            if proc.is_alive():
+                proc.kill()
+                proc.join(2)
+        if heavy_acquired:
+            heavy_slots.release()
         cleanup_folder(job_dir)

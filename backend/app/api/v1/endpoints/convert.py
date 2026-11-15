@@ -3,6 +3,7 @@ Web page → PDF, and which converters this server has. Every format-to-format c
 (Word/PowerPoint/Excel ↔ PDF and the rest) lives in the universal converter (endpoints/universal.py).
 """
 
+import asyncio
 import uuid
 from functools import lru_cache
 from pathlib import Path
@@ -13,7 +14,10 @@ from fastapi.responses import FileResponse
 from starlette.concurrency import run_in_threadpool
 
 from app.config.convert import settings
+from app.config.jobs import settings as job_settings
+from app.core.lanes import heavy_lane
 from app.core.utils import cleanup_folder
+from app.exceptions.base import AppBaseException
 from app.exceptions.convert import InvalidConvertInputError
 from app.services.convert import convert_service
 from app.services.pdf_tools import pdf_tools_service
@@ -85,7 +89,18 @@ async def html_to_pdf(
             await run_in_threadpool(convert_service.save_upload, file.file, html_path, settings.HTML_MAX_MB)
             name = _stem(file.filename)
         out = job_dir / "page.pdf"
-        await run_in_threadpool(convert_service.html_to_pdf, out, url, html_path, page_size, landscape, margin, background, screen)
+        slots = heavy_lane.semaphore()
+        try:
+            await asyncio.wait_for(slots.acquire(), timeout=job_settings.QUEUE_WAIT_SECONDS)
+        except asyncio.TimeoutError:
+            raise AppBaseException(
+                detail="The server is busy with other heavy files. Try again in a minute.",
+                status_code=503,
+            )
+        try:
+            await run_in_threadpool(convert_service.html_to_pdf, out, url, html_path, page_size, landscape, margin, background, screen)
+        finally:
+            slots.release()
         return _respond(out, f"{name}.pdf", background_tasks, job_dir)
     except Exception:
         cleanup_folder(job_dir)

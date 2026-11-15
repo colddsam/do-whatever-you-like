@@ -329,10 +329,11 @@ def _http_probe(url: str, timeout: float = 3.5, accept: str = "application/json,
 
 
 _IG_SEMAPHORE = threading.Semaphore(2)
-_FB_SEMAPHORE = threading.Semaphore(2)
-_TT_SEMAPHORE = threading.Semaphore(2)
+_FB_SEMAPHORE = threading.Semaphore(1)
+_TT_SEMAPHORE = threading.Semaphore(1)
 _RD_SEMAPHORE = threading.Semaphore(1)
 _IG_STATE_LOCK = threading.Lock()
+_IG_CANARY_PROBE_LOCK = threading.Lock()
 _TT_STATE_LOCK = threading.Lock()
 _RD_STATE_LOCK = threading.Lock()
 _IG_CANARY_STATE: Dict[str, Any] = {
@@ -367,11 +368,11 @@ def _new_anonymous_instaloader():
     import instaloader
 
     # Strictly cookie-free: fresh context, zero cookie/session files loaded, single request attempt.
-    return instaloader.Instaloader(
+    loader = instaloader.Instaloader(
         quiet=True,
         sleep=False,
         max_connection_attempts=1,
-        request_timeout=5.0,
+        request_timeout=9.0,
         download_pictures=False,
         download_videos=False,
         download_video_thumbnails=False,
@@ -380,6 +381,69 @@ def _new_anonymous_instaloader():
         save_metadata=False,
         compress_json=False,
     )
+    loader.context._session.cookies.clear()
+    loader.context._session.headers.setdefault("Accept-Language", "en-US,en;q=0.9")
+    return loader
+
+
+def _probe_ig_html_profile_headers(clean: str) -> Optional[bool]:
+    """
+    Lightweight cookie-free HTML probe for an Instagram handle.
+    Returns True if occupied, False if public 200 without user payload, or None if blocked/uncertain.
+    """
+    import requests
+
+    target = f"https://www.instagram.com/{clean}/"
+    header_sets = (
+        {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
+            ),
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
+        },
+        {
+            "User-Agent": "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+        },
+    )
+    user_re = re.compile(rf'"username"\s*:\s*"{re.escape(clean)}"', re.I)
+    og_re = re.compile(r'<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']*)["\']', re.I)
+    lower_clean = clean.lower()
+
+    for headers in header_sets:
+        try:
+            with requests.Session() as sess:
+                sess.cookies.clear()
+                resp = sess.get(target, headers=headers, timeout=7.5, allow_redirects=False)
+            location = (resp.headers.get("location") or "").lower()
+            if resp.status_code in (403, 429) or (300 <= resp.status_code < 400) or "login" in location:
+                continue
+            if resp.status_code != 200:
+                continue
+            html = resp.text or ""
+            if "login" in resp.url.lower():
+                continue
+            og_match = og_re.search(html)
+            og_text = (og_match.group(1) if og_match else "").lower()
+            if (
+                "xig_user_by_username" in html
+                or user_re.search(html)
+                or f"@{lower_clean}" in og_text
+                or f"&#064;{lower_clean}" in og_text
+            ):
+                return True
+            if html:
+                return False
+        except Exception:
+            continue
+    return None
 
 
 def _verify_ig_anonymous_healthy() -> bool:
@@ -390,25 +454,54 @@ def _verify_ig_anonymous_healthy() -> bool:
     with _IG_STATE_LOCK:
         if now < _IG_CANARY_STATE["cooldown_until"]:
             return False
-        if _IG_CANARY_STATE["healthy"] is True and (now - _IG_CANARY_STATE["checked_at"]) < 15.0:
+        if _IG_CANARY_STATE["healthy"] is True and (now - _IG_CANARY_STATE["checked_at"]) < 30.0:
             return True
 
-    loader = _new_anonymous_instaloader()
-    try:
-        instaloader.Profile.from_username(loader.context, "instagram")
+    with _IG_CANARY_PROBE_LOCK:
         now = time.monotonic()
         with _IG_STATE_LOCK:
-            _IG_CANARY_STATE["healthy"] = True
-            _IG_CANARY_STATE["checked_at"] = now
-            _IG_CANARY_STATE["cooldown_until"] = 0.0
-        return True
-    except Exception:
+            if now < _IG_CANARY_STATE["cooldown_until"]:
+                return False
+            if _IG_CANARY_STATE["healthy"] is True and (now - _IG_CANARY_STATE["checked_at"]) < 30.0:
+                return True
+
+        healthy = False
+        loader = _new_anonymous_instaloader()
+        try:
+            instaloader.Profile.from_username(loader.context, "instagram")
+            healthy = True
+        except Exception:
+            healthy = _probe_ig_html_profile_headers("instagram") is True
+
         now = time.monotonic()
         with _IG_STATE_LOCK:
-            _IG_CANARY_STATE["healthy"] = False
-            _IG_CANARY_STATE["checked_at"] = now
-            _IG_CANARY_STATE["cooldown_until"] = now + 35.0
-        return False
+            if healthy:
+                _IG_CANARY_STATE["healthy"] = True
+                _IG_CANARY_STATE["checked_at"] = now
+                _IG_CANARY_STATE["cooldown_until"] = 0.0
+            else:
+                _IG_CANARY_STATE["healthy"] = False
+                _IG_CANARY_STATE["checked_at"] = now
+                _IG_CANARY_STATE["cooldown_until"] = now + 12.0
+        return healthy
+
+
+def _probe_instagram_html_no_cookies(clean: str, url: str, out) -> Optional[Dict[str, Any]]:
+    """Fallback cookie-free Instagram profile probe when Instaloader hits cooldown or login redirect."""
+    signal = _probe_ig_html_profile_headers(clean)
+    if signal is True:
+        return out(
+            "occupied",
+            f"@{clean} is occupied on Instagram (cookie-free public profile check)",
+            url,
+        )
+    if signal is False and clean.lower() != "instagram" and _verify_ig_anonymous_healthy():
+        return out(
+            "available",
+            "No active public Instagram profile found (cookie-free check) — click link to confirm signup",
+            url,
+        )
+    return None
 
 
 def _probe_instagram_no_cookies(clean: str, url: str, out) -> Dict[str, Any]:
@@ -422,12 +515,18 @@ def _probe_instagram_no_cookies(clean: str, url: str, out) -> Dict[str, Any]:
 
     now = time.monotonic()
     with _IG_STATE_LOCK:
-        if now < _IG_CANARY_STATE["cooldown_until"]:
-            return out(
-                "unverified",
-                "Instagram temporarily rate-limited anonymous lookups — click link to confirm",
-                url,
-            )
+        in_cooldown = now < _IG_CANARY_STATE["cooldown_until"]
+
+    if in_cooldown:
+        with _IG_SEMAPHORE:
+            fallback = _probe_instagram_html_no_cookies(clean, url, out)
+            if fallback is not None:
+                return fallback
+        return out(
+            "unverified",
+            "Instagram temporarily rate-limited anonymous lookups — click link to confirm",
+            url,
+        )
 
     with _IG_SEMAPHORE:
         loader = _new_anonymous_instaloader()
@@ -446,21 +545,19 @@ def _probe_instagram_no_cookies(clean: str, url: str, out) -> Dict[str, Any]:
                     f"@{clean} exists on Instagram (cookie-free Instaloader check)",
                     url,
                 )
-            # Instagram sometimes returns HTTP 404 even for @instagram when throttling unauthenticated IPs.
-            if clean.lower() == "instagram" or not _verify_ig_anonymous_healthy():
-                now = time.monotonic()
-                with _IG_STATE_LOCK:
-                    _IG_CANARY_STATE["healthy"] = False
-                    _IG_CANARY_STATE["checked_at"] = now
-                    _IG_CANARY_STATE["cooldown_until"] = now + 35.0
+            # Instagram sometimes returns ErrorRoot shells even for @instagram when throttling unauthenticated IPs.
+            if clean.lower() != "instagram" and _verify_ig_anonymous_healthy():
                 return out(
-                    "unverified",
-                    "Instagram rate-limited anonymous lookups without cookies — click link to confirm",
+                    "available",
+                    "No active public Instagram profile found (cookie-free Instaloader) — click link to confirm signup",
                     url,
                 )
+            fallback = _probe_instagram_html_no_cookies(clean, url, out)
+            if fallback is not None:
+                return fallback
             return out(
-                "available",
-                "No active Instagram profile found (cookie-free Instaloader) — click link to confirm signup",
+                "unverified",
+                "Instagram rate-limited anonymous lookups without cookies — click link to confirm",
                 url,
             )
         except (LoginRequiredException, TooManyRequestsException, ConnectionException):
@@ -468,13 +565,19 @@ def _probe_instagram_no_cookies(clean: str, url: str, out) -> Dict[str, Any]:
             with _IG_STATE_LOCK:
                 _IG_CANARY_STATE["healthy"] = False
                 _IG_CANARY_STATE["checked_at"] = now
-                _IG_CANARY_STATE["cooldown_until"] = now + 35.0
+                _IG_CANARY_STATE["cooldown_until"] = now + 12.0
+            fallback = _probe_instagram_html_no_cookies(clean, url, out)
+            if fallback is not None:
+                return fallback
             return out(
                 "unverified",
                 "Instagram requested login or rate-limit cooldown without cookies — click link to confirm",
                 url,
             )
         except Exception:
+            fallback = _probe_instagram_html_no_cookies(clean, url, out)
+            if fallback is not None:
+                return fallback
             return out(
                 "unverified",
                 "Could not confirm Instagram anonymously right now — click link to verify",
@@ -1036,7 +1139,7 @@ def check_usernames(usernames: List[str], services: List[str]) -> Dict[str, Any]
 
     tasks = [(u, s) for u in clean_names for s in clean_services]
     by_name: Dict[str, List[Dict[str, Any]]] = {u: [] for u in clean_names}
-    with ThreadPoolExecutor(max_workers=min(24, max(4, len(tasks)))) as pool:
+    with ThreadPoolExecutor(max_workers=min(6, max(2, len(tasks)))) as pool:
         for res in pool.map(lambda pair: _probe_single_handle(pair[0], pair[1]), tasks):
             by_name[res["username"]].append(res)
     return {"results": by_name}

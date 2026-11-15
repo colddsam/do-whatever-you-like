@@ -30,7 +30,10 @@ function ToolRows({ ids, compact, columns }: { ids: string[]; compact?: boolean;
                 {!compact && <span className="block truncate text-sm text-ink-3">{tool.description}</span>}
               </span>
               {live ? (
-                <ArrowRight aria-hidden className="size-4 shrink-0 text-ink-3 transition-[color,transform] duration-150 group-hover:translate-x-0.5 group-hover:text-ink" />
+                <span className="flex shrink-0 items-center gap-2">
+                  {tool.beta && <Badge variant="beta">Beta</Badge>}
+                  <ArrowRight aria-hidden className="size-4 text-ink-3 transition-[color,transform] duration-150 group-hover:translate-x-0.5 group-hover:text-ink" />
+                </span>
               ) : (
                 <span className="label-mono shrink-0 text-ink-3">Soon</span>
               )}
