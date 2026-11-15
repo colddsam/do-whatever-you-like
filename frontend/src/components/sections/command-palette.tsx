@@ -186,11 +186,12 @@ export function CommandPalette({
       )}
     >
       {/* Input */}
-      <label className="flex h-14 items-center gap-2.5 border-b border-line px-4">
+      <div className="flex h-14 w-full min-w-0 items-center gap-2 border-b border-line px-3 sm:gap-2.5 sm:px-4">
         <Search aria-hidden className={cn("size-[18px] shrink-0 transition-colors", voiceListening ? "text-accent" : "text-ink-3")} />
-        <span className="sr-only">Search for a task</span>
-        <div className="relative min-w-0 flex-1">
+        <label htmlFor="home-palette-input" className="sr-only">Search for a task</label>
+        <div className="relative w-0 min-w-0 flex-1">
           <input
+            id="home-palette-input"
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -203,13 +204,13 @@ export function CommandPalette({
             aria-activedescendant={results[active] ? `palette-${results[active].tool.id}` : undefined}
             autoComplete="off"
             spellCheck={false}
-            className="peer w-full bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-3"
-            placeholder={voiceListening ? "Speak a task, e.g. “merge pdf” or “username generator”…" : focused ? "What do you want to do?" : ""}
+            className="peer w-full min-w-0 bg-transparent text-[16px] text-ink outline-none placeholder:text-ink-3 sm:text-[15px]"
+            placeholder={voiceListening ? "Listening… speak a task, e.g. “merge pdf”…" : focused ? "What do you want to do?" : ""}
           />
           {!focused && !voiceListening && query === "" && (
-            <span aria-hidden className="pointer-events-none absolute inset-0 flex items-center text-[15px] text-ink-3">
+            <span aria-hidden className="pointer-events-none absolute inset-0 flex items-center truncate text-[16px] text-ink-3 sm:text-[15px]">
               {placeholder}
-              <span className="ml-px h-[18px] w-px animate-blink bg-ink" />
+              <span className="ml-px h-[18px] w-px shrink-0 animate-blink bg-ink" />
             </span>
           )}
         </div>
@@ -230,7 +231,6 @@ export function CommandPalette({
         <VoiceSearchButton
           onTranscript={(text) => {
             setQuery(text);
-            inputRef.current?.focus();
           }}
           onListeningChange={setVoiceListening}
         />
@@ -238,7 +238,7 @@ export function CommandPalette({
           <Kbd>{isMac ? "⌘" : "Ctrl"}</Kbd>
           <Kbd>K</Kbd>
         </span>
-      </label>
+      </div>
 
       {/* Results & animated availability / query suggestions */}
       <div className="px-2 pt-2">

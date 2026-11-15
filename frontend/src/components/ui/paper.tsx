@@ -39,7 +39,7 @@ export function PageBackdrop() {
  */
 export function Page({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <div className="relative isolate -mt-16 pt-16">
+    <div className="relative isolate -mt-16 overflow-x-clip pt-16">
       <PageBackdrop />
       <Container className={cn("pb-20 md:pb-28", className)}>{children}</Container>
     </div>
