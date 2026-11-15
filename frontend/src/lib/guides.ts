@@ -760,6 +760,27 @@ const GUIDES: Record<string, Guide> = {
     ],
     see: ["find-and-replace", "word-counter", "markdown-editor"],
   },
+  "username-generator": {
+    intro: [
+      "Generate clean, memorable usernames from any name, brand, or niche keywords across multiple styles (Clean, Professional, Developer, Creative, Short), then verify handle availability across the social platforms and mail services you toggle on.",
+      "Whenever a username is already taken on any selected platform or email domain, the tool automatically generates and checks the closest available variations so you can lock in a consistent online identity with zero guesswork.",
+    ],
+    faqs: [
+      {
+        q: "How are social media and mail availability checks performed?",
+        a: "Developer, creator, community, and gaming networks (GitHub, YouTube, Bluesky, Mastodon, DEV.to, GitLab, Hugging Face, Hacker News, Docker Hub, etc.), X (Twitter), Mail.ru, and custom email domains (.com, .dev, .io, .in via DNS-over-HTTPS) run live public lookups. Instagram runs through cookie-free Instaloader (with rate-limit canary verification), Facebook uses cookie-free yt-dlp and public metadata, TikTok inspects public profile data / cookie-free yt-dlp (from US/EU servers), and Reddit combines live checks with public archive fallback — falling back honestly to a verify link if rate-limited or hidden. Webmail providers without unauthenticated enumeration (Gmail, Outlook, Proton, iCloud, Yahoo) validate strict handle rules and check public Gravatar/OpenPGP registries.",
+      },
+      {
+        q: "What happens if my preferred username is occupied?",
+        a: "Whenever one or more toggled platforms report the handle as occupied, the tool automatically generates close variations (natural prefixes, niche suffixes, separator adjustments) and scans their availability so you can pick the closest free alternative immediately.",
+      },
+      {
+        q: "Is there any usage fee or sign-up required?",
+        a: "No. All username generation and handle lookups are 100% free with zero API keys or accounts required.",
+      },
+    ],
+    see: ["password-generator", "qr", "case-converter"],
+  },
   "data-format-converter": {
     intro: [
       "Convert cleanly between JSON, CSV, YAML, XML, HTML, and Markdown in your browser with instant preview and copy/download.",

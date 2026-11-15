@@ -47,7 +47,7 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 
 - **Free, for everyone.** No account, no sign-up, no watermark, no "pro" plan.
 - **Private by default.** Most tools run inside your browser, so your file never leaves your device. When a tool does need our server, your file is deleted as soon as you have the result.
-- **Simple.** Every tool works in three steps: add your thing, pick the options, download.
+- **Simple.** Describe what you want to do in plain words (or press `/` / `⌘K` to hop between tools), follow three clear steps — add your thing, pick the options, preview and download.
 - **For anyone.** Students, developers, business people, analysts, designers, or anyone with a file to fix.
 
 <p align="center">
@@ -103,7 +103,7 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 - [**Compress files**](https://do-whatever-you-like.colddsam.com/tools/compress-files) — Make any file smaller: PDF, Word, PowerPoint, Excel, photos, audio, video and more.
 - [**ZIP, TAR & GZ archive tool**](https://do-whatever-you-like.colddsam.com/tools/archive-extractor-creator) — Inspect archive contents, preview files inside or bundle multiple files into .zip, .tar, .tar.gz or .gz in your browser.
 - [**Merge files**](https://do-whatever-you-like.colddsam.com/tools/merge-files) — Combine Word, PowerPoint, Excel, CSV, PDF, audio or video files into one.
-- [**Split files**](https://do-whatever-you-like.colddsam.com/tools/split-files) — Break Word, PowerPoint, Excel, CSV, PDF, audio or video into parts.
+- [**Split files**](https://do-whatever-you-like.colddsam.com/tools/split-files) — Break Word, PowerPoint, Excel, CSV, PDF, audio or video into parts, with inline previews and per-part downloads before saving the ZIP.
 
 </details>
 
@@ -111,9 +111,9 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 <summary><b>📄 PDF tools</b> — 23 tools</summary>
 <br>
 
-- [**PDF toolkit**](https://do-whatever-you-like.colddsam.com/tools/pdf) — Merge, split, rearrange and compress PDFs in seconds.
-- [**Merge PDF**](https://do-whatever-you-like.colddsam.com/tools/merge-pdf) — Combine PDFs into one, in the order you set.
-- [**Split PDF**](https://do-whatever-you-like.colddsam.com/tools/split-pdf) — Break a PDF into parts, or group pages your way.
+- [**PDF toolkit**](https://do-whatever-you-like.colddsam.com/tools/pdf) — Merge, split, rearrange and compress PDFs in seconds, with an inline PDF viewer to check the result before downloading.
+- [**Merge PDF**](https://do-whatever-you-like.colddsam.com/tools/merge-pdf) — Combine PDFs into one in the order you set, and preview the merged document right on the page.
+- [**Split PDF**](https://do-whatever-you-like.colddsam.com/tools/split-pdf) — Break a PDF into parts or group pages your way, with inline per-part PDF previews and single-part downloads inside the split ZIP.
 - [**Remove pages**](https://do-whatever-you-like.colddsam.com/tools/remove-pages) — Delete the pages you don't need.
 - [**Extract pages**](https://do-whatever-you-like.colddsam.com/tools/extract-pages) — Keep just the pages you pick, as a new PDF.
 - [**Organize PDF**](https://do-whatever-you-like.colddsam.com/tools/organize-pdf) — Reorder, turn and remove pages, seeing each one.
@@ -232,9 +232,9 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 <summary><b>⬇️ Media downloads</b> — 3 tools</summary>
 <br>
 
-- [**YouTube downloader**](https://do-whatever-you-like.colddsam.com/tools/youtube) — Save videos and Shorts in the quality you pick, or just the audio as MP3 or M4A.
-- [**Instagram downloader**](https://do-whatever-you-like.colddsam.com/tools/instagram) — Reels, posts and carousels, or just a reel's audio, straight from a link.
-- [**Facebook downloader**](https://do-whatever-you-like.colddsam.com/tools/facebook) — Grab public videos and reels, or just their audio, without the hassle.
+- [**YouTube downloader**](https://do-whatever-you-like.colddsam.com/tools/youtube) — Save videos and Shorts in the quality you pick, or just the audio as MP3 or M4A, with instant cover thumbnail and duration previews.
+- [**Instagram downloader**](https://do-whatever-you-like.colddsam.com/tools/instagram) — Reels, posts and carousels, or just a reel's audio, straight from a link — with server-resolved Reel/video thumbnails and duration previews.
+- [**Facebook downloader**](https://do-whatever-you-like.colddsam.com/tools/facebook) — Grab public videos and reels, or just their audio, with instant thumbnail and duration previews before you download.
 
 </details>
 
@@ -355,16 +355,20 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 <tr>
 <td width="50%" valign="top">
 
-**🗂️ Every tool, one search away**
+**🗂️ Every tool, one task-aware search away**
 
 <img src="docs/assets/directory.jpg" alt="The tools directory with a filter box and collections" width="100%">
+
+<sub>Type a tool name or describe your task in plain English (like <i>"combine two pdfs"</i> or <i>"remove audio noise"</i>) to get ranked tool & collection suggestions.</sub>
 
 </td>
 <td width="50%" valign="top">
 
-**🧩 Each tool on its own page**, with steps, a spec sheet and a guide
+**🧩 Each tool on its own page**, with a floating tool hopper (`/`), inline previews, a spec sheet and a guide
 
 <img src="docs/assets/tool-page.jpg" alt="The Merge PDF tool page" width="100%">
+
+<sub>Hop to any other tool without losing your spot using the morphing search pill that tucks out of the way as you scroll.</sub>
 
 </td>
 </tr>
@@ -425,11 +429,14 @@ timeline
            : Translator (Text, Audio & Video)
            : Archive, SVG/mockup, waveform, SQLite/Parquet, writing & finance tools
            : AI-search readiness (AEO, GEO)
+    15 Nov : Task-intent search and animated tool hopper
+           : Inline PDF viewer and per-part split-ZIP previews
+           : Server-resolved Reel, Short & video cover thumbnails
 ```
 
 | 📅 Days | 🧰 Live tools | 🗂️ Collections | 📡 API endpoints | 🧪 Check scripts |
 | :---: | :---: | :---: | :---: | :---: |
-| 7 | 251 | 9 | 77 | 9 backend suites + browser & unit tests |
+| 8 | 251 | 9 | 77 | 9 backend suites + browser & unit tests |
 
 ---
 
@@ -684,7 +691,7 @@ Run the backend scripts from `backend/` with the virtual environment's Python. B
 
 | Method | Endpoint | What it does |
 | :--- | :--- | :--- |
-| `POST` | `/api/v1/instagram/extract` | Get direct Instagram media URLs without saving to disk |
+| `POST` | `/api/v1/instagram/extract` | Get direct Instagram media URLs, duration and browser-safe cover thumbnails (with FFmpeg first-frame fallback) without saving to disk |
 | `POST` | `/api/v1/instagram/download` | Download Instagram media directly (single file or packaged ZIP for carousels) |
 
 </details>
@@ -695,7 +702,7 @@ Run the backend scripts from `backend/` with the virtual environment's Python. B
 
 | Method | Endpoint | What it does |
 | :--- | :--- | :--- |
-| `POST` | `/api/v1/facebook/extract` | Get direct Facebook video or reel URLs and metadata without saving to disk |
+| `POST` | `/api/v1/facebook/extract` | Get direct Facebook video or reel URLs, metadata and browser-safe cover thumbnails without saving to disk |
 | `POST` | `/api/v1/facebook/download` | Download public Facebook video or reel directly as an MP4 file |
 
 </details>
@@ -706,7 +713,7 @@ Run the backend scripts from `backend/` with the virtual environment's Python. B
 
 | Method | Endpoint | What it does |
 | :--- | :--- | :--- |
-| `POST` | `/api/v1/youtube/extract` | Get direct YouTube video or Shorts URLs and metadata without saving to disk |
+| `POST` | `/api/v1/youtube/extract` | Get direct YouTube video or Shorts URLs, metadata and verified cover thumbnails without saving to disk |
 | `POST` | `/api/v1/youtube/download` | Download public YouTube video or Short directly as an MP4 file |
 
 </details>
@@ -947,7 +954,7 @@ do-whatever-you-like/
 │   ├── scripts/                 # End-to-end check scripts
 │   └── app/
 │       ├── main.py              # App, CORS, security headers, auth
-│       ├── core/                # Settings, upload guard, size limits, isolated job runner, clean-up
+│       ├── core/                # Settings, upload guard, size limits, isolated job runner, thumbnail resolver, clean-up
 │       ├── config/              # Settings per tool (env prefixes)
 │       ├── exceptions/          # Clean, user-safe errors per tool
 │       ├── schemas/             # Request and response models
@@ -959,17 +966,20 @@ do-whatever-you-like/
     └── src/
         ├── app/                 # Pages, /tools/[id], collections, /api/tools/* proxies, SEO files
         ├── components/
-        │   ├── layout/ sections/        # Header, footer, home page sections, directory
+        │   ├── layout/ sections/        # Header, footer, command palette, home page sections, directory
         │   └── tools/                   # Every tool's workspace
         │       ├── pdf/ image/ files/ universal/ media/ transcribe/ health/ text/
         │       ├── design/              # Chart maker, flowchart maker, fonts, colour picker
         │       ├── dev/ utilities/      # Developer hub and one-engine-per-job utilities
+        │       ├── tool-hopper-search.tsx # Morphing, non-obstructive floating search bar for tool pages
         │       └── playground.tsx       # Which workspace each tool uses
         └── lib/
             ├── tools.ts                 # The registry of every tool
+            ├── tool-search.ts           # Natural-language task & intent search engine across all 251 tools
             ├── utilities/catalog.ts     # Developer, Text, Everyday and Design pages as data
             ├── charts.ts flowchart.ts period.ts whatsapp.ts # Client tool engines
             ├── translate.ts             # Translator API client, direct-ticket streaming & speech helpers
+            ├── pdf.ts media.ts          # PDF/split-ZIP preview helpers and downloader API clients
             ├── backend.ts files.ts      # Server proxy and upload helpers
             └── file-sniff.ts            # The in-browser upload check
 ```

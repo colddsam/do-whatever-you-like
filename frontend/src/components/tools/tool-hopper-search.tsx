@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
-import { ArrowRight, ArrowUpRight, CornerDownLeft, Search, Sparkles, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, CornerDownLeft, Mic, Search, Sparkles, X } from "lucide-react";
 import { clusterOf, getCluster, toolHref, tools, toolsIn, type ClusterId } from "@/lib/tools";
 import { analyzeTaskQuery, type ScoredToolMatch, type TaskSuggestion } from "@/lib/tool-search";
 import { Kbd, SignalDot } from "@/components/ui/primitives";
+import { VoiceSearchButton } from "@/components/ui/voice-search-button";
 import { getLenis } from "@/lib/smooth-scroll";
 import { cn } from "@/lib/utils";
 
@@ -65,7 +66,10 @@ export function ToolHopperSearch({
   };
 
   const [inlineFocused, setInlineFocused] = useState(false);
+  const [inlineVoiceListening, setInlineVoiceListening] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [modalVoiceAutoStart, setModalVoiceAutoStart] = useState(false);
+  const [modalVoiceListening, setModalVoiceListening] = useState(false);
   const [scrolledPast, setScrolledPast] = useState(false);
   const [scrollingDown, setScrollingDown] = useState(false);
   const [pillHovered, setPillHovered] = useState(false);
@@ -76,6 +80,7 @@ export function ToolHopperSearch({
   if (prevPathname !== pathname) {
     setPrevPathname(pathname);
     setModalOpen(false);
+    setModalVoiceAutoStart(false);
     setInlineFocused(false);
     setScrolledPast(false);
     setScrollingDown(false);
@@ -118,6 +123,17 @@ export function ToolHopperSearch({
   }, [query, analysis.results, modalOpen, quickHops]);
   const topSuggestion = query.trim() ? analysis.suggestions[0] : undefined;
   const currentCluster = contextClusterId ? getCluster(contextClusterId) : undefined;
+
+  const openModal = useCallback((withVoice = false) => {
+    setModalVoiceAutoStart(withVoice);
+    setModalOpen(true);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setModalOpen(false);
+    setModalVoiceAutoStart(false);
+    setModalVoiceListening(false);
+  }, []);
 
   // Detect when the inline trigger scrolls out of view + scroll direction to keep the floating pill subtle.
   useEffect(() => {
@@ -168,11 +184,11 @@ export function ToolHopperSearch({
         inlineInputRef.current?.focus();
         return;
       }
-      setModalOpen(true);
+      openModal(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [mode, scrolledPast, modalOpen]);
+  }, [mode, scrolledPast, modalOpen, openModal]);
 
   // Dismiss inline dropdown on outside click.
   useEffect(() => {
@@ -194,7 +210,7 @@ export function ToolHopperSearch({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
-        setModalOpen(false);
+        closeModal();
       }
     };
     window.addEventListener("keydown", onKey);
@@ -203,11 +219,11 @@ export function ToolHopperSearch({
       window.removeEventListener("keydown", onKey);
       getLenis()?.start();
     };
-  }, [modalOpen]);
+  }, [modalOpen, closeModal]);
 
   const navigateToTool = (id: string) => {
     setInlineFocused(false);
-    setModalOpen(false);
+    closeModal();
     router.push(toolHref(id));
   };
 
@@ -242,7 +258,7 @@ export function ToolHopperSearch({
     } else if (e.key === "Escape") {
       e.preventDefault();
       if (inModal) {
-        setModalOpen(false);
+        closeModal();
       } else if (inlineFocused) {
         setInlineFocused(false);
         inlineInputRef.current?.blur();
@@ -262,13 +278,15 @@ export function ToolHopperSearch({
           <div ref={inlineWrapperRef} className="relative md:col-span-9 md:col-start-4">
             <label
               className={cn(
-                "flex h-14 items-center gap-3 rounded-lg border bg-surface px-4 shadow-float transition-[border-color,box-shadow]",
-                inlineFocused
-                  ? "border-ink ring-4 ring-accent/15"
-                  : "border-line hover:border-ink-3 focus-within:border-ink focus-within:ring-4 focus-within:ring-accent/15",
+                "flex h-14 items-center gap-2.5 rounded-lg border bg-surface px-4 shadow-float transition-[border-color,box-shadow]",
+                inlineVoiceListening
+                  ? "border-accent ring-4 ring-accent/15"
+                  : inlineFocused
+                    ? "border-ink ring-4 ring-accent/15"
+                    : "border-line hover:border-ink-3 focus-within:border-ink focus-within:ring-4 focus-within:ring-accent/15",
               )}
             >
-              <Search aria-hidden className={cn("size-[18px] shrink-0 transition-colors", inlineFocused ? "text-ink" : "text-ink-3")} />
+              <Search aria-hidden className={cn("size-[18px] shrink-0 transition-colors", inlineVoiceListening ? "text-accent" : inlineFocused ? "text-ink" : "text-ink-3")} />
               <span className="sr-only">Search tools or describe a task</span>
               <input
                 ref={inlineInputRef}
@@ -279,7 +297,7 @@ export function ToolHopperSearch({
                 }}
                 onFocus={() => setInlineFocused(true)}
                 onKeyDown={(e) => handleInputKeyDown(e, false)}
-                placeholder="Describe a task or search: “shrink pdf”, “cut out background”, “epub to pdf”…"
+                placeholder={inlineVoiceListening ? "Listening… speak a task, format or tool name" : "Describe a task or search: “shrink pdf”, “username generator”, “epub to pdf”…"}
                 role="combobox"
                 aria-expanded={inlineFocused}
                 aria-controls={listboxId}
@@ -336,6 +354,15 @@ export function ToolHopperSearch({
                   <X aria-hidden className="size-4" />
                 </button>
               )}
+
+              <VoiceSearchButton
+                onTranscript={(text) => {
+                  setQuery(text);
+                  setInlineFocused(true);
+                  inlineInputRef.current?.focus();
+                }}
+                onListeningChange={setInlineVoiceListening}
+              />
             </label>
 
             {/* Google-style animated dropdown over /tools only while actively focused */}
@@ -374,17 +401,28 @@ export function ToolHopperSearch({
             </AnimatePresence>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => setModalOpen(true)}
-            aria-label="Search tools or describe a task"
-            className="group inline-flex h-9 items-center gap-2 rounded-full border border-line bg-surface px-3 text-xs text-ink-2 shadow-card transition-[border-color,background-color,color] hover:border-ink-3 hover:text-ink"
-          >
-            <Search aria-hidden className="size-3.5 shrink-0 text-ink-3 transition-colors group-hover:text-ink" />
-            <span className="max-sm:hidden">Hop to a tool…</span>
-            <span className="sm:hidden">Search</span>
-            <Kbd className="max-sm:hidden">/</Kbd>
-          </button>
+          <div className="inline-flex h-9 items-center gap-1 rounded-full border border-line bg-surface p-1 shadow-card transition-[border-color] hover:border-ink-3">
+            <button
+              type="button"
+              onClick={() => openModal(false)}
+              aria-label="Search tools or describe a task"
+              className="group inline-flex h-7 items-center gap-2 rounded-full pl-2 pr-1.5 text-xs text-ink-2 transition-colors hover:text-ink"
+            >
+              <Search aria-hidden className="size-3.5 shrink-0 text-ink-3 transition-colors group-hover:text-ink" />
+              <span className="max-sm:hidden">Hop to a tool…</span>
+              <span className="sm:hidden">Search</span>
+              <Kbd className="max-sm:hidden">/</Kbd>
+            </button>
+            <button
+              type="button"
+              onClick={() => openModal(true)}
+              aria-label="Voice search for a tool"
+              title="Voice search"
+              className="inline-flex size-7 items-center justify-center rounded-full border border-line bg-paper text-ink-2 transition-colors hover:border-accent/50 hover:bg-accent/10 hover:text-accent"
+            >
+              <Mic aria-hidden className="size-3.5" />
+            </button>
+          </div>
         )}
       </div>
 
@@ -396,7 +434,7 @@ export function ToolHopperSearch({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1, transition: { duration: 0.2 } }}
             exit={{ opacity: 0, transition: { duration: 0.16 } }}
-            onClick={() => setModalOpen(false)}
+            onClick={closeModal}
             className="fixed inset-0 z-[60] bg-ink/20 backdrop-blur-[2px]"
           >
             <motion.div
@@ -407,20 +445,25 @@ export function ToolHopperSearch({
               aria-label="Search and switch tools"
               data-lenis-prevent
               onClick={(e) => e.stopPropagation()}
-              className="mx-auto mt-16 w-[calc(100%-24px)] max-w-2xl overflow-hidden rounded-lg border border-line bg-surface shadow-float md:mt-20"
+              className={cn(
+                "mx-auto mt-16 w-[calc(100%-24px)] max-w-2xl overflow-hidden rounded-lg border bg-surface shadow-float transition-[border-color,box-shadow] md:mt-20",
+                modalVoiceListening ? "border-accent ring-4 ring-accent/15" : "border-line",
+              )}
             >
               <div className="border-b border-line px-4">
-                <div className="flex h-14 items-center gap-3">
-                  <Search aria-hidden className="size-[18px] shrink-0 text-ink" />
+                <div className="flex h-14 items-center gap-2.5">
+                  <Search aria-hidden className={cn("size-[18px] shrink-0 transition-colors", modalVoiceListening ? "text-accent" : "text-ink")} />
                   <input
                     ref={modalInputRef}
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onKeyDown={(e) => handleInputKeyDown(e, true)}
                     placeholder={
-                      currentCluster
-                        ? `Search all tools or ${currentCluster.name.toLowerCase()} tasks…`
-                        : "Describe what you want to do, or hop to any tool…"
+                      modalVoiceListening
+                        ? "Listening… speak a tool name or task"
+                        : currentCluster
+                          ? `Search all tools or ${currentCluster.name.toLowerCase()} tasks…`
+                          : "Describe what you want to do, or hop to any tool…"
                     }
                     role="combobox"
                     aria-expanded="true"
@@ -443,9 +486,17 @@ export function ToolHopperSearch({
                       <X aria-hidden className="size-4" />
                     </button>
                   )}
+                  <VoiceSearchButton
+                    autoStart={modalVoiceAutoStart}
+                    onTranscript={(text) => {
+                      setQuery(text);
+                      modalInputRef.current?.focus();
+                    }}
+                    onListeningChange={setModalVoiceListening}
+                  />
                   <button
                     type="button"
-                    onClick={() => setModalOpen(false)}
+                    onClick={closeModal}
                     aria-label="Close search"
                     className="inline-flex h-8 items-center gap-1 rounded-sm border border-line bg-paper px-2 font-mono text-[11px] text-ink-2 transition-colors hover:border-ink-3 hover:text-ink"
                   >
@@ -473,12 +524,12 @@ export function ToolHopperSearch({
                   mode === "directory" && query.trim() && (matchCount ?? results.length) > 0
                     ? {
                         label: `Show all ${matchCount ?? results.length} on page`,
-                        onClick: () => setModalOpen(false),
+                        onClick: closeModal,
                       }
                     : {
                         label: "Browse all 9 collections",
                         href: "/tools",
-                        onClick: () => setModalOpen(false),
+                        onClick: closeModal,
                       }
                 }
               />
@@ -498,7 +549,7 @@ export function ToolHopperSearch({
           >
             <button
               type="button"
-              onClick={() => setModalOpen(true)}
+              onClick={() => openModal(false)}
               aria-label="Open tool search"
               className={cn(
                 "flex h-9 items-center gap-2 rounded-full text-sm text-ink transition-[padding,background-color] hover:bg-paper-2",
@@ -536,6 +587,15 @@ export function ToolHopperSearch({
                 <X aria-hidden className="size-3.5" />
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => openModal(true)}
+              aria-label="Voice search for a tool"
+              title="Voice search"
+              className="inline-flex size-8 items-center justify-center rounded-full border border-line bg-paper text-ink-2 transition-colors hover:border-accent/50 hover:bg-accent/10 hover:text-accent"
+            >
+              <Mic aria-hidden className="size-3.5" />
+            </button>
           </motion.div>
         ) : null}
       </AnimatePresence>

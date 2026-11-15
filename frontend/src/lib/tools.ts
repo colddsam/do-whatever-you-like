@@ -1,5 +1,6 @@
 import {
   Archive,
+  AtSign,
   CalendarHeart,
   ChartColumnBig,
   Languages,
@@ -1230,6 +1231,36 @@ export const tools: Tool[] = [
     ],
   },
   {
+    id: "username-generator",
+    name: "Username & handle generator",
+    category: "Text",
+    family: "text",
+    group: "Generate",
+    description: "Generate tailored usernames from any name or niche, check social & email availability, and discover closest free handles.",
+    status: "live",
+    icon: AtSign,
+    kind: "generate",
+    options: ["Clean", "Professional", "Developer", "Creative", "Short"],
+    takes: "A name, brand, or keywords",
+    gives: "Scored usernames, live social/mail availability & closest alternatives",
+    limit: "Live public checks · Free",
+    steps: ["Type name & niche", "Toggle social & mail", "Verify & claim handles"],
+    wide: true,
+    keywords: [
+      "username generator", "handle generator", "handle checker", "username availability",
+      "social media username checker", "email availability checker", "check username",
+      "instagram username ideas", "facebook username checker", "github username checker", "youtube handle checker",
+      "bluesky handle", "domain email checker", "gamertag generator", "brand handle",
+    ],
+    features: [
+      "Generates 30+ scored usernames across Clean, Professional, Developer, Creative & Short styles",
+      "Toggle individual social platforms (GitHub, YouTube, Bluesky, Mastodon, DEV, Instagram, Facebook, X, Reddit…)",
+      "Toggle mail & custom email domains (Gmail, Outlook, Proton rules/registries, Mail.ru, .com/.dev/.io/.in DNS)",
+      "When a handle is occupied, automatically suggests and verifies the closest available alternatives",
+      "Star favorites to a shortlist and export availability reports as CSV or JSON",
+    ],
+  },
+  {
     id: "dev",
     name: "Developer utilities",
     category: "Developers",
@@ -1560,6 +1591,7 @@ export const exampleTasks = [
   "make a meme",
   "format some json",
   "make a qr code for my wifi",
+  "suggest a username",
 ];
 
 /* ---------- Collections: how the toolbox is organised everywhere on the site ---------- */
@@ -1635,10 +1667,10 @@ export const CLUSTERS: Cluster[] = [
     name: "Text",
     title: "Text tools",
     noun: "text",
-    blurb: "Free text, audio & video translator, WhatsApp chat insights, binary/Morse converters and summaries.",
+    blurb: "Free text, audio & video translator, username generator & checker, WhatsApp chat insights, binary/Morse converters and summaries.",
     icon: WholeWord,
     groups: TEXT_GROUPS,
-    featured: ["translator", "whatsapp-chat-analyzer", "text-to-binary", "number-to-words", "morse-code", "text-summarizer"],
+    featured: ["translator", "username-generator", "whatsapp-chat-analyzer", "text-to-binary", "number-to-words", "morse-code", "text-summarizer"],
   },
   {
     id: "design",

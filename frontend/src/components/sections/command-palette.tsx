@@ -4,10 +4,11 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowUpRight, CornerDownLeft, Search, Sparkles } from "lucide-react";
+import { ArrowUpRight, CornerDownLeft, Search, Sparkles, X } from "lucide-react";
 import { CLUSTERS, exampleTasks, toolHref, tools, toolsIn, type Tool } from "@/lib/tools";
 import { analyzeTaskQuery } from "@/lib/tool-search";
 import { Kbd, SignalDot } from "@/components/ui/primitives";
+import { VoiceSearchButton } from "@/components/ui/voice-search-button";
 import { cn } from "@/lib/utils";
 
 const noopSubscribe = () => () => {};
@@ -80,6 +81,7 @@ export function CommandPalette({
   const [intro, setIntro] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
   const [focused, setFocused] = useState(false);
+  const [voiceListening, setVoiceListening] = useState(false);
   const [active, setActive] = useState(0);
   const isMac = useSyncExternalStore(
     noopSubscribe,
@@ -177,12 +179,17 @@ export function CommandPalette({
   };
 
   return (
-    <div className="overflow-hidden rounded-lg border border-line bg-surface shadow-float">
+    <div
+      className={cn(
+        "overflow-hidden rounded-lg border bg-surface shadow-float transition-[border-color,box-shadow] duration-200",
+        voiceListening ? "border-accent ring-4 ring-accent/15" : "border-line",
+      )}
+    >
       {/* Input */}
-      <label className="flex h-14 items-center gap-3 border-b border-line px-4">
-        <Search aria-hidden className="size-[18px] shrink-0 text-ink-3" />
+      <label className="flex h-14 items-center gap-2.5 border-b border-line px-4">
+        <Search aria-hidden className={cn("size-[18px] shrink-0 transition-colors", voiceListening ? "text-accent" : "text-ink-3")} />
         <span className="sr-only">Search for a task</span>
-        <div className="relative flex-1">
+        <div className="relative min-w-0 flex-1">
           <input
             ref={inputRef}
             value={query}
@@ -197,15 +204,36 @@ export function CommandPalette({
             autoComplete="off"
             spellCheck={false}
             className="peer w-full bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-3"
-            placeholder={focused ? "What do you want to do?" : ""}
+            placeholder={voiceListening ? "Speak a task, e.g. “merge pdf” or “username generator”…" : focused ? "What do you want to do?" : ""}
           />
-          {!focused && query === "" && (
+          {!focused && !voiceListening && query === "" && (
             <span aria-hidden className="pointer-events-none absolute inset-0 flex items-center text-[15px] text-ink-3">
               {placeholder}
               <span className="ml-px h-[18px] w-px animate-blink bg-ink" />
             </span>
           )}
         </div>
+        {query && (
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              setQuery("");
+              inputRef.current?.focus();
+            }}
+            aria-label="Clear search"
+            className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-ink-3 transition-colors hover:bg-paper-2 hover:text-ink"
+          >
+            <X aria-hidden className="size-4" />
+          </button>
+        )}
+        <VoiceSearchButton
+          onTranscript={(text) => {
+            setQuery(text);
+            inputRef.current?.focus();
+          }}
+          onListeningChange={setVoiceListening}
+        />
         <span className="hidden items-center gap-1 sm:flex">
           <Kbd>{isMac ? "⌘" : "Ctrl"}</Kbd>
           <Kbd>K</Kbd>

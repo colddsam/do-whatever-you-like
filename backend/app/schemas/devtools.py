@@ -33,3 +33,8 @@ class XsdRequest(BaseModel):
 class XsltRequest(BaseModel):
     xml: str = Field(..., min_length=1, max_length=5_000_000)
     xsl: str = Field(..., min_length=1, max_length=5_000_000)
+
+
+class UsernameCheckRequest(BaseModel):
+    usernames: List[str] = Field(..., min_length=1, max_length=8)
+    services: List[str] = Field(..., min_length=1, max_length=35)

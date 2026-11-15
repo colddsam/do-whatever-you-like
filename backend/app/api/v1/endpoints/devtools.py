@@ -12,7 +12,15 @@ POST /devtools/xslt     — transform XML with an XSLT 1.0 stylesheet (browsers 
 from fastapi import APIRouter
 from starlette.concurrency import run_in_threadpool
 
-from app.schemas.devtools import DnsRequest, HttpRequest, PortRequest, ReverseRequest, XsdRequest, XsltRequest
+from app.schemas.devtools import (
+    DnsRequest,
+    HttpRequest,
+    PortRequest,
+    ReverseRequest,
+    UsernameCheckRequest,
+    XsdRequest,
+    XsltRequest,
+)
 from app.services import devtools
 
 router = APIRouter(prefix="/devtools", tags=["Developer tools"])
@@ -46,3 +54,8 @@ async def xsd(req: XsdRequest):
 @router.post("/xslt", summary="Transform XML with an XSLT 1.0 stylesheet")
 async def xslt(req: XsltRequest):
     return await run_in_threadpool(devtools.transform_xslt, req.xml, req.xsl)
+
+
+@router.post("/username-check", summary="Check username availability across social platforms and mail services")
+async def username_check(req: UsernameCheckRequest):
+    return await run_in_threadpool(devtools.check_usernames, req.usernames, req.services)
