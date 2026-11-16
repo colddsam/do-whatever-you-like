@@ -4,16 +4,19 @@ loudness normalising, mute) and denoise (learn the noise from a quiet moment and
 (app/core/isolation.py), so a stuck FFmpeg can never hold up the server.
 """
 
+import json
 import logging
 from pathlib import Path
 from typing import BinaryIO, Dict, Optional, Tuple
 
 from fastapi import Request
+from pydantic import ValidationError
 
 from app.config.media import settings
 from app.core.config import app_settings
 from app.core.isolation import heavy_lane, light_lane, run_isolated
 from app.exceptions.media import InvalidMediaInputError, MediaProcessingError, MediaUnavailableError
+from app.schemas.media import CutPartsPlan
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +92,19 @@ class MediaService:
 
     async def denoise(self, job_dir: Path, saved: dict, opts: dict, request: Optional[Request]):
         return await self._run(job_dir, "app.services.media.worker:denoise", {**saved, **opts}, True, request)
+
+    @staticmethod
+    def parse_cut_plan(raw: str) -> dict:
+        try:
+            return CutPartsPlan.model_validate(json.loads(raw or "{}")).model_dump()
+        except (ValueError, ValidationError) as exc:
+            msg = str(exc)
+            if "segments" in msg and "60" in msg:
+                raise InvalidMediaInputError("Split into at most 60 parts at a time.")
+            raise InvalidMediaInputError("Pick at least one valid time range and output format.")
+
+    async def cut_parts(self, job_dir: Path, saved: dict, plan: dict, request: Optional[Request]):
+        return await self._run(job_dir, "app.services.media.worker:cut_parts", {**saved, "plan": plan}, True, request)
 
 
 media_service = MediaService()

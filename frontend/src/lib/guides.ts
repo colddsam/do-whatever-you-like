@@ -316,14 +316,39 @@ const GUIDES: Record<string, Guide> = {
   },
   "trim-media": {
     intro: [
-      "Cut any video or audio file (MP4, MOV, MKV, WebM, MP3, WAV, M4A, and more up to 150 MB) to the exact start and end time you want. Drag the handles on a live preview or type exact timestamps.",
-      "Use fast mode to trim without re-encoding, or exact mode to cut on the precise frame. Your file keeps its original format and is deleted from our server once sent.",
+      "Cut or split any video or audio file (MP4, MOV, MKV, WebM, MP3, WAV, M4A, and more up to 150 MB) right on a live player and audio waveform. Drag trim handles, press C while listening to drop cut markers into multiple parts, toggle Keep or Skip on sections, and choose your desired output format.",
+      "Keep the original format with instant lossless stream copy, cut frame-exact clips, extract audio tracks cleanly to MP3/WAV/M4A/FLAC, or preview individual ZIP parts directly in your browser before saving.",
     ],
     faqs: [
-      { q: "Does trimming reduce video or audio quality?", a: "Fast mode cuts without re-encoding, so it keeps the original quality. Exact mode re-encodes only when you need frame-accurate cuts." },
-      { q: "What happens to my file?", a: "It is deleted from our server as soon as the trimmed file is sent." },
+      { q: "Can I cut a video or song into several parts at once?", a: "Yes. Switch to 'Cut in parts (Split)', click 'Add cut at playhead' (or press C), split into N equal parts or second intervals, and export all kept clips as one ZIP or joined into one file." },
+      { q: "Can I pick a different output format?", a: "Yes. Export in the original format, MP4, MOV, MKV, WebM, animated GIF, or extract audio directly to MP3, M4A, WAV, FLAC, OGG or OPUS." },
+      { q: "What happens to my file?", a: "Files are processed on our server and deleted immediately after your download is sent." },
     ],
-    see: ["audio-volume", "noise-remover", "video-to-gif"],
+    see: ["split-media", "audio-volume", "noise-remover", "video-to-gif"],
+  },
+  "split-media": {
+    intro: [
+      "Split any video or audio recording into multiple clips on a live waveform timeline. Play your file and click 'Add cut' (or press C) wherever a new part should begin, auto-slice by equal count or seconds, drag boundaries by eye, and toggle Keep or Skip on each segment.",
+      "Download every kept clip separately in one ZIP (with inline preview for every clip right in your browser) or merge kept clips back-to-back into a single edited file in your chosen format.",
+    ],
+    faqs: [
+      { q: "How do I remove middle parts like pauses or ads?", a: "Drop cut markers before and after the section you want to drop, click 'Skip' on that segment, and choose 'Merge kept parts into 1 file'." },
+      { q: "Which formats can I save to?", a: "Keep the original format with zero re-encoding, or export to MP4, MOV, MKV, WebM, GIF, MP3, M4A, WAV, FLAC, OGG or OPUS." },
+      { q: "Can I preview individual parts before downloading the ZIP?", a: "Yes. Small and medium ZIP outputs unpack cleanly in your browser so you can play and save any single clip." },
+    ],
+    see: ["trim-media", "merge-files", "audio-volume", "noise-remover"],
+  },
+  "3d-viewer": {
+    intro: [
+      "Open, inspect, slice and convert 3D files completely inside your browser using hardware-accelerated WebGL. Supports GLB, GLTF (with Draco decompression), STL, OBJ (+ MTL materials & textures), FBX, PLY, 3MF, DAE, PCD, XYZ and bundled ZIP packages.",
+      "Orbit, pan and zoom smoothly, flip between Textured PBR, Studio Clay, Wireframe, Surface Normals and X-Ray shading, rotate Z-up CAD models to Y-up in one click, cut cross-section slice planes, inspect individual mesh parts and export PNG, GLB, STL or OBJ locally.",
+    ],
+    faqs: [
+      { q: "Are my 3D models uploaded to a server?", a: "Never. All parsing, WebGL rendering, cross-section slicing and exports (.GLB/.STL/.OBJ/PNG) run locally in your browser." },
+      { q: "My .gltf or .obj uses external .bin, .mtl or texture images—how do I load them?", a: "Select or drag all the files together at once (e.g. model.obj + model.mtl + texture.png), or drop the .zip archive directly onto the page." },
+      { q: "How do I inspect hollow interiors or upside-down CAD files?", a: "Open the Slice tab to click 'Z-up -> Y-up (-90° X)' or drag an X, Y, or Z cross-section clipping plane through your mesh." },
+    ],
+    see: ["document-viewer", "svg-optimizer-jsx", "image-to-svg"],
   },
   "noise-remover": {
     intro: [

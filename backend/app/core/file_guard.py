@@ -396,6 +396,7 @@ def _policies() -> Dict[str, FrozenSet[str]]:
         "/merge-split/merge": anything,
         "/palette/extract": anything,
         "/media/trim": frozenset(MEDIA),
+        "/media/cut-parts": frozenset(MEDIA),
         "/media/sound": frozenset(MEDIA),
         "/media/denoise": frozenset(MEDIA),
     }

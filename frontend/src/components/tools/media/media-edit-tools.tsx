@@ -12,6 +12,7 @@ import { FileDrop } from "../file-drop";
 import { Workbench } from "../workbench";
 import { ProgressButton, type Job } from "../progress-button";
 import { Chips, Notice, Panel, Row, Slider, TextField, Toggle } from "../pdf/kit";
+import { MediaCutterStudio } from "./media-cutter";
 import { Trim } from "./trim";
 
 export const MEDIA_ACCEPT = "audio/*,video/*,.mkv,.avi,.flac,.opus,.m4a,.wma,.amr,.3gp";
@@ -187,93 +188,10 @@ function useUpload(endpoint: string) {
   return { job, out, setOut, run, cancel: () => abort.current?.abort() };
 }
 
-/* ---------- Trimmer ---------- */
+/* ---------- Trimmer & Multi-Part Cutter ---------- */
 
-export function TrimMediaTool({ toolId }: { toolId: string }) {
-  const tool = getTool(toolId)!;
-  const { src, setSrc, error, take } = useSource();
-  const [range, setRange] = useState<[number, number]>([0, 0]);
-  const [typed, setTyped] = useState({ start: "0:00", end: "" });
-  const [exact, setExact] = useState(false);
-  const up = useUpload("/api/tools/media/trim");
-
-  useEffect(() => {
-    if (src?.duration) queueMicrotask(() => setRange([0, src.duration!]));
-  }, [src]);
-
-  const start = src?.duration ? range[0] : parseTime(typed.start);
-  const end = src?.duration ? range[1] : parseTime(typed.end);
-  const valid = start !== null && end !== null && end > start;
-  const len = valid ? end! - start! : 0;
-  const tooLongExact = exact && src?.video && len > 180;
-
-  const go = () => {
-    if (!src || !valid) return;
-    const form = new FormData();
-    form.append("file", src.file);
-    form.append("start", String(start));
-    form.append("end", String(end));
-    form.append("exact", String(exact && src.video));
-    void up.run(form, src.file.name.replace(/(\.[^.]+)$/, "-trimmed$1"));
-  };
-
-  return (
-    <Workbench steps={stepsFor(tool)} current={!src ? 0 : up.out ? 2 : 1} footer="Your file is cut on our server and deleted right after you download it.">
-      <div className="@container grid gap-4 p-3 sm:p-4 md:p-5">
-        {!src ? (
-          <FileDrop accept={MEDIA_ACCEPT} title="Drop a video or audio file here" formats={`${FORMATS} · up to ${MAX_MB} MB`} error={error} onFile={take} />
-        ) : (
-          <>
-            <SourceRow src={src} onChange={() => (setSrc(null), up.setOut(null))} />
-            {src.duration ? (
-              <Trim url={src.url} duration={src.duration} start={range[0]} end={range[1]} onChange={(s, e) => setRange([s, e])} />
-            ) : (
-              <Panel>
-                <Row label="Part to keep" hint="This browser can't preview the file, so type the times.">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <div className="w-32">
-                      <TextField label="Start" value={typed.start} onChange={(v) => setTyped((t) => ({ ...t, start: v }))} placeholder="0:00" mono />
-                    </div>
-                    <span className="text-ink-3">to</span>
-                    <div className="w-32">
-                      <TextField label="End" value={typed.end} onChange={(v) => setTyped((t) => ({ ...t, end: v }))} placeholder="1:30" mono />
-                    </div>
-                    <span className="text-xs text-ink-3">minutes:seconds, or seconds</span>
-                  </div>
-                </Row>
-              </Panel>
-            )}
-            {src.video && (
-              <Panel>
-                <Row label="Cut">
-                  <Chips
-                    value={exact ? "exact" : "fast"}
-                    options={[{ value: "fast", label: "Fast, no quality loss" }, { value: "exact", label: "Frame-exact" }]}
-                    onChange={(v) => setExact(v === "exact")}
-                    label="Cut"
-                  />
-                  <p className="mt-2 text-xs text-ink-3">
-                    {exact ? "Re-encodes the part you keep so it starts on the exact frame. Up to 3 minutes; takes a little longer." : "Copies the video as it is: instant and lossless, but it starts at the nearest keyframe (up to a couple of seconds early)."}
-                  </p>
-                </Row>
-              </Panel>
-            )}
-            {tooLongExact && <Notice tone="warning">Frame-exact cuts are for parts up to 3 minutes. Use a fast cut, or a shorter part.</Notice>}
-            <ProgressButton
-              job={up.job}
-              label={valid ? `Keep ${stamp(len)} (${stamp(start!)} → ${stamp(end!)})` : "Pick the part to keep"}
-              working={exact ? "Cutting and re-encoding…" : "Cutting…"}
-              hint={src.video ? (exact ? "Frame-exact, re-encoded." : "No re-encoding: same quality as the original.") : "Audio is cut without re-encoding."}
-              disabled={!valid || Boolean(tooLongExact)}
-              onStart={go}
-              onCancel={up.cancel}
-            />
-            {up.out && <Result out={up.out} kind={src.video ? "video" : "audio"} onBack={() => up.setOut(null)} />}
-          </>
-        )}
-      </div>
-    </Workbench>
-  );
+export function TrimMediaTool({ toolId, initialMode = "trim" }: { toolId: string; initialMode?: "trim" | "parts" }) {
+  return <MediaCutterStudio toolId={toolId} initialMode={initialMode} />;
 }
 
 /* ---------- Volume, normalise, mute ---------- */

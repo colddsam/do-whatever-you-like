@@ -24,8 +24,12 @@ from app.services.media import media_service
 router = APIRouter(prefix="/media", tags=["Audio & video"])
 
 
+MEDIA_OVERRIDES = {".zip": "application/zip", ".mp4": "video/mp4", ".webm": "video/webm", ".mp3": "audio/mpeg"}
+
+
 def _reply(out, info):
-    return FileResponse(path=out, filename=out.name, media_type=mimetypes.guess_type(out.name)[0] or "application/octet-stream", headers={"X-Convert-Info": json.dumps(info, ensure_ascii=True)})
+    media_type = MEDIA_OVERRIDES.get(out.suffix.lower()) or mimetypes.guess_type(out.name)[0] or "application/octet-stream"
+    return FileResponse(path=out, filename=out.name, media_type=media_type, headers={"X-Convert-Info": json.dumps(info, ensure_ascii=True)})
 
 
 @router.post("/trim", response_class=FileResponse, summary="Cut a part out of an audio or video file")
@@ -42,6 +46,31 @@ async def trim(
     try:
         saved = await run_in_threadpool(media_service.save_upload, file.file, file.filename, job_dir)
         out, info = await media_service.trim(job_dir, saved, start, end, exact, request)
+        background_tasks.add_task(cleanup_folder, job_dir)
+        return _reply(out, info)
+    except Exception:
+        cleanup_folder(job_dir)
+        raise
+    finally:
+        await file.close()
+
+
+@router.post(
+    "/cut-parts",
+    response_class=FileResponse,
+    summary="Cut audio or video into one or several parts (ZIP or joined) in your chosen format",
+)
+async def cut_parts(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    plan: str = Form(..., max_length=12000, description="JSON CutPartsPlan: segments, combine, output_format, exact"),
+):
+    parsed = media_service.parse_cut_plan(plan)
+    job_dir = settings.TEMP_DIR / f"cut_{uuid.uuid4().hex}"
+    try:
+        saved = await run_in_threadpool(media_service.save_upload, file.file, file.filename, job_dir)
+        out, info = await media_service.cut_parts(job_dir, saved, parsed, request)
         background_tasks.add_task(cleanup_folder, job_dir)
         return _reply(out, info)
     except Exception:

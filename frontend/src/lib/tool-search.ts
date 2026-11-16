@@ -509,6 +509,18 @@ const SYNONYM_GRAPH: Record<string, string[]> = {
   neumorphism: ["neumorphism-generator"],
   flexbox: ["css-grid-flexbox-playground"],
   grid: ["css-grid-flexbox-playground", "organize-pdf"],
+  "3d": ["3d-viewer", "glb", "stl", "obj"],
+  glb: ["3d-viewer"],
+  gltf: ["3d-viewer"],
+  stl: ["3d-viewer"],
+  obj: ["3d-viewer"],
+  fbx: ["3d-viewer"],
+  ply: ["3d-viewer"],
+  "3mf": ["3d-viewer"],
+  dae: ["3d-viewer"],
+  mesh: ["3d-viewer"],
+  cutter: ["split-media", "trim-media"],
+  clip: ["split-media", "trim-media", "video-to-gif"],
 };
 
 type IntentRule = {
@@ -532,6 +544,22 @@ const INTENT_RULES: IntentRule[] = [
     phrases: ["split pdf", "separate pdf", "extract pdf page", "cut pdf pages"],
     boostIds: ["split-pdf", "extract-pages", "remove-pages"],
     reason: "Splits or extracts PDF pages",
+  },
+  {
+    phrases: [
+      "cut video", "cut audio", "cut mp3", "cut video in parts", "cut video into parts",
+      "split video", "split audio", "cut in several parts", "trim video", "trim audio",
+    ],
+    boostIds: ["split-media", "trim-media", "split-files"],
+    reason: "Cuts or splits audio & video on a waveform timeline",
+  },
+  {
+    phrases: [
+      "3d viewer", "3d file", "3d model", "open glb", "open gltf", "open stl", "open obj",
+      "view 3d", "inspect 3d", "glb viewer", "stl viewer", "fbx viewer", "ply viewer",
+    ],
+    boostIds: ["3d-viewer"],
+    reason: "Interactive WebGL 3D model viewer & inspector",
   },
   {
     phrases: ["cut out background", "remove background", "erase background", "transparent background", "white background", "remove bg", "cut out subject", "cut out person"],

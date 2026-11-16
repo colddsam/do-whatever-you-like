@@ -18,7 +18,7 @@ from app.config.merge_split import settings
 from app.exceptions.merge_split import InvalidMergeSplitInputError, MergeSplitProcessingError, MergeSplitUnavailableError
 from app.services.merge_split.common import ensure, limit_parts, unique
 from app.services.universal.engines.common import run, tail
-from app.services.universal.engines.media import LOCAL_ONLY, probe
+from app.services.universal.engines.media import LOCAL_ONLY, VIDEO_ARGS, probe
 from app.services.universal.graph import ffmpeg_path
 
 logger = logging.getLogger(__name__)
@@ -112,15 +112,35 @@ def split(path: Path, plan: Dict[str, Any], out_dir: Path, name: str, family: st
     info = _probe(path, family)
     ext = path.suffix.lower()
     files = []
+    reencoded_parts = False
     for i, (a, b) in enumerate(_cuts(plan, info["duration"]), 1):
         out = unique(out_dir, f"{name}-{i:02d} ({_stamp(a)}-{_stamp(b)}){ext}")
+        span = b - a
         maps = ["-map", "0:v:0", "-map", "0:a?"] if family == "video" else ["-map", "0:a:0"]
-        _ffmpeg([*LOCAL_ONLY, "-ss", f"{a:.3f}", "-i", str(path), "-t", f"{b - a:.3f}", *maps, "-sn", "-dn", "-c", "copy",
+        _ffmpeg([*LOCAL_ONLY, "-ss", f"{a:.3f}", "-i", str(path), "-t", f"{span:.3f}", *maps, "-sn", "-dn", "-c", "copy",
                  "-avoid_negative_ts", "make_zero", "-map_metadata", "0", str(out)], "Cutting the file")
+        # If stream copy jumped back to an earlier keyframe (producing 0-4 / 0-6 / 0-8 on sparse-keyframe
+        # videos), automatically re-encode that part cleanly within the re-encode budget so parts stay separate.
+        if family == "video" and a > 0 and out.is_file() and span <= 180:
+            copied_dur = float(probe(out).get("duration") or 0)
+            if copied_dur > span + 0.55:
+                out.unlink(missing_ok=True)
+                fmt_key = ext.lstrip(".")
+                vargs = VIDEO_ARGS.get(fmt_key) or VIDEO_ARGS["mp4"]
+                if not info["audio"]:
+                    vargs = ["-c:v", "libvpx-vp9", "-deadline", "realtime", "-cpu-used", "8", "-row-mt", "1", "-crf", "34", "-b:v", "0", "-pix_fmt", "yuv420p", "-an"] if fmt_key == "webm" else [
+                        "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-pix_fmt", "yuv420p", "-an",
+                        *(["-movflags", "+faststart"] if fmt_key in ("mp4", "mov", "m4v") else []),
+                    ]
+                _ffmpeg([*LOCAL_ONLY, "-ss", f"{a:.3f}", "-i", str(path), "-t", f"{span:.3f}", *maps, "-sn", "-dn", *vargs, str(out)], "Cutting the video part accurately")
+                reencoded_parts = True
         files.append(ensure(out, "A part"))
-    notes = ["Cut without re-encoding, so quality is untouched."]
-    if family == "video":
-        notes.append("Video cuts land on the nearest keyframe, so a part may start up to a second or two early.")
+    if reencoded_parts:
+        notes = ["Parts where the source had few keyframes were re-encoded automatically so every clip contains only its own segment."]
+    else:
+        notes = ["Cut without re-encoding, so quality is untouched."]
+        if family == "video":
+            notes.append("Video cuts land on the nearest keyframe, so a part may start up to a moment early.")
     return files, notes
 
 

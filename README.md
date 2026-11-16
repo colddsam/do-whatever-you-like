@@ -12,7 +12,7 @@
 
 <a href="https://do-whatever-you-like.colddsam.com"><img src="https://img.shields.io/badge/Open%20the%20site-do--whatever--you--like.colddsam.com-eb4a10?style=for-the-badge&labelColor=15140f" alt="Open the live site"></a>
 
-<img src="https://img.shields.io/badge/tools-258%20live-15140f?style=flat-square" alt="258 live tools">
+<img src="https://img.shields.io/badge/tools-260%20live-15140f?style=flat-square" alt="260 live tools">
 <img src="https://img.shields.io/badge/price-free-2f7d4f?style=flat-square" alt="Free">
 <img src="https://img.shields.io/badge/sign--up-not%20needed-57544a?style=flat-square" alt="No sign-up">
 <img src="https://img.shields.io/badge/watermarks-none-57544a?style=flat-square" alt="No watermarks">
@@ -41,7 +41,7 @@
 
 ## 👋 What is Do-Whatever-You-Like?
 
-**Do-Whatever-You-Like is a free website with 258 small tools for everyday digital chores.**
+**Do-Whatever-You-Like is a free website with 260 small tools for everyday digital chores.**
 
 Need to turn a PDF into Word, translate text, audio recordings or videos into another language, analyze an exported WhatsApp chat, shrink a photo, vectorise a logo to SVG, cut a song, clean up a noisy recording, format JSON, query a local SQLite or Parquet file, make a chart, split a trip bill, track your period privately, or download a Reel? Open the site, pick the tool, done.
 
@@ -70,18 +70,18 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 
 ## 🗂️ What's inside
 
-258 live tools in 9 collections. Click a name to open that collection on the site.
+260 live tools in 9 collections. Click a name to open that collection on the site.
 
 | | Collection | What you can do | Tools |
 | :---: | :--- | :--- | :---: |
-| 🔁 | [**Any file**](https://do-whatever-you-like.colddsam.com/tools/category/files) | View Word, Excel, PowerPoint, CSV & PDF in-browser, convert almost any file, compress, merge, split and inspect or build archives | **18** |
+| 🔁 | [**Any file**](https://do-whatever-you-like.colddsam.com/tools/category/files) | View Word, Excel, PowerPoint, CSV, PDF & 3D models in-browser, convert almost any file, compress, merge, split and inspect or build archives | **19** |
 | 📄 | [**PDF tools**](https://do-whatever-you-like.colddsam.com/tools/category/pdf) | Merge, split, compress, edit, sign, protect, OCR and compare PDFs | **23** |
 | 🖼️ | [**Image tools**](https://do-whatever-you-like.colddsam.com/tools/category/images) | Compress, resize, crop, remove backgrounds, upscale, vectorise to SVG, frame mockups, blur faces, make memes and icons | **20** |
 | 💻 | [**Developer tools**](https://do-whatever-you-like.colddsam.com/tools/category/developer) | Format, minify and validate code, convert JSON/CSV/YAML/XML/SQL/types, query SQLite & Parquet, hashes, JWT, UUID/ULID, regex, DNS and HTTP checks, cron | **114** |
 | ✍️ | [**Text tools**](https://do-whatever-you-like.colddsam.com/tools/category/text) | Writing helper, username & handle generator, translator (text, audio & video), WhatsApp chat analyzer, word counter, case & list tools, binary and hex, Morse code, summaries | **29** |
 | 🎨 | [**Charts, fonts and colour**](https://do-whatever-you-like.colddsam.com/tools/category/design) | Animated charts, flowcharts, font checker and maker, colour picker & 50–950 scales, SVG optimizer, CSS Grid/Flexbox & UI generators | **14** |
 | ⬇️ | [**Media downloads**](https://do-whatever-you-like.colddsam.com/tools/category/downloads) | Save public YouTube, Instagram and Facebook videos, or just their sound | **3** |
-| 🎬 | [**Audio and video**](https://do-whatever-you-like.colddsam.com/tools/category/media) | Trim, remove noise, change volume, waveforms & spectrograms, record your screen, subtitles & caption translation, speech to text, GIFs | **10** |
+| 🎬 | [**Audio and video**](https://do-whatever-you-like.colddsam.com/tools/category/media) | Trim & multi-cut on a waveform, remove noise, change volume, waveforms & spectrograms, record your screen, subtitles & caption translation, speech to text, GIFs | **11** |
 | 🧰 | [**Everyday utilities**](https://do-whatever-you-like.colddsam.com/tools/category/utilities) | Private period tracker, EMI/SIP/GST calculators, bill splitter, invoice & signature maker, QR codes, converters, clocks, passwords, device tests | **27** |
 
 <details>
@@ -89,7 +89,7 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 <br>
 
 <details>
-<summary><b>🔁 Any file</b> — 18 tools</summary>
+<summary><b>🔁 Any file</b> — 19 tools</summary>
 <br>
 
 - [**Document viewer**](https://do-whatever-you-like.colddsam.com/tools/document-viewer) — Open Word, Excel, PowerPoint, CSV, ODF and PDF files right in your browser.
@@ -98,6 +98,7 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 - [**PowerPoint viewer**](https://do-whatever-you-like.colddsam.com/tools/powerpoint-viewer) — Step through PPTX, PPSX and ODP slide decks with speaker notes and filmstrip.
 - [**PDF viewer**](https://do-whatever-you-like.colddsam.com/tools/pdf-viewer) — View PDF pages in-browser and inspect metadata, embedded fonts and extracted text.
 - [**CSV & TSV viewer**](https://do-whatever-you-like.colddsam.com/tools/csv-viewer) — Filter, sort, search and summarize CSV and TSV tables cleanly in your browser.
+- [**3D model viewer & inspector**](https://do-whatever-you-like.colddsam.com/tools/3d-viewer) — Inspect GLB, GLTF, STL, OBJ (+MTL), FBX, PLY, 3MF & ZIP 3D files with orbit, slicing, mesh tree and exports.
 - [**Universal converter**](https://do-whatever-you-like.colddsam.com/tools/convert-anything) — Turn almost any file into the format you need: documents, data, images, audio, video, fonts and more.
 - [**PDF to Word**](https://do-whatever-you-like.colddsam.com/tools/pdf-to-word) — An editable Word document from your PDF.
 - [**PDF to Excel**](https://do-whatever-you-like.colddsam.com/tools/pdf-to-excel) — Tables from your PDF, ready in Excel.
@@ -246,12 +247,13 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 </details>
 
 <details>
-<summary><b>🎬 Audio and video</b> — 10 tools</summary>
+<summary><b>🎬 Audio and video</b> — 11 tools</summary>
 <br>
 
 - [**Video to frames**](https://do-whatever-you-like.colddsam.com/tools/video-to-frames) — Split a video into still frames: pick how many, which part and the format.
 - [**Video to GIF**](https://do-whatever-you-like.colddsam.com/tools/video-to-gif) — Turn a clip into a GIF: trim it, set the size, smoothness, speed and loop.
-- [**Video & audio trimmer**](https://do-whatever-you-like.colddsam.com/tools/trim-media) — Cut a video or song to the part you want: fast and lossless, or frame-exact.
+- [**Video & audio trimmer**](https://do-whatever-you-like.colddsam.com/tools/trim-media) — Cut a video or audio file cleanly or split it into multiple parts on a waveform timeline, in your chosen format.
+- [**Video & audio multi-cutter**](https://do-whatever-you-like.colddsam.com/tools/split-media) — Cut a video or song into several clips visually on a waveform timeline, drop unwanted parts, or export in your chosen format.
 - [**Noise remover**](https://do-whatever-you-like.colddsam.com/tools/noise-remover) — Remove background noise, hiss, hum and clicks from audio or a video's sound.
 - [**Volume booster & normaliser**](https://do-whatever-you-like.colddsam.com/tools/audio-volume) — Make audio or a video louder or quieter, even out the loudness, or mute a video.
 - [**Screen & voice recorder**](https://do-whatever-you-like.colddsam.com/tools/screen-recorder) — Record your screen, a window or a tab with your voice, or just your voice.
@@ -402,14 +404,14 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 | 🔒 **Private by default** | If a tool can run in your browser, it does. If it needs the server, the file lives in a private folder for that one request and is deleted right after. |
 | 🧑‍🤝‍🧑 **Plain words** | Buttons say what they do ("Remove the noise", "Download 3 clean photos"). Errors say what went wrong and what to try. |
 | 🛡️ **Safe by default** | Every uploaded file is checked by its real contents before anything opens it. A program renamed to `.pdf` is turned away. |
-| 🎨 **One design** | Every page follows one design system (`frontend/DESIGN.md`), so all 258 tools feel like one product. |
+| 🎨 **One design** | Every page follows one design system (`frontend/DESIGN.md`), so all 260 tools feel like one product. |
 | 🧩 **Built to grow** | One registry lists every tool; most new tools are one line plus one engine. That's how the site grew so fast. |
 
 ---
 
 ## 🚀 Our pace
 
-Do-Whatever-You-Like went from an empty repository to **258 live tools in its first week**.
+Do-Whatever-You-Like went from an empty repository to **260 live tools in 9 days**.
 
 ```mermaid
 timeline
@@ -441,17 +443,20 @@ timeline
            : Server-resolved Reel, Short & video cover thumbnails
            : In-browser Office & document viewers (Word, Excel, PowerPoint, CSV, PDF)
            : Beta badges & shared heavy-job concurrency lanes for free-tier stability
+    16 Nov : 3D model viewer & inspector (GLB, GLTF, STL, OBJ, FBX, PLY, 3MF)
+           : Waveform video & audio multi-cutter (/api/v1/media/cut-parts)
+           : Security policy (SECURITY.md)
 ```
 
 | 📅 Days | 🧰 Live tools | 🗂️ Collections | 📡 API endpoints | 🧪 Check scripts |
 | :---: | :---: | :---: | :---: | :---: |
-| 8 | 258 | 9 | 77 | 9 backend suites + browser & unit tests |
+| 9 | 260 | 9 | 78 | 9 backend suites + browser & unit tests |
 
 ---
 
 ## 🗺️ What's next
 
-- ✅ **Every listed tool is live.** All 258 tools in the directory — including the Writing helper and Office & document viewers — are now live and ready to use.
+- ✅ **Every listed tool is live.** All 260 tools in the directory — including the Writing helper, Office & document viewers, 3D model inspector, and waveform multi-cutter — are now live and ready to use.
 - 🙋 **Your requests.** The site has a *Request a tool* button. New tools are picked from what people ask for.
 - 🔧 **Making the existing tools better**: faster on free hosting, clearer wording, and better phone layouts.
 
@@ -518,6 +523,8 @@ sequenceDiagram
 | 🧯 **One job can't break another** | Heavy jobs run in their own child process with a time limit, so a crash or a huge file can't take the server down. |
 | 📏 **Size limits up front** | Oversized requests are refused before they're read (150 MB for files by default). |
 | 🙈 **No accounts, no private content tracking** | Nothing you upload or parse is stored or sold. Aggregate traffic analytics use Vercel Web Analytics and Google Analytics 4 (`G-GVKMN99S3N`) when configured. |
+
+See [SECURITY.md](SECURITY.md) for responsible disclosure, scope, and self-hosting security guidelines.
 
 ---
 
@@ -671,7 +678,7 @@ Run the backend scripts from `backend/` with the virtual environment's Python. B
 
 ## 📡 API reference
 
-77 endpoints, all under `/api/v1`, all needing `Authorization: Bearer <HEADER_TOKEN>`. With `DEBUG=true`, try them at `http://127.0.0.1:8000/docs`, or import `backend/postman_collection.json` into Postman (rebuild it with `python generate_postman.py`).
+78 endpoints, all under `/api/v1`, all needing `Authorization: Bearer <HEADER_TOKEN>`. With `DEBUG=true`, try them at `http://127.0.0.1:8000/docs`, or import `backend/postman_collection.json` into Postman (rebuild it with `python generate_postman.py`).
 
 <details>
 <summary><b>Health</b> — 1 endpoint</summary>
@@ -919,12 +926,13 @@ Run the backend scripts from `backend/` with the virtual environment's Python. B
 </details>
 
 <details>
-<summary><b>Audio & video</b> — 3 endpoints</summary>
+<summary><b>Audio & video</b> — 4 endpoints</summary>
 <br>
 
 | Method | Endpoint | What it does |
 | :--- | :--- | :--- |
 | `POST` | `/api/v1/media/trim` | Cut a part out of an audio or video file |
+| `POST` | `/api/v1/media/cut-parts` | Cut audio or video into one or several parts (ZIP or joined) in your chosen format |
 | `POST` | `/api/v1/media/sound` | Change the volume, normalise loudness, or mute a video |
 | `POST` | `/api/v1/media/denoise` | Remove background noise, hiss and hum from audio or video |
 
@@ -953,6 +961,7 @@ Most tools are small. The usual path:
 
 ```text
 do-whatever-you-like/
+├── SECURITY.md                  # Security policy, responsible disclosure & self-hosting checklist
 ├── render.yaml                  # Render blueprint for the server (free plan)
 ├── start-dev.ps1 / stop-dev.ps1 # Start and stop both parts on Windows
 ├── docs/assets/                 # Images and animations for this README
@@ -977,16 +986,16 @@ do-whatever-you-like/
         ├── components/
         │   ├── layout/ sections/        # Header, footer, command palette, home page sections, directory
         │   └── tools/                   # Every tool's workspace
-        │       ├── pdf/ image/ files/ universal/ media/ transcribe/ health/ text/ # Incl. in-browser Office & document viewer (files/)
-        │       ├── design/              # Chart maker, flowchart maker, fonts, colour picker
+        │       ├── pdf/ image/ files/ universal/ media/ transcribe/ health/ text/ # Incl. Office & document viewer (files/) and waveform multi-cutter (media/)
+        │       ├── design/              # Chart maker, flowchart maker, 3D model viewer, fonts, colour picker
         │       ├── dev/ utilities/      # Developer hub and one-engine-per-job utilities
         │       ├── tool-hopper-search.tsx # Morphing, non-obstructive floating search bar for tool pages
         │       └── playground.tsx       # Which workspace each tool uses
         └── lib/
             ├── tools.ts                 # The registry of every tool (and SERVER_HEAVY_TOOL_IDS Beta markers)
-            ├── tool-search.ts           # Natural-language task & intent search engine across all 258 tools
+            ├── tool-search.ts           # Natural-language task & intent search engine across all 260 tools
             ├── utilities/catalog.ts     # Developer, Text, Everyday and Design pages as data
-            ├── charts.ts flowchart.ts period.ts whatsapp.ts # Client tool engines
+            ├── charts.ts flowchart.ts period.ts whatsapp.ts three-loader.ts # Client tool engines & 3D loader
             ├── translate.ts             # Translator API client, direct-ticket streaming & speech helpers
             ├── pdf.ts media.ts          # PDF/split-ZIP preview helpers and downloader API clients
             ├── backend.ts files.ts      # Server proxy and upload helpers

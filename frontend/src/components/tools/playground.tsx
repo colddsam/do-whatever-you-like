@@ -76,6 +76,7 @@ const MockupSafeZoneTool = dynamic(() => import("./image/mockup-tool").then((m) 
 const AudioWaveformTool = dynamic(() => import("./media/waveform-tool").then((m) => m.AudioWaveformTool), { loading });
 const ArchiveTool = dynamic(() => import("./files/archive-tool").then((m) => m.ArchiveTool), { loading });
 const DocumentViewerTool = dynamic(() => import("./files/document-viewer").then((m) => m.DocumentViewerTool), { loading });
+const ThreeViewerTool = dynamic(() => import("./design/three-viewer").then((m) => m.ThreeViewerTool), { loading });
 
 type Workspace = ComponentType<{ toolId: string }>;
 
@@ -177,7 +178,8 @@ const byId: Record<string, Workspace> = {
   "video-to-frames": VideoFramesTool,
   "video-to-gif": VideoGifTool,
   // Audio & video, edited on our server (trim, volume) or in the browser (recorder, subtitles)
-  "trim-media": TrimMediaTool,
+  "trim-media": () => <TrimMediaTool toolId="trim-media" initialMode="trim" />,
+  "split-media": () => <TrimMediaTool toolId="split-media" initialMode="parts" />,
   "audio-volume": SoundTool,
   "noise-remover": DenoiseTool,
   "screen-recorder": RecorderTool,
@@ -194,6 +196,7 @@ const byId: Record<string, Workspace> = {
   "powerpoint-viewer": DocumentViewerTool,
   "pdf-viewer": DocumentViewerTool,
   "csv-viewer": DocumentViewerTool,
+  "3d-viewer": ThreeViewerTool,
 };
 
 /** A standalone page for one tab of the developer hub (JSON formatter, JWT decoder…). */
