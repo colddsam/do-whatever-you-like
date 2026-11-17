@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { CheckCircle2, Sparkles, Wand2 } from "lucide-react";
 import { getTool, stepsFor } from "@/lib/tools";
 import { summarize } from "@/lib/utilities/text";
+import { useStartParam } from "@/lib/start-params";
 import { cn } from "@/lib/utils";
 import { Workbench } from "../workbench";
 import { Chips, Notice, Panel, Row, Slider } from "../pdf/kit";
@@ -184,7 +185,10 @@ const SAMPLE_DRAFT = `In order to ship faster , the the engineering team made a 
 export function WritingHelperTool({ toolId }: { toolId: string }) {
   const tool = getTool(toolId)!;
   const [text, setText] = useState(SAMPLE_DRAFT);
-  const [mode, setMode] = useState<WritingMode>("grammar");
+  // ?mode=summarize opens on the summariser (the old Text summarizer page redirects here).
+  const startMode = useStartParam("mode");
+  const [picked, setMode] = useState<WritingMode | null>(null);
+  const mode: WritingMode = picked ?? (startMode === "summarize" || startMode === "rewrite" ? startMode : "grammar");
   const [rewriteStyle, setRewriteStyle] = useState<"concise" | "clear" | "bullets" | "clean">("concise");
   const [summaryRatio, setSummaryRatio] = useState(40);
   const [summaryBullets, setSummaryBullets] = useState(true);

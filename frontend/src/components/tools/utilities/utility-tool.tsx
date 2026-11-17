@@ -1,7 +1,8 @@
 "use client";
 
 import { useSyncExternalStore, type ComponentType } from "react";
-import { getUtility, ENGINE_INFO, type Engine } from "@/lib/utilities/catalog";
+import { getUtility, ENGINE_INFO, UTILITIES, type Engine } from "@/lib/utilities/catalog";
+import { readStartParams } from "@/lib/start-params";
 import { Workbench } from "../workbench";
 import {
   CardEngine,
@@ -151,6 +152,17 @@ const ENGINES: Record<Engine, ComponentType<EngineProps>> = {
  */
 const noop = () => () => {};
 
+/**
+ * The page's preset, overridden by the address for the settings this engine understands
+ * (?alg=md5 on the hash generator, ?lang=sql on the formatter). That's how the pages merged into
+ * one tool (lib/merged-tools.ts) still open on their own variant.
+ */
+function startPreset(engine: Engine, preset: Record<string, string> = {}): Record<string, string> {
+  const known = new Set(UTILITIES.filter((u) => u.engine === engine).flatMap((u) => Object.keys(u.preset ?? {})));
+  const fromUrl = Object.entries(readStartParams()).filter(([k, v]) => known.has(k) && v.length <= 40);
+  return { ...preset, ...Object.fromEntries(fromUrl) };
+}
+
 export function UtilityTool({ toolId }: { toolId: string }) {
   // Engines use browser APIs (DOMParser, crypto, canvas) and random output, so they render in the
   // browser only; the server sends a same-sized placeholder, which avoids hydration mismatches.
@@ -182,7 +194,7 @@ export function UtilityTool({ toolId }: { toolId: string }) {
     <Workbench steps={info.steps} current={1} footer={footer}>
       <div className="@container grid gap-3 p-3 sm:p-4 md:gap-4 md:p-5">
         {mounted ? (
-          <Engine key={toolId} preset={def.preset ?? {}} />
+          <Engine key={toolId} preset={startPreset(def.engine, def.preset)} />
         ) : (
           <div aria-hidden className="grid gap-3">
             <div className="h-28 animate-pulse rounded-md border border-dashed border-line" />

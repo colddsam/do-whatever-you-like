@@ -2480,22 +2480,16 @@ function PdfViewerView({ doc, blobUrl }: { doc: PdfDocInfo; blobUrl: string }) {
 
 /* ---------- Main Workbench Tool Component ---------- */
 
-const ACCEPT_BY_TOOL: Record<string, { label: string; types: string }> = {
-  "excel-viewer": { label: "XLSX, XLSM, ODS, CSV or TSV", types: ".xlsx,.xlsm,.xltx,.ods,.csv,.tsv,.xls" },
-  "csv-viewer": { label: "CSV or TSV files", types: ".csv,.tsv,.tab,.txt" },
-  "word-viewer": { label: "DOCX, ODT, RTF or Markdown", types: ".docx,.docm,.dotx,.odt,.rtf,.md,.txt,.doc" },
-  "powerpoint-viewer": { label: "PPTX, PPSX or ODP decks", types: ".pptx,.ppsx,.pptm,.odp,.ppt" },
-  "pdf-viewer": { label: "PDF documents", types: ".pdf,application/pdf" },
-  "document-viewer": {
-    label: "XLSX, CSV, DOCX, PPTX, PDF, ODT, ODS, ODP, RTF…",
-    types: ".xlsx,.xlsm,.ods,.csv,.tsv,.docx,.docm,.odt,.rtf,.pptx,.ppsx,.odp,.pdf,.xls,.doc,.ppt,.md,.txt",
-  },
+/** One viewer for every document; it picks the right reader for each file. */
+const ACCEPT = {
+  label: "XLSX, CSV, DOCX, PPTX, PDF, ODT, ODS, ODP, RTF…",
+  types: ".xlsx,.xlsm,.xltx,.ods,.csv,.tsv,.tab,.docx,.docm,.dotx,.odt,.rtf,.pptx,.ppsx,.pptm,.odp,.pdf,.xls,.doc,.ppt,.md,.txt",
 };
 
 export function DocumentViewerTool({ toolId }: { toolId: string }) {
   const tool = getTool(toolId);
   const steps = tool ? stepsFor(tool) : (["Add document", "Inspect or search", "Export"] as const);
-  const accept = ACCEPT_BY_TOOL[toolId] ?? ACCEPT_BY_TOOL["document-viewer"];
+  const accept = ACCEPT;
 
   const [doc, setDoc] = useState<ParsedDocument | null>(null);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);

@@ -103,7 +103,7 @@ maker's "IMG" swatch), which nobody needs to read.
 ## E1. Collections: how the toolbox is organised
 
 Every tool belongs to exactly one of nine **collections** (`CLUSTERS` in `lib/tools.ts`, `clusterOf()`):
-**Any file** (three groups), **PDF** (five groups), **Images** (five groups), **Developer** (ten groups,
+**Any file** (three groups), **PDF** (five groups), **Images** (five groups), **Developer** (seven groups,
 hub: Developer utilities), **Text** (four groups), **Design** (Fonts, Colour, CSS), **Downloads**, **Audio & video** and
 **Everyday** (Calculate & convert, Time & dates, Privacy & security, QR codes, Device & browser); Design's groups are Charts & diagrams, Fonts, Colour, CSS. The Developer, Text,
 Everyday and Design-CSS pages are generated from `lib/utilities/catalog.ts`: each

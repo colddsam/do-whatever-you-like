@@ -80,6 +80,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { DESIGN_GROUPS, DEV_GROUPS, ENGINE_INFO, EVERYDAY_GROUPS, TEXT_GROUPS, UTILITIES } from "@/lib/utilities/catalog";
+import { MERGED_TOOLS } from "./merged-tools";
 import { rankToolsForTask } from "./tool-search";
 
 export type ToolStatus = "live" | "soon";
@@ -282,6 +283,13 @@ const imageTools: Tool[] = [
   }),
   // Convert
   imageTool({
+    id: "convert-image", name: "Convert image", group: "Convert", icon: FileImage,
+    description: "Any image (HEIC, PNG, WebP, TIFF, PSD, SVG, RAW, JPG…) to JPG, PNG, WebP or GIF, or several into an animated GIF.",
+    takes: "HEIC, JPG, PNG, WebP, TIFF, PSD, SVG, RAW…", gives: "JPG, PNG, WebP, GIF or animated GIF", steps: ["Add images", "Pick a format", "Download"],
+    keywords: ["convert image", "image converter", "photo converter", "change image format"],
+    features: ["iPhone HEIC photos and camera RAW files", "JPG, PNG, WebP or GIF; Highest quality keeps every pixel", "Animated GIF from several images, in your order", "Up to 30 images at once"],
+  }),
+  imageTool({
     id: "convert-to-jpg", name: "Convert to JPG", group: "Convert", icon: FileImage,
     description: "HEIC, PNG, WebP, TIFF, PSD, SVG, RAW and more, to JPG.",
     takes: "HEIC, PNG, WebP, TIFF, PSD, SVG, RAW…", gives: "JPG images", steps: ["Add images", "Pick the quality", "Download"],
@@ -375,11 +383,11 @@ const pdfTools: Tool[] = [
     features: ["Up to 20 PDFs, 150 MB in total", "Drag to set the order", "Exact size shown before you merge"],
   }),
   pdfTool({
-    id: "split-pdf", name: "Split PDF", group: "Organize", icon: Scissors,
-    description: "Break a PDF into parts, or group pages your way.",
-    takes: "One PDF", gives: "PDFs in a ZIP", steps: ["Add a PDF", "Pick the pages", "Download"],
-    keywords: ["split", "separate", "divide", "break", "pages", "pdf"],
-    features: ["Every page on its own, or ranges you type", "Pick which pages go together on the page grid", "Each part's size before you split"],
+    id: "split-pdf", name: "Split & extract PDF pages", group: "Organize", icon: Scissors,
+    description: "Break a PDF into parts, or pull out just the pages you pick as a new PDF.",
+    takes: "One PDF", gives: "A PDF, or PDFs in a ZIP", steps: ["Add a PDF", "Pick the pages", "Download"],
+    keywords: ["split", "separate", "divide", "break", "pages", "pdf", "extract pages", "select pages"],
+    features: ["Every page on its own, or ranges you type", "Extract chosen pages into one new PDF", "Pick which pages go together on the page grid", "Each part's size before you split"],
   }),
   pdfTool({
     id: "remove-pages", name: "Remove pages", group: "Organize", icon: FileMinus,
@@ -396,11 +404,11 @@ const pdfTools: Tool[] = [
     features: ["Click pages or type ranges like 1-3, 7", "Put several pages in one PDF with +", "Preview the result before saving"],
   }),
   pdfTool({
-    id: "organize-pdf", name: "Organize PDF", group: "Organize", icon: LayoutGrid,
-    description: "Reorder, turn and remove pages, seeing each one.",
+    id: "organize-pdf", name: "Organize, rotate & remove PDF pages", group: "Organize", icon: LayoutGrid,
+    description: "Reorder, rotate and delete pages on a page grid, seeing each one.",
     takes: "One PDF", gives: "PDF", steps: ["Add a PDF", "Arrange the pages", "Download"],
     keywords: ["organize", "reorder", "rearrange", "sort", "move pages", "pdf"],
-    features: ["Drag pages into a new order", "Turn and remove pages", "Keyboard shortcuts for every action"],
+    features: ["Drag pages into a new order", "Rotate one page, a selection or all of them", "Remove pages, and put them back from the tray", "Keyboard shortcuts for every action"],
   }),
   pdfTool({
     id: "scan-to-pdf", name: "Scan to PDF", group: "Organize", icon: ScanLine,
@@ -563,7 +571,7 @@ const fileTools: Tool[] = [
   // View: instant in-browser readers for Office docs, spreadsheets, presentations, CSV and PDFs
   fileTool({
     id: "document-viewer", name: "Document viewer", group: "View", icon: Eye,
-    description: "Open Word, Excel, PowerPoint, CSV, ODF and PDF files right in your browser.",
+    description: "Open Word, Excel, PowerPoint, CSV, ODF and PDF files right in your browser: the right viewer is picked for each file.",
     takes: "DOCX, XLSX, PPTX, CSV, ODT, ODP, ODS, RTF or PDF",
     gives: "Interactive preview, search & clean exports",
     steps: ["Drop any document or pick a sample", "Read, inspect sheets or slides, or search", "Export clean CSV, JSON, Markdown or print"],
@@ -877,10 +885,10 @@ const devTabTools: Tool[] = [
   devTab("json-formatter", "json", "JSON formatter & validator", "XML & JSON", FileJson, "Format, validate, minify and browse JSON, with errors pointed out.", ["json formatter", "json beautifier", "json validator", "pretty print json", "json viewer", "json minify", "json lint", "json to csv"], ["Errors point to the line and column", "Beautify, minify, sort keys", "Browse it as a tree; JSON to CSV", "Nothing leaves your browser"]),
   devTab("jwt-decoder", "jwt", "JWT decoder", "Encode", KeySquare, "Decode a JSON Web Token's header and claims, and verify its signature.", ["jwt decoder", "jwt debugger", "decode jwt", "jwt verify", "json web token", "jwt parser", "bearer token"], ["Header, claims and expiry made readable", "Verify HS256/384/512 with your secret", "Nothing leaves your browser: safe for real tokens"]),
   devTab("base64-encoder", "base64", "Base64 encode & decode", "Encode", Binary, "Encode text or files to Base64, or decode it back, including data URLs.", ["base64 encode", "base64 decode", "base64 converter", "base64 to image", "image to base64", "data url", "base64url"], ["Text or files, both directions", "Standard and URL-safe Base64", "Decoded images previewed", "Nothing leaves your browser"]),
-  devTab("regex-tester", "regex", "Regex tester", "Validate", Regex, "Test a regular expression and see every match and group, live.", ["regex tester", "regular expression tester", "regex101", "regex match", "test regex online", "javascript regex"], ["Every match and capture group highlighted", "Flags: global, case, multiline, dotall, unicode", "Replace preview with $1 groups", "Live as you type"]),
+  devTab("regex-tester", "regex", "Regex tester", "Format & validate", Regex, "Test a regular expression and see every match and group, live.", ["regex tester", "regular expression tester", "regex101", "regex match", "test regex online", "javascript regex"], ["Every match and capture group highlighted", "Flags: global, case, multiline, dotall, unicode", "Replace preview with $1 groups", "Live as you type"]),
   devTab("timestamp-converter", "time", "Unix timestamp converter", "Encode", Clock, "Unix time to a date and back, in seconds or milliseconds, any time zone.", ["unix timestamp", "epoch converter", "timestamp to date", "date to timestamp", "unix time", "epoch time", "milliseconds to date"], ["Seconds or milliseconds, detected", "Local, UTC and ISO 8601", "Relative time (3 days ago)", "Live current timestamp"]),
   devTab("diff-checker", "diff", "Diff checker", "Edit & view", GitCompare, "Compare two texts and see exactly what was added, removed or changed.", ["diff checker", "text compare", "compare two texts", "diff tool", "find differences", "text diff online", "code compare"], ["Line and word differences highlighted", "Side by side or inline", "Ignore whitespace or case", "Nothing leaves your browser"]),
-  devTab("uuid-generator", "uuid", "UUID, ULID & NanoID generator", "Random data", Fingerprint, "Generate sortable UUID v7, ULID, UUID v4 or custom NanoIDs in bulk (up to 500).", ["uuid generator", "uuid v7", "ulid generator", "nanoid generator", "bulk uuid"], ["UUID v4, UUID v7, ULID and customizable NanoID", "Generate up to 500 IDs in one click", "Export as Lines, JSON array, CSV or SQL values", "Cryptographically random in your browser"]),
+  devTab("uuid-generator", "uuid", "UUID, ULID & NanoID generator", "Hash & random", Fingerprint, "Generate sortable UUID v7, ULID, UUID v4 or custom NanoIDs in bulk (up to 500).", ["uuid generator", "uuid v7", "ulid generator", "nanoid generator", "bulk uuid"], ["UUID v4, UUID v7, ULID and customizable NanoID", "Generate up to 500 IDs in one click", "Export as Lines, JSON array, CSV or SQL values", "Cryptographically random in your browser"]),
   devTab("url-encoder", "url", "URL encoder & query parser", "Encode", Link2, "Encode/decode URLs and edit URL query parameters in a live key-value table.", ["url encoder", "url decoder", "query string parser", "url params builder", "percent encoding"], ["Interactive key-value query parameter editor", "One-click sort, trim or remove empty parameters", "Full URL encode, decode and Query JSON preview", "Everything stays in your browser"]),
 ];
 
@@ -893,11 +901,7 @@ const ON_DEVICE = new Set([
   "font-creator",
   "dev",
   "contrast-checker",
-  "css-gradient-generator",
-  "box-shadow-generator",
-  "border-radius-generator",
-  "glassmorphism-generator",
-  "neumorphism-generator",
+  "css-generator",
   "svg-optimizer-jsx",
   "css-grid-flexbox-playground",
   "color-palette-scale-generator",
@@ -907,11 +911,6 @@ const ON_DEVICE = new Set([
   "audio-waveform-generator",
   "writing",
   "document-viewer",
-  "excel-viewer",
-  "word-viewer",
-  "powerpoint-viewer",
-  "pdf-viewer",
-  "csv-viewer",
   "3d-viewer",
 ]);
 
@@ -946,7 +945,6 @@ export const SERVER_HEAVY_TOOL_IDS = new Set<string>([
   "audio-to-text",
   "translator",
   "trim-media",
-  "split-media",
   "noise-remover",
   "audio-volume",
   "color-picker",
@@ -964,8 +962,6 @@ export const SERVER_HEAVY_TOOL_IDS = new Set<string>([
   "pdf",
   "merge-pdf",
   "split-pdf",
-  "remove-pages",
-  "extract-pages",
   "organize-pdf",
   "scan-to-pdf",
   "compress-pdf",
@@ -974,7 +970,6 @@ export const SERVER_HEAVY_TOOL_IDS = new Set<string>([
   "pdf-to-pdfa",
   "jpg-to-pdf",
   "html-to-pdf",
-  "rotate-pdf",
   "page-numbers",
   "watermark-pdf",
   "crop-pdf",
@@ -991,8 +986,7 @@ export const SERVER_HEAVY_TOOL_IDS = new Set<string>([
   "resize-image",
   "crop-image",
   "rotate-image",
-  "convert-to-jpg",
-  "jpg-to-image",
+  "convert-image",
   "html-to-image",
   "watermark-image",
   "blur-face",
@@ -1078,7 +1072,7 @@ const rawTools: Tool[] = [
   },
   {
     id: "trim-media",
-    name: "Video & audio trimmer",
+    name: "Trim & cut video or audio",
     category: "Edit",
     wide: true,
     description: "Cut a video or audio file cleanly or split it into multiple parts on a waveform timeline, in your chosen format.",
@@ -1365,16 +1359,16 @@ const rawTools: Tool[] = [
       "Finds emails, links, phone numbers, dates, numbers (with sum and average), hashtags and mentions",
       "Spots hidden zero-width characters, odd spaces, repeats, duplicate lines and broken brackets, with one-click fixes",
       "Find & replace with match case, whole words and regex, go to line, and highlights in the text",
-      "30 transforms (case, sort, dedupe, number, clean, JSON) on the whole note or just the selection, all undoable",
+      "30+ transforms (case, sort, dedupe, number, clean, JSON) on the whole note or just the selection, all undoable",
     ],
   },
   {
     id: "writing",
-    name: "Writing helper",
+    name: "Writing helper & summarizer",
     category: "Text",
     family: "text",
     group: "Analyze",
-    description: "Summarise long passages, rewrite tone and fix grammar right in your browser.",
+    description: "Summarise long text into key points, tighten and rewrite it, or fix grammar, right in your browser.",
     status: "live",
     icon: PenLine,
     kind: "text",
@@ -1733,7 +1727,22 @@ const rawTools: Tool[] = [
   ...utilityTools,
 ];
 
-export const tools: Tool[] = rawTools.map((tool) =>
+/**
+ * Pages folded into broader tools (lib/merged-tools.ts) leave the directory; their names and
+ * keywords move to the tool that replaced them, so searching "md5" or "csv viewer" still finds it.
+ */
+function foldMerged(list: Tool[]): Tool[] {
+  const absorbed = new Map<string, string[]>();
+  for (const t of list) {
+    const m = MERGED_TOOLS[t.id];
+    if (m) absorbed.set(m.to, [...(absorbed.get(m.to) ?? []), t.name.toLowerCase(), ...t.keywords]);
+  }
+  return list
+    .filter((t) => !MERGED_TOOLS[t.id])
+    .map((t) => (absorbed.has(t.id) ? { ...t, keywords: [...new Set([...t.keywords, ...absorbed.get(t.id)!])] } : t));
+}
+
+export const tools: Tool[] = foldMerged(rawTools).map((tool) =>
   SERVER_HEAVY_TOOL_IDS.has(tool.id) ? { ...tool, beta: true } : tool,
 );
 
@@ -1814,7 +1823,7 @@ export const CLUSTERS: Cluster[] = [
     icon: ImageIcon,
     hub: "image",
     groups: IMAGE_GROUPS,
-    featured: ["compress-image", "resize-image", "remove-background", "convert-to-jpg", "icon-maker", "upscale-image"],
+    featured: ["compress-image", "resize-image", "remove-background", "convert-image", "icon-maker", "upscale-image"],
   },
   {
     id: "developer",
@@ -1825,7 +1834,7 @@ export const CLUSTERS: Cluster[] = [
     icon: CodeSquare,
     hub: "dev",
     groups: DEV_GROUPS,
-    featured: ["dev", "markdown-editor", "javascript-formatter", "sql-formatter", "code-editor", "sha256-hash", "dns-lookup", "api-tester"],
+    featured: ["dev", "code-formatter", "json-formatter", "data-format-converter", "markdown-editor", "hash-generator", "dns-lookup", "api-tester"],
   },
   {
     id: "text",
@@ -1835,7 +1844,7 @@ export const CLUSTERS: Cluster[] = [
     blurb: "Smart notepad to paste, inspect & clean text, free text, audio & video translator, username generator & checker, WhatsApp chat insights, binary/Morse converters and summaries.",
     icon: WholeWord,
     groups: TEXT_GROUPS,
-    featured: ["notepad", "translator", "username-generator", "whatsapp-chat-analyzer", "text-to-binary", "number-to-words", "morse-code", "text-summarizer"],
+    featured: ["notepad", "translator", "username-generator", "whatsapp-chat-analyzer", "text-to-binary", "number-to-words", "morse-code", "writing"],
   },
   {
     id: "design",
@@ -1845,7 +1854,7 @@ export const CLUSTERS: Cluster[] = [
     blurb: "Make charts and flowcharts, check and make fonts, pick colours, check contrast, and generate CSS.",
     icon: Type,
     groups: DESIGN_GROUPS,
-    featured: ["chart-maker", "flowchart-maker", "font-checker", "color-picker", "contrast-checker", "css-gradient-generator"],
+    featured: ["chart-maker", "flowchart-maker", "font-checker", "color-picker", "contrast-checker", "css-generator"],
   },
   {
     id: "downloads",
@@ -1863,7 +1872,7 @@ export const CLUSTERS: Cluster[] = [
     noun: "audio and video",
     blurb: "Trim, clean up, boost and record; subtitles, sound out of video, speech into text, frames and GIFs.",
     icon: AudioLines,
-    featured: ["trim-media", "split-media", "noise-remover", "screen-recorder", "audio", "audio-to-text", "audio-volume", "subtitle-editor", "video-to-gif"],
+    featured: ["trim-media", "noise-remover", "screen-recorder", "audio", "audio-to-text", "audio-volume", "subtitle-editor", "video-to-gif"],
   },
   {
     id: "utilities",
@@ -1873,7 +1882,7 @@ export const CLUSTERS: Cluster[] = [
     blurb: "A private period tracker, converters, clocks and timers, passwords and privacy, QR codes, and device checks.",
     icon: Monitor,
     groups: EVERYDAY_GROUPS,
-    featured: ["period-tracker", "unit-converter", "currency-converter", "qr", "password-generator", "world-clock", "age-calculator", "pomodoro-timer"],
+    featured: ["period-tracker", "unit-converter", "qr", "password-generator", "world-clock", "age-calculator", "stopwatch", "emi-sip-calculator"],
   },
 ];
 
@@ -1896,7 +1905,6 @@ const CLUSTER_OF: Record<string, ClusterId> = {
   "video-to-frames": "media",
   "video-to-gif": "media",
   "trim-media": "media",
-  "split-media": "media",
   "audio-volume": "media",
   "noise-remover": "media",
   "screen-recorder": "media",

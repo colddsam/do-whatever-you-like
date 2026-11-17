@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { MERGED_TOOLS, mergedHref } from "./src/lib/merged-tools";
 
 /**
  * Security headers for every response. Deliberately no script-src/style-src CSP: the tools rely on
@@ -23,6 +24,11 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
+  },
+  // Pages folded into broader tools (src/lib/merged-tools.ts) move permanently, opening the new
+  // tool on the same mode, so old links and search results keep working.
+  async redirects() {
+    return Object.keys(MERGED_TOOLS).map((id) => ({ source: `/tools/${id}`, destination: mergedHref(id)!, permanent: true }));
   },
   cacheComponents: true,
   partialPrefetching: true,

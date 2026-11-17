@@ -9,6 +9,7 @@
  * workspace footers. No FAQPage schema: these are for readers, not rich results.
  */
 import { getUtility } from "@/lib/utilities/catalog";
+import { MERGED_TOOLS } from "@/lib/merged-tools";
 import { stepsFor, type Tool } from "@/lib/tools";
 
 export type Faq = { q: string; a: string };
@@ -38,6 +39,94 @@ const RETAIN_PDF = "Your PDF is kept on our server for 30 minutes after you last
 const RIGHTS = "Only download content you own or have permission to use. The tool works with public posts only: nothing private, paywalled or behind a login.";
 
 const GUIDES: Record<string, Guide> = {
+  notepad: {
+    intro: [
+      "Smart notepad is a place to paste text and see what's in it. As you type, the inspector counts words, characters, lines and reading time, tells you what the text is (JSON, CSV, Markdown, a list…) and pulls out every email, link, phone number, date, number, hashtag and mention.",
+      "It also finds what you can't see: zero-width characters, non-breaking spaces, stray spaces, repeated words, duplicate lines and unbalanced brackets, each with a one-click fix. Find & replace (with regex), sorting, de-duplicating, numbering and case changes work on the whole note or just your selection, and Ctrl+Z undoes all of them.",
+    ],
+    faqs: [
+      { q: "Where are my notes saved?", a: "In this browser's local storage, as you type. Nothing is uploaded, and other people can't see them. Clearing your browser data removes them, so download a copy of anything important." },
+      { q: "Can I find and replace with a regular expression?", a: "Yes. Press Ctrl+H, turn on the regex button, and use $1, $2 in the replacement for groups. Match case, whole words and Keep capitals are there too." },
+      { q: "How do I remove hidden characters copied from a PDF or an AI chat?", a: "Open the Issues tab: hidden characters show as red bars in the text, and Remove (or Fix all) strips them along with odd spaces and curly quotes." },
+      { q: "Can I sort or de-duplicate only part of the text?", a: "Yes. Select the lines first; every transform applies to the selection when there is one, and to the whole note when there isn't." },
+    ],
+    see: ["word-counter", "writing", "diff-checker"],
+  },
+  "css-generator": {
+    intro: [
+      "CSS generator makes gradients, box shadows, border radius, glassmorphism and neumorphism with a live preview. Pick what you're making at the top, adjust it with sliders and colours, and copy CSS that works in every current browser.",
+    ],
+    faqs: [
+      { q: "What can I make here?", a: "Linear, radial and conic gradients; layered box shadows (including inset); per-corner border radius; frosted-glass (glassmorphism) panels; and soft extruded (neumorphism) surfaces." },
+      { q: "Does the CSS need vendor prefixes?", a: "No. The output uses standard properties supported by current Chrome, Edge, Firefox and Safari." },
+    ],
+    see: ["color-picker", "contrast-checker", "color-palette-scale-generator"],
+  },
+  "hash-generator": {
+    intro: [
+      "Hash generator computes MD5, SHA-1, SHA-2 (224/256/384/512 and 512/224, 512/256), SHA-3, SHAKE, MD2, MD4, NTLM, CRC-16 and CRC-32 of text or a file, in your browser. Pick one algorithm, or All at once to see every digest side by side.",
+      "Turn on HMAC to sign with a secret key, and paste an expected digest to check a download hasn't been changed.",
+    ],
+    faqs: [
+      { q: "Is my file uploaded?", a: "No. Files and text are hashed on your device; nothing leaves your browser." },
+      { q: "Which algorithm should I use?", a: "SHA-256 for checksums and integrity. MD5 and SHA-1 are fine for matching files but are broken for security, so don't use them for passwords or signatures." },
+      { q: "Can I hash a password for storage here?", a: "Use a slow password hash (bcrypt, Argon2) in your app for that. For WordPress there's a separate WordPress password hash tool." },
+    ],
+    see: ["wordpress-hash", "base64-encoder", "password-generator"],
+  },
+  "random-generator": {
+    intro: [
+      "Random data generator makes as many random values as you need: integers and decimals in a range, fractions, primes, strings, letters, hex, binary and bytes, dates and times, IP and MAC addresses, mock JSON, CSV, TSV and XML records, strings matching a regular expression, and noise bitmaps.",
+      "Values come from your browser's cryptographic random generator, so they're suitable for test data, IDs and draws.",
+    ],
+    faqs: [
+      { q: "How many values can I make at once?", a: "Up to 500 per batch (50 for random bytes); copy them, or press again for a new batch." },
+      { q: "Can I make realistic test data?", a: "Yes. The JSON, CSV, TSV and XML kinds generate records with names, emails, numbers and dates you can paste straight into a test." },
+    ],
+    see: ["random-name-picker", "uuid-generator", "password-generator"],
+  },
+  "code-formatter": {
+    intro: [
+      "Code formatter beautifies HTML, CSS, JavaScript, TypeScript, JSX, Angular templates, XML, PHP, Java, SQL, YAML and Markdown with Prettier (and sql-formatter for SQL). Pick the language, paste your code and copy the result; indentation, quotes and SQL keyword case are adjustable.",
+    ],
+    faqs: [
+      { q: "Is my code sent anywhere?", a: "No. Formatting runs entirely in your browser." },
+      { q: "What if my code has a syntax error?", a: "The formatter points to the line and column it couldn't read, so you can fix it and try again." },
+    ],
+    see: ["code-minifier", "code-validator", "json-formatter"],
+  },
+  "code-minifier": {
+    intro: [
+      "Code minifier makes JavaScript, CSS or HTML as small as possible by removing whitespace and comments (and shortening names in JavaScript), and shows how many bytes were saved.",
+    ],
+    faqs: [
+      { q: "Will minifying change how my code works?", a: "No. Only whitespace, comments and safe renames are changed; keep the original for editing." },
+      { q: "Is my code uploaded?", a: "No. It's minified in your browser." },
+    ],
+    see: ["code-formatter", "code-validator", "svg-optimizer-jsx"],
+  },
+  "code-validator": {
+    intro: [
+      "Code validator checks JavaScript (and JSX or jQuery), CSS, XML or YAML for syntax errors and shows each one with its line and column, so you can fix broken code before it ships.",
+    ],
+    faqs: [
+      { q: "Does it check style too?", a: "It reports syntax errors: the things that stop code from running or parsing. For tidy formatting, use the code formatter." },
+      { q: "Can it check XML against a schema?", a: "For that, use the XSD validator; this checks that the XML is well-formed." },
+    ],
+    see: ["code-formatter", "xsd-validator", "json-formatter"],
+  },
+  "convert-image": {
+    intro: [
+      "Convert image turns any picture into JPG, PNG, WebP or GIF: iPhone HEIC photos, camera RAW files, PSD, TIFF, SVG, BMP, AVIF and the usual web formats. Several images can also become one animated GIF, in the order you set.",
+      "JPG has a Recommended or Highest quality setting and a colour for transparent areas; PNG and WebP keep every pixel.",
+    ],
+    faqs: [
+      { q: "How do I convert an iPhone HEIC photo to JPG?", a: "Drop the HEIC files in, keep JPG selected and press Convert. Up to 30 images at once." },
+      { q: "How do I make an animated GIF from photos?", a: "Pick Animated GIF, add two or more images, reorder them with the arrows, then set the seconds per frame and looping." },
+      { q: "Are my images kept?", a: "No. They're converted on our server and deleted as soon as the result is sent." },
+    ],
+    see: ["compress-image", "resize-image", "convert-anything"],
+  },
   "merge-pdf": {
     intro: [
       "Merge PDF joins 2 to 20 PDF files into one document, in the order you choose. Drag the files to reorder them, and the size of the combined file is shown before you merge, so there are no surprises.",
@@ -73,7 +162,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Can I take out just a few pages?", a: "Yes. Type the pages you want, or use Extract pages to save chosen pages as a single new PDF." },
       { q: "What happens to my file?", a: RETAIN_PDF },
     ],
-    see: ["extract-pages", "remove-pages", "merge-pdf", "organize-pdf"],
+    see: ["split-pdf", "organize-pdf", "merge-pdf"],
   },
   "pdf-to-word": {
     intro: [
@@ -135,7 +224,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Can I compress several images at once?", a: "Yes. Add several images and each one shows its own before and after size." },
       { q: "What happens to my images?", a: "They're compressed on our server and deleted as soon as the result is sent." },
     ],
-    see: ["resize-image", "convert-to-jpg", "crop-image", "compress-pdf"],
+    see: ["resize-image", "convert-image", "crop-image", "compress-pdf"],
   },
   "remove-background": {
     intro: [
@@ -243,7 +332,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Can I export true pixel-art dimensions?", a: "Yes, you can export at pixel-art size for sprites as well as full-resolution PNG, JPG, or WebP." },
       { q: "Does my image leave my device?", a: "No. Pixelation runs entirely in your browser." },
     ],
-    see: ["blur-faces", "crop-image", "compress-image"],
+    see: ["blur-face", "crop-image", "compress-image"],
   },
   "gif-speed": {
     intro: [
@@ -281,17 +370,6 @@ const GUIDES: Record<string, Guide> = {
     ],
     see: ["gif-speed", "video-to-frames", "audio"],
   },
-  "find-and-replace": {
-    intro: [
-      "Search and replace text in your browser with every match highlighted, counted, and shown with its line number. Toggle case matching, whole words, or full regular expressions with capture groups ($1).",
-      "Smart case preservation can even match capitalization automatically—for example turning Fox into Cat and FOX into CAT.",
-    ],
-    faqs: [
-      { q: "Does it support regular expressions?", a: "Yes. You can switch on regex mode and use capture groups like $1 in the replacement." },
-      { q: "Is my text sent anywhere?", a: "No. Everything runs locally in your browser." },
-    ],
-    see: ["split-text", "line-tools", "regex-tester"],
-  },
   "split-text": {
     intro: [
       "Split any block of text into clean pieces by lines, commas, spaces, sentences, words, characters, a custom separator, a regex, or every N characters.",
@@ -301,7 +379,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Can I convert a comma-separated list into JSON or lines?", a: "Yes. Split by commas, optionally trim and deduplicate, and export as lines, JSON, CSV, or a quoted list." },
       { q: "Does my text stay private?", a: "Yes. Splitting and formatting happen entirely in your browser." },
     ],
-    see: ["find-and-replace", "line-tools", "json-formatter"],
+    see: ["notepad", "json-formatter"],
   },
   "scientific-calculator": {
     intro: [
@@ -324,19 +402,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Can I pick a different output format?", a: "Yes. Export in the original format, MP4, MOV, MKV, WebM, animated GIF, or extract audio directly to MP3, M4A, WAV, FLAC, OGG or OPUS." },
       { q: "What happens to my file?", a: "Files are processed on our server and deleted immediately after your download is sent." },
     ],
-    see: ["split-media", "audio-volume", "noise-remover", "video-to-gif"],
-  },
-  "split-media": {
-    intro: [
-      "Split any video or audio recording into multiple clips on a live waveform timeline. Play your file and click 'Add cut' (or press C) wherever a new part should begin, auto-slice by equal count or seconds, drag boundaries by eye, and toggle Keep or Skip on each segment.",
-      "Download every kept clip separately in one ZIP (with inline preview for every clip right in your browser) or merge kept clips back-to-back into a single edited file in your chosen format.",
-    ],
-    faqs: [
-      { q: "How do I remove middle parts like pauses or ads?", a: "Drop cut markers before and after the section you want to drop, click 'Skip' on that segment, and choose 'Merge kept parts into 1 file'." },
-      { q: "Which formats can I save to?", a: "Keep the original format with zero re-encoding, or export to MP4, MOV, MKV, WebM, GIF, MP3, M4A, WAV, FLAC, OGG or OPUS." },
-      { q: "Can I preview individual parts before downloading the ZIP?", a: "Yes. Small and medium ZIP outputs unpack cleanly in your browser so you can play and save any single clip." },
-    ],
-    see: ["trim-media", "merge-files", "audio-volume", "noise-remover"],
+    see: ["trim-media", "audio-volume", "noise-remover", "video-to-gif"],
   },
   "3d-viewer": {
     intro: [
@@ -427,37 +493,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "What ratio is needed for WCAG AA and AAA?", a: "WCAG AA requires 4.5:1 for normal text and 3:1 for large text or UI components. AAA requires 7:1 for normal text and 4.5:1 for large text." },
       { q: "Does it handle semi-transparent colours?", a: "Yes. Alpha transparency is composited over the background before calculating the contrast ratio." },
     ],
-    see: ["color-picker", "css-gradient-generator", "font-checker"],
-  },
-  "css-gradient-generator": {
-    intro: [
-      "Design linear, radial, and conic CSS gradients visually with any number of colour stops, angles, and positions. Preview the result live and copy clean, standard CSS in one click.",
-    ],
-    faqs: [
-      { q: "Which gradient types are supported?", a: "Linear, radial, and conic CSS gradients with multiple colour stops." },
-      { q: "Does it work in all modern browsers?", a: "Yes. It outputs standard CSS linear-gradient(), radial-gradient(), and conic-gradient() syntax." },
-    ],
-    see: ["box-shadow-generator", "border-radius-generator", "contrast-checker"],
-  },
-  "box-shadow-generator": {
-    intro: [
-      "Craft layered, soft, or crisp CSS box shadows with live controls for offset, blur, spread, colour, opacity, and inset mode. Stack multiple shadow layers and copy ready-to-paste CSS.",
-    ],
-    faqs: [
-      { q: "Can I layer multiple shadows?", a: "Yes. You can combine multiple shadow layers for realistic depth." },
-      { q: "Are inset shadows supported?", a: "Yes. Toggle inset on any shadow layer." },
-    ],
-    see: ["border-radius-generator", "css-gradient-generator", "contrast-checker"],
-  },
-  "border-radius-generator": {
-    intro: [
-      "Adjust all four corners together or individually, or switch to 8-value organic CSS blob shapes with a live preview. Copy the exact `border-radius` CSS rule in one click.",
-    ],
-    faqs: [
-      { q: "Can I make organic CSS blob shapes?", a: "Yes. Use the 8-value border-radius controls to shape smooth organic blobs." },
-      { q: "Can I control each corner separately?", a: "Yes. Toggle individual corner controls for asymmetric shapes." },
-    ],
-    see: ["box-shadow-generator", "css-gradient-generator", "crop-image"],
+    see: ["color-picker", "css-generator", "font-checker"],
   },
   "json-formatter": {
     intro: [
@@ -467,7 +503,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Is my JSON sent to a server?", a: "No. Parsing, formatting, and validation run 100% in your browser." },
       { q: "Can I convert JSON to CSV?", a: "Yes. Arrays of JSON objects can be exported directly as CSV." },
     ],
-    see: ["jsonpath", "yaml-formatter", "diff-checker"],
+    see: ["jsonpath-tester", "code-formatter", "diff-checker"],
   },
   "jwt-decoder": {
     intro: [
@@ -477,7 +513,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Is it safe to paste real JWTs here?", a: "Yes. Decoding and signature verification run locally in your browser—nothing is sent to any server." },
       { q: "Which signature algorithms can it verify?", a: "HS256, HS384, and HS512 HMAC signatures using your secret." },
     ],
-    see: ["base64-encoder", "hmac-generator", "json-formatter"],
+    see: ["base64-encoder", "hash-generator", "json-formatter"],
   },
   "base64-encoder": {
     intro: [
@@ -487,7 +523,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Does it support URL-safe Base64?", a: "Yes. Switch between standard Base64 and URL-safe Base64url." },
       { q: "Can I preview decoded Base64 images?", a: "Yes. Image data URLs and Base64-encoded images preview right in the browser." },
     ],
-    see: ["jwt-decoder", "url-encoder", "sha256-hash"],
+    see: ["jwt-decoder", "url-encoder", "hash-generator"],
   },
   "regex-tester": {
     intro: [
@@ -497,7 +533,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Does it show capture groups?", a: "Yes. Every match and numbered capture group is highlighted." },
       { q: "Can I test find-and-replace patterns?", a: "Yes. Use the replacement preview with `$1` group references." },
     ],
-    see: ["find-and-replace", "random-regex", "diff-checker"],
+    see: ["notepad", "random-generator", "diff-checker"],
   },
   "timestamp-converter": {
     intro: [
@@ -507,7 +543,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Does it detect seconds vs milliseconds?", a: "Yes. 10-digit seconds and 13-digit millisecond timestamps are detected automatically." },
       { q: "Can I see the current live Unix timestamp?", a: "Yes. The live current epoch timestamp updates in real time." },
     ],
-    see: ["world-clock", "cron-explainer", "date-calculator"],
+    see: ["world-clock", "cron-explainer", "age-calculator"],
   },
   "diff-checker": {
     intro: [
@@ -517,7 +553,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Can I ignore whitespace or case differences?", a: "Yes. Toggle whitespace and case sensitivity options to focus on meaningful changes." },
       { q: "Is my code uploaded?", a: "No. Text comparison runs locally in your browser." },
     ],
-    see: ["compare-pdf", "json-formatter", "find-and-replace"],
+    see: ["compare-pdf", "json-formatter", "notepad"],
   },
   "cron-explainer": {
     intro: [
@@ -547,17 +583,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "How many unit categories are supported?", a: "12 categories, showing conversions to every unit in that category simultaneously." },
       { q: "Can I convert currencies too?", a: "Yes. Use the Currency converter for 30 currencies at daily ECB reference rates." },
     ],
-    see: ["currency-converter", "scientific-calculator", "date-calculator"],
-  },
-  "currency-converter": {
-    intro: [
-      "Convert between 30 world currencies using the European Central Bank's daily reference exchange rates. Type any amount to see instant conversions across currencies.",
-    ],
-    faqs: [
-      { q: "Where do the exchange rates come from?", a: "They use the European Central Bank's daily reference rates." },
-      { q: "Is it free to use?", a: "Yes, completely free with no sign-up." },
-    ],
-    see: ["unit-converter", "scientific-calculator", "number-to-words"],
+    see: ["unit-converter", "scientific-calculator", "age-calculator"],
   },
   "world-clock": {
     intro: [
@@ -567,17 +593,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Does it handle daylight saving time automatically?", a: "Yes. It uses standard IANA time zones with current DST rules." },
       { q: "Can I plan meetings across time zones?", a: "Yes. Pick a proposed time in any city to compare local hours across all added cities." },
     ],
-    see: ["timestamp-converter", "date-calculator", "pomodoro-timer"],
-  },
-  "pomodoro-timer": {
-    intro: [
-      "Stay focused with 25-minute work intervals, short breaks, and long breaks, complete with a subtle chime and the remaining time shown right in your browser tab title so it keeps accurate time in the background.",
-    ],
-    faqs: [
-      { q: "Does the timer keep running if I switch tabs?", a: "Yes. It tracks elapsed wall-clock time and updates your browser tab title." },
-      { q: "Can I adjust focus and break lengths?", a: "Yes, you can customise work and break durations." },
-    ],
-    see: ["stopwatch", "world-clock", "date-calculator"],
+    see: ["timestamp-converter", "age-calculator", "stopwatch"],
   },
   stopwatch: {
     intro: [
@@ -587,7 +603,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Does it highlight best and worst laps?", a: "Yes. Fastest and slowest lap splits are automatically marked." },
       { q: "Does the countdown timer play an alarm?", a: "Yes, it plays a chime when the countdown finishes." },
     ],
-    see: ["pomodoro-timer", "world-clock", "date-calculator"],
+    see: ["stopwatch", "world-clock", "age-calculator"],
   },
   "age-calculator": {
     intro: [
@@ -596,16 +612,6 @@ const GUIDES: Record<string, Guide> = {
     faqs: [
       { q: "Does it handle leap-year birthdays?", a: "Yes. Leap years and varying month lengths are handled accurately." },
       { q: "Can I calculate days between two arbitrary dates?", a: "Yes. Use the Date calculator for spans, business days, and adding or subtracting days." },
-    ],
-    see: ["date-calculator", "world-clock", "timestamp-converter"],
-  },
-  "date-calculator": {
-    intro: [
-      "Find the exact days, weeks, and business days between any two dates, or add and subtract days, weeks, months, years, or working days from a starting date—all in your browser.",
-    ],
-    faqs: [
-      { q: "Can it count business days only?", a: "Yes. Both date-difference and add/subtract modes support business days." },
-      { q: "Are leap years handled?", a: "Yes, calendar leap years and month-end rules are handled automatically." },
     ],
     see: ["age-calculator", "world-clock", "timestamp-converter"],
   },
@@ -617,7 +623,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Is my password sent to any server?", a: "No. Generation (via Web Crypto) and strength checking run 100% locally in your browser." },
       { q: "What is a passphrase?", a: "A sequence of random dictionary words (from the EFF 7,776-word list) that is easier to type and remember than random symbols while staying high-entropy." },
     ],
-    see: ["encrypt-note", "sha256-hash", "random-string"],
+    see: ["encrypt-note", "hash-generator", "random-generator"],
   },
   "encrypt-note": {
     intro: [
@@ -627,7 +633,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Can the server read my encrypted note or link?", a: "No. Encryption happens in your browser, and shareable links put the ciphertext after the `#` URL fragment, which browsers never send to servers." },
       { q: "What encryption standard is used?", a: "AES-256-GCM authenticated encryption with PBKDF2-SHA256 (600,000 iterations)." },
     ],
-    see: ["password-generator", "sha256-hash", "base64-encoder"],
+    see: ["password-generator", "hash-generator", "base64-encoder"],
   },
   "exif-remover": {
     intro: [
@@ -637,7 +643,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Does removing EXIF metadata reduce photo quality?", a: "No. Metadata is stripped losslessly from JPG, PNG, and WebP without re-compressing pixels, while keeping orientation and colour profiles intact." },
       { q: "Are my photos uploaded?", a: "No. Metadata inspection and removal run locally in your browser." },
     ],
-    see: ["compress-image", "blur-faces", "pixelate-image"],
+    see: ["compress-image", "blur-face", "pixelate-image"],
   },
   "qr-scanner": {
     intro: [
@@ -679,7 +685,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Can I lock it with a PIN?", a: "Yes. You can enable an optional PIN lock encrypted with AES-256 on your device." },
       { q: "Can I back up or delete all my data?", a: "Yes. Export a JSON backup anytime to move between devices, or erase everything with one tap." },
     ],
-    see: ["date-calculator", "age-calculator", "encrypt-note"],
+    see: ["age-calculator", "encrypt-note"],
   },
   translator: {
     intro: [
@@ -703,7 +709,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Which WhatsApp export formats and languages work?", a: "Both iOS [date, time] and Android date, time - exports (as .txt or .zip with media), 12h/24h clocks, DMY/MDY/YMD date order (auto-detected with manual override), localized AM/PM and digits, RTL Arabic/Hebrew, Hindi, CJK, and emojis." },
       { q: "Can I export the statistics?", a: "Yes. Download full JSON analytics, Excel-ready UTF-8 CSV tables, a self-contained printable HTML report, or copy a text summary." },
     ],
-    see: ["text-summarizer", "diff-checker", "chart-maker"],
+    see: ["writing", "diff-checker", "chart-maker"],
   },
   "image-to-svg": {
     intro: [
@@ -753,7 +759,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Does it show reading time and readability?", a: "Yes. It calculates estimated reading time and the Flesch readability score live." },
       { q: "Is my text stored anywhere?", a: "No. Counting runs locally in your browser." },
     ],
-    see: ["text-summarizer", "case-converter", "find-and-replace"],
+    see: ["writing", "case-converter", "notepad"],
   },
   "case-converter": {
     intro: [
@@ -763,7 +769,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Which case styles are supported?", a: "camelCase, snake_case, kebab-case, PascalCase, Title Case, UPPERCASE, and lowercase." },
       { q: "Does it run locally?", a: "Yes, 100% in your browser." },
     ],
-    see: ["word-counter", "split-text", "find-and-replace"],
+    see: ["word-counter", "split-text", "notepad"],
   },
   "list-comparator": {
     intro: [
@@ -773,17 +779,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Which set operations are included?", a: "A only, B only, intersection (common items), union (combined), and symmetric difference." },
       { q: "Are my lists sent to a server?", a: "No. Comparison runs locally in your browser." },
     ],
-    see: ["diff-checker", "line-tools", "split-text"],
-  },
-  "invisible-character-cleaner": {
-    intro: [
-      "Detect and strip hidden zero-width spaces, non-breaking spaces, soft hyphens, and curly smart quotes from pasted AI, PDF, or word-processor text right in your browser.",
-    ],
-    faqs: [
-      { q: "What characters does it remove?", a: "Zero-width spaces, non-breaking spaces, soft hyphens, and curly quotes (converted to straight quotes)." },
-      { q: "Is my text uploaded?", a: "No. Cleaning runs locally in your browser." },
-    ],
-    see: ["find-and-replace", "word-counter", "markdown-editor"],
+    see: ["diff-checker", "notepad", "split-text"],
   },
   "username-generator": {
     intro: [
@@ -814,87 +810,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Which formats can I convert between?", a: "JSON, CSV, YAML, XML, HTML, and Markdown." },
       { q: "Is my data sent to a server?", a: "No. Conversion runs locally in your browser." },
     ],
-    see: ["json-to-csv", "json-to-yaml", "sqlite-csv-parquet-viewer"],
-  },
-  "json-to-csv": {
-    intro: [
-      "Flatten JSON arrays into clean RFC 4180 CSV tables with a live table preview right in your browser.",
-    ],
-    faqs: [
-      { q: "Does it handle nested JSON fields?", a: "Yes. JSON arrays are flattened into clean RFC 4180 CSV columns." },
-      { q: "Is my JSON uploaded?", a: "No. Everything runs in your browser." },
-    ],
-    see: ["csv-to-json", "json-formatter", "sqlite-csv-parquet-viewer"],
-  },
-  "csv-to-json": {
-    intro: [
-      "Parse CSV spreadsheets—including quoted fields and commas inside cells—into structured JSON right in your browser.",
-    ],
-    faqs: [
-      { q: "Does it handle quoted CSV fields?", a: "Yes. Standard RFC 4180 quoted fields and line breaks are parsed cleanly." },
-      { q: "Is my CSV uploaded?", a: "No. Parsing runs locally in your browser." },
-    ],
-    see: ["json-to-csv", "json-formatter", "sqlite-csv-parquet-viewer"],
-  },
-  "json-to-yaml": {
-    intro: [
-      "Convert JSON objects and arrays into clean, properly indented YAML in your browser.",
-    ],
-    faqs: [
-      { q: "Is my JSON sent anywhere?", a: "No. Conversion happens locally in your browser." },
-      { q: "Can I convert YAML back to JSON?", a: "Yes. Use the YAML to JSON converter." },
-    ],
-    see: ["yaml-to-json", "json-formatter", "data-format-converter"],
-  },
-  "yaml-to-json": {
-    intro: [
-      "Parse YAML configs, Docker Compose files, and Kubernetes manifests into formatted JSON right in your browser.",
-    ],
-    faqs: [
-      { q: "Is it safe for config files?", a: "Yes. Parsing runs locally in your browser and nothing is sent to a server." },
-      { q: "Can I convert JSON back to YAML?", a: "Yes. Use the JSON to YAML converter." },
-    ],
-    see: ["json-to-yaml", "json-formatter", "diff-checker"],
-  },
-  "json-to-xml": {
-    intro: [
-      "Serialise JSON objects and arrays into formatted XML trees right in your browser.",
-    ],
-    faqs: [
-      { q: "Is my JSON uploaded?", a: "No. Conversion runs locally in your browser." },
-      { q: "Can I convert XML back to JSON?", a: "Yes. Use the XML to JSON converter." },
-    ],
-    see: ["xml-to-json", "xml-viewer", "json-formatter"],
-  },
-  "xml-to-json": {
-    intro: [
-      "Convert XML elements and attributes into clean, structured JSON right in your browser.",
-    ],
-    faqs: [
-      { q: "Are XML attributes preserved?", a: "Yes. Elements and attributes are mapped cleanly into JSON." },
-      { q: "Is my XML uploaded?", a: "No. Parsing runs locally in your browser." },
-    ],
-    see: ["json-to-xml", "xml-viewer", "xpath-tester"],
-  },
-  "html-to-markdown": {
-    intro: [
-      "Convert pasted HTML markup into clean CommonMark Markdown right in your browser.",
-    ],
-    faqs: [
-      { q: "Does it keep headings, links, and lists?", a: "Yes. Standard HTML headings, links, lists, code blocks, and emphasis convert cleanly to CommonMark Markdown." },
-      { q: "Is my HTML uploaded?", a: "No. Conversion runs locally in your browser." },
-    ],
-    see: ["markdown-to-html", "markdown-editor", "html-viewer"],
-  },
-  "markdown-to-html": {
-    intro: [
-      "Render CommonMark and GitHub-flavoured Markdown into sanitised, semantic HTML right in your browser.",
-    ],
-    faqs: [
-      { q: "Is the output HTML sanitised?", a: "Yes. It produces clean, sanitised semantic HTML." },
-      { q: "Is my Markdown uploaded?", a: "No. Rendering runs locally in your browser." },
-    ],
-    see: ["html-to-markdown", "markdown-editor", "html-viewer"],
+    see: ["data-format-converter", "sqlite-csv-parquet-viewer"],
   },
   "json-sql-to-types": {
     intro: [
@@ -904,7 +820,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Which target languages and schemas are supported?", a: "TypeScript interfaces, Zod schemas, Python Pydantic models, and Go structs." },
       { q: "Can I paste a SQL CREATE TABLE statement?", a: "Yes. Both sample JSON and SQL CREATE TABLE inputs are supported." },
     ],
-    see: ["json-formatter", "sql-formatter", "diff-checker"],
+    see: ["json-formatter", "code-formatter", "diff-checker"],
   },
   "chmod-calculator": {
     intro: [
@@ -914,7 +830,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "What does chmod 755 mean?", a: "Owner has read, write, and execute (7), while group and public have read and execute (5)." },
       { q: "Does it show symbolic notation too?", a: "Yes. It updates octal, symbolic (`-rwxr-xr-x`), and the `chmod` command live." },
     ],
-    see: ["cron-explainer", "base64-encoder", "sha256-hash"],
+    see: ["cron-explainer", "base64-encoder", "hash-generator"],
   },
   "sqlite-csv-parquet-viewer": {
     intro: [
@@ -924,7 +840,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Which file formats can I query with SQL?", a: "SQLite (.sqlite, .db), Parquet, CSV, TSV, and JSON files." },
       { q: "Is my database file uploaded?", a: "No. Schema inspection and SQL queries run locally in your browser." },
     ],
-    see: ["json-to-csv", "csv-to-json", "json-sql-to-types"],
+    see: ["data-format-converter", "json-sql-to-types"],
   },
   "emi-sip-calculator": {
     intro: [
@@ -933,16 +849,6 @@ const GUIDES: Record<string, Guide> = {
     faqs: [
       { q: "Can I include loan prepayments?", a: "Yes. You can model prepayments to see how much interest and tenure you save." },
       { q: "Is any financial data saved on a server?", a: "No. Calculations run locally in your browser." },
-    ],
-    see: ["sip-calculator", "gst-percentage-calculator", "scientific-calculator"],
-  },
-  "sip-calculator": {
-    intro: [
-      "Estimate mutual fund SIP returns with optional annual step-up percentages and inflation adjustment right in your browser.",
-    ],
-    faqs: [
-      { q: "Does it support annual SIP step-up?", a: "Yes. You can model yearly step-up increases and inflation-adjusted real value." },
-      { q: "Is my data sent anywhere?", a: "No. Everything is calculated locally in your browser." },
     ],
     see: ["emi-sip-calculator", "gst-percentage-calculator", "scientific-calculator"],
   },
@@ -964,7 +870,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "How does it minimise group transfers?", a: "It calculates net balances for everyone and settles debts in the fewest possible payments." },
       { q: "Can I share the split on WhatsApp?", a: "Yes. Copy a clean formatted breakdown ready to paste into WhatsApp." },
     ],
-    see: ["gst-percentage-calculator", "currency-converter", "scientific-calculator"],
+    see: ["gst-percentage-calculator", "unit-converter", "scientific-calculator"],
   },
   "invoice-signature-generator": {
     intro: [
@@ -976,26 +882,6 @@ const GUIDES: Record<string, Guide> = {
     ],
     see: ["gst-percentage-calculator", "sign-pdf", "qr"],
   },
-  "glassmorphism-generator": {
-    intro: [
-      "Design frosted-glass CSS cards visually with live controls for backdrop blur, translucency, saturation, and crisp borders, then copy clean CSS in one click.",
-    ],
-    faqs: [
-      { q: "Which CSS properties does it generate?", a: "Standard `backdrop-filter: blur(...) saturate(...)`, translucent `rgba()` background, and border styles." },
-      { q: "Is there a live preview?", a: "Yes, over a colourful backdrop so you can see the frosted glass effect immediately." },
-    ],
-    see: ["neumorphism-generator", "box-shadow-generator", "css-gradient-generator"],
-  },
-  "neumorphism-generator": {
-    intro: [
-      "Generate soft extruded Neumorphism UI surfaces with directional highlights, soft shadows, and colour pickers right in your browser.",
-    ],
-    faqs: [
-      { q: "What is Neumorphism?", a: "A soft UI style that uses matching background colours with light and dark directional box shadows to make elements look extruded or inset." },
-      { q: "Can I copy the CSS directly?", a: "Yes, one click copies the generated CSS rules." },
-    ],
-    see: ["glassmorphism-generator", "box-shadow-generator", "border-radius-generator"],
-  },
   "svg-optimizer-jsx": {
     intro: [
       "Minify raw SVG markup, strip editor bloat, and convert SVG attributes (`class`, `stroke-width`, `fill-opacity`, etc.) into valid React JSX/TSX components or CSS Data URIs in your browser.",
@@ -1004,7 +890,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Does it convert SVG attributes to React camelCase?", a: "Yes. Attributes like `stroke-width` and `class` are converted to `strokeWidth` and `className` for JSX/TSX." },
       { q: "Can I export an SVG Data URI for CSS?", a: "Yes. Copy optimised SVG, React JSX/TSX, or a CSS `url(...)` Data URI." },
     ],
-    see: ["image-to-svg", "html-minify", "css-grid-flexbox-playground"],
+    see: ["image-to-svg", "code-minifier", "css-grid-flexbox-playground"],
   },
   "css-grid-flexbox-playground": {
     intro: [
@@ -1014,7 +900,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Does it output Tailwind CSS classes too?", a: "Yes. You can copy Tailwind utility classes as well as standard CSS and HTML." },
       { q: "Does it support both Grid and Flexbox?", a: "Yes. Switch between CSS Grid and Flexbox modes." },
     ],
-    see: ["box-shadow-generator", "border-radius-generator", "contrast-checker"],
+    see: ["css-generator", "contrast-checker"],
   },
   "color-palette-scale-generator": {
     intro: [
@@ -1024,7 +910,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Does it check accessibility contrast for the scale?", a: "Yes. Each shade in the 50–950 scale shows WCAG contrast badges." },
       { q: "Can I export the palette for Tailwind?", a: "Yes. Copy CSS variables or Tailwind colour scale configs directly." },
     ],
-    see: ["contrast-checker", "color-picker", "css-gradient-generator"],
+    see: ["contrast-checker", "color-picker", "css-generator"],
   },
 };
 
@@ -1064,7 +950,7 @@ function hashGuide(tool: Tool, alg: string): Guide | undefined {
       { q: `Is ${name} secure?`, a: h.secure },
       { q: "Can a hash be reversed?", a: "No. A hash is one-way. The only way back is guessing inputs until one matches, which is why weak or unsalted hashes of short passwords can be cracked." },
     ],
-    see: alg === "md5" ? ["sha256-hash", "sha1-hash", "crc32-hash"] : alg.startsWith("sha3") ? ["sha256-hash", "sha3-512-hash", "hmac-generator"] : ["sha256-hash", "sha512-hash", "hmac-generator"],
+    see: alg === "md5" ? ["hash-generator"] : alg.startsWith("sha3") ? ["hash-generator"] : ["hash-generator"],
   };
 }
 
@@ -1123,7 +1009,7 @@ function randomGuide(tool: Tool, kind: string): Guide | undefined {
   return {
     intro: [use, "Results are made in your browser with crypto.getRandomValues, the browser's cryptographically secure generator, so every value is equally likely and nothing is sent anywhere."],
     faqs: [{ q: `What does a result look like?`, a: RANDOM_LOOKS[kind] ?? use }],
-    see: ["random-integer", "random-string", "random-name-picker"].filter((id) => id !== tool.id),
+    see: ["random-generator", "random-name-picker"].filter((id) => id !== tool.id),
   };
 }
 
@@ -1173,6 +1059,14 @@ function codeGuide(tool: Tool, engine: string, lang: string): Guide | undefined 
 
 /** The written guide for a tool, if there is one. */
 export function guideFor(tool: Tool): Guide | undefined {
+  const g = baseGuide(tool);
+  if (!g?.see) return g;
+  // Suggestions name tools by id; merged pages resolve to the tool that replaced them.
+  const see = [...new Set(g.see.map((id) => MERGED_TOOLS[id]?.to ?? id))].filter((id) => id !== tool.id);
+  return { ...g, see };
+}
+
+function baseGuide(tool: Tool): Guide | undefined {
   if (GUIDES[tool.id]) return GUIDES[tool.id];
   const u = getUtility(tool.id);
   if (!u?.preset) return undefined;

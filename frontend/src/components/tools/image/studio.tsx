@@ -4,14 +4,14 @@ import { useRef, useState } from "react";
 import { motion } from "motion/react";
 import { Eraser, FileOutput, Maximize2, Minimize2, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CompressImageTool, ConvertToJpgTool, RemoveBackgroundTool, ResizeImageTool } from "./simple-tools";
+import { CompressImageTool, ConvertImageTool, RemoveBackgroundTool, ResizeImageTool } from "./simple-tools";
 
 type Mode = "compress" | "resize" | "convert" | "background";
 
 const MODES: Record<Mode, { label: string; hint: string; icon: LucideIcon; toolId: string; Tool: typeof CompressImageTool }> = {
   compress: { label: "Compress", hint: "Smaller files", icon: Minimize2, toolId: "compress-image", Tool: CompressImageTool },
   resize: { label: "Resize", hint: "Pixels or %", icon: Maximize2, toolId: "resize-image", Tool: ResizeImageTool },
-  convert: { label: "Convert", hint: "To JPG", icon: FileOutput, toolId: "convert-to-jpg", Tool: ConvertToJpgTool },
+  convert: { label: "Convert", hint: "JPG, PNG, WebP, GIF", icon: FileOutput, toolId: "convert-image", Tool: ConvertImageTool },
   background: { label: "Cut out", hint: "Remove background", icon: Eraser, toolId: "remove-background", Tool: RemoveBackgroundTool },
 };
 

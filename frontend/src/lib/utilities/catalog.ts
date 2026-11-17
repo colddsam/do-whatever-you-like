@@ -75,7 +75,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-export const DEV_GROUPS = ["Format", "Minify", "Validate", "Edit & view", "XML & JSON", "Encode", "Hash", "Random data", "Web & network", "HTML & CSS"] as const;
+export const DEV_GROUPS = ["Format & validate", "Edit & view", "XML & JSON", "Encode", "Hash & random", "Web & network", "HTML & CSS"] as const;
 export const TEXT_GROUPS = ["Convert", "Transform", "Generate", "Analyze"] as const;
 export const EVERYDAY_GROUPS = ["Health", "Calculate & convert", "Time & dates", "Privacy & security", "QR codes", "Device & browser"] as const;
 export const DESIGN_GROUPS = ["Charts & diagrams", "Fonts", "Colour", "CSS"] as const;
@@ -112,18 +112,18 @@ const fancy = d("text", "Transform", "fancy", Type);
 const textConvert = (engine: Engine, icon: LucideIcon) => d("text", "Convert", engine, icon);
 
 const TEXT: UtilityDef[] = [
-  codes("text-to-binary", "Text to binary", "Turn text into binary code, eight bits per byte.", ["binary translator", "text to binary converter", "ascii to binary", "binary code", "01"], { from: "text", base: "binary" }),
+  codes("text-to-binary", "Text ↔ binary, hex & ASCII converter", "Turn text into binary, hex or ASCII codes, or decode them back into text.", ["binary translator", "text to binary converter", "ascii to binary", "binary code", "01"], { from: "text", base: "binary" }),
   codes("binary-to-text", "Binary to text", "Read binary code back as text (binary translator).", ["binary translator", "binary to ascii", "binary decoder", "decode binary"], { from: "codes", base: "binary" }),
   codes("text-to-hex", "Text to hex", "Text as hexadecimal byte values.", ["ascii to hex", "string to hex", "hex encode", "hexadecimal"], { from: "text", base: "hex" }),
   codes("hex-to-text", "Hex to text", "Hexadecimal bytes back to readable text.", ["hex to ascii", "hex to string", "hex decoder", "hexadecimal"], { from: "codes", base: "hex" }),
   codes("text-to-ascii", "Text to ASCII codes", "Each character's ASCII (decimal) code.", ["text to ascii", "ascii to decimal", "char code", "character code", "unicode code point"], { from: "text", base: "decimal" }),
   codes("ascii-to-text", "ASCII codes to text", "Decimal ASCII or Unicode codes back to characters.", ["ascii to text", "decimal to ascii", "char code to text", "ascii decoder"], { from: "codes", base: "decimal" }),
-  textConvert("numwords", Calculator)("number-to-words", "Number to words", "Spell out any number, with lakh and crore if you like.", ["number to word", "number to text", "amount in words", "cheque words", "spell number", "lakh", "crore"], { dir: "to-words" }),
+  textConvert("numwords", Calculator)("number-to-words", "Number ↔ words converter", "Spell out any number (with lakh and crore if you like), or turn words back into digits.", ["number to word", "number to text", "amount in words", "cheque words", "spell number", "lakh", "crore"], { dir: "to-words" }),
   textConvert("numwords", Calculator)("words-to-number", "Words to number", "“Two thousand and five” becomes 2005.", ["word to number", "text to number", "words to digits"], { dir: "to-number" }),
   textConvert("roman", Sigma)("roman-numerals", "Roman numeral converter", "Numbers to Roman numerals and back, 1 to 3999.", ["roman numeral", "roman to number", "number to roman", "mcmxciv", "roman date"]),
   textConvert("morse", Radio)("morse-code", "Morse code translator", "Text to Morse and back, with sound you can play.", ["morse", "morse translator", "morse to text", "text to morse", "sos", "dots and dashes"]),
   textConvert("morse-audio", AudioLines)("morse-audio-decoder", "Morse code audio decoder", "Turn Morse beeps from a recording, a video or your microphone into text.", ["morse code audio decoder", "morse sound to text", "decode morse from audio", "morse audio to text", "morse code listener", "morse decoder microphone", "cw decoder", "morse from video", "morse beeps translator"]),
-  fancy("upside-down-text", "Upside-down text", "Flip text upside down for posts and bios.", ["upside down text", "flip text upside down", "rotate text 180"], { kind: "upside" }),
+  fancy("upside-down-text", "Upside-down, mirror & reverse text", "Flip text upside down, mirror it, or reverse its letters, words or lines.", ["upside down text", "flip text upside down", "rotate text 180"], { kind: "upside" }),
   fancy("mirror-text", "Mirror text", "Text as its mirror image.", ["mirror text", "reverse text", "backwards writing"], { kind: "mirror" }),
   fancy("reverse-text", "Reverse text", "Reverse the letters, the words, each word or the lines.", ["backwards text", "reverse text generator", "flip text", "reverse words", "reverse lines"], { kind: "reverse" }),
   d("text", "Transform", "repeat", Repeat)("text-repeater", "Text repeater", "Repeat text any number of times, with a separator.", ["text repeater", "repeat text", "duplicate text", "copy paste many times"]),
@@ -141,15 +141,16 @@ const TEXT: UtilityDef[] = [
 
 /* ---------- Developer ---------- */
 
-const fmt = d("dev", "Format", "format", Code);
-const min = d("dev", "Minify", "minify", Minimize);
-const val = d("dev", "Validate", "validate", CheckCheck);
-const hash = d("dev", "Hash", "hash", Hash);
-const rnd = d("dev", "Random data", "random", Dices);
+const fmt = d("dev", "Format & validate", "format", Code);
+const min = d("dev", "Format & validate", "minify", Minimize);
+const val = d("dev", "Format & validate", "validate", CheckCheck);
+const hash = d("dev", "Hash & random", "hash", Hash);
+const rnd = d("dev", "Hash & random", "random", Dices);
 const net = d("dev", "Web & network", "network", Globe);
 const web = d("dev", "HTML & CSS", "webgen", PanelsTopLeft);
 
 const DEV: UtilityDef[] = [
+  fmt("code-formatter", "Code formatter", "Beautify HTML, CSS, JavaScript, TypeScript, JSX, Angular, XML, PHP, Java, SQL, YAML or Markdown: pick the language, paste, copy.", ["code formatter", "code beautifier", "prettier online", "beautify code", "pretty print", "format code online"], { lang: "javascript" }),
   fmt("html-formatter", "HTML formatter", "Indent and tidy HTML (HTML beautifier).", ["html beautifier", "html prettify", "format html", "indent html"], { lang: "html" }),
   fmt("css-formatter", "CSS formatter", "Indent and tidy CSS, SCSS or Less.", ["beautify css", "css beautifier", "format css", "scss formatter", "less formatter"], { lang: "css" }),
   fmt("javascript-formatter", "JavaScript formatter", "Format JavaScript (JS beautifier, Babel).", ["js beautifier", "javascript beautifier", "babel formatter", "format js", "prettier"], { lang: "javascript" }),
@@ -162,15 +163,17 @@ const DEV: UtilityDef[] = [
   fmt("sql-formatter", "SQL formatter", "Format SQL for MySQL, PostgreSQL, SQL Server and more.", ["sql beautifier", "format sql", "sql pretty print", "mysql formatter", "postgres formatter"], { lang: "sql" }),
   fmt("yaml-formatter", "YAML formatter", "Format YAML consistently.", ["yaml beautifier", "format yaml", "yml formatter"], { lang: "yaml" }),
   fmt("markdown-formatter", "Markdown formatter", "Tidy Markdown: lists, tables, spacing.", ["markdown formatter", "format md", "prettier markdown"], { lang: "markdown" }),
+  min("code-minifier", "Code minifier", "Make JavaScript, CSS or HTML as small as it gets, with the bytes saved shown.", ["minifier", "minify code", "code compressor", "uglify"], { lang: "javascript" }),
   min("html-minifier", "HTML minifier", "Strip comments and spaces from HTML.", ["minify html", "html compressor", "compress html"], { lang: "html" }),
   min("css-minifier", "CSS minifier", "Make CSS as small as it gets (csso).", ["minify css", "css compressor", "compress css"], { lang: "css" }),
   min("javascript-minifier", "JavaScript minifier", "Minify and mangle JavaScript (Terser).", ["minify js", "js minifier", "uglify", "terser", "compress javascript"], { lang: "javascript" }),
+  val("code-validator", "Code validator", "Find syntax errors in JavaScript, JSX, CSS, XML or YAML, with the line and column.", ["code validator", "syntax checker", "lint online", "check syntax"], { lang: "javascript" }),
   val("javascript-validator", "JavaScript validator", "Find syntax errors in JavaScript, JSX or jQuery code.", ["javascript validator", "js validator", "jquery validator", "syntax checker", "js lint"], { lang: "javascript" }),
   val("css-validator", "CSS validator", "Check CSS syntax and property values.", ["css validator", "css checker", "validate css", "css lint"], { lang: "css" }),
   val("xml-validator", "XML validator", "Check XML is well-formed, with the line of any error.", ["xml validator", "well formed xml", "validate xml", "xml checker"], { lang: "xml" }),
   val("yaml-validator", "YAML validator", "Check YAML and see it as JSON.", ["yaml validator", "yml validator", "validate yaml", "yaml lint"], { lang: "yaml" }),
-  d("dev", "Validate", "card", CreditCard)("card-validator", "Card number validator", "Luhn check and card brand, for testing forms.", ["credit card validator", "luhn check", "card number checker", "card type", "visa", "mastercard", "test card"]),
-  d("dev", "Validate", "xsd", CheckCheck)("xsd-validator", "XSD validator", "Validate XML against an XML Schema.", ["xsd validation", "xml schema validator", "validate xml against xsd"]),
+  d("dev", "Format & validate", "card", CreditCard)("card-validator", "Card number validator", "Luhn check and card brand, for testing forms.", ["credit card validator", "luhn check", "card number checker", "card type", "visa", "mastercard", "test card"]),
+  d("dev", "Format & validate", "xsd", CheckCheck)("xsd-validator", "XSD validator", "Validate XML against an XML Schema.", ["xsd validation", "xml schema validator", "validate xml against xsd"]),
   d("dev", "Edit & view", "editor", SquareTerminal)("code-editor", "Code editor", "Edit code in 100+ languages with highlighting, then copy or download.", ["online editor", "code editor", "online code editor", "python editor", "java editor", "c++ editor", "php editor", "sql editor", "html editor", "css editor", "javascript editor", "typescript editor", "markdown editor", "latex editor", "yaml editor", "xml editor", "json editor", "rust editor", "go editor", "ruby editor", "kotlin editor", "swift editor", "lua editor", "perl editor", "r editor", "haskell editor", "scala editor", "dart editor", "shell editor", "powershell editor", "batch editor", "dockerfile", "toml editor", "ini editor", "svg editor", "diff editor", "cobol editor", "fortran", "pascal editor", "verilog editor", "matlab editor", "julia editor", "clojure editor", "erlang editor", "groovy editor", "sass editor", "scss editor", "less editor", "stylus editor", "twig editor", "liquid editor", "ejs editor", "jsx editor", "tex editor", "assembly editor"]),
   d("dev", "Edit & view", "editor", TextCursorInput)("text-editor", "Online text editor", "A plain notepad in the browser, saved as you type.", ["online text editor", "editpad", "notepad online", "online notepad", "write text"], { lang: "text" }),
   d("dev", "Edit & view", "markdown", FileText)("markdown-editor", "Markdown editor", "Write Markdown with a live preview, then export .md, HTML or PDF.", ["markdown editor", "md editor", "online markdown editor", "markdown live preview", "readme editor", "github markdown", "gfm", "markdown to html", "markdown to pdf", "write markdown", "dillinger", "stackedit"]),
@@ -181,9 +184,10 @@ const DEV: UtilityDef[] = [
   d("dev", "XML & JSON", "xslt", FileCode)("xslt-transformer", "XSLT transformer", "Transform XML with an XSLT stylesheet.", ["xslt", "xsl transformation", "xslt online", "xml transform"]),
   d("dev", "XML & JSON", "jsonpath", FileCode)("jsonpath-tester", "JSONPath tester", "Query JSON with JSONPath and see the results.", ["jsonpath", "json path tester", "json query", "jsonpath evaluator"]),
   d("dev", "XML & JSON", "uritemplate", Link)("uri-template", "URI template expander", "Expand RFC 6570 URI templates with your values.", ["uri template", "url template", "rfc 6570", "uritemplate parser"]),
-  d("dev", "Encode", "escape", Quote)("json-escape", "JSON escape / unescape", "Escape text for a JSON string, or unescape it.", ["json escape", "json unescape", "escape string json", "stringify"], { kind: "json" }),
+  d("dev", "Encode", "escape", Quote)("json-escape", "JSON & HTML escape / unescape", "Escape text for a JSON string or as HTML entities, or turn it back.", ["json escape", "json unescape", "escape string json", "stringify"], { kind: "json" }),
   d("dev", "Encode", "escape", Code)("html-entities", "HTML entities encoder", "Encode text to HTML entities, or decode them.", ["html encoder", "html decoder", "html entities", "escape html", "unescape html"], { kind: "html" }),
   d("dev", "Encode", "ieee", Cpu)("ieee-754", "IEEE-754 float analyser", "See how a number is stored as a 32- or 64-bit float.", ["ieee 754", "float converter", "floating point", "float to hex", "double precision", "binary32", "binary64"]),
+  hash("hash-generator", "Hash generator", "MD5, SHA-1, SHA-2, SHA-3, SHAKE, NTLM, CRC and HMAC of text or a file, one algorithm or all at once, in your browser.", ["hash generator", "hash", "checksum", "file checksum", "online hash", "hash calculator", "verify hash"], { alg: "sha256" }),
   ...[
     ["md5", "MD5 hash generator", ["md5", "md5 generator", "md5 checksum"]],
     ["sha1", "SHA-1 hash generator", ["sha1", "sha-1"]],
@@ -207,6 +211,7 @@ const DEV: UtilityDef[] = [
   ].map(([alg, name, kw]) => hash(`${alg}-hash`, name as string, `${(name as string).replace(" generator", "")} of text or a file, in your browser.`, [...(kw as string[]), "hash generator", "hash"], { alg: alg as string })),
   hash("hmac-generator", "HMAC generator", "Keyed hashes (HMAC) with SHA-2, SHA-3, SHA-1 or MD5.", ["hmac", "hmac generator", "hmac sha256", "signature", "keyed hash"], { alg: "sha256", hmac: "1" }),
   hash("wordpress-hash", "WordPress password hash", "Make or check a WordPress (phpass) password hash.", ["wordpress hash", "phpass", "wp password", "$P$"], { alg: "wordpress" }),
+  rnd("random-generator", "Random data generator", "Random numbers, strings, dates, IPs, MACs, mock JSON, CSV or XML, data from a regex, or a noise bitmap: as many as you need.", ["random generator", "random data", "mock data", "test data generator", "fake data"], { kind: "integer" }),
   ...[
     ["random-name-picker", "Random name picker", "names", ["name picker", "random name", "pick a winner", "raffle", "draw names"]],
     ["random-string", "Random string generator", "string", ["random string", "random text"]],
@@ -230,12 +235,12 @@ const DEV: UtilityDef[] = [
     ["random-from-regex", "Random data from regex", "regex", ["regex generator", "string from regex", "randexp"]],
     ["random-bitmap", "Random bitmap generator", "bitmap", ["random bitmap", "noise image", "random pixels"]],
   ].map(([id, name, kind, kw]) => rnd(id as string, name as string, `${name}: as many as you need, made in your browser.`, kw as string[], { kind: kind as string })),
-  net("dns-lookup", "DNS lookup", "Every DNS record of a domain: A, AAAA, CNAME, MX, NS, TXT, SOA, CAA.", ["dns lookup", "dns records", "dns checker", "txt record", "cname"], { kind: "dns" }),
+  net("dns-lookup", "DNS lookup", "Every DNS record of a domain, or just its MX, NS or IP addresses, plus reverse lookup from an IP to its hostname.", ["dns lookup", "dns records", "dns checker", "txt record", "cname"], { kind: "dns" }),
   net("mx-lookup", "MX lookup", "A domain's mail servers, in priority order.", ["mx lookup", "mx record", "mail server lookup"], { kind: "mx" }),
   net("ns-lookup", "NS lookup", "A domain's name servers.", ["ns lookup", "nameserver lookup", "nslookup"], { kind: "ns" }),
   net("website-to-ip", "Website to IP", "The IP addresses of a website or hostname.", ["hostname to ip", "website to ip address", "domain ip lookup", "domain to ip", "find ip of website"], { kind: "ip" }),
   net("ip-to-hostname", "IP to hostname", "The hostname behind an IP address (reverse DNS).", ["ip to hostname", "reverse dns", "ptr lookup", "reverse ip"], { kind: "reverse" }),
-  net("http-headers", "HTTP header checker", "Every response header a URL sends back.", ["http header checker", "check headers", "response headers", "security headers"], { kind: "headers" }),
+  net("http-headers", "HTTP header & status checker", "A URL's status code, its whole redirect chain and every response header it sends back.", ["http header checker", "check headers", "response headers", "security headers"], { kind: "headers" }),
   net("http-status", "HTTP status checker", "A URL's status code and its whole redirect chain.", ["http status checker", "status code", "redirect checker", "301 302 checker"], { kind: "status" }),
   net("open-port-checker", "Open port checker", "Is a TCP port open on a public server?", ["open port checker", "port checker", "port scan", "is port open"], { kind: "port" }),
   net("api-tester", "API tester", "Send GET, POST, PUT or DELETE requests with headers and a body.", ["api test", "rest client", "http client", "postman online", "curl online"], { kind: "api" }),
@@ -265,7 +270,7 @@ const DEV: UtilityDef[] = [
 const dev = (icon: LucideIcon) => d("everyday", "Device & browser", "device", icon);
 const EVERYDAY: UtilityDef[] = [
   d("everyday", "Calculate & convert", "calculator", Calculator)("scientific-calculator", "Scientific calculator", "Trig, logs, powers, factorials, memory and history, with units too.", ["scientific calculator", "calculator", "calc", "sin cos tan", "logarithm", "factorial", "nCr", "permutation", "combination", "online calculator", "percentage calculator", "unit converter", "math"]),
-  dev(Monitor)("screen-resolution", "Screen resolution", "Your screen's resolution, pixel ratio and colour depth.", ["screen resolution detection", "what is my screen resolution", "display size", "dpi"], { kind: "screen" }),
+  dev(Monitor)("screen-resolution", "Screen resolution & window size", "Your screen's resolution, pixel ratio and colour depth, and the browser window's live size.", ["screen resolution detection", "what is my screen resolution", "display size", "dpi"], { kind: "screen" }),
   dev(Maximize2)("browser-window-size", "Browser window size", "The browser's viewport size, live as you resize.", ["browser window size checker", "viewport size", "window size"], { kind: "window" }),
   dev(AppWindow)("screen-resolution-tester", "Responsive tester", "See a website in 30+ real device frames, or at any custom size.", ["screen resolution tester", "responsive design checker", "mobile view", "viewport tester", "device mockup", "iphone preview", "ipad preview", "macbook frame", "mobile simulator", "custom screen size"], { kind: "tester" }),
   dev(Webcam)("webcam-test", "Webcam test", "Check your camera works, and see its resolution and frame rate.", ["webcam test", "camera test", "test webcam online"], { kind: "webcam" }),
@@ -273,18 +278,18 @@ const EVERYDAY: UtilityDef[] = [
   dev(Network)("my-ip", "What is my IP", "Your public IP address and what it says about your connection.", ["my ip address", "what is my ip", "my ip", "public ip", "ip address"], { kind: "myip" }),
   dev(Mic)("mic-speaker-test", "Mic & speaker test", "Check your microphone with a live level meter, and your speakers left and right.", ["mic test", "microphone test", "test my mic", "speaker test", "left right audio test", "headphone test", "sound test", "audio test"], { kind: "mic" }),
   dev(SquareDashed)("dead-pixel-test", "Dead pixel test", "Full-screen colours to spot dead or stuck pixels, and a flasher to try to fix them.", ["dead pixel test", "stuck pixel fixer", "screen test", "monitor test", "pixel checker", "backlight bleed test"], { kind: "deadpixel" }),
-  d("everyday", "Calculate & convert", "units", Scale)("unit-converter", "Unit converter", "Length, weight, temperature, area, volume, speed, data and more, all at once.", ["unit converter", "cm to inches", "kg to lbs", "celsius to fahrenheit", "km to miles", "liters to gallons", "mb to gb", "metric to imperial", "conversion calculator"]),
+  d("everyday", "Calculate & convert", "units", Scale)("unit-converter", "Unit & currency converter", "Length, weight, temperature, area, volume, speed, data and more, plus live currency rates.", ["unit converter", "cm to inches", "kg to lbs", "celsius to fahrenheit", "km to miles", "liters to gallons", "mb to gb", "metric to imperial", "conversion calculator"]),
   d("everyday", "Calculate & convert", "units", Globe2)("currency-converter", "Currency converter", "30 currencies at today's European Central Bank rates.", ["currency converter", "exchange rate", "usd to inr", "eur to usd", "gbp to inr", "dollar to rupee", "forex rates", "money converter"], { cat: "currency" }),
   d("everyday", "Time & dates", "worldclock", Clock3)("world-clock", "World clock & time zones", "The time in any city, and a meeting planner across time zones.", ["world clock", "time zone converter", "timezone converter", "time in london", "ist to est", "utc converter", "meeting planner", "what time is it in"]),
   d("everyday", "Time & dates", "timer", Timer)("pomodoro-timer", "Pomodoro timer", "Focus in 25-minute rounds with breaks, chimes and the time in your tab.", ["pomodoro timer", "focus timer", "study timer", "tomato timer", "productivity timer"], { mode: "pomodoro" }),
-  d("everyday", "Time & dates", "timer", Timer)("stopwatch", "Stopwatch & countdown", "A stopwatch with laps, and a countdown timer with an alarm.", ["stopwatch", "online stopwatch", "lap timer", "countdown timer", "timer", "alarm timer", "kitchen timer"], { mode: "stopwatch" }),
-  d("everyday", "Time & dates", "date", CalendarDays)("age-calculator", "Age calculator", "Your exact age in years, months and days, and your next birthday.", ["age calculator", "how old am i", "date of birth calculator", "birthday calculator", "age in days"], { mode: "age" }),
+  d("everyday", "Time & dates", "timer", Timer)("stopwatch", "Stopwatch, countdown & Pomodoro timer", "A stopwatch with laps, a countdown with an alarm, and Pomodoro focus sessions.", ["stopwatch", "online stopwatch", "lap timer", "countdown timer", "timer", "alarm timer", "kitchen timer"], { mode: "stopwatch" }),
+  d("everyday", "Time & dates", "date", CalendarDays)("age-calculator", "Age & date calculator", "Your exact age and next birthday, the days between two dates, or a date plus or minus some time.", ["age calculator", "how old am i", "date of birth calculator", "birthday calculator", "age in days"], { mode: "age" }),
   d("everyday", "Time & dates", "date", CalendarDays)("date-calculator", "Date calculator", "Days between two dates, business days, or a date plus or minus any time.", ["date calculator", "days between dates", "date difference", "business days calculator", "working days", "add days to date", "date duration"], { mode: "between" }),
   d("everyday", "Privacy & security", "password", KeyRound)("password-generator", "Password generator & checker", "Strong passwords and memorable passphrases, and an honest strength check.", ["password generator", "passphrase generator", "diceware", "password strength checker", "how secure is my password", "random password", "strong password"]),
   d("everyday", "Privacy & security", "encrypt", FileLock2)("encrypt-note", "Encrypt a note", "Lock a message with a password (AES-256), and share it as text or a link.", ["encrypt text", "encrypt message", "password protect text", "secret note", "aes encryption online", "decrypt text", "private message"]),
   d("everyday", "Privacy & security", "exif", ImageOff)("exif-remover", "Photo metadata viewer & remover", "See the hidden GPS, camera and date in photos, and remove it without losing quality.", ["exif viewer", "exif remover", "remove metadata from photo", "remove gps from photo", "photo location", "image metadata", "strip exif", "exif data"]),
   d("everyday", "QR codes", "qrscan", ScanQrCode)("qr-scanner", "QR code scanner", "Read a QR code from a picture, a screenshot or your camera.", ["qr scanner", "qr code reader", "scan qr code", "read qr from image", "qr decoder", "scan qr online", "wifi qr"]),
-  d("everyday", "Calculate & convert", "finance-calc", IndianRupee)("emi-sip-calculator", "EMI & Compound Interest calculator", "Calculate loan EMIs with prepayments, SIP growth and compound interest with INR schedules.", ["emi calculator", "loan emi calculator", "compound interest calculator", "home loan emi india"], { mode: "emi" }),
+  d("everyday", "Calculate & convert", "finance-calc", IndianRupee)("emi-sip-calculator", "EMI, SIP & interest calculator", "Loan EMIs, SIP and step-up SIP returns, and compound interest, with charts and schedules.", ["emi calculator", "loan emi calculator", "compound interest calculator", "home loan emi india"], { mode: "emi" }),
   d("everyday", "Calculate & convert", "finance-calc", IndianRupee)("sip-calculator", "SIP & Step-Up Wealth calculator", "Estimate mutual fund SIP returns with annual step-up and inflation adjustment.", ["sip calculator", "step up sip", "mutual fund calculator", "inflation adjusted sip"], { mode: "sip" }),
   d("everyday", "Calculate & convert", "gst-percent", Percent)("gst-percentage-calculator", "GST & Discount calculator", "Inclusive and exclusive Indian GST (CGST+SGST or IGST), coupon discounts and percentage math.", ["gst calculator", "gst calculator india", "percentage calculator", "discount calculator", "cgst sgst"], { mode: "gst" }),
   d("everyday", "Calculate & convert", "bill-split", Users)("bill-splitter", "Trip & Bill splitter", "Settle group trip expenses with minimum transfers or split dinner bills for WhatsApp.", ["bill splitter", "splitwise alternative", "trip expense splitter", "whatsapp bill split", "dinner split"], { mode: "group" }),
@@ -295,6 +300,7 @@ const EVERYDAY: UtilityDef[] = [
 
 const DESIGN: UtilityDef[] = [
   d("design", "Colour", "contrast", Contrast)("contrast-checker", "Contrast checker", "Check any text and background colours against WCAG AA and AAA, with fixes.", ["contrast checker", "wcag contrast", "color contrast", "accessibility checker", "a11y colors", "contrast ratio", "aa aaa"]),
+  d("design", "CSS", "cssgen", Palette)("css-generator", "CSS generator", "Gradients, box shadows, border radius, glassmorphism and neumorphism, with a live preview and copy-ready CSS.", ["css generator", "css3 generator", "css maker", "ui css generator"], { kind: "gradient" }),
   d("design", "CSS", "cssgen", Palette)("css-gradient-generator", "CSS gradient generator", "Linear, radial and conic gradients with any number of colours.", ["css gradient generator", "gradient maker", "linear gradient", "radial gradient", "background gradient", "color gradient"], { kind: "gradient" }),
   d("design", "CSS", "cssgen", Square)("box-shadow-generator", "Box shadow generator", "Layered, soft or crisp CSS shadows, live.", ["box shadow generator", "css shadow", "drop shadow css", "shadow maker", "inset shadow"], { kind: "shadow" }),
   d("design", "CSS", "cssgen", ScanLine)("border-radius-generator", "Border radius generator", "Rounded corners, one by one, or organic blob shapes.", ["border radius generator", "rounded corners css", "css blob", "border-radius"], { kind: "radius" }),
@@ -308,7 +314,7 @@ const DESIGN: UtilityDef[] = [
 /* ---------- Developer: scheduling ---------- */
 
 const CRON: UtilityDef[] = [
-  d("dev", "Validate", "cron", Clock3)("cron-explainer", "Cron expression explainer", "Cron schedules in plain English, with the next run times.", ["cron expression", "crontab guru", "cron explainer", "cron parser", "cron schedule", "cron next run", "crontab"]),
+  d("dev", "Format & validate", "cron", Clock3)("cron-explainer", "Cron expression explainer", "Cron schedules in plain English, with the next run times.", ["cron expression", "crontab guru", "cron explainer", "cron parser", "cron schedule", "cron next run", "crontab"]),
 ];
 
 export const UTILITIES: UtilityDef[] = [...TEXT, ...DEV, ...CRON, ...EVERYDAY, ...DESIGN];

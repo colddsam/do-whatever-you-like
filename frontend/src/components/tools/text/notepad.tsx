@@ -44,6 +44,7 @@ import {
   extract,
   findAll,
   findIssues,
+  keepCapitals,
   lineCol,
   lineStart,
   numberSummary,
@@ -56,6 +57,7 @@ import {
   type Range,
   type TransformId,
 } from "@/lib/notepad";
+import { readStartParams } from "@/lib/start-params";
 import { cn } from "@/lib/utils";
 import { Workbench } from "../workbench";
 import { Toggle } from "../pdf/kit";
@@ -124,6 +126,7 @@ const TRANSFORMS: { group: string; items: { id: TransformId; label: string }[] }
       { id: "trim-lines", label: "Trim" },
       { id: "remove-empty", label: "Remove empty" },
       { id: "dedupe", label: "Remove duplicates" },
+      { id: "dedupe-any-case", label: "Remove duplicates (any case)" },
       { id: "sort-az", label: "Sort A→Z" },
       { id: "sort-za", label: "Sort Z→A" },
       { id: "sort-natural", label: "Sort 1→10" },
@@ -220,10 +223,15 @@ const noop = () => () => {};
 export function NotepadTool({ toolId }: { toolId: string }) {
   const mounted = useSyncExternalStore(noop, () => true, () => false);
   if (!mounted) return <div className="h-[760px] animate-pulse rounded-lg border border-line bg-surface" aria-hidden />;
-  return <Notepad toolId={toolId} saved={readSaved()} />;
+  return <Notepad toolId={toolId} saved={readSaved()} start={readStartParams()} />;
 }
 
-function Notepad({ toolId, saved }: { toolId: string; saved: Saved | null }) {
+/**
+ * `start` comes from the address: ?open=find|replace opens the find bar, ?tab=issues the issues
+ * list, ?panel=lines points at the line tools (the old Find and replace, Invisible character
+ * cleaner and Sort lines pages redirect here that way).
+ */
+function Notepad({ toolId, saved, start }: { toolId: string; saved: Saved | null; start: Record<string, string> }) {
   const tool = getTool(toolId)!;
 
   // ---------- notes & persistence ----------
@@ -338,8 +346,9 @@ function Notepad({ toolId, saved }: { toolId: string; saved: Saved | null }) {
   }, [flash]);
 
   // ---------- find & replace ----------
-  const [findOpen, setFindOpen] = useState(false);
-  const [replaceOpen, setReplaceOpen] = useState(false);
+  const [findOpen, setFindOpen] = useState(start.open === "find" || start.open === "replace");
+  const [replaceOpen, setReplaceOpen] = useState(start.open === "replace");
+  const [keepCaps, setKeepCaps] = useState(false);
   const [query, setQuery] = useState("");
   const [replacement, setReplacement] = useState("");
   const [opts, setOpts] = useState<FindOptions>({ caseSensitive: false, wholeWord: false, regex: false });
@@ -384,7 +393,11 @@ function Notepad({ toolId, saved }: { toolId: string; saved: Saved | null }) {
     const isSelected = sel.start === m.start && sel.end === m.end;
     if (!isSelected) return jump(m);
     const piece = text.slice(m.start, m.end);
-    const one = opts.regex ? piece.replace(new RegExp(regex.source, regex.flags.replace("g", "")), replacement) : replacement;
+    const one = opts.regex
+      ? piece.replace(new RegExp(regex.source, regex.flags.replace("g", "")), replacement)
+      : keepCaps
+        ? keepCapitals(piece, replacement)
+        : replacement;
     edit(m.start, m.end, one, false);
     requestAnimationFrame(() => {
       const ta = taRef.current;
@@ -395,7 +408,7 @@ function Notepad({ toolId, saved }: { toolId: string; saved: Saved | null }) {
 
   const replaceEvery = () => {
     if (!regex || !matchCount) return;
-    const res = replaceAll(text, regex, replacement, opts.regex);
+    const res = replaceAll(text, regex, replacement, opts.regex, keepCaps);
     edit(0, text.length, res.text, false);
     setToast({ text: `Replaced ${res.count.toLocaleString("en")} match${res.count === 1 ? "" : "es"}`, tone: "ok" });
   };
@@ -428,7 +441,7 @@ function Notepad({ toolId, saved }: { toolId: string; saved: Saved | null }) {
   };
 
   // ---------- analysis ----------
-  const [tab, setTab] = useState<InspectorTab>("overview");
+  const [tab, setTab] = useState<InspectorTab>(start.tab === "issues" || start.tab === "found" || start.tab === "words" ? start.tab : "overview");
   const [skipCommon, setSkipCommon] = useState(true);
   const counts = useMemo(() => textStats(deferred), [deferred]);
   const format = useMemo(() => detectFormat(deferred), [deferred]);
@@ -857,6 +870,12 @@ function Notepad({ toolId, saved }: { toolId: string; saved: Saved | null }) {
                         className="h-full min-w-0 flex-1 bg-transparent px-2 font-mono text-[13px] text-ink outline-none placeholder:text-ink-3"
                       />
                     </div>
+                    {!opts.regex && (
+                      <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 px-1 text-[13px] text-ink-2" title="FOX → CAT, Fox → Cat">
+                        <input type="checkbox" checked={keepCaps} onChange={(e) => setKeepCaps(e.target.checked)} className="size-4 accent-[var(--color-ink)]" />
+                        Keep capitals
+                      </label>
+                    )}
                     <button
                       type="button"
                       onClick={replaceOne}
@@ -988,7 +1007,14 @@ function Notepad({ toolId, saved }: { toolId: string; saved: Saved | null }) {
                 )}
               </p>
               {TRANSFORMS.map((g) => (
-                <div key={g.group} className="flex flex-wrap items-center gap-1.5">
+                <div
+                  key={g.group}
+                  ref={g.group === "Lines" && start.panel === "lines" ? (el) => el?.scrollIntoView({ block: "center" }) : undefined}
+                  className={cn(
+                    "flex flex-wrap items-center gap-1.5",
+                    g.group === "Lines" && start.panel === "lines" && "-mx-1.5 rounded-md bg-accent/5 px-1.5 py-1.5 ring-1 ring-accent/30",
+                  )}
+                >
                   <span className="label-mono w-16 shrink-0 text-ink-3">{g.group}</span>
                   {g.items.map((t) => (
                     <button

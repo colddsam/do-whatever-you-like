@@ -44,10 +44,55 @@ const SECURITY_HEADERS = [
 export function NetworkEngine({ preset }: EngineProps) {
   const kind = preset.kind ?? "dns";
   if (kind === "api") return <ApiTester />;
-  if (kind === "headers" || kind === "status") return <HttpCheck kind={kind} />;
   if (kind === "port") return <PortCheck />;
-  if (kind === "reverse") return <ReverseCheck />;
-  return <DnsCheck kind={kind} />;
+  if (kind === "headers" || kind === "status") return <HttpSwitch start={kind} />;
+  return <DnsSwitch start={kind} />;
+}
+
+const DNS_KINDS = [
+  { value: "dns", label: "All records" },
+  { value: "ip", label: "IP address (A, AAAA)" },
+  { value: "mx", label: "Mail servers (MX)" },
+  { value: "ns", label: "Name servers (NS)" },
+  { value: "reverse", label: "Reverse: IP → hostname" },
+];
+
+/** DNS lookup, MX, NS, website-to-IP and reverse lookup: one page, picked here. */
+function DnsSwitch({ start }: { start: string }) {
+  const [kind, setKind] = useState(DNS_KINDS.some((k) => k.value === start) ? start : "dns");
+  return (
+    <>
+      <Panel>
+        <Row label="Look up">
+          <Chips value={kind} options={DNS_KINDS} onChange={setKind} label="Look up" />
+        </Row>
+      </Panel>
+      {kind === "reverse" ? <ReverseCheck /> : <DnsCheck key={kind} kind={kind} />}
+    </>
+  );
+}
+
+/** Response headers, or the status and redirect chain: one page, picked here. */
+function HttpSwitch({ start }: { start: string }) {
+  const [kind, setKind] = useState(start === "status" ? "status" : "headers");
+  return (
+    <>
+      <Panel>
+        <Row label="Check">
+          <Chips
+            value={kind}
+            options={[
+              { value: "headers", label: "Headers (GET)" },
+              { value: "status", label: "Status & redirects (HEAD)" },
+            ]}
+            onChange={setKind}
+            label="Check"
+          />
+        </Row>
+      </Panel>
+      <HttpCheck key={kind} kind={kind} />
+    </>
+  );
 }
 
 function useRun<T>() {
@@ -444,7 +489,12 @@ export function DeviceEngine({ preset }: EngineProps) {
     case "deadpixel":
       return <DeadPixelTest />;
     default:
-      return <ScreenInfo />;
+      return (
+        <>
+          <ScreenInfo />
+          <WindowSize />
+        </>
+      );
   }
 }
 

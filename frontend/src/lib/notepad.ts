@@ -35,14 +35,26 @@ export function findAll(text: string, finder: RegExp | null): { ranges: Range[];
   return { ranges, capped: false };
 }
 
-/** Replaces every match; `$1`-style groups work in regex mode, and are literal otherwise. */
-export function replaceAll(text: string, finder: RegExp, replacement: string, regexMode: boolean): { text: string; count: number } {
+/** The replacement in the match's capitals: FOX → CAT, Fox → Cat, fox → cat. */
+export function keepCapitals(match: string, replacement: string): string {
+  const letters = match.replace(/[^\p{L}]/gu, "");
+  if (letters.length > 1 && letters === letters.toLocaleUpperCase() && letters !== letters.toLocaleLowerCase()) return replacement.toLocaleUpperCase();
+  const first = letters[0];
+  if (first && first === first.toLocaleUpperCase() && first !== first.toLocaleLowerCase()) return replacement.charAt(0).toLocaleUpperCase() + replacement.slice(1);
+  return replacement;
+}
+
+/**
+ * Replaces every match; `$1`-style groups work in regex mode, and are literal otherwise.
+ * With `capitals`, a plain replacement follows each match's capitals (see keepCapitals).
+ */
+export function replaceAll(text: string, finder: RegExp, replacement: string, regexMode: boolean, capitals = false): { text: string; count: number } {
   let count = 0;
   const out = text.replace(finder, (...args) => {
     const match = args[0] as string;
     if (!match) return match;
     count++;
-    if (!regexMode) return replacement;
+    if (!regexMode) return capitals ? keepCapitals(match, replacement) : replacement;
     // Re-run the single match so $1, $<name> and $& expand exactly as String.replace does.
     return match.replace(new RegExp(finder.source, finder.flags.replace("g", "")), replacement);
   });
@@ -397,7 +409,7 @@ export function stats(text: string) {
 
 export type TransformId =
   | "upper" | "lower" | "title" | "sentence" | "swap"
-  | "trim-lines" | "remove-empty" | "dedupe" | "sort-az" | "sort-za" | "sort-natural" | "sort-length" | "reverse-lines" | "shuffle" | "number-lines" | "unnumber-lines"
+  | "trim-lines" | "remove-empty" | "dedupe" | "dedupe-any-case" | "sort-az" | "sort-za" | "sort-natural" | "sort-length" | "reverse-lines" | "shuffle" | "number-lines" | "unnumber-lines"
   | "join-lines" | "split-sentences" | "add-bullets" | "quote-lines"
   | "strip-invisible" | "straighten" | "collapse-spaces" | "tabs-to-spaces" | "strip-html" | "strip-markdown"
   | "json-pretty" | "json-minify" | "url-encode" | "url-decode";
@@ -406,11 +418,11 @@ const lines = (s: string) => s.split("\n");
 const collator = new Intl.Collator(undefined, { sensitivity: "base" });
 const natural = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
 
-export function dedupeLines(s: string): string {
+export function dedupeLines(s: string, anyCase = false): string {
   const seen = new Set<string>();
   return lines(s)
     .filter((l) => {
-      const k = l.trim();
+      const k = anyCase ? l.trim().toLocaleLowerCase() : l.trim();
       if (!k) return true;
       if (seen.has(k)) return false;
       seen.add(k);
@@ -433,6 +445,7 @@ export function transform(s: string, id: TransformId): string {
     case "trim-lines": return lines(s).map((l) => l.trim()).join("\n");
     case "remove-empty": return lines(s).filter((l) => l.trim()).join("\n");
     case "dedupe": return dedupeLines(s);
+    case "dedupe-any-case": return dedupeLines(s, true);
     case "sort-az": return lines(s).sort(collator.compare).join("\n");
     case "sort-za": return lines(s).sort((a, b) => collator.compare(b, a)).join("\n");
     case "sort-natural": return lines(s).sort(natural.compare).join("\n");

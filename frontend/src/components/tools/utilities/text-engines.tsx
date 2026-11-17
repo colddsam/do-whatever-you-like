@@ -472,11 +472,18 @@ export function SummarizeEngine() {
 
 /* ---------- escapes ---------- */
 
+const ESCAPE_SAMPLES = { json: 'He said "hi"\nand left.\tTab → é', html: '<a href="/x?a=1&b=2">Café & “quotes”</a>' };
+
 export function EscapeEngine({ preset }: EngineProps) {
-  const kind = preset.kind === "html" ? "html" : "json";
+  const [kind, setKindState] = useState<"json" | "html">(preset.kind === "html" ? "html" : "json");
   const [encode, setEncode] = useState(true);
   const [all, setAll] = useState(false);
-  const [input, setInput] = useState(kind === "json" ? 'He said "hi"\nand left.\tTab → é' : '<a href="/x?a=1&b=2">Café & “quotes”</a>');
+  const [input, setInput] = useState(ESCAPE_SAMPLES[kind]);
+  const setKind = (k: "json" | "html") => {
+    // Swap in the other kind's sample only if the box still holds this kind's sample.
+    if (input === ESCAPE_SAMPLES[kind]) setInput(ESCAPE_SAMPLES[k]);
+    setKindState(k);
+  };
   const r = attempt(() => (kind === "json" ? (encode ? jsonEscape(input) : jsonUnescape(input)) : encode ? htmlEncode(input, all) : htmlDecode(input)));
   const flip = () => {
     if (r.value !== null) setInput(r.value);
@@ -485,6 +492,9 @@ export function EscapeEngine({ preset }: EngineProps) {
   return (
     <>
       <Panel>
+        <Row label="Format">
+          <Chips value={kind} options={[{ value: "json", label: "JSON string" }, { value: "html", label: "HTML entities" }]} onChange={setKind} label="Format" />
+        </Row>
         <Row label="Direction">
           <Chips value={encode ? "e" : "d"} options={[{ value: "e", label: kind === "json" ? "Escape" : "Encode" }, { value: "d", label: kind === "json" ? "Unescape" : "Decode" }]} onChange={(v) => setEncode(v === "e")} label="Direction" />
         </Row>

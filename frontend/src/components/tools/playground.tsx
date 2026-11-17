@@ -4,6 +4,7 @@ import type { ComponentType } from "react";
 import { getTool, type ToolKind } from "@/lib/tools";
 import dynamic from "next/dynamic";
 import { getUtility } from "@/lib/utilities/catalog";
+import { useStartParam } from "@/lib/start-params";
 
 /**
  * Each workspace is its own chunk, so a tool page downloads only the code for its tool (the PDF,
@@ -33,8 +34,7 @@ const HtmlToImageTool = dynamic(() => import("./image/html-tool").then((m) => m.
 const MemeGeneratorTool = dynamic(() => import("./image/meme-tool").then((m) => m.MemeGeneratorTool), { loading });
 const PhotoEditorTool = dynamic(() => import("./image/photo-editor").then((m) => m.PhotoEditorTool), { loading });
 const CompressImageTool = dynamic(() => import("./image/simple-tools").then((m) => m.CompressImageTool), { loading });
-const ConvertFromJpgTool = dynamic(() => import("./image/simple-tools").then((m) => m.ConvertFromJpgTool), { loading });
-const ConvertToJpgTool = dynamic(() => import("./image/simple-tools").then((m) => m.ConvertToJpgTool), { loading });
+const ConvertImageTool = dynamic(() => import("./image/simple-tools").then((m) => m.ConvertImageTool), { loading });
 const RemoveBackgroundTool = dynamic(() => import("./image/simple-tools").then((m) => m.RemoveBackgroundTool), { loading });
 const ResizeImageTool = dynamic(() => import("./image/simple-tools").then((m) => m.ResizeImageTool), { loading });
 const RotateImageTool = dynamic(() => import("./image/simple-tools").then((m) => m.RotateImageTool), { loading });
@@ -131,9 +131,7 @@ const byId: Record<string, Workspace> = {
   "split-files": SplitFilesTool,
   // PDF family: organize
   "merge-pdf": (p) => <PdfPlayground {...p} mode="merge" />,
-  "split-pdf": (p) => <PdfPlayground {...p} mode="split" />,
-  "remove-pages": (p) => <PdfPlayground {...p} mode="organize" />,
-  "extract-pages": (p) => <PdfPlayground {...p} mode="split" chosenPages />,
+  "split-pdf": SplitPdf,
   "organize-pdf": (p) => <PdfPlayground {...p} mode="organize" />,
   "scan-to-pdf": ScanTool,
   // optimize
@@ -145,7 +143,6 @@ const byId: Record<string, Workspace> = {
   "jpg-to-pdf": ImagesToPdfTool,
   "html-to-pdf": HtmlToPdfTool,
   // edit
-  "rotate-pdf": (p) => <PdfPlayground {...p} mode="organize" />,
   "page-numbers": PageNumbersTool,
   "watermark-pdf": WatermarkTool,
   "crop-pdf": CropTool,
@@ -166,8 +163,7 @@ const byId: Record<string, Workspace> = {
   "resize-image": ResizeImageTool,
   "crop-image": CropImageTool,
   "rotate-image": RotateImageTool,
-  "convert-to-jpg": ConvertToJpgTool,
-  "jpg-to-image": ConvertFromJpgTool,
+  "convert-image": ConvertImageTool,
   "html-to-image": HtmlToImageTool,
   "icon-maker": IconMakerTool,
   "watermark-image": WatermarkImageTool,
@@ -179,8 +175,7 @@ const byId: Record<string, Workspace> = {
   "video-to-frames": VideoFramesTool,
   "video-to-gif": VideoGifTool,
   // Audio & video, edited on our server (trim, volume) or in the browser (recorder, subtitles)
-  "trim-media": () => <TrimMediaTool toolId="trim-media" initialMode="trim" />,
-  "split-media": () => <TrimMediaTool toolId="split-media" initialMode="parts" />,
+  "trim-media": TrimOrCut,
   "audio-volume": SoundTool,
   "noise-remover": DenoiseTool,
   "screen-recorder": RecorderTool,
@@ -193,13 +188,22 @@ const byId: Record<string, Workspace> = {
   "audio-waveform-generator": AudioWaveformTool,
   "archive-extractor-creator": ArchiveTool,
   "document-viewer": DocumentViewerTool,
-  "excel-viewer": DocumentViewerTool,
-  "word-viewer": DocumentViewerTool,
-  "powerpoint-viewer": DocumentViewerTool,
-  "pdf-viewer": DocumentViewerTool,
-  "csv-viewer": DocumentViewerTool,
   "3d-viewer": ThreeViewerTool,
 };
+
+/*
+ * Workspaces whose starting mode can come from the address (lib/start-params.ts), so the pages
+ * merged into them (Extract pages, Multi-cutter) still open on the mode they used to show. The
+ * value is null on the server, so the key remounts the workspace, still empty, once it's known.
+ */
+function SplitPdf(p: { toolId: string }) {
+  const pages = useStartParam("pages");
+  return <PdfPlayground key={pages ?? "-"} {...p} mode="split" chosenPages={pages === "chosen"} />;
+}
+function TrimOrCut({ toolId }: { toolId: string }) {
+  const mode = useStartParam("mode");
+  return <TrimMediaTool key={mode ?? "-"} toolId={toolId} initialMode={mode === "parts" ? "parts" : "trim"} />;
+}
 
 /** A standalone page for one tab of the developer hub (JSON formatter, JWT decoder…). */
 function DevTabPage({ toolId }: { toolId: string }) {

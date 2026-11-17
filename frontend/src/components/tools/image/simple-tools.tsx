@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { FlipHorizontal2, FlipVertical2, RotateCcw, RotateCw } from "lucide-react";
 import { IMAGE_API, megapixels, targetSize, upscalePlan, type ImageCapabilities } from "@/lib/image";
+import { useStartParam } from "@/lib/start-params";
 import { cn } from "@/lib/utils";
 import { Chips, Panel, Row, Slider, Swatches, TextField, Toggle } from "../pdf/kit";
 import { plural } from "../pdf/parts";
@@ -176,65 +177,31 @@ export function ResizeImageTool({ toolId, band }: ToolProps) {
 
 /* ---------- Convert ---------- */
 
-export function ConvertToJpgTool({ toolId, band }: ToolProps) {
+type ConvertTarget = "jpg" | "png" | "webp" | "gif" | "animated";
+const CONVERT_TARGETS: ConvertTarget[] = ["jpg", "png", "webp", "gif", "animated"];
+/** What the animated-GIF endpoint can read (no SVG, PSD or camera RAW). */
+const ANIMATABLE = new Set([".jpg", ".jpeg", ".jfif", ".png", ".gif", ".webp", ".bmp", ".tif", ".tiff", ".avif", ".heic", ".heif"]);
+const extOf = (name: string) => name.slice(name.lastIndexOf(".")).toLowerCase();
+
+/**
+ * Any image to JPG, PNG, WebP or GIF, or several into an animated GIF. One tool for what used to be
+ * "Convert to JPG" and "Convert from JPG"; ?to=png (and the old pages' redirects) pick the start.
+ */
+export function ConvertImageTool({ toolId, band }: ToolProps) {
+  const start = useStartParam("to");
+  const [picked, setPicked] = useState<ConvertTarget | null>(null);
+  const target: ConvertTarget = picked ?? (CONVERT_TARGETS.includes(start as ConvertTarget) ? (start as ConvertTarget) : "jpg");
   const [quality, setQuality] = useState<"recommended" | "high">("recommended");
   const [background, setBackground] = useState("#ffffff");
-  return (
-    <ImageTask
-      toolId={toolId}
-      band={band}
-      input="convert"
-      endpoint={IMAGE_API("convert")}
-      label={({ items }) => `Convert ${plural(items.length, "image")} to JPG`}
-      working="Converting…"
-      fields={() => [
-        ["target", "jpg"],
-        ["quality", quality],
-        ["background", background],
-      ]}
-      hint="HEIC, RAW, PSD and multi-page TIFF files use their main picture. Animated GIFs use the first frame."
-      options={({ locked }) => (
-        <Panel>
-          <Row label="Quality">
-            <Chips
-              label="Quality"
-              value={quality}
-              onChange={setQuality}
-              disabled={locked}
-              options={[
-                { value: "recommended", label: "Recommended" },
-                { value: "high", label: "Highest" },
-              ]}
-            />
-            <p className="mt-2 text-xs text-ink-3">
-              {quality === "high"
-                ? "Every pixel kept, JPG quality 95 with full colour detail. Bigger files."
-                : "JPG quality 85. Very large photos are scaled to 6,000 px on the long side."}
-            </p>
-          </Row>
-          <Row label="Transparent areas become">
-            <Swatches value={background} onChange={setBackground} colors={BACKGROUNDS} disabled={locked} />
-          </Row>
-        </Panel>
-      )}
-    />
-  );
-}
-
-type FromTarget = "png" | "webp" | "gif" | "animated";
-
-export function ConvertFromJpgTool({ toolId, band }: ToolProps) {
-  const [target, setTarget] = useState<FromTarget>("png");
   const [seconds, setSeconds] = useState(0.5);
   const [loop, setLoop] = useState(true);
   const [fit, setFit] = useState<"contain" | "cover">("contain");
-  const [background, setBackground] = useState("#ffffff");
   const animated = target === "animated";
   return (
     <ImageTask
       toolId={toolId}
       band={band}
-      input="gif"
+      input="convert"
       endpoint={IMAGE_API(animated ? "gif" : "convert")}
       sortable={animated}
       label={({ items }) => (animated ? `Make a GIF from ${plural(items.length, "image")}` : `Convert ${plural(items.length, "image")} to ${target.toUpperCase()}`)}
@@ -249,28 +216,68 @@ export function ConvertFromJpgTool({ toolId, band }: ToolProps) {
             ]
           : [
               ["target", target],
-              ["quality", "high"],
+              ["quality", target === "jpg" ? quality : "high"],
+              ["background", background],
             ]
       }
-      invalid={({ items }) => (animated && items.length < 2 ? "Add at least two images to make an animation." : null)}
+      invalid={({ items }) => {
+        if (!animated) return null;
+        if (items.length < 2) return "Add at least two images to make an animation.";
+        const odd = items.find((i) => !ANIMATABLE.has(extOf(i.file.name)));
+        return odd ? `${odd.file.name} can't be a GIF frame. Convert it to PNG first, or remove it.` : null;
+      }}
       tileNote={(_, { items }) => (animated && items.length > 1 ? `frame · ${seconds}s` : null)}
-      hint={animated ? "Frames play in the order shown. Use the arrows under each image to reorder them." : "PNG and WebP keep every pixel. GIF uses 256 colours."}
+      hint={
+        animated
+          ? "Frames play in the order shown. Use the arrows under each image to reorder them."
+          : "HEIC, RAW, PSD and multi-page TIFF files use their main picture. Animated GIFs stay animated as GIF or WebP; other formats use the first frame."
+      }
       options={({ locked }) => (
         <Panel>
           <Row label="Convert to">
             <Chips
               label="Convert to"
               value={target}
-              onChange={setTarget}
+              onChange={setPicked}
               disabled={locked}
               options={[
+                { value: "jpg", label: "JPG" },
                 { value: "png", label: "PNG" },
                 { value: "webp", label: "WebP" },
                 { value: "gif", label: "GIF" },
                 { value: "animated", label: "Animated GIF" },
               ]}
             />
+            {!animated && (
+              <p className="mt-2 text-xs text-ink-3">
+                {target === "jpg" ? "Smallest for photos; no transparency." : target === "gif" ? "256 colours; best for simple graphics." : "Keeps every pixel and transparency."}
+              </p>
+            )}
           </Row>
+          {target === "jpg" && (
+            <>
+              <Row label="Quality">
+                <Chips
+                  label="Quality"
+                  value={quality}
+                  onChange={setQuality}
+                  disabled={locked}
+                  options={[
+                    { value: "recommended", label: "Recommended" },
+                    { value: "high", label: "Highest" },
+                  ]}
+                />
+                <p className="mt-2 text-xs text-ink-3">
+                  {quality === "high"
+                    ? "Every pixel kept, JPG quality 95 with full colour detail. Bigger files."
+                    : "JPG quality 85. Very large photos are scaled to 6,000 px on the long side."}
+                </p>
+              </Row>
+              <Row label="Transparent areas become">
+                <Swatches value={background} onChange={setBackground} colors={BACKGROUNDS} disabled={locked} />
+              </Row>
+            </>
+          )}
           {animated && (
             <>
               <Row label="Each image shows for">
