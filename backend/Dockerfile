@@ -55,6 +55,13 @@ RUN pip install -r requirements.txt \
     # And the background-removal model (U2-Net "silueta", 44 MB), checked against its pinned SHA-256.
     && python -c "import hashlib, os, urllib.request; os.makedirs('/app/models/image', exist_ok=True); d = urllib.request.urlopen('https://github.com/danielgatis/rembg/releases/download/v0.0.0/silueta.onnx', timeout=120).read(); assert hashlib.sha256(d).hexdigest() == '75da6c8d2f8096ec743d071951be73b4a8bc7b3e51d9a6625d63644f90ffeedb'; open('/app/models/image/silueta.onnx', 'wb').write(d)"
 
+# The cut-out model's full-resolution layers in float: ~60 MB less per run (see the script). The
+# onnx package is only needed for this step, so it's installed aside and removed again.
+COPY scripts/lean_background_model.py /tmp/lean_background_model.py
+RUN pip install --target /tmp/onnx-build onnx==1.23.2 \
+    && PYTHONPATH=/tmp/onnx-build python /tmp/lean_background_model.py /app/models/image/silueta.onnx /app/models/image/silueta-lean.onnx \
+    && rm -rf /tmp/onnx-build /tmp/lean_background_model.py
+
 COPY app ./app
 
 RUN useradd --create-home --uid 10001 app \

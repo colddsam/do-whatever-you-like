@@ -10,16 +10,25 @@ The image tools that need a neural network, all run with ONNX Runtime on the CPU
 
 These run inside the PDF process pool. Sessions are created per job and dropped afterwards, so an
 idle server holds none of them in memory (important on a 512 MB instance).
+
+Memory, measured for one 2000 x 2667 photo: U²-Net's activations at 320 px take ~240 MB (~180 MB with
+silueta-lean.onnx, see background_model), so nothing else may be large at the same time. ONNX Runtime's default CPU arena kept another
+~130 MB (and grew with each run), and the full-size photo was held twice while the network ran;
+together that pushed the instance past 512 MB and Render restarted it. Hence: no arena, small
+copies for the network, and the model is freed before any full-size photo is opened.
 """
 
+import ctypes
 import gc
 import hashlib
 import logging
+import math
 import os
+import sys
 import tempfile
 import urllib.request
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Iterable, List, Tuple
 
 import numpy as np
 from PIL import Image, ImageFilter
@@ -34,23 +43,63 @@ UPSCALER = ML_DIR / "realesr-general-x4v3.onnx"
 FACES = ML_DIR / "face_detection_yunet_2023mar.onnx"
 
 
-def _session(path: Path):
+def _threads() -> int:
+    """ONNX_THREADS, or (0) the CPUs this container may actually use: its cgroup quota, not the host's cores."""
+    if settings.ONNX_THREADS > 0:
+        return settings.ONNX_THREADS
+    cpus = len(os.sched_getaffinity(0)) if hasattr(os, "sched_getaffinity") else (os.cpu_count() or 1)
+    try:
+        quota, period = Path("/sys/fs/cgroup/cpu.max").read_text().split()[:2]
+        if quota != "max":
+            cpus = min(cpus, math.ceil(int(quota) / int(period)))
+    except (OSError, ValueError):
+        pass
+    return max(1, min(cpus, 4))
+
+
+def _session(path: Path, layout_copies: bool = True):
     try:
         import onnxruntime as ort
     except ImportError:
         raise ImageToolUnavailableError()
     opts = ort.SessionOptions()
-    opts.intra_op_num_threads = settings.ONNX_THREADS
+    opts.intra_op_num_threads = _threads()
     opts.inter_op_num_threads = 1
     opts.log_severity_level = 3
+    # The arena keeps every buffer it ever allocated (and grows run after run); the memory pattern
+    # pre-plans one block for the whole graph. Both trade a few percent of speed for 100+ MB here.
+    opts.enable_cpu_mem_arena = False
+    opts.enable_mem_pattern = False
+    if not layout_copies:
+        # EXTENDED skips the NCHWc layout pass, which copies each full-size activation once more.
+        opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_EXTENDED
+    # Idle worker threads would otherwise spin, burning a small instance's CPU quota for nothing.
+    opts.add_session_config_entry("session.intra_op.allow_spinning", "0")
     return ort.InferenceSession(str(path), sess_options=opts, providers=["CPUExecutionProvider"])
+
+
+def _release() -> None:
+    """Hands freed native memory back to the OS, so the pool process doesn't sit on it after a job."""
+    gc.collect()
+    if sys.platform.startswith("linux"):
+        try:
+            ctypes.CDLL("libc.so.6").malloc_trim(0)
+        except (OSError, AttributeError):
+            pass
 
 
 # ---------- background ----------
 
 
 def background_model() -> Path:
-    """The cut-out model, fetched on first use (and baked into the Docker image) and verified."""
+    """
+    The cut-out model, fetched on first use (and baked into the Docker image) and verified. The
+    Docker image also carries silueta-lean.onnx (scripts/lean_background_model.py), the same network
+    with its full-resolution layers in float, which needs ~60 MB less per run; it's used when present.
+    """
+    lean = settings.MODEL_DIR / "silueta-lean.onnx"
+    if lean.is_file():
+        return lean
     target = settings.MODEL_DIR / "silueta.onnx"
     if target.is_file():
         return target
@@ -75,39 +124,60 @@ def background_model() -> Path:
     return target
 
 
-def subject_mask(img: Image.Image) -> Image.Image:
-    """An L-mode mask the size of `img`: 255 where the subject is, 0 for background."""
-    session = _session(background_model())
+MASK_SIZE = 320  # silueta's fixed input size
+
+
+def background_masks(images: Iterable[Image.Image]) -> List[Image.Image]:
+    """
+    One raw MASK_SIZE x MASK_SIZE L-mode mask per RGB image, from a single model session that is
+    freed before returning. Pass small copies: only a 320 px version of each image is ever used.
+    """
+    session = _session(background_model(), layout_copies=False)
     try:
-        small = img.convert("RGB").resize((320, 320), Image.Resampling.LANCZOS)
-        arr = np.asarray(small, dtype=np.float32)
-        arr = arr / max(float(arr.max()), 1e-6)
-        arr = (arr - np.array([0.485, 0.456, 0.406], dtype=np.float32)) / np.array([0.229, 0.224, 0.225], dtype=np.float32)
-        tensor = arr.transpose(2, 0, 1)[None].astype(np.float32)
-        pred = session.run(None, {session.get_inputs()[0].name: tensor})[0][0, 0]
-        lo, hi = float(pred.min()), float(pred.max())
-        pred = (pred - lo) / max(hi - lo, 1e-6)
-        mask = Image.fromarray((pred * 255).astype(np.uint8), "L").resize(img.size, Image.Resampling.LANCZOS)
+        name = session.get_inputs()[0].name
+        masks = []
+        for img in images:
+            small = img.resize((MASK_SIZE, MASK_SIZE), Image.Resampling.LANCZOS)
+            del img
+            arr = np.asarray(small, dtype=np.float32)
+            arr = arr / max(float(arr.max()), 1e-6)
+            arr = (arr - np.array([0.485, 0.456, 0.406], dtype=np.float32)) / np.array([0.229, 0.224, 0.225], dtype=np.float32)
+            tensor = arr.transpose(2, 0, 1)[None].astype(np.float32)
+            pred = session.run(None, {name: tensor})[0][0, 0]
+            lo, hi = float(pred.min()), float(pred.max())
+            pred = (pred - lo) / max(hi - lo, 1e-6)
+            masks.append(Image.fromarray((pred * 255).astype(np.uint8), "L"))
+        return masks
     finally:
         del session
-        gc.collect()
+        _release()
+
+
+def cutout(img: Image.Image, raw_mask: Image.Image, background: str, color: Tuple[int, int, int]) -> Image.Image:
+    """
+    Applies a mask from background_masks() to the full-size RGB image. Works in place where it can
+    (`img` itself may become the RGBA result): at 25 MP every extra full-size copy is 75-100 MB.
+    """
+    mask = raw_mask.resize(img.size, Image.Resampling.LANCZOS)
     # Firm up the edges: faint haze becomes background, near-certain pixels become fully solid.
-    return mask.point(lambda v: 0 if v < 20 else 255 if v > 235 else int((v - 20) * 255 / 215))
-
-
-def cutout(img: Image.Image, background: str, color: Tuple[int, int, int]) -> Image.Image:
-    mask = subject_mask(img)
+    mask = mask.point(lambda v: 0 if v < 20 else 255 if v > 235 else int((v - 20) * 255 / 215))
     if mask.getextrema()[1] < 32:
         raise ImageProcessingError("We couldn't find a clear subject in that image.")
     if background == "transparent":
-        out = img.convert("RGBA")
-        out.putalpha(mask)
-        return out
+        img.putalpha(mask)
+        return img
     if background == "blur":
-        back = img.filter(ImageFilter.GaussianBlur(max(6, max(img.size) // 60)))
+        radius = max(6, max(img.size) // 60)
+        # A blur this strong looks the same done at reduced scale and enlarged, for a fraction of
+        # the memory and CPU (a ~100 px radius over a 25 MP photo otherwise needs its own full copy).
+        f = max(1, min(4, radius // 6))
+        small = img.resize((max(1, img.width // f), max(1, img.height // f)), Image.Resampling.BOX)
+        back = small.filter(ImageFilter.GaussianBlur(radius / f)).resize(img.size, Image.Resampling.BICUBIC)
+        del small
     else:
         back = Image.new("RGB", img.size, color)
-    return Image.composite(img, back, mask)
+    back.paste(img, (0, 0), mask)
+    return back
 
 
 # ---------- upscaling ----------
@@ -139,7 +209,7 @@ def super_resolve(img: Image.Image, factor: int) -> Image.Image:
             out[y * scale : y * scale + th, x * scale : x * scale + tw] = np.clip(res[ty : ty + th, tx : tx + tw] * 255.0 + 0.5, 0, 255).astype(np.uint8)
     result = Image.fromarray(out, "RGB")
     del session, rgb, out
-    gc.collect()
+    _release()
     if factor == 2:
         result = result.resize((w * 2, h * 2), Image.Resampling.LANCZOS)
     if alpha is not None:
