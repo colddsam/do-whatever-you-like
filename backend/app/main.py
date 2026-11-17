@@ -5,6 +5,7 @@ from app.api.v1.router import api_v1_router
 from app.core.config import app_settings
 from app.core.lifespan import lifespan
 from app.auth.authorization import verify_global_api_key
+from app.core.errors import CatchAllMiddleware
 from app.core.limits import BodySizeLimitMiddleware
 
 
@@ -20,6 +21,8 @@ def create_app() -> FastAPI:
         dependencies=[Depends(verify_global_api_key)],
     )
 
+    # Unexpected errors become a JSON 500 here, inside CORS, so the browser can read them too.
+    application.add_middleware(CatchAllMiddleware)
     # Oversized bodies are refused before they're read. Added before CORS, so CORS wraps it and the
     # browser can read the 413 when it uploads straight to this service.
     application.add_middleware(BodySizeLimitMiddleware)

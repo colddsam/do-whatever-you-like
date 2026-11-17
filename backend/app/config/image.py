@@ -21,7 +21,7 @@ class ImageSettings(BaseSettings):
     # Upscaling runs Real-ESRGAN tile by tile; the result's size is what costs memory and time.
     UPSCALE_MAX_OUTPUT_PIXELS: int = 16_000_000
     UPSCALE_TILE: int = 192
-    ONNX_THREADS: int = 0  # 0 = all cores
+    ONNX_THREADS: int = 0  # 0 = the CPUs this container may use (its cgroup quota), at most 4
 
     HTML_TIMEOUT_SECONDS: int = 45
     HTML_MAX_HEIGHT: int = 16_000
