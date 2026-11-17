@@ -69,6 +69,7 @@ const SoundTool = dynamic(() => import("./media/media-edit-tools").then((m) => m
 const DenoiseTool = dynamic(() => import("./media/media-edit-tools").then((m) => m.DenoiseTool), { loading });
 const RecorderTool = dynamic(() => import("./media/recorder-tool").then((m) => m.RecorderTool), { loading });
 const SubtitleTool = dynamic(() => import("./media/subtitle-tool").then((m) => m.SubtitleTool), { loading });
+const NotepadTool = dynamic(() => import("./text/notepad").then((m) => m.NotepadTool), { loading });
 const WritingHelperTool = dynamic(() => import("./text/writing-helper").then((m) => m.WritingHelperTool), { loading });
 const UsernameGeneratorTool = dynamic(() => import("./text/username-generator").then((m) => m.UsernameGeneratorTool), { loading });
 const ImageToSvgTool = dynamic(() => import("./image/vectorize-tool").then((m) => m.ImageToSvgTool), { loading });
@@ -185,6 +186,7 @@ const byId: Record<string, Workspace> = {
   "screen-recorder": RecorderTool,
   "subtitle-editor": SubtitleTool,
   writing: WritingHelperTool,
+  notepad: NotepadTool,
   "username-generator": UsernameGeneratorTool,
   "image-to-svg": ImageToSvgTool,
   "mockup-frame-generator": MockupSafeZoneTool,

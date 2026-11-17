@@ -28,7 +28,7 @@ import sys
 import tempfile
 import urllib.request
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import numpy as np
 from PIL import Image, ImageFilter
@@ -183,35 +183,67 @@ def cutout(img: Image.Image, raw_mask: Image.Image, background: str, color: Tupl
 # ---------- upscaling ----------
 
 
-def super_resolve(img: Image.Image, factor: int) -> Image.Image:
-    """4× with Real-ESRGAN (2× is the 4× result scaled down, which keeps the sharper detail)."""
+def upscale_plan(w: int, h: int, factor: int, max_in: int, max_out: int) -> Optional[Dict[str, Any]]:
+    """
+    Sizes for one upscale: what the network sees and what comes out. The network always enlarges 4x
+    (2x is that result scaled down, which keeps the sharper detail), so its cost follows its input,
+    not the factor. An image above `max_in` is reduced first; a result above `max_out` is made as
+    large as fits. None when the result couldn't be meaningfully bigger than the image itself.
+    """
     if factor not in (2, 4):
         raise ImageProcessingError("Pick 2× or 4×.")
+    ow, oh = w * factor, h * factor
+    capped = ow * oh > max_out
+    if capped:
+        s = math.sqrt(max_out / (ow * oh))
+        ow, oh = max(1, int(ow * s)), max(1, int(oh * s))
+    if ow < w * 1.25 or oh < h * 1.25:
+        return None
+    nw, nh = w, h
+    if nw * nh > max_in:
+        s = math.sqrt(max_in / (nw * nh))
+        nw, nh = max(1, int(nw * s)), max(1, int(nh * s))
+    # Feeding the full image for 2x is right (4x then down keeps detail); beyond the result's own size it's waste.
+    if nw > ow or nh > oh:
+        nw, nh = min(nw, ow), min(nh, oh)
+    return {"network": (nw, nh), "output": (ow, oh), "capped": capped, "reduced": (nw, nh) != (w, h)}
+
+
+def super_resolve(img: Image.Image, network: Tuple[int, int], output: Tuple[int, int]) -> Image.Image:
+    """Real-ESRGAN 4x on `img` at the `network` size, then resized to `output` (see upscale_plan)."""
     if not UPSCALER.is_file():
         raise ImageToolUnavailableError("Upscaling isn't available on this server yet.")
+    alpha = None
+    if img.mode in ("RGBA", "LA", "PA") or "transparency" in img.info:
+        alpha = (img if img.mode in ("RGBA", "LA") else img.convert("RGBA")).getchannel("A")
+    work = img.convert("RGB")
+    if work.size != tuple(network):
+        work = work.resize(network, Image.Resampling.LANCZOS)
     session = _session(UPSCALER)
-    alpha = img.getchannel("A") if img.mode in ("RGBA", "LA") else None
-    rgb = np.asarray(img.convert("RGB"), dtype=np.float32) / 255.0
+    rgb = np.asarray(work, dtype=np.float32) / 255.0
+    del work
     h, w, _ = rgb.shape
     scale = 4
     out = np.zeros((h * scale, w * scale, 3), dtype=np.uint8)
     tile, pad = max(64, settings.UPSCALE_TILE), 12
     name = session.get_inputs()[0].name
-    for y in range(0, h, tile):
-        for x in range(0, w, tile):
-            y0, x0 = max(0, y - pad), max(0, x - pad)
-            y1, x1 = min(h, y + tile + pad), min(w, x + tile + pad)
-            patch = rgb[y0:y1, x0:x1].transpose(2, 0, 1)[None]
-            res = session.run(None, {name: np.ascontiguousarray(patch)})[0][0].transpose(1, 2, 0)
-            # Keep only the tile's own area; the padding just gives the network context at the seams.
-            ty, tx = (y - y0) * scale, (x - x0) * scale
-            th, tw = (min(y + tile, h) - y) * scale, (min(x + tile, w) - x) * scale
-            out[y * scale : y * scale + th, x * scale : x * scale + tw] = np.clip(res[ty : ty + th, tx : tx + tw] * 255.0 + 0.5, 0, 255).astype(np.uint8)
-    result = Image.fromarray(out, "RGB")
-    del session, rgb, out
-    _release()
-    if factor == 2:
-        result = result.resize((w * 2, h * 2), Image.Resampling.LANCZOS)
+    try:
+        for y in range(0, h, tile):
+            for x in range(0, w, tile):
+                y0, x0 = max(0, y - pad), max(0, x - pad)
+                y1, x1 = min(h, y + tile + pad), min(w, x + tile + pad)
+                patch = rgb[y0:y1, x0:x1].transpose(2, 0, 1)[None]
+                res = session.run(None, {name: np.ascontiguousarray(patch)})[0][0].transpose(1, 2, 0)
+                # Keep only the tile's own area; the padding just gives the network context at the seams.
+                ty, tx = (y - y0) * scale, (x - x0) * scale
+                th, tw = (min(y + tile, h) - y) * scale, (min(x + tile, w) - x) * scale
+                out[y * scale : y * scale + th, x * scale : x * scale + tw] = np.clip(res[ty : ty + th, tx : tx + tw] * 255.0 + 0.5, 0, 255).astype(np.uint8)
+        result = Image.fromarray(out, "RGB")
+    finally:
+        del session, rgb, out
+        _release()
+    if result.size != tuple(output):
+        result = result.resize(output, Image.Resampling.LANCZOS)
     if alpha is not None:
         result = result.convert("RGBA")
         result.putalpha(alpha.resize(result.size, Image.Resampling.LANCZOS))

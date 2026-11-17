@@ -393,6 +393,7 @@ class ImageService:
             "web": find_spec("playwright") is not None,
             "max_files": settings.MAX_FILES,
             "max_pixels": settings.MAX_PIXELS,
+            "upscale_max_input_pixels": settings.UPSCALE_MAX_INPUT_PIXELS,
             "upscale_max_output_pixels": settings.UPSCALE_MAX_OUTPUT_PIXELS,
         }
 
@@ -646,24 +647,24 @@ class ImageService:
         return {"files": entries}
 
     def upscale(self, path_s: str, name: str, out_dir: str, factor: int) -> Dict[str, Any]:
-        from app.services.image_ai import super_resolve
+        from app.services.image_ai import super_resolve, upscale_plan
 
         src = Path(path_s)
         img = open_image(src, name)
         if _animated(img):
             img.seek(0)
             img = img.copy()
-        if img.width * img.height * factor * factor > settings.UPSCALE_MAX_OUTPUT_PIXELS:
-            limit = math.sqrt(settings.UPSCALE_MAX_OUTPUT_PIXELS / (factor * factor))
+        plan = upscale_plan(img.width, img.height, factor, settings.UPSCALE_MAX_INPUT_PIXELS, settings.UPSCALE_MAX_OUTPUT_PIXELS)
+        if plan is None:
             raise InvalidImageError(
-                f"That image is {img.width} × {img.height}. For {factor}× it can be up to about {int(limit)} × {int(limit)} "
-                f"({settings.UPSCALE_MAX_OUTPUT_PIXELS / 1e6:.0f} MP out). Try 2×, or a smaller image."
+                f"That image is already {img.width} × {img.height}, about as large as this server can make an image "
+                f"({settings.UPSCALE_MAX_OUTPUT_PIXELS / 1e6:.0f} MP). Upscaling is for smaller pictures."
             )
-        result = super_resolve(img, factor)
+        result = super_resolve(img, plan["network"], plan["output"])
         fmt = "png" if result.mode == "RGBA" else ("jpg" if src.suffix.lower() in (".jpg", ".jpeg", ".jfif") else "png")
         dest = _unique(Path(out_dir), f"{Path(name).stem}-{factor}x", SAVE_FORMATS[fmt][1])
         save_image(result, dest, fmt, quality=95, source=img, subsampling=0)
-        return {"files": [_entry(src, dest, name, result)]}
+        return {"files": [_entry(src, dest, name, result)], "capped": plan["capped"]}
 
     def detect_faces(self, path_s: str, name: str, sensitivity: str) -> Dict[str, Any]:
         from app.services.image_ai import find_faces

@@ -39,12 +39,16 @@ services:
         sync: false
       - key: TRANSLATE_GROQ_API_KEY
         sync: false
-      # Image tools. Images are decoded in memory (4 bytes a pixel), and upscaling on 0.1 CPU takes
-      # about a minute per megapixel out, so both are capped for the free instance.
+      # Image tools. Images are decoded in memory (4 bytes a pixel), so they're capped for 512 MB.
+      # Upscaling's time follows the pixels Real-ESRGAN sees (~6 min per megapixel on 0.1 CPU, for 2x
+      # and 4x alike): bigger pictures are reduced to 0.5 MP for the network (~3 min at most) and the
+      # result resized to the size asked for, so 2x and 4x are both always offered. Results up to 12 MP.
       - key: IMAGE_MAX_PIXELS
         value: "25000000"
+      - key: IMAGE_UPSCALE_MAX_INPUT_PIXELS
+        value: "500000"
       - key: IMAGE_UPSCALE_MAX_OUTPUT_PIXELS
-        value: "4000000"
+        value: "12000000"
       # Universal converter (any file -> any format). Re-encoding video on 0.1 CPU runs at about real
       # time or slower, so it's capped; copying streams (MP4 -> MKV, M4A -> AAC) isn't.
       - key: UNIVERSAL_VIDEO_MAX_SECONDS

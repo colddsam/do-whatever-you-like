@@ -119,6 +119,7 @@ export type ImageCapabilities = {
   web: boolean;
   max_files: number;
   max_pixels: number;
+  upscale_max_input_pixels?: number;
   upscale_max_output_pixels: number;
 };
 
@@ -140,6 +141,23 @@ export function useImageCapabilities() {
     };
   }, []);
   return caps;
+}
+
+/**
+ * Mirrors upscale_plan() in backend/app/services/image_ai.py: the result's size for a factor, and
+ * whether the picture is reduced for the network first (big images) or the result is capped.
+ * Null when the server couldn't make it meaningfully bigger.
+ */
+export function upscalePlan(w: number, h: number, factor: 2 | 4, maxIn: number, maxOut: number) {
+  let ow = w * factor, oh = h * factor;
+  const capped = ow * oh > maxOut;
+  if (capped) {
+    const s = Math.sqrt(maxOut / (ow * oh));
+    ow = Math.max(1, Math.floor(ow * s));
+    oh = Math.max(1, Math.floor(oh * s));
+  }
+  if (ow < w * 1.25 || oh < h * 1.25) return null;
+  return { width: ow, height: oh, capped, reduced: w * h > maxIn };
 }
 
 export const megapixels = (w: number, h: number) => `${((w * h) / 1e6).toFixed(w * h < 1e6 ? 2 : 1)} MP`;

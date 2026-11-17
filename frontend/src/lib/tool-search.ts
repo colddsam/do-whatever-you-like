@@ -429,6 +429,8 @@ const SYNONYM_GRAPH: Record<string, string[]> = {
   curl: ["api", "http"],
   ssl: ["http", "headers"],
   paraphrase: ["writing", "rewrite"],
+  notepad: ["notepad", "notes", "text"],
+  scratchpad: ["notepad", "notes"],
   rewrite: ["writing", "grammar"],
   grammar: ["writing", "proofread"],
   proofread: ["writing", "grammar"],
@@ -869,6 +871,8 @@ const CURATED_TASK_SUGGESTIONS: Array<{ phrase: string; toolId: string; kind: "t
   { phrase: "strip hidden gps exif data from photos", toolId: "exif-remover", kind: "task" },
   { phrase: "black out sensitive details in pdf", toolId: "redact-pdf", kind: "task" },
   { phrase: "summarize long article or fix grammar", toolId: "writing", kind: "task" },
+  { phrase: "paste text and check or clean it up", toolId: "notepad", kind: "task" },
+  { phrase: "extract emails and links from text", toolId: "notepad", kind: "task" },
   { phrase: "check website http headers and dns records", toolId: "dns-lookup", kind: "task" },
 ];
 

@@ -57,4 +57,5 @@ class Capabilities(BaseModel):
     web: bool
     max_files: int
     max_pixels: int
+    upscale_max_input_pixels: int
     upscale_max_output_pixels: int

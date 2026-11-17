@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { FlipHorizontal2, FlipVertical2, RotateCcw, RotateCw } from "lucide-react";
-import { IMAGE_API, megapixels, targetSize } from "@/lib/image";
+import { IMAGE_API, megapixels, targetSize, upscalePlan, type ImageCapabilities } from "@/lib/image";
 import { cn } from "@/lib/utils";
 import { Chips, Panel, Row, Slider, Swatches, TextField, Toggle } from "../pdf/kit";
 import { plural } from "../pdf/parts";
@@ -412,7 +412,8 @@ export function RotateImageTool({ toolId, band }: ToolProps) {
 /* ---------- Upscale ---------- */
 
 export function UpscaleImageTool({ toolId, band }: ToolProps) {
-  const [factor, setFactor] = useState<2 | 4>(2);
+  const [factor, setFactor] = useState<2 | 4>(4);
+  const limits = (caps: ImageCapabilities | null) => [caps?.upscale_max_input_pixels ?? 4_000_000, caps?.upscale_max_output_pixels ?? 16_000_000] as const;
   return (
     <ImageTask
       toolId={toolId}
@@ -423,20 +424,22 @@ export function UpscaleImageTool({ toolId, band }: ToolProps) {
       compare
       endpoint={IMAGE_API("upscale")}
       label={`Upscale ${factor}×`}
-      working="Adding detail… (about a minute for big images)"
+      working="Adding detail… big pictures can take a few minutes, keep this tab open."
       fields={() => [["factor", String(factor)]]}
       invalid={({ items, caps }) => {
         const s = items[0]?.size;
-        const max = caps?.upscale_max_output_pixels ?? 16_000_000;
-        return s && s.width * s.height * factor * factor > max
-          ? `${s.width} × ${s.height} at ${factor}× would be ${megapixels(s.width * factor, s.height * factor)}. The limit is ${megapixels(max, 1)}: try 2×, or a smaller image.`
-          : null;
+        if (!s) return null;
+        const [maxIn, maxOut] = limits(caps);
+        return upscalePlan(s.width, s.height, factor, maxIn, maxOut)
+          ? null
+          : `${s.width} × ${s.height} is already about as large as this server can make an image (${megapixels(maxOut, 1)}). Upscaling is for smaller pictures.`;
       }}
       hint="Real-ESRGAN redraws the detail, rather than just stretching the pixels."
       resultNote="Zoom in to see the difference: edges, hair and text stay crisp instead of blurring."
       options={({ locked, items, caps }) => {
         const s = items[0]?.size;
-        const max = caps?.upscale_max_output_pixels ?? 16_000_000;
+        const [maxIn, maxOut] = limits(caps);
+        const plan = s ? upscalePlan(s.width, s.height, factor, maxIn, maxOut) : null;
         return (
           <Panel>
             <Row label="Enlarge" hint={s ? `Now ${s.width} × ${s.height}` : undefined}>
@@ -445,13 +448,26 @@ export function UpscaleImageTool({ toolId, band }: ToolProps) {
                 value={factor}
                 onChange={setFactor}
                 disabled={locked}
-                options={([2, 4] as const).map((f) => ({
-                  value: f,
-                  label: s ? `${f}× · ${s.width * f} × ${s.height * f}` : `${f}×`,
-                  disabled: Boolean(s && s.width * s.height * f * f > max),
-                  title: s && s.width * s.height * f * f > max ? "Too large for this server" : undefined,
-                }))}
+                options={([2, 4] as const).map((f) => {
+                  const p = s ? upscalePlan(s.width, s.height, f, maxIn, maxOut) : null;
+                  return {
+                    value: f,
+                    label: p ? `${f}× · ${p.width} × ${p.height}` : `${f}×`,
+                    disabled: Boolean(s && !p),
+                    title: s && !p ? "This picture is already too large to enlarge on this server" : undefined,
+                  };
+                })}
               />
+              {plan?.capped && (
+                <p className="mt-2 text-xs text-ink-3">
+                  Made as large as this server allows ({megapixels(plan.width, plan.height)}), slightly under the full {factor}×.
+                </p>
+              )}
+              {plan?.reduced && (
+                <p className="mt-2 text-xs text-ink-3">
+                  A big picture: the AI works on a reduced copy (to finish in minutes), then the result is enlarged to full size.
+                </p>
+              )}
             </Row>
           </Panel>
         );

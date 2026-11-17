@@ -12,7 +12,7 @@
 
 <a href="https://do-whatever-you-like.colddsam.com"><img src="https://img.shields.io/badge/Open%20the%20site-do--whatever--you--like.colddsam.com-eb4a10?style=for-the-badge&labelColor=15140f" alt="Open the live site"></a>
 
-<img src="https://img.shields.io/badge/tools-260%20live-15140f?style=flat-square" alt="260 live tools">
+<img src="https://img.shields.io/badge/tools-261%20live-15140f?style=flat-square" alt="261 live tools">
 <img src="https://img.shields.io/badge/price-free-2f7d4f?style=flat-square" alt="Free">
 <img src="https://img.shields.io/badge/sign--up-not%20needed-57544a?style=flat-square" alt="No sign-up">
 <img src="https://img.shields.io/badge/watermarks-none-57544a?style=flat-square" alt="No watermarks">
@@ -41,9 +41,9 @@
 
 ## 👋 What is Do-Whatever-You-Like?
 
-**Do-Whatever-You-Like is a free website with 260 small tools for everyday digital chores.**
+**Do-Whatever-You-Like is a free website with 261 small tools for everyday digital chores.**
 
-Need to turn a PDF into Word, translate text, audio recordings or videos into another language, analyze an exported WhatsApp chat, shrink a photo, vectorise a logo to SVG, cut a song, clean up a noisy recording, format JSON, query a local SQLite or Parquet file, make a chart, split a trip bill, track your period privately, or download a Reel? Open the site, pick the tool, done.
+Need to paste a block of text and check what's hiding in it, turn a PDF into Word, translate text, audio recordings or videos into another language, analyze an exported WhatsApp chat, shrink a photo, vectorise a logo to SVG, cut a song, clean up a noisy recording, format JSON, query a local SQLite or Parquet file, make a chart, split a trip bill, track your period privately, or download a Reel? Open the site, pick the tool, done.
 
 - **Free, for everyone.** No account, no sign-up, no watermark, no "pro" plan.
 - **Private by default.** Most tools run inside your browser, so your file never leaves your device. When a tool does need our server, your file is deleted as soon as you have the result.
@@ -70,7 +70,7 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 
 ## 🗂️ What's inside
 
-260 live tools in 9 collections. Click a name to open that collection on the site.
+261 live tools in 9 collections. Click a name to open that collection on the site.
 
 | | Collection | What you can do | Tools |
 | :---: | :--- | :--- | :---: |
@@ -78,7 +78,7 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 | 📄 | [**PDF tools**](https://do-whatever-you-like.colddsam.com/tools/category/pdf) | Merge, split, compress, edit, sign, protect, OCR and compare PDFs | **23** |
 | 🖼️ | [**Image tools**](https://do-whatever-you-like.colddsam.com/tools/category/images) | Compress, resize, crop, remove backgrounds, upscale, vectorise to SVG, frame mockups, blur faces, make memes and icons | **20** |
 | 💻 | [**Developer tools**](https://do-whatever-you-like.colddsam.com/tools/category/developer) | Format, minify and validate code, convert JSON/CSV/YAML/XML/SQL/types, query SQLite & Parquet, hashes, JWT, UUID/ULID, regex, DNS and HTTP checks, cron | **114** |
-| ✍️ | [**Text tools**](https://do-whatever-you-like.colddsam.com/tools/category/text) | Writing helper, username & handle generator, translator (text, audio & video), WhatsApp chat analyzer, word counter, case & list tools, binary and hex, Morse code, summaries | **29** |
+| ✍️ | [**Text tools**](https://do-whatever-you-like.colddsam.com/tools/category/text) | Smart notepad (paste, inspect & clean text), writing helper, username & handle generator, translator (text, audio & video), WhatsApp chat analyzer, word counter, case & list tools, binary and hex, Morse code, summaries | **30** |
 | 🎨 | [**Charts, fonts and colour**](https://do-whatever-you-like.colddsam.com/tools/category/design) | Animated charts, flowcharts, font checker and maker, colour picker & 50–950 scales, SVG optimizer, CSS Grid/Flexbox & UI generators | **14** |
 | ⬇️ | [**Media downloads**](https://do-whatever-you-like.colddsam.com/tools/category/downloads) | Save public YouTube, Instagram and Facebook videos, or just their sound | **3** |
 | 🎬 | [**Audio and video**](https://do-whatever-you-like.colddsam.com/tools/category/media) | Trim & multi-cut on a waveform, remove noise, change volume, waveforms & spectrograms, record your screen, subtitles & caption translation, speech to text, GIFs | **11** |
@@ -150,7 +150,7 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 
 - [**Image studio**](https://do-whatever-you-like.colddsam.com/tools/image) — Compress, resize, convert and cut out images in seconds.
 - [**Compress image**](https://do-whatever-you-like.colddsam.com/tools/compress-image) — Make JPG, PNG, GIF, WebP and SVG files smaller.
-- [**Upscale image**](https://do-whatever-you-like.colddsam.com/tools/upscale-image) — Enlarge a picture 2× or 4× with AI that redraws the detail.
+- [**Upscale image**](https://do-whatever-you-like.colddsam.com/tools/upscale-image) — Enlarge a picture 2× or 4× with AI that redraws the detail. Both sizes work for any picture: big ones are reduced for the AI pass, then enlarged to the full size.
 - [**Remove background**](https://do-whatever-you-like.colddsam.com/tools/remove-background) — Cut out the subject: transparent, a colour, or a soft blur behind.
 - [**Meme generator**](https://do-whatever-you-like.colddsam.com/tools/meme-generator) — Captions on a picture, the classic way, in seconds.
 - [**Photo editor**](https://do-whatever-you-like.colddsam.com/tools/photo-editor) — Filters, light and colour, text, stickers and frames.
@@ -180,9 +180,10 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 </details>
 
 <details>
-<summary><b>✍️ Text tools</b> — 29 tools</summary>
+<summary><b>✍️ Text tools</b> — 30 tools</summary>
 <br>
 
+- [**Smart notepad**](https://do-whatever-you-like.colddsam.com/tools/notepad) — Paste any text and see what's in it: counts, emails, links, numbers, hidden characters and stray spaces, with one-click fixes, find & replace and saved notes.
 - [**Writing helper**](https://do-whatever-you-like.colddsam.com/tools/writing) — Summarise long passages, rewrite tone and fix grammar right in your browser.
 - [**Username & handle generator**](https://do-whatever-you-like.colddsam.com/tools/username-generator) — Generate brandable usernames and check handle availability across social platforms.
 - [**Translator**](https://do-whatever-you-like.colddsam.com/tools/translator) — Translate plain text, subtitles (`.srt`/`.vtt`), audio recordings, voice notes or videos — returning dubbed audio/video files plus copyable input and translated transcripts.
@@ -404,14 +405,14 @@ Need to turn a PDF into Word, translate text, audio recordings or videos into an
 | 🔒 **Private by default** | If a tool can run in your browser, it does. If it needs the server, the file lives in a private folder for that one request and is deleted right after. |
 | 🧑‍🤝‍🧑 **Plain words** | Buttons say what they do ("Remove the noise", "Download 3 clean photos"). Errors say what went wrong and what to try. |
 | 🛡️ **Safe by default** | Every uploaded file is checked by its real contents before anything opens it. A program renamed to `.pdf` is turned away. |
-| 🎨 **One design** | Every page follows one design system (`frontend/DESIGN.md`), so all 260 tools feel like one product. |
+| 🎨 **One design** | Every page follows one design system (`frontend/DESIGN.md`), so all 261 tools feel like one product. |
 | 🧩 **Built to grow** | One registry lists every tool; most new tools are one line plus one engine. That's how the site grew so fast. |
 
 ---
 
 ## 🚀 Our pace
 
-Do-Whatever-You-Like went from an empty repository to **260 live tools in 9 days**.
+Do-Whatever-You-Like went from an empty repository to **261 live tools in 10 days**.
 
 ```mermaid
 timeline
@@ -446,17 +447,20 @@ timeline
     16 Nov : 3D model viewer & inspector (GLB, GLTF, STL, OBJ, FBX, PLY, 3MF)
            : Waveform video & audio multi-cutter (/api/v1/media/cut-parts)
            : Security policy (SECURITY.md)
+    17 Nov : Smart notepad (paste, inspect, fix & keep notes)
+           : Upscaler fixed on the free server (2× and 4× for any picture)
+           : Heavy-tool health check across every server engine
 ```
 
 | 📅 Days | 🧰 Live tools | 🗂️ Collections | 📡 API endpoints | 🧪 Check scripts |
 | :---: | :---: | :---: | :---: | :---: |
-| 9 | 260 | 9 | 78 | 9 backend suites + browser & unit tests |
+| 10 | 261 | 9 | 78 | 10 backend suites + browser & unit tests |
 
 ---
 
 ## 🗺️ What's next
 
-- ✅ **Every listed tool is live.** All 260 tools in the directory — including the Writing helper, Office & document viewers, 3D model inspector, and waveform multi-cutter — are now live and ready to use.
+- ✅ **Every listed tool is live.** All 261 tools in the directory — including the new Smart notepad, the Writing helper, Office & document viewers, 3D model inspector, and waveform multi-cutter — are now live and ready to use.
 - 🙋 **Your requests.** The site has a *Request a tool* button. New tools are picked from what people ask for.
 - 🔧 **Making the existing tools better**: faster on free hosting, clearer wording, and better phone layouts.
 
@@ -508,7 +512,7 @@ sequenceDiagram
 
 | Runs in your browser (file never leaves your device) | Runs on our server (deleted after use) |
 | :--- | :--- |
-| Developer and text converters & analyzers, **SQLite/CSV/Parquet viewer**, **writing helper**, **WhatsApp chat analyzer**, **ZIP/TAR/GZ archive tool**, **image to SVG vectoriser**, **mockup & safe-zone frame**, **audio waveform & spectrogram**, chart maker, flowchart maker, SVG optimizer & CSS playgrounds, **period tracker**, EMI/SIP/GST calculators, bill splitter & invoice generator, QR scanner, photo metadata remover, password generator, encrypted notes, Markdown editor, video to GIF/frames, screen recorder, subtitle editor (with instant inline translation via API), Morse decoder, device tests and timers | PDF tools, universal converter, compress/merge/split, image AI (background removal, upscaling, face blur), audio to text, **translator (text, audio & video dubbing)**, media downloads, trim/volume/noise removal, font and colour inspection, DNS and HTTP checks |
+| Developer and text converters & analyzers, **smart notepad**, **SQLite/CSV/Parquet viewer**, **writing helper**, **WhatsApp chat analyzer**, **ZIP/TAR/GZ archive tool**, **image to SVG vectoriser**, **mockup & safe-zone frame**, **audio waveform & spectrogram**, chart maker, flowchart maker, SVG optimizer & CSS playgrounds, **period tracker**, EMI/SIP/GST calculators, bill splitter & invoice generator, QR scanner, photo metadata remover, password generator, encrypted notes, Markdown editor, video to GIF/frames, screen recorder, subtitle editor (with instant inline translation via API), Morse decoder, device tests and timers | PDF tools, universal converter, compress/merge/split, image AI (background removal, upscaling, face blur), audio to text, **translator (text, audio & video dubbing)**, media downloads, trim/volume/noise removal, font and colour inspection, DNS and HTTP checks |
 
 ---
 
@@ -615,6 +619,8 @@ Then open **http://localhost:3000**.
 | `TRANSCRIBE_GROQ_API_KEY` | Optional free Groq key: fast, accurate speech to text. Without it, Whisper runs on the server. | (empty) |
 | `MEDIA_EXACT_TRIM_MAX_SECONDS` / `MEDIA_VIDEO_REENCODE_MAX_SECONDS` | Caps for slow re-encoding jobs on a small server. | `180` / `1800` |
 | `PDF_CACHE_TTL_SECONDS` | How long a PDF upload is kept for multi-step PDF tools. | `1800` |
+| `IMAGE_UPSCALE_MAX_INPUT_PIXELS` | Upscaling time follows the pixels the AI sees (~36 s per megapixel on one CPU core, for 2× and 4× alike). Bigger pictures are reduced to this before the AI pass, then the result is resized to the size asked for. | `4000000` (Render: `500000`) |
+| `IMAGE_UPSCALE_MAX_OUTPUT_PIXELS` | Largest upscaled result; above it the result is made as large as fits. | `16000000` (Render: `12000000`) |
 
 Every tool has its own settings with a prefix (`PDF_`, `IMAGE_`, `UNIVERSAL_`, `COMPRESS_`, `MEDIA_`, `TRANSCRIBE_`…) in `backend/app/config/`. `render.yaml` shows the values tuned for the free plan.
 
@@ -671,6 +677,7 @@ Everything new is checked end to end with real files before it ships.
 | Request a tool email pipeline | `python scripts/check_tool_request.py` | Validation, header/HTML escaping, honeypot, rate limit, HTTP & SMTP delivery to `colddsam@gmail.com` |
 | Developer network tools | `python scripts/check_devtools.py` | DNS, HTTP, ports, XSD and XSLT, public addresses only |
 | Design tools | `python scripts/check_design_tools.py` | Font and colour inspection |
+| Server-heavy tools (live) | `python scripts/check_heavy_tools.py` | Against a running server: upscaler 2×/4× within Render's caps, background removal, faces, Chromium, OCR, PDF/A, LibreOffice, FFmpeg, Whisper, icons, translation |
 
 Run the backend scripts from `backend/` with the virtual environment's Python. Browser tests (Playwright) drive tool pages with real inputs, check outputs, and audit layouts at phone and desktop widths.
 
@@ -993,7 +1000,7 @@ do-whatever-you-like/
         │       └── playground.tsx       # Which workspace each tool uses
         └── lib/
             ├── tools.ts                 # The registry of every tool (and SERVER_HEAVY_TOOL_IDS Beta markers)
-            ├── tool-search.ts           # Natural-language task & intent search engine across all 260 tools
+            ├── tool-search.ts           # Natural-language task & intent search engine across all 261 tools
             ├── utilities/catalog.ts     # Developer, Text, Everyday and Design pages as data
             ├── charts.ts flowchart.ts period.ts whatsapp.ts three-loader.ts # Client tool engines & 3D loader
             ├── translate.ts             # Translator API client, direct-ticket streaming & speech helpers
