@@ -27,3 +27,6 @@ frontend/.env*
 # Website listing & asset sheets
 website-assets-and-details.xlsx
 dwyl.png
+
+# Launch videos, audio and marketing assets (large files)
+launch-kit/
