@@ -126,6 +126,7 @@ function Editor() {
   const box = useRef<HTMLDivElement>(null);
   const chart = useRef<ECharts | null>(null);
   const [fonts, setFonts] = useState<Record<ChartStyle["font"], string> | null>(null);
+  const [narrow, setNarrow] = useState(false);
 
   const set = (patch: Partial<ChartStyle>) => setState((s) => ({ ...s, style: { ...s.style, ...patch } }));
   const setTable = (t: Table) => setState((s) => ({ ...s, tables: { ...s.tables, [def.shape]: t } }));
@@ -158,18 +159,22 @@ function Editor() {
 
   const built = useMemo(() => {
     try {
-      return { option: buildOption(type, table, style, { fontFamily: fonts?.[style.font] }), error: null as string | null };
+      return { option: buildOption(type, table, style, { fontFamily: fonts?.[style.font], narrow }), error: null as string | null };
     } catch (e) {
       return { option: null, error: (e as Error).message };
     }
-  }, [type, table, style, fonts]);
+  }, [type, table, style, fonts, narrow]);
 
   useEffect(() => {
     if (!lib || !box.current) return;
     const c = lib.init(box.current, undefined, { renderer: "canvas" });
     chart.current = c;
-    const ro = new ResizeObserver(() => c.resize());
-    ro.observe(box.current);
+    const el = box.current;
+    const ro = new ResizeObserver(() => {
+      c.resize();
+      setNarrow(el.clientWidth < 480);
+    });
+    ro.observe(el);
     return () => {
       ro.disconnect();
       c.dispose();
@@ -205,9 +210,18 @@ function Editor() {
   };
   const image = (kind: "png" | "jpeg") => {
     const c = chart.current;
-    if (!c) return null;
-    const ratio = width / (box.current?.clientWidth || width);
-    return c.getDataURL({ type: kind, pixelRatio: ratio, backgroundColor: kind === "jpeg" && exportBg === "transparent" ? "#ffffff" : exportBg });
+    const el = box.current;
+    if (!c || !el || !lib || !built.option) return null;
+    const backgroundColor = kind === "jpeg" && exportBg === "transparent" ? "#ffffff" : exportBg;
+    const w = el.clientWidth || width;
+    if (Math.abs(el.clientHeight - w / ASPECT[style.aspect]) <= 2) return c.getDataURL({ type: kind, pixelRatio: width / w, backgroundColor });
+    // The preview was given a taller floor (phones): draw a still copy at the chosen shape instead.
+    const ow = Math.max(w, 640);
+    const off = lib.init(document.createElement("div"), undefined, { renderer: "canvas", width: ow, height: Math.round(ow / ASPECT[style.aspect]) });
+    off.setOption(buildOption(type, table, { ...style, anim: false }, { fontFamily: fonts?.[style.font] }));
+    const url = off.getDataURL({ type: kind, pixelRatio: width / ow, backgroundColor });
+    off.dispose();
+    return url;
   };
   const toBlob = async (url: string) => (await fetch(url)).blob();
   const svgString = (animated: boolean) => {
@@ -338,7 +352,8 @@ function Editor() {
         {/* Preview */}
         <div className="grid gap-2">
           <div className="relative overflow-hidden rounded-md border border-line bg-[repeating-conic-gradient(var(--color-paper-2)_0%_25%,var(--color-surface)_0%_50%)] bg-[length:16px_16px]">
-            <div ref={box} role="img" aria-label={`${def.name} chart: ${style.title}`} className="mx-auto w-full" style={{ aspectRatio: ASPECT[style.aspect], maxHeight: style.aspect === "9:16" ? 640 : undefined, maxWidth: style.aspect === "9:16" ? 360 : undefined }} />
+            {/* Phones: a 16:9 or 3:1 preview would be under 200px tall, so it gets a floor; exports keep the chosen shape. */}
+            <div ref={box} role="img" aria-label={`${def.name} chart: ${style.title}`} className="mx-auto min-h-[300px] w-full" style={{ aspectRatio: ASPECT[style.aspect], maxHeight: style.aspect === "9:16" ? 640 : undefined, maxWidth: style.aspect === "9:16" ? 360 : undefined }} />
             {(!lib || built.error) && (
               <div className="absolute inset-0 grid place-items-center bg-surface/80 p-6 text-center">
                 {built.error ? <p className="max-w-sm text-sm text-warning">{built.error}</p> : <p className="text-sm text-ink-3">Loading the chart engine…</p>}

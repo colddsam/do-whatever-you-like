@@ -308,7 +308,8 @@ function quartiles(values: number[]) {
   return [v[0], q(0.25), q(0.5), q(0.75), v[v.length - 1]];
 }
 
-export type BuildContext = { fontFamily?: string; width?: number };
+/** `narrow`: the live preview is phone-width, so pie labels hug the edges instead of being cut short. */
+export type BuildContext = { fontFamily?: string; width?: number; narrow?: boolean };
 
 /** Table + style → ECharts option. Throws an Error with a plain message when the data doesn't fit. */
 export function buildOption(type: ChartType, table: Table, s: ChartStyle, ctx: BuildContext = {}): any {
@@ -465,6 +466,7 @@ export function buildOption(type: ChartType, table: Table, s: ChartStyle, ctx: B
           series: [{ type: "funnel", name: cols[0].name, data, left: "12%", width: "76%", top: top + 8, bottom: 24, sort: "descending", gap: 3, minSize: "8%", label: { ...pieLabel, show: true, position: "inside", color: "#fff", formatter: (p: any) => `${p.name}  ${s.showPercent ? `${p.percent.toFixed(0)}%` : fmt(p.value)}` }, itemStyle: { borderWidth: 0 }, universalTransition: true }],
         };
       const half = type === "halfDoughnut";
+      const halfOuter = ctx.narrow ? 64 : 75;
       return {
         ...base,
         series: [
@@ -472,15 +474,23 @@ export function buildOption(type: ChartType, table: Table, s: ChartStyle, ctx: B
             type: "pie",
             name: cols[0].name,
             data,
-            radius: type === "pie" ? [0, "66%"] : type === "rose" ? ["14%", "70%"] : [`${s.inner}%`, half ? "92%" : "70%"],
-            center: half ? ["50%", "78%"] : ["50%", s.legend === "top" || s.title ? "58%" : "50%"],
+            // The pie lays out inside its own box, below the title and legend (or beside a side legend),
+            // so on short or narrow charts the ring can never be drawn over them.
+            top: s.title || s.subtitle || s.legend === "top" ? top : 8,
+            // A half doughnut only fills the top half of its box, so its box runs on below the chart's edge.
+            bottom: half ? "-50%" : s.legend === "bottom" ? 40 : 8,
+            left: s.legend === "left" ? 110 : 0,
+            right: s.legend === "right" ? 120 : 0,
+            radius: type === "pie" ? [0, "66%"] : type === "rose" ? ["14%", "70%"] : half ? [`${(s.inner * halfOuter) / 92}%`, `${halfOuter}%`] : [`${s.inner}%`, "70%"],
+            center: ["50%", "50%"],
+            labelLayout: { hideOverlap: true },
             startAngle: half ? 180 : 90,
             endAngle: half ? 360 : "auto",
             roseType: type === "rose" ? "area" : undefined,
             padAngle: type === "pie" ? 0 : 1.5,
             itemStyle: { borderRadius: s.radius * 1.5, borderColor: background === "transparent" ? undefined : background, borderWidth: type === "pie" ? 2 : 0 },
-            label: pieLabel,
-            labelLine: { lineStyle: { color: line } },
+            label: ctx.narrow ? { ...pieLabel, alignTo: "edge", edgeDistance: 6 } : pieLabel,
+            labelLine: { lineStyle: { color: line }, ...(ctx.narrow ? { length: 8, length2: 0 } : {}) },
             emphasis: { scaleSize: 8 },
             animationType: "expansion",
             universalTransition: true,
