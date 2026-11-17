@@ -11,7 +11,8 @@ Everything here is free to use, change and redistribute under the licence noted.
 
 Downloaded on first use (and baked into the Docker image), not stored here: `silueta.onnx`, the
 background-removal model (U²-Net, via github.com/danielgatis/rembg), Apache-2.0, pinned by SHA-256
-in `app/config/image.py`.
+in `app/config/image.py`. The Docker image also carries `silueta-lean.onnx`, the same model with its
+full-resolution layers converted to float by `backend/scripts/lean_background_model.py` (less memory per run).
 
 ## fonts/ (watermark and meme lettering)
 

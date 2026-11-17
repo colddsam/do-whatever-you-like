@@ -159,8 +159,13 @@ def _render_raw(path: Path, name: str) -> Image.Image:
     return Image.fromarray(rgb)
 
 
-def open_image(path: Path, display_name: Optional[str] = None) -> Image.Image:
-    """Opens any supported image. Animated images stay animated; still ones come back upright."""
+def open_image(path: Path, display_name: Optional[str] = None, draft: Optional[Tuple[int, int]] = None) -> Image.Image:
+    """
+    Opens any supported image. Animated images stay animated; still ones come back upright.
+
+    With `draft`, a JPEG is decoded at a reduced scale that still covers that size (much less memory
+    and time when only a small copy is needed); other formats ignore it.
+    """
     global _heif_ready
     name = _readable(display_name or path.name)
     ext = path.suffix.lower()
@@ -182,6 +187,8 @@ def open_image(path: Path, display_name: Optional[str] = None) -> Image.Image:
             raise InvalidImageError(
                 f"{name} is {img.width * img.height / 1e6:.0f} megapixels. The limit is {settings.MAX_PIXELS / 1e6:.0f}."
             )
+        if draft and img.format == "JPEG":
+            img.draft("RGB", draft)
         if not _animated(img):
             img = ImageOps.exif_transpose(img)
             img.load()
@@ -214,7 +221,8 @@ def _flatten(img: Image.Image, background: Tuple[int, int, int] = (255, 255, 255
         base = Image.new("RGB", rgba.size, background)
         base.paste(rgba, mask=rgba.getchannel("A"))
         return base
-    return img.convert("RGB")
+    # Callers only read the result; copying an RGB image would cost 75 MB more at 25 MP.
+    return img if img.mode == "RGB" else img.convert("RGB")
 
 
 def _hex(color: str) -> Tuple[int, int, int]:
@@ -611,17 +619,26 @@ class ImageService:
     # ---------- AI tools (models load in this same pool process) ----------
 
     def remove_background(self, items: List[Tuple[str, str]], out_dir: str, background: str, color: str) -> Dict[str, Any]:
-        from app.services.image_ai import cutout
+        from app.services.image_ai import MASK_SIZE, background_masks, cutout
 
-        out = Path(out_dir)
-        entries = []
-        for path_s, name in items:
-            src = Path(path_s)
-            img = open_image(src, name)
+        def first_frame(img: Image.Image) -> Image.Image:
             if _animated(img):
                 img.seek(0)
                 img = img.copy()
-            result = cutout(img.convert("RGB"), background, _hex(color))
+            return img if img.mode == "RGB" else img.convert("RGB")
+
+        # Two passes, so the network and a full-size photo are never in memory at the same time:
+        # the model sees small copies (a JPEG is decoded straight at reduced scale), then is freed
+        # before each photo is opened at full size for the cut-out itself.
+        smalls = (first_frame(open_image(Path(p), n, draft=(MASK_SIZE * 2, MASK_SIZE * 2))) for p, n in items)
+        masks = background_masks(smalls)
+
+        out = Path(out_dir)
+        entries = []
+        for (path_s, name), mask in zip(items, masks):
+            src = Path(path_s)
+            img = open_image(src, name)
+            result = cutout(first_frame(img), mask, background, _hex(color))
             fmt = "png" if result.mode == "RGBA" else "jpg"
             dest = _unique(out, f"{Path(name).stem}-cutout", SAVE_FORMATS[fmt][1])
             save_image(result, dest, fmt, quality=92, source=img)
