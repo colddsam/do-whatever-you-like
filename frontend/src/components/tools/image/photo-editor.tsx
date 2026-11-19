@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { handOffToProEditor, PRO_EDITOR_HREF } from "@/lib/handoff";
 import { AnimatePresence, motion } from "motion/react";
 import { Check, Download, FlipHorizontal2, FlipVertical2, Plus, RotateCcw, RotateCw, Trash2, Type } from "lucide-react";
 import { checkFile, saveBlob } from "@/lib/files";
@@ -198,6 +200,7 @@ type Tab = "adjust" | "filters" | "shape" | "text" | "stickers" | "frame";
 
 export function PhotoEditorTool({ toolId }: { toolId: string }) {
   const tool = getTool(toolId)!;
+  const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [img, setImg] = useState<HTMLImageElement | null>(null);
   const [rejected, setRejected] = useState<string | null>(null);
@@ -293,7 +296,23 @@ export function PhotoEditorTool({ toolId }: { toolId: string }) {
 
   return (
     <div className={FONT_CLASSES}>
-      <Workbench steps={stepsFor(tool)} current={step} footer={<>Edited right here in your browser: your photo never leaves your device.</>}>
+      <Workbench
+        steps={stepsFor(tool)}
+        current={step}
+        footer={
+          <>
+            Edited right here in your browser: your photo never leaves your device. Need layers, looks, retouching or masks?{" "}
+            <button
+              type="button"
+              onClick={() => (out ? void handOffToProEditor(out.blob, file?.name ?? "photo.png").then((href) => router.push(href)) : router.push(PRO_EDITOR_HREF))}
+              className="text-ink-2 underline underline-offset-2 hover:text-ink"
+            >
+              {img ? "Continue in the Pro photo editor" : "Open the Pro photo editor"}
+            </button>
+            .
+          </>
+        }
+      >
         <div className="space-y-3 p-3 sm:p-4">
           <AnimatePresence mode="wait" initial={false}>
             {!img ? (

@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowLeft, ArrowRight, Check, Download, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Download, Layers, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { handOffToProEditor } from "@/lib/handoff";
 import { getLenis } from "@/lib/smooth-scroll";
 import { formatBytes } from "@/lib/media";
 import { checkFile, saveBlob, uploadForm, type Converted } from "@/lib/files";
@@ -560,6 +562,9 @@ export function ResultPanel({
   const panel = useRef<HTMLDivElement>(null);
   const kind = KIND.find(([re]) => re.test(result.type) || re.test(result.name.toLowerCase()))?.[1] ?? "File";
   const isZip = kind === "ZIP";
+  // A single picture the browser can open goes on to the Pro editor without another upload.
+  const router = useRouter();
+  const editable = !isZip && /^image\/(png|jpeg|webp|gif|avif|bmp)/.test(result.type);
   const files = result.files;
   const one = !isZip ? files[0] : null;
   const totals = useMemo(() => {
@@ -635,6 +640,16 @@ export function ResultPanel({
           {result.saved ? "Saved. Download again" : `Download ${kind}`}
           <span className="font-mono text-[13px] font-normal text-paper/60">{formatBytes(result.size)}</span>
         </button>
+        {editable && (
+          <button
+            type="button"
+            onClick={() => void handOffToProEditor(result.blob, result.name).then((href) => router.push(href))}
+            title="Keep editing this picture with layers, looks, retouching and text"
+            className="inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-line bg-surface px-4 text-sm font-medium text-ink transition-colors hover:border-ink-3"
+          >
+            <Layers aria-hidden className="size-4" /> Edit in Pro editor
+          </button>
+        )}
         <button
           type="button"
           onClick={onBack}

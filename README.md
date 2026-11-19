@@ -12,7 +12,7 @@
 
 <a href="https://do-whatever-you-like.colddsam.com"><img src="https://img.shields.io/badge/Open%20the%20site-do--whatever--you--like.colddsam.com-eb4a10?style=for-the-badge&labelColor=15140f" alt="Open the live site"></a>
 
-<img src="https://img.shields.io/badge/tools-160%20live-15140f?style=flat-square" alt="160 live tools">
+<img src="https://img.shields.io/badge/tools-161%20live-15140f?style=flat-square" alt="161 live tools">
 <img src="https://img.shields.io/badge/price-free-2f7d4f?style=flat-square" alt="Free">
 <img src="https://img.shields.io/badge/sign--up-not%20needed-57544a?style=flat-square" alt="No sign-up">
 <img src="https://img.shields.io/badge/watermarks-none-57544a?style=flat-square" alt="No watermarks">
@@ -41,7 +41,7 @@
 
 ## 👋 What is Do-Whatever-You-Like?
 
-**Do-Whatever-You-Like is a free website with 160 tools for everyday digital chores.**
+**Do-Whatever-You-Like is a free website with 161 tools for everyday digital chores.**
 
 Need to paste a block of text and check what's hiding in it, turn a PDF into Word, translate text, audio recordings or videos into another language, analyze an exported WhatsApp chat, shrink a photo, vectorise a logo to SVG, cut a song, clean up a noisy recording, format JSON, query a local SQLite or Parquet file, make a chart, split a trip bill, track your period privately, or download a Reel? Open the site, pick the tool, done.
 
@@ -70,7 +70,7 @@ Need to paste a block of text and check what's hiding in it, turn a PDF into Wor
 
 ## 🗂️ What's inside
 
-160 live tools in 9 collections, one place per job: each tool covers every variant of its task (one hash generator for MD5, SHA and CRC; one document viewer for Word, Excel, PowerPoint, CSV and PDF). Click a name to open that collection on the site.
+161 live tools in 9 collections, one place per job: each tool covers every variant of its task (one hash generator for MD5, SHA and CRC; one document viewer for Word, Excel, PowerPoint, CSV and PDF). Click a name to open that collection on the site.
 
 | | Collection | What you can do | Tools |
 | :---: | :--- | :--- | :---: |
@@ -137,7 +137,7 @@ Need to paste a block of text and check what's hiding in it, turn a PDF into Wor
 </details>
 
 <details>
-<summary><b>🖼️ Image tools</b> — 19 tools</summary>
+<summary><b>🖼️ Image tools</b> — 20 tools</summary>
 <br>
 
 - [**Image studio**](https://do-whatever-you-like.colddsam.com/tools/image) — Compress, resize, convert and cut out images in seconds.
@@ -145,7 +145,8 @@ Need to paste a block of text and check what's hiding in it, turn a PDF into Wor
 - [**Upscale image**](https://do-whatever-you-like.colddsam.com/tools/upscale-image) — Enlarge a picture 2× or 4× with AI that redraws the detail.
 - [**Remove background**](https://do-whatever-you-like.colddsam.com/tools/remove-background) — Cut out the subject: transparent, a colour, or a soft blur behind.
 - [**Meme generator**](https://do-whatever-you-like.colddsam.com/tools/meme-generator) — Captions on a picture, the classic way, in seconds.
-- [**Photo editor**](https://do-whatever-you-like.colddsam.com/tools/photo-editor) — Filters, light and colour, text, stickers and frames.
+- [**Pro photo editor**](https://do-whatever-you-like.colddsam.com/tools/pro-photo-editor) — A free Photoshop-style editor in your browser: layers, masks, retouching, Lightroom-style looks, effects, text, stickers and PSD files.
+- [**Photo editor**](https://do-whatever-you-like.colddsam.com/tools/photo-editor) — Filters, light and colour, text, stickers and frames (one tap away from the Pro editor).
 - [**Emoji to image**](https://do-whatever-you-like.colddsam.com/tools/emoji-to-image) — Any emoji as a PNG, WebP or SVG, in four styles and any size.
 - [**Pixelate image**](https://do-whatever-you-like.colddsam.com/tools/pixelate-image) — Turn a picture into pixel art, or pixelate just a part of it.
 - [**Change GIF speed**](https://do-whatever-you-like.colddsam.com/tools/gif-speed) — Speed up or slow down an animated GIF, reverse it or make a boomerang.
@@ -485,7 +486,33 @@ sequenceDiagram
 
 | Runs in your browser (file never leaves your device) | Runs on our server (deleted after use) |
 | :--- | :--- |
-| Developer and text converters & analyzers, **smart notepad**, **SQLite/CSV/Parquet viewer**, **writing helper**, **WhatsApp chat analyzer**, **ZIP/TAR/GZ archive tool**, **image to SVG vectoriser**, **mockup & safe-zone frame**, **audio waveform & spectrogram**, chart maker, flowchart maker, SVG optimizer & CSS playgrounds, **period tracker**, EMI/SIP/GST calculators, bill splitter & invoice generator, QR scanner, photo metadata remover, password generator, encrypted notes, Markdown editor, video to GIF/frames, screen recorder, subtitle editor (with instant inline translation via API), Morse decoder, device tests and timers | PDF tools, universal converter, compress/merge/split, image AI (background removal, upscaling, face blur), audio to text, **translator (text, audio & video dubbing)**, media downloads, trim/volume/noise removal, font and colour inspection, DNS and HTTP checks |
+| **Pro photo editor** (layers, retouching, looks, effects, PSD), developer and text converters & analyzers, **smart notepad**, **SQLite/CSV/Parquet viewer**, **writing helper**, **WhatsApp chat analyzer**, **ZIP/TAR/GZ archive tool**, **image to SVG vectoriser**, **mockup & safe-zone frame**, **audio waveform & spectrogram**, chart maker, flowchart maker, SVG optimizer & CSS playgrounds, **period tracker**, EMI/SIP/GST calculators, bill splitter & invoice generator, QR scanner, photo metadata remover, password generator, encrypted notes, Markdown editor, video to GIF/frames, screen recorder, subtitle editor (with instant inline translation via API), Morse decoder, device tests and timers | PDF tools, universal converter, compress/merge/split, image AI (background removal, upscaling, face blur, and the Pro editor's Select subject / background / upscale), audio to text, **translator (text, audio & video dubbing)**, media downloads, trim/volume/noise removal, font and colour inspection, DNS and HTTP checks |
+
+
+### 🎨 Pro photo editor
+
+A layer-based, Photoshop- and Lightroom-style editor at [`/tools/pro-photo-editor`](https://do-whatever-you-like.colddsam.com/tools/pro-photo-editor). It runs **entirely in the browser**, so it adds no load to the free Render server and costs nothing extra on Vercel.
+
+| Area | What's there |
+| :--- | :--- |
+| **Layers** | Pixel, text, shape and adjustment layers · 17 blend modes · opacity · layer masks (paint black/white, from selection, apply, disable) · clipping masks · lock / lock transparency · layer styles (drop shadow, outer glow, stroke, colour overlay) · duplicate, merge down, merge visible, flatten, drag to reorder |
+| **Selections** | Rectangle and ellipse marquee, lasso, polygonal lasso, magic wand (tolerance, contiguous, all layers), colour range, Select subject (AI) · add / subtract / intersect · feather, expand, contract, invert · move the outline |
+| **Paint & retouch** | Brush and pencil (pen pressure), eraser, gradient (5 kinds), paint bucket, clone stamp, healing brush, spot healing, red eye, smudge, blur, sharpen, dodge, burn, sponge, liquify · content-aware fill (OpenCV.js inpainting in a worker) |
+| **Lightroom-style** | 22 one-tap **Looks** with live thumbnails and an amount slider · Camera Raw (exposure, contrast, highlights, shadows, whites, blacks, temperature, tint, vibrance, saturation, texture, clarity, dehaze, vignette, grain) · Curves · Levels · HSL Color Mixer · Color Grading · hold-to-compare before/after |
+| **Adjustments** | Brightness/Contrast, Exposure, Vibrance, Hue/Saturation, Color Balance, Black & White, Photo Filter, Channel Mixer, Selective Color, Gradient Map, Shadows/Highlights, Posterize, Threshold, Invert, Desaturate, Equalize, Auto Tone/Contrast/Color (most also as editable adjustment layers) |
+| **Filters & effects** | Gaussian, motion, radial and tilt-shift blur · unsharp mask, high pass · noise, median · mosaic, colour halftone · emboss, find edges, oil paint, solarize · twirl, pinch/bulge, wave, ripple, polar coordinates · clouds, vignette · glitch, RGB split, pencil sketch, cartoon, duotone, neon edges, dreamy glow, light leak, pop art |
+| **Create** (Picsart/Canva-style) | Text styles (headline, outline, neon, label, poster, handwritten…) · stickers · 8 frames · collage from 2–9 photos · portrait background blur / replace / remove · text and shape tools |
+| **Image** | Crop (ratios), free transform (scale, rotate, flip; text stays editable), image size, canvas size, rotate/flip canvas, trim, AI upscale 2×/4× |
+| **Files** | Opens JPG, PNG, WebP, GIF, AVIF, SVG, **PSD** (ag-psd) and `.dwlp` projects · exports PNG/JPG/WebP (quality, 10–400% size, exact file size shown) · saves **PSD with layers** and `.dwlp` projects · clipboard copy/paste · autosave to IndexedDB with *Continue editing* |
+| **Workflow** | 60-step history panel · Photoshop shortcuts · full screen · pinch zoom and a phone layout · histogram and colour info |
+
+**Connected to the other image tools:** single-image results from Compress, Resize, Crop, Convert, Upscale, Remove background and the rest show **Edit in Pro editor**, and the simple Photo editor offers *Continue in the Pro photo editor*. The picture is handed over through the browser's IndexedDB (`lib/handoff.ts`), never uploaded again.
+
+**What uses the server:** only *Select subject*, *Remove / blur / replace background* and *Upscale (AI)*. They call the existing `/image/remove-background` and `/image/upscale` endpoints, and the editor sends a copy no larger than 2048 px for cut-outs to keep the free instance's memory low.
+
+**Not included:** layer groups (PSD groups are flattened on open), 3D, video timelines, actions and vector pen paths. In a PSD, adjustment layers are applied to the flat preview but not kept as layers, and layer styles are baked into the pixels; the `.dwlp` project keeps everything editable.
+
+Code lives in `frontend/src/components/tools/image/pro/` (engine: `render.ts`, `paint.ts`, `selection.ts`, `adjustments.ts`, `filters.ts`, `looks.ts`, `create.ts`, `io.ts`, `inpaint.ts`; UI: `editor.tsx`, `panels.tsx`, `tools.tsx`, `dialogs.tsx`, `ui.tsx`) and `frontend/public/photo/inpaint-worker.js`. Design notes are in `frontend/DESIGN.md`.
 
 ---
 
@@ -517,7 +544,7 @@ See [SECURITY.md](SECURITY.md) for responsible disclosure, scope, and self-hosti
 - **ECharts 6** (charts), **React Flow 12** + **dagre** (flowcharts)
 - **fflate** (in-browser ZIP handling), `Intl.Segmenter` (multilingual tokenization)
 - **CodeMirror**, **Prettier**, **Terser**, **marked**, **KaTeX**, **Mermaid**
-- **opentype.js**, **OpenCV.js**, **jsQR**, **exifr**, **mathjs**, **gifenc**
+- **opentype.js**, **OpenCV.js** (document scanner, healing / content-aware fill), **ag-psd** (PSD read/write), **jsQR**, **exifr**, **mathjs**, **gifenc**
 - Hosted on **Vercel** (free)
 
 </td>

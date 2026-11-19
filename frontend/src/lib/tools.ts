@@ -174,6 +174,8 @@ export type Tool = {
   devTab?: string;
   /** Editors that need room (charts, flowcharts): the workspace spans the page, the spec sheet goes under it. */
   wide?: boolean;
+  /** The <title> when the name alone misses how people search ("free Photoshop alternative"). */
+  seoTitle?: string;
 };
 
 const PDF_ACCEPT = { label: "PDF files", types: ".pdf,application/pdf" };
@@ -233,6 +235,25 @@ const imageTools: Tool[] = [
     steps: ["Add a photo", "Edit it", "Download"],
     keywords: ["photo editor", "edit photo", "filter", "brightness", "contrast", "saturation", "text on photo", "sticker", "frame", "image editor"],
     features: ["Nine filters, then fine-tune six sliders", "Turn, flip and crop to square or story", "Drag text and stickers into place", "Frames, polaroid and rounded corners"],
+  }),
+  imageTool({
+    id: "pro-photo-editor", name: "Pro photo editor", group: "Create", icon: Layers, wide: true,
+    seoTitle: "Pro Photo Editor — Free Photoshop Alternative Online",
+    description: "A Photoshop-style editor in your browser: layers, masks, retouching, Lightroom-style looks, effects, text, stickers and PSD files.",
+    takes: "A photo, a PSD, a project or a blank canvas", gives: "PNG, JPG, WebP, PSD or a project", limit: "Made in your browser",
+    accept: { label: "JPG, PNG, WebP, GIF, AVIF, SVG or PSD", types: "image/*,.psd,.dwlp" },
+    steps: ["Open or create", "Edit with layers", "Export"],
+    options: ["layers and masks", "one-tap looks", "retouching", "effects", "text and stickers"],
+    keywords: ["photoshop", "photoshop online", "free photoshop alternative", "photopea alternative", "lightroom online", "lightroom presets", "picsart online", "canva photo editor", "snapseed online", "gimp online", "pro photo editor", "online photo editor", "image editor", "layers", "layer mask", "blend modes", "adjustment layer", "curves", "levels", "hsl color mixer", "color grading", "magic wand", "lasso", "clone stamp", "healing brush", "spot healing", "content aware fill", "dodge burn", "liquify", "psd editor", "open psd online", "camera raw", "photo filters", "glitch effect", "pencil sketch effect", "cartoon effect", "duotone", "stickers", "photo frames", "collage maker", "blur background", "retouch"],
+    features: [
+      "Layers with masks, 17 blend modes, opacity, clipping and layer styles",
+      "22 one-tap looks plus Camera Raw, Curves, Levels, HSL Color Mixer and Color Grading",
+      "Marquee, lasso, magic wand, colour range and Select subject (AI)",
+      "Healing, clone stamp, content-aware fill, dodge, burn, smudge and liquify",
+      "35+ filters and effects: glitch, sketch, cartoon, duotone, neon, light leak",
+      "Text styles, stickers, frames, collages and portrait background blur",
+      "Opens and saves PSD; your work is kept on this device between visits",
+    ],
   }),
   imageTool({
     id: "emoji-to-image", name: "Emoji to image", group: "Create", icon: Smile,
@@ -898,6 +919,7 @@ export const toolHref = (id: string) => `/tools/${id}`;
 const ON_DEVICE = new Set([
   "meme-generator",
   "photo-editor",
+  "pro-photo-editor",
   "font-creator",
   "dev",
   "contrast-checker",
@@ -1823,7 +1845,7 @@ export const CLUSTERS: Cluster[] = [
     icon: ImageIcon,
     hub: "image",
     groups: IMAGE_GROUPS,
-    featured: ["compress-image", "resize-image", "remove-background", "convert-image", "icon-maker", "upscale-image"],
+    featured: ["pro-photo-editor", "compress-image", "resize-image", "remove-background", "convert-image", "icon-maker", "upscale-image"],
   },
   {
     id: "developer",

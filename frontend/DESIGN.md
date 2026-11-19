@@ -325,6 +325,27 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
       never leaves the device. The photo editor's tabs (Adjust, Filters, Shape, Text, Stickers, Frame) slide an
       ink thumb (`photo-tab`); text and stickers are live elements over the canvas, dragged into place, drawn
       into the file at the same spot.
+    - **Pro photo editor** (`image/pro/`, `wide`): a layer-based, Photoshop-style workspace, all in the browser
+      (only Select subject and Remove background call the existing `/image/remove-background`, with a ≤2048 px copy, so
+      the free server stays light). The document is immutable data (`types.ts`): every edit makes a new `Doc`, layers
+      that didn't change keep their canvas, so undo is a list of documents sharing pixels (60 steps, ~900 MB cap).
+      Engine files are plain TS: `render.ts` composites only the visible region at screen scale (blend modes via canvas
+      compositing, masks as alpha canvases, clipping, layer styles, adjustment layers), `paint.ts` strokes into a buffer
+      merged at opacity (Photoshop's flow/opacity model), `adjustments.ts`/`filters.ts` declare their settings so one
+      panel draws them all, `io.ts` reads/writes PSD (ag-psd, MIT), `.dwlp` projects (ZIP of PNGs) and autosaves to
+      IndexedDB, `inpaint.ts` heals in `public/photo/inpaint-worker.js` (the vendored OpenCV.js Telea, JS fallback).
+      Layout: menu bar (File…View), tool options bar, a toolbar of flyout groups (ink = selected), the canvas on
+      `paper-2`, and a right column of Properties / Adjust / History / Info tabs over the Layers panel (accent rule on
+      the active layer). Phones stack canvas, a scrolling tool row, then tabbed panels; two fingers pinch-zoom.
+      Full screen portals to `<body>` (z-100; its dialogs at z-120). Keyboard shortcuts follow Photoshop except where
+      browsers reserve them (free transform is Shift+T, not Ctrl+T).
+      The panel tabs are Properties / Looks / Adjust / Create / History / Info: icons with tooltips, and only the open tab
+      shows its name (it widens to fit). Looks are a grid of live thumbnails of the active layer (drawn a few per frame),
+      each a recipe of the editor's own operations with an Amount slider. Create holds text styles (rendered as ink
+      tiles), stickers (colour-emoji text layers), frames (a layer on top, in the foreground colour), background tools and
+      collage. Menus, submenus and flyouts float in a portal on `<body>` (`Floating`, z-130) so no scrolling bar clips
+      them, and fade in over 140 ms. While a job runs, history and edit shortcuts hold still. Image tools hand a result to
+      the editor through IndexedDB (`lib/handoff.ts`, `?open=handoff`), shown as "Edit in Pro editor" on single-image results.
     - Grids that hold a canvas use `grid-cols-[minmax(0,1fr)]` on phones: an `auto` track grows to the canvas's
       natural width and pushes the page sideways.
   - `convert-anything` (by id) → `UniversalConverter` (`components/tools/universal/`): any file to any format it

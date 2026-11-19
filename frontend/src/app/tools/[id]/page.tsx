@@ -31,6 +31,7 @@ export async function generateMetadata({ params }: PageProps<"/tools/[id]">): Pr
 
 /** "Merge PDF — Free Online, No Sign-up | Do-Whatever-You-Like": the name people search, then the promise. */
 function toolTitle(tool: Tool) {
+  if (tool.seoTitle) return `${tool.seoTitle} | Do-Whatever-You-Like`;
   return `${tool.name} — Free Online, No Sign-up | Do-Whatever-You-Like`;
 }
 

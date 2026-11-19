@@ -39,6 +39,26 @@ const RETAIN_PDF = "Your PDF is kept on our server for 30 minutes after you last
 const RIGHTS = "Only download content you own or have permission to use. The tool works with public posts only: nothing private, paywalled or behind a login.";
 
 const GUIDES: Record<string, Guide> = {
+  "pro-photo-editor": {
+    intro: [
+      "Pro photo editor is a free, Photoshop-style image editor that runs entirely in your browser. It works with layers the way desktop editors do: each layer has its own opacity, blend mode (17 of them), layer mask, clipping and layer style (drop shadow, outer glow, stroke, colour overlay), and adjustment layers such as Curves, Levels and Hue/Saturation stay editable afterwards. Undo goes back 60 steps.",
+      "It also covers what people usually open Lightroom or a phone app for: 22 one-tap looks with an amount slider, Camera Raw (exposure, highlights, shadows, temperature, texture, clarity, dehaze, vignette, grain), an HSL Color Mixer, Color Grading, and 35+ filters and effects including glitch, pencil sketch, cartoon, duotone, neon and light leaks. Text styles, stickers, frames and a collage maker are in the Create panel.",
+      "For retouching there are the spot healing brush, healing brush, clone stamp, content-aware fill, red-eye, dodge, burn, sponge, smudge and liquify. Selections come from the marquee, lasso, polygonal lasso, magic wand, colour range or Select subject. Pictures never leave your device: only Select subject, background blur or removal and AI upscaling send a copy to our server, which deletes it straight away.",
+    ],
+    faqs: [
+      { q: "Is this a free alternative to Photoshop?", a: "Yes. It has the core Photoshop workflow (layers, masks, adjustment layers, blend modes, selections, healing, clone stamp, content-aware fill, text and PSD files) free, with no account, no watermark and nothing to install. It doesn't have 3D, video, actions or layer groups." },
+      { q: "Can I open and save PSD files?", a: "Yes. PSD files open with their layers, positions, opacity, blend modes and masks; layer groups are flattened into their layers. Save as PSD keeps your layers for Photoshop, Photopea or GIMP. Adjustment layers are applied to the flat preview but not kept as layers in the PSD, so use the project format (.dwlp) to keep everything editable." },
+      { q: "Does it have Lightroom-style presets and editing?", a: "Yes. The Looks panel has 22 one-tap looks (Vivid, Moody, Golden hour, Teal & orange, Film, Cinematic, B&W, HDR and more) with an Amount slider, and Camera Raw, Curves, the HSL Color Mixer and Color Grading give you Lightroom's main sliders." },
+      { q: "Are my photos uploaded?", a: "No. Editing happens in your browser, and your work is kept only on this device so you can continue later. Only Select subject, background blur or removal and AI upscale send a reduced copy to our server, which deletes it as soon as the result is sent." },
+      { q: "How do I remove an object or a blemish from a photo?", a: "Paint over small spots with the spot healing brush (J), or select the object with the lasso and choose Edit → Content-aware fill. For larger areas, Alt-click a clean area with the clone stamp (S) and paint over the object." },
+      { q: "Can I blur or replace the background?", a: "Yes. In the Create panel, Portrait blur keeps the subject sharp and softens everything behind it, and Replace swaps the background for the background colour. Remove background hides it with a layer mask, so you can paint parts back." },
+      { q: "Does it work on a phone?", a: "Yes. On phones the tools sit in a scrolling row under the picture, the panels are tabs below, and two fingers pinch to zoom. Very large photos are reduced on iPhones and iPads, which limit how big a picture a browser can hold." },
+      { q: "Will I lose my work if I close the tab?", a: "No. The last document is kept on this device and offered as Continue editing when you come back. To move it to another device, save a project (.dwlp) or a PSD." },
+      { q: "What can I export?", a: "PNG, JPG or WebP at any size from 10% to 400% with a quality setting, and the exact file size is shown before you download. You can also copy the picture to the clipboard, save a PSD with layers, or save a project file." },
+      { q: "Which keyboard shortcuts does it use?", a: "Photoshop's, wherever the browser allows: V move, M marquee, L lasso, W magic wand, B brush, S clone stamp, J healing, Ctrl+Z undo, Ctrl+J layer via copy, Ctrl+M curves, [ and ] for brush size. Free transform is Shift+T because browsers keep Ctrl+T for new tabs. Press ? for the full list." },
+    ],
+    see: ["remove-background", "upscale-image", "compress-image", "photo-editor"],
+  },
   notepad: {
     intro: [
       "Smart notepad is a place to paste text and see what's in it. As you type, the inspector counts words, characters, lines and reading time, tells you what the text is (JSON, CSV, Markdown, a list…) and pulls out every email, link, phone number, date, number, hashtag and mention.",
@@ -236,7 +256,7 @@ const GUIDES: Record<string, Guide> = {
       { q: "Is there a watermark?", a: "No. It's free, with no watermark." },
       { q: "What happens to my images?", a: "They're processed on our server and deleted as soon as the result is sent." },
     ],
-    see: ["upscale-image", "crop-image", "resize-image", "photo-editor"],
+    see: ["pro-photo-editor", "upscale-image", "crop-image", "resize-image"],
   },
   "convert-anything": {
     intro: [

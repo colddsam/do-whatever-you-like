@@ -1,0 +1,156 @@
+/*
+ * The pro photo editor's document model.
+ *
+ * A document is immutable data: every edit makes a new `Doc`, and layers that didn't change keep
+ * the same object (and the same canvas). That makes undo a list of documents that share most of
+ * their pixels, and "what changed" a reference comparison.
+ *
+ * Canvases are never drawn into after they enter a document. A tool that edits pixels clones the
+ * canvas first (`cloneCanvas`), works on the clone, and commits a new layer that holds it.
+ */
+
+export type BlendMode =
+  | "normal"
+  | "multiply"
+  | "screen"
+  | "overlay"
+  | "darken"
+  | "lighten"
+  | "color-dodge"
+  | "color-burn"
+  | "hard-light"
+  | "soft-light"
+  | "difference"
+  | "exclusion"
+  | "hue"
+  | "saturation"
+  | "color"
+  | "luminosity"
+  | "lighter";
+
+export type TextMeta = {
+  text: string;
+  font: string; // a CSS font-family
+  size: number; // px in the document
+  weight: 400 | 700;
+  italic: boolean;
+  color: string;
+  align: "left" | "center" | "right";
+  lineHeight: number; // × size
+  letterSpacing: number; // px
+  stroke: { color: string; width: number } | null;
+  background: string | null;
+};
+
+export type ShapeKind = "rect" | "ellipse" | "line" | "arrow" | "polygon" | "star";
+export type ShapeMeta = {
+  kind: ShapeKind;
+  w: number;
+  h: number;
+  fill: string | null;
+  stroke: string | null;
+  strokeWidth: number;
+  radius: number; // rect corners
+  sides: number; // polygon / star points
+};
+
+export type Effects = {
+  shadow: { on: boolean; color: string; opacity: number; angle: number; distance: number; size: number };
+  glow: { on: boolean; color: string; opacity: number; size: number };
+  stroke: { on: boolean; color: string; size: number };
+  overlay: { on: boolean; color: string; opacity: number };
+};
+
+export const NO_EFFECTS: Effects = {
+  shadow: { on: false, color: "#000000", opacity: 60, angle: 120, distance: 12, size: 16 },
+  glow: { on: false, color: "#ffe9a8", opacity: 75, size: 18 },
+  stroke: { on: false, color: "#000000", size: 4 },
+  overlay: { on: false, color: "#eb4a10", opacity: 100 },
+};
+
+export type AdjustMeta = { id: string; params: Record<string, unknown> };
+
+export type Layer = {
+  id: string;
+  name: string;
+  kind: "pixel" | "text" | "shape" | "adjustment";
+  /** Pixels (not used by adjustment layers). Position in the document is x, y. */
+  canvas: HTMLCanvasElement;
+  x: number;
+  y: number;
+  visible: boolean;
+  opacity: number; // 0..1
+  blend: BlendMode;
+  locked: boolean;
+  lockAlpha: boolean;
+  /** Clipped to the layer below (Photoshop's clipping mask). */
+  clip: boolean;
+  /** Same size and position as `canvas`. Alpha is visibility: opaque shows, clear hides. */
+  mask: HTMLCanvasElement | null;
+  maskOn: boolean;
+  effects: Effects | null;
+  text?: TextMeta;
+  shape?: ShapeMeta;
+  adjust?: AdjustMeta;
+};
+
+/** A selection is a document-sized alpha mask, plus its bounds for quick tests. */
+export type Selection = { mask: HTMLCanvasElement; bounds: Rect };
+
+export type Doc = {
+  w: number;
+  h: number;
+  layers: Layer[]; // bottom first
+  active: string;
+  selection: Selection | null;
+  /** Edit the active layer's mask instead of its pixels. */
+  editMask: boolean;
+  name: string;
+};
+
+export type Rect = { x: number; y: number; w: number; h: number };
+export type Pt = { x: number; y: number };
+
+export type ToolId =
+  | "move"
+  | "marquee-rect"
+  | "marquee-ellipse"
+  | "lasso"
+  | "lasso-poly"
+  | "wand"
+  | "crop"
+  | "eyedropper"
+  | "brush"
+  | "pencil"
+  | "eraser"
+  | "bucket"
+  | "gradient"
+  | "clone"
+  | "heal"
+  | "spot-heal"
+  | "red-eye"
+  | "smudge"
+  | "blur-brush"
+  | "sharpen-brush"
+  | "dodge"
+  | "burn"
+  | "sponge"
+  | "liquify"
+  | "text"
+  | "shape"
+  | "hand"
+  | "zoom";
+
+export type BrushSettings = {
+  size: number;
+  hardness: number; // 0..100
+  opacity: number; // 0..100
+  flow: number; // 0..100
+  spacing: number; // % of size
+  strength: number; // pixel tools: 0..100
+  sampleAll: boolean;
+  spongeMode: "saturate" | "desaturate";
+  range: "shadows" | "midtones" | "highlights";
+};
+
+export type SelectMode = "new" | "add" | "subtract" | "intersect";

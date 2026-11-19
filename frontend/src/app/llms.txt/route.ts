@@ -17,7 +17,7 @@ export function GET() {
     "",
     `- **Total live tools:** ${liveCount} across ${CLUSTERS.length} collections`,
     "- **Cost & accounts:** 100% free, no sign-up, no watermarks",
-    "- **Where tools run:** Browser-only for most developer, text, meme, photo editor, and font creator tools; isolated server processing for PDF, image, media, transcription, and network lookup tools",
+    "- **Where tools run:** Browser-only for most developer, text, meme, photo editor, Pro photo editor (Photoshop/Lightroom-style, with PSD support), and font creator tools; isolated server processing for PDF, image, media, transcription, and network lookup tools",
     "- **Data retention:** Files are deleted immediately after download (or after 30 minutes for multi-step PDF tools)",
     "",
     "## Core Pages",

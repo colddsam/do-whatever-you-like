@@ -33,6 +33,7 @@ const CropImageTool = dynamic(() => import("./image/crop-tool").then((m) => m.Cr
 const HtmlToImageTool = dynamic(() => import("./image/html-tool").then((m) => m.HtmlToImageTool), { loading });
 const MemeGeneratorTool = dynamic(() => import("./image/meme-tool").then((m) => m.MemeGeneratorTool), { loading });
 const PhotoEditorTool = dynamic(() => import("./image/photo-editor").then((m) => m.PhotoEditorTool), { loading });
+const ProPhotoEditor = dynamic(() => import("./image/pro/editor").then((m) => m.ProPhotoEditor), { loading, ssr: false });
 const CompressImageTool = dynamic(() => import("./image/simple-tools").then((m) => m.CompressImageTool), { loading });
 const ConvertImageTool = dynamic(() => import("./image/simple-tools").then((m) => m.ConvertImageTool), { loading });
 const RemoveBackgroundTool = dynamic(() => import("./image/simple-tools").then((m) => m.RemoveBackgroundTool), { loading });
@@ -160,6 +161,7 @@ const byId: Record<string, Workspace> = {
   "remove-background": RemoveBackgroundTool,
   "meme-generator": MemeGeneratorTool,
   "photo-editor": PhotoEditorTool,
+  "pro-photo-editor": ProPhotoEditor,
   "resize-image": ResizeImageTool,
   "crop-image": CropImageTool,
   "rotate-image": RotateImageTool,

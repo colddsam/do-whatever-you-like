@@ -564,6 +564,16 @@ const INTENT_RULES: IntentRule[] = [
     reason: "Interactive WebGL 3D model viewer & inspector",
   },
   {
+    phrases: [
+      "photoshop", "photoshop online", "free photoshop", "photoshop alternative", "photopea", "gimp", "lightroom", "lightroom online",
+      "lightroom presets", "picsart", "snapseed", "canva photo", "layers", "layer mask", "edit psd", "open psd", "psd file", "retouch photo",
+      "healing brush", "clone stamp", "content aware fill", "remove object from photo", "remove blemish", "photo effects", "glitch effect",
+      "pencil sketch", "cartoon effect", "color grading", "hsl", "photo collage", "collage maker", "blur background", "portrait mode",
+    ],
+    boostIds: ["pro-photo-editor"],
+    reason: "Layer-based, Photoshop- and Lightroom-style photo editor in the browser",
+  },
+  {
     phrases: ["cut out background", "remove background", "erase background", "transparent background", "white background", "remove bg", "cut out subject", "cut out person"],
     boostIds: ["remove-background", "image"],
     reason: "Isolates subject with transparent or solid backdrop",
@@ -849,6 +859,11 @@ const CURATED_TASK_SUGGESTIONS: Array<{ phrase: string; toolId: string; kind: "t
   { phrase: "convert epub to pdf", toolId: "convert-anything", kind: "conversion" },
   { phrase: "convert heic iphone photo to jpg", toolId: "convert-image", kind: "conversion" },
   { phrase: "remove background from photo transparently", toolId: "remove-background", kind: "task" },
+  { phrase: "edit photo with layers like photoshop online free", toolId: "pro-photo-editor", kind: "task" },
+  { phrase: "apply lightroom style presets and color grading", toolId: "pro-photo-editor", kind: "task" },
+  { phrase: "remove an object or blemish from a photo", toolId: "pro-photo-editor", kind: "task" },
+  { phrase: "open and edit a psd file online", toolId: "pro-photo-editor", kind: "task" },
+  { phrase: "make a photo collage", toolId: "pro-photo-editor", kind: "task" },
   { phrase: "blur faces or hide details in photo", toolId: "blur-face", kind: "task" },
   { phrase: "download instagram reel or save audio mp3", toolId: "instagram", kind: "task" },
   { phrase: "save youtube video or mp3 audio", toolId: "youtube", kind: "task" },
