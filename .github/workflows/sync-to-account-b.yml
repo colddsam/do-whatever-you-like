@@ -1,0 +1,26 @@
+name: Sync Code to Account B
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  mirror-repo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to Destination Repository
+        env:
+          DEST_TOKEN: ${{ secrets.DEST_REPO_TOKEN }}
+          DEST_USER: ${{ secrets.DEST_USERNAME }}
+          DEST_NAME: ${{ secrets.DEST_REPO }}
+        run: |
+          git config --unset-all http.https://github.com/.extraheader || true
+          git remote add destination https://x-access-token:${DEST_TOKEN}@github.com/${DEST_USER}/${DEST_NAME}.git
+          git push destination main --force
