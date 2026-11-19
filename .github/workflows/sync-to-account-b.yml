@@ -21,6 +21,17 @@ jobs:
           DEST_USER: ${{ secrets.DEST_USERNAME }}
           DEST_NAME: ${{ secrets.DEST_REPO }}
         run: |
+          CLEAN_TOKEN=$(printf '%s' "$DEST_TOKEN" | tr -d '[:space:]')
+          CLEAN_USER=$(printf '%s' "$DEST_USER" | tr -d '[:space:]')
+          CLEAN_NAME=$(printf '%s' "$DEST_NAME" | tr -d '[:space:]')
+
+          # Create a temporary branch without .github/workflows so workflow scope isn't needed
+          git checkout --orphan clean-sync
+          git rm -rf --cached .github/workflows || true
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git commit -m "Sync code from source repository"
+
           git config --unset-all http.https://github.com/.extraheader || true
-          git remote add destination https://x-access-token:${DEST_TOKEN}@github.com/${DEST_USER}/${DEST_NAME}.git
-          git push destination main --force
+          git remote add destination "https://x-access-token:${CLEAN_TOKEN}@github.com/${CLEAN_USER}/${CLEAN_NAME}.git"
+          git push destination clean-sync:main --force
