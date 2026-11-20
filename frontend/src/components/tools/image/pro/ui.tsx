@@ -3,7 +3,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { Check, ChevronRight, Menu as MenuGlyph, X, type LucideIcon } from "lucide-react";
+import { Check, ChevronRight, Menu as MenuGlyph, RotateCcw, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /*
@@ -536,6 +536,7 @@ export function RangeRow({
   onChange,
   unit = "",
   signed,
+  def,
 }: {
   label: string;
   value: number;
@@ -545,23 +546,45 @@ export function RangeRow({
   onChange: (v: number) => void;
   unit?: string;
   signed?: boolean;
+  /** The neutral value: marked on the track; a changed slider shows its value in the accent and a reset. */
+  def?: number;
 }) {
   const id = useId();
+  const home = def ?? (min < 0 && max > 0 ? 0 : min);
+  const changed = def !== undefined && Math.abs(value - def) > 1e-9;
   const shown = `${signed && value > 0 ? "+" : ""}${Math.round(value * 100) / 100}${unit}`;
+  const pct = (v: number) => ((Math.min(max, Math.max(min, v)) - min) / (max - min || 1)) * 100;
+  // The fill runs from the neutral point to the value, so +/− sliders fill outwards from the middle.
+  const a = Math.min(pct(home), pct(value));
+  const b = Math.max(pct(home), pct(value));
   return (
-    <div className="py-1">
-      <div className="flex items-baseline justify-between gap-2">
-        <label htmlFor={id} className="text-[12px] text-ink-2">
+    <div className="group/range py-1">
+      <div className="flex items-center justify-between gap-2">
+        <label htmlFor={id} className={cn("text-[12px] transition-colors", changed ? "text-ink" : "text-ink-2")}>
           {label}
         </label>
-        <button
-          type="button"
-          title="Double-click to reset"
-          onDoubleClick={() => onChange(min < 0 && max > 0 ? 0 : min)}
-          className="font-mono text-[12px] tabular-nums text-ink"
-        >
-          {shown}
-        </button>
+        <span className="flex items-center gap-1">
+          <AnimatePresence>
+            {changed && (
+              <motion.button
+                type="button"
+                aria-label={`Reset ${label}`}
+                title="Reset"
+                onClick={() => onChange(home)}
+                initial={{ opacity: 0, scale: 0.6 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.6 }}
+                transition={{ duration: 0.15 }}
+                className="inline-flex size-5 items-center justify-center rounded-sm text-ink-3 hover:bg-paper-2 hover:text-ink"
+              >
+                <RotateCcw aria-hidden className="size-3" />
+              </motion.button>
+            )}
+          </AnimatePresence>
+          <button type="button" title="Double-click to reset" onDoubleClick={() => onChange(home)} className={cn("min-w-9 text-right font-mono text-[12px] tabular-nums transition-colors", changed ? "text-accent" : "text-ink")}>
+            {shown}
+          </button>
+        </span>
       </div>
       <input
         id={id}
@@ -571,8 +594,9 @@ export function RangeRow({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        onDoubleClick={() => onChange(min < 0 && max > 0 ? 0 : min)}
-        className="h-6 w-full cursor-pointer accent-ink"
+        onDoubleClick={() => onChange(home)}
+        style={{ "--a": `${a}%`, "--b": `${b}%`, "--h": `${pct(home)}%` } as React.CSSProperties}
+        className="pro-range h-6 w-full cursor-pointer"
       />
     </div>
   );

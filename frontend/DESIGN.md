@@ -346,8 +346,14 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
       layer only when it's the photo (an opaque pixel layer covering half the canvas, `isPhotoLayer`); otherwise the
       whole image, so effects never land silently on text, a sticker or an empty layer. Whole image = an adjustment
       layer on top for per-pixel operations, or a stamped (merged + filtered) layer on top for the rest. Every operation
-      has an icon and a one-line description (`catalog.ts`); the Adjust tab is a searchable grid of icon tiles grouped
-      by family (a bolt marks one-tap ones), and menus show the same icons.
+      has an icon and a one-line description (`catalog.ts`). The Adjust tab (`effects.tsx`) is a grid of preview tiles:
+      the whole picture through each effect (with `demoParams`, since many start neutral), its icon on an ink badge and
+      its name; a bolt marks one-tap ones. A pinned search ("/" focuses it, Enter picks the first) and a row of family
+      chips (an ink pill slides between them) sit above groups that fold open; "Recently used" (localStorage) leads.
+      Picking one slides its settings into Properties: back link, icon, change count, Hold to compare (the picture
+      without the preview), Reset all, and a sticky Apply. Sliders (`.pro-range`) fill in ink from their neutral point,
+      tick it, and turn their value accent with a reset when changed. While browsing effects or looks the desktop
+      Layers dock folds to its header. Menus show the same icons; all motion follows reduced-motion.
       Vector (Illustrator) side, `vector.ts`: `vector` layers hold cubic-Bézier paths (`VPath`) and redraw their canvas
       from them on every edit, so they stay sharp through moves, free transform, canvas rotation and resizing. Pen (P)
       clicks corners and drags curves; Direct selection (A) drags points/handles (smooth points keep handles in line,

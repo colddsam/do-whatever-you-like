@@ -61,7 +61,7 @@ import {
   Zap,
   type LucideIcon,
 } from "lucide-react";
-import type { Op } from "./ops";
+import { defaults, type Op } from "./ops";
 
 /*
  * How each adjustment, filter and look is presented: an icon that hints at what it does and a
@@ -160,7 +160,43 @@ export const GROUP_INFO: Record<string, { label: string; icon: LucideIcon }> = {
   Looks: { label: "Looks", icon: Film },
 };
 
-export const opIcon = (op: Pick<Op, "id" | "group">): LucideIcon => ENTRIES[op.id]?.icon ?? (op.group === "Looks" ? Film : Sparkles);
+/*
+ * Settings used only for the preview tiles. Many adjustments start neutral (every slider at 0),
+ * which would make their preview look exactly like the photo; these show what each one does.
+ */
+const ID_CURVE: [number, number][] = [
+  [0, 0],
+  [255, 255],
+];
+const DEMO: Record<string, Record<string, unknown>> = {
+  "camera-raw": { exposure: 20, contrast: 30, vibrance: 55, clarity: 35, vignette: 30 },
+  "brightness-contrast": { brightness: 55, contrast: 35 },
+  levels: { levels: { channel: "rgb", inLo: 45, inHi: 205, gamma: 1.25, outLo: 0, outHi: 255 } },
+  curves: { curves: { rgb: [[0, 0], [64, 34], [190, 225], [255, 255]], r: ID_CURVE, g: ID_CURVE, b: ID_CURVE } },
+  exposure: { exposure: 1 },
+  "shadows-highlights": { shadows: 70, highlights: 40 },
+  "color-mixer": { h_red: 60, s_red: 60, h_orange: 60, s_blue: 70, l_blue: -30, h_green: -50 },
+  "color-grading": { ss: 55, hs: 45, ms: 20 },
+  vibrance: { vibrance: 90, saturation: 15 },
+  "hue-saturation": { hue: 110, saturation: 20 },
+  "color-balance": { cr: 70, yb: -55 },
+  "channel-mixer": { r: 30, g: 80, b: 10 },
+  "selective-color": { family: "reds", hue: 45, sat: 60 },
+  "photo-filter": { density: 55 },
+  "black-white": { tint: true },
+  posterize: { levels: 4 },
+  "unsharp-mask": { amount: 300, radius: 3 },
+  "add-noise": { amount: 30 },
+  vignette: { amount: 80 },
+  glitch: { amount: 70 },
+};
+
+/** An operation's defaults with its preview settings on top. */
+export function demoParams(op: Op): Record<string, unknown> {
+  return { ...defaults(op), ...(op.group === "Looks" ? { amount: 100 } : DEMO[op.id]) };
+}
+
+export const opIcon =(op: Pick<Op, "id" | "group">): LucideIcon => ENTRIES[op.id]?.icon ?? (op.group === "Looks" ? Film : Sparkles);
 export const opBlurb = (op: Pick<Op, "id" | "hint">) => ENTRIES[op.id]?.blurb ?? op.hint ?? "";
 export const groupLabel = (g: string) => GROUP_INFO[g]?.label ?? g;
 export const groupIcon = (g: string) => GROUP_INFO[g]?.icon ?? Sparkles;

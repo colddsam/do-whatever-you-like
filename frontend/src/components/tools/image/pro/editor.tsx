@@ -107,7 +107,8 @@ import { clearSession, copyToClipboard, decodeImage, deserialize, isProject, isP
 import { blurImage, defaults, histogram, type Op } from "./ops";
 import { beginStroke, BUFFER_TOOLS, bucketFill, endStroke, gradientFill, liveFor, PIXEL_TOOLS, redEye, strokeTo, type StrokeState } from "./paint";
 import { groupIcon, groupLabel, opBlurb, opIcon } from "./catalog";
-import { EffectsBrowser, EffectsEditor, HistogramChart, HistoryPanel, LayersPanel, ParamsEditor, VectorPanel, type LayerApi } from "./panels";
+import { EffectsBrowser, rememberEffect, useEffectPreviews } from "./effects";
+import { EffectsEditor, HistogramChart, HistoryPanel, LayersPanel, ParamsEditor, VectorPanel, type LayerApi } from "./panels";
 import { compose, flatten, renderShape, renderText, shapePad, type Live } from "./render";
 import { colorMask, combine, drawAnts, edgeCanvas, ellipsePath, featherSelection, fromMask, growMask, polyPath, rectPath, selectAll, shapeMask, wandMask } from "./selection";
 import { DEFAULT_BRUSH, DEFAULT_OPTS, FONTS, OptionsBar, TOOLS, Toolbar, type GradPreset, type ToolOpts } from "./tools";
@@ -193,7 +194,7 @@ type Drag =
   | { type: "vnode"; layerId: string; path: number; sub: number; node: number; part: "node" | "i" | "o"; start: Pt; base: VPath[]; alt: boolean; next: VPath[] | null }
   | { type: "vpath"; layerId: string; path: number; start: Pt; base: VPath[]; next: VPath[] | null };
 
-type OpEdit = { op: Op; params: Record<string, unknown>; asLayer: boolean; target: OpTarget };
+type OpEdit = { op: Op; params: Record<string, unknown>; asLayer: boolean; target: OpTarget; from?: Panel };
 /** The path being edited with the Direct selection tool, and (optionally) one of its points. */
 type NodeSel = { layerId: string; path: number; sub: number | null; node: number | null };
 type Panel = "properties" | "looks" | "adjust" | "create" | "history" | "info" | "layers";
@@ -216,6 +217,8 @@ const QUICK_FIXES: { label: string; run: string; icon: typeof Wand2 }[] = [
 
 /** The Adjust tab's order: quick wins first, then light, colour, and the filter families. */
 const ADJUST_ORDER = ["Auto", "Basic", "Colour", "Special"];
+/** Every adjustment and filter, for the Adjust tab's preview tiles. */
+const ALL_OPS: Op[] = [...ADJUSTMENTS, ...FILTERS];
 
 /** Keeps at least this much of the picture on screen, so it can never be panned out of reach. */
 const KEEP_VISIBLE = 64;
@@ -263,6 +266,8 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
   const [zoom, setZoom] = useState(1);
   const [hasClip, setHasClip] = useState(false);
   const [compare, setCompare] = useState(false);
+  // Live previews for the Adjust tab: your picture through each effect, while that tab is open.
+  const effectPreviews = useEffectPreviews(doc && panel === "adjust" ? doc : null, ALL_OPS, { fg, bg });
   const [lookThumbs, setLookThumbs] = useState<{ src: HTMLCanvasElement | null; urls: Record<string, string> }>({ src: null, urls: {} });
   const [stickerSet, setStickerSet] = useState(0);
   // Vector editing: the pen's path in progress, and the path (and point) picked for direct selection.
@@ -270,7 +275,19 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
   const [nodeSel, setNodeSel] = useState<NodeSel | null>(null);
   // Phones: the panel sheet under the canvas can fold away to give the picture the room.
   const [sheetOpen, setSheetOpen] = useState(true);
+  // Desktop: the Layers dock folds down while browsing effects and looks, so their grids get the room.
+  const [layersOpen, setLayersOpen] = useState(true);
+  const [seenPanel, setSeenPanel] = useState(panel);
+  if (seenPanel !== panel) {
+    setSeenPanel(panel);
+    const browsing = (p: Panel) => p === "adjust" || p === "looks";
+    // Picking an effect opens its settings in Properties: those stay roomy too.
+    setLayersOpen(!browsing(panel) && !(panel === "properties" && browsing(seenPanel)));
+  }
   const pannedHint = useRef(false);
+  // Held down in an effect's settings: shows the picture without the effect being previewed.
+  const peekRef = useRef(false);
+  const [peeking, setPeeking] = useState(false);
   const compareRef = useRef(false);
   const collageRef = useRef<HTMLInputElement>(null);
   const subjectCache = useRef<{ canvas: HTMLCanvasElement; mask: HTMLCanvasElement } | null>(null);
@@ -943,7 +960,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
         const ry1 = clamp(Math.ceil((H - v.y) / v.z), 0, d.h);
         if (rx1 > rx && ry1 > ry) {
           const s = Math.min(1, v.z * dpr);
-          const comp = compose(d, { rect: { x: rx, y: ry, w: rx1 - rx, h: ry1 - ry }, scale: s, live: comparing ? undefined : live.current });
+          const comp = compose(d, { rect: { x: rx, y: ry, w: rx1 - rx, h: ry1 - ry }, scale: s, live: comparing || peekRef.current ? undefined : live.current });
           g.imageSmoothingEnabled = v.z * dpr < 2;
           g.imageSmoothingQuality = "high";
           g.drawImage(comp, (v.x + rx * v.z) * dpr, (v.y + ry * v.z) * dpr, (rx1 - rx) * v.z * dpr, (ry1 - ry) * v.z * dpr);
@@ -1039,6 +1056,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     // (never silently on a text, sticker, shape or empty layer).
     const target = defaultTarget(d);
     if (op.instant) {
+      rememberEffect(op.id);
       setBusy(`${op.label}…`);
       nextFrame().then(() => {
         try {
@@ -1052,8 +1070,9 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
       });
       return;
     }
+    rememberEffect(op.id);
     setStyleEdit(false);
-    setOpEdit({ op, params: defaults(op), asLayer: false, target });
+    setOpEdit({ op, params: defaults(op), asLayer: false, target, from: panel === "looks" ? "looks" : "adjust" });
     setPanel("properties");
     setSheetOpen(true);
   };
@@ -1061,6 +1080,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
   // Live preview while settings change: a reduced copy with the operation applied.
   useEffect(() => {
     if (!opEdit || !doc) {
+      peekRef.current = false;
       if (live.current?.replace || live.current?.insert) {
         live.current = undefined;
         dirty.current = true;
@@ -2862,18 +2882,59 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
       const Icon = opIcon(op);
       const layerOk = active.kind !== "adjustment";
       const pixelsOnly = target === "layer" && !opEdit.asLayer;
+      const base = defaults(op);
+      const changes = Object.keys(base).filter((k) => JSON.stringify(base[k]) !== JSON.stringify(opEdit.params[k])).length;
+      const back = () => {
+        const from = opEdit.from ?? "adjust";
+        setOpEdit(null);
+        setPanel(from);
+      };
+      const peek = (on: boolean) => {
+        peekRef.current = on;
+        setPeeking(on);
+        dirty.current = true;
+      };
       return (
-        <div className="space-y-3 p-3">
+        <motion.div key={op.id} initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }} className="space-y-3 p-3">
+          <button type="button" onClick={back} className="group -ml-1 inline-flex h-7 items-center gap-1 rounded-sm px-1 text-[12px] text-ink-2 transition-colors hover:text-ink">
+            <ChevronDown aria-hidden className="size-3.5 rotate-90 transition-transform group-hover:-translate-x-0.5" />
+            {opEdit.from === "looks" ? "All looks" : "All effects"}
+          </button>
           <div className="flex items-start gap-2.5">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-sm bg-ink text-paper">
-              <Icon aria-hidden className="size-[18px]" strokeWidth={1.75} />
-            </span>
+            <motion.span initial={{ scale: 0.7, rotate: -8 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring", bounce: 0.45, duration: 0.5 }} className="flex size-10 shrink-0 items-center justify-center rounded-md bg-ink text-paper shadow-card">
+              <Icon aria-hidden className="size-5" strokeWidth={1.75} />
+            </motion.span>
             <div className="min-w-0 flex-1">
-              <p className="text-[14px] font-medium leading-tight text-ink">{op.label}</p>
+              <p className="flex items-center gap-1.5 text-[14px] font-medium leading-tight text-ink">
+                <span className="truncate">{op.label}</span>
+                <AnimatePresence>
+                  {changes > 0 && (
+                    <motion.span initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.7 }} className="inline-flex h-5 shrink-0 items-center rounded-full bg-accent/10 px-1.5 font-mono text-[12px] font-normal text-accent">
+                      {changes} {changes === 1 ? "change" : "changes"}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </p>
               <p className="mt-0.5 text-[12px] leading-relaxed text-ink-3">{op.hint ?? opBlurb(op)}</p>
             </div>
-            <button type="button" aria-label="Reset settings" title="Reset settings" onClick={() => setOpEdit({ ...opEdit, params: defaults(op) })} className="inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-ink-2 hover:bg-paper-2 hover:text-ink">
-              <RotateCcw aria-hidden className="size-3.5" />
+          </div>
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              type="button"
+              aria-pressed={peeking}
+              onPointerDown={() => peek(true)}
+              onPointerUp={() => peek(false)}
+              onPointerLeave={() => peekRef.current && peek(false)}
+              onPointerCancel={() => peek(false)}
+              onKeyDown={(e) => (e.key === " " || e.key === "Enter") && !e.repeat && peek(true)}
+              onKeyUp={() => peek(false)}
+              onContextMenu={(e) => e.preventDefault()}
+              className={cn("inline-flex h-8 select-none items-center justify-center gap-1.5 rounded-sm border text-[12px] transition-colors", peeking ? "border-ink bg-ink text-paper" : "border-line text-ink-2 hover:border-ink-3 hover:text-ink")}
+            >
+              <Eye aria-hidden className="size-3.5" /> {peeking ? "Showing before" : "Hold to compare"}
+            </button>
+            <button type="button" disabled={!changes} onClick={() => setOpEdit({ ...opEdit, params: base })} className="inline-flex h-8 items-center justify-center gap-1.5 rounded-sm border border-line text-[12px] text-ink-2 transition-colors hover:border-ink-3 hover:text-ink disabled:opacity-40">
+              <RotateCcw aria-hidden className="size-3.5" /> Reset all
             </button>
           </div>
           <div>
@@ -2923,7 +2984,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
               <Check aria-hidden className="size-4" /> Apply
             </Btn>
           </div>
-        </div>
+        </motion.div>
       );
     }
     if (styleEdit && active.kind !== "adjustment") {
@@ -3105,7 +3166,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
           ))}
         </div>
       </div>
-      <EffectsBrowser sections={effectSections} active={opEdit?.op.id ?? null} onPick={openOp} />
+      <EffectsBrowser sections={effectSections} active={opEdit?.op.id ?? null} onPick={openOp} previews={effectPreviews} />
     </div>
   );
 
@@ -3727,24 +3788,42 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
                 </button>
               </div>
               <div className={cn("min-h-0 overflow-y-auto overscroll-contain max-lg:h-[min(36dvh,340px)] lg:flex-1", !sheetOpen && "max-lg:hidden")} data-lenis-prevent>
-                {panel === "properties" && <Slot>{propertiesPanel}</Slot>}
-                {panel === "adjust" && <Slot>{adjustPanel}</Slot>}
-                {panel === "looks" && <Slot>{looksPanel}</Slot>}
-                {panel === "create" && <Slot>{createPanel}</Slot>}
-                {panel === "history" && <HistoryPanel entries={hist!.entries} index={hist!.index} onJump={jump} />}
-                {panel === "info" && <Slot>{infoPanel}</Slot>}
-                {panel === "layers" && (
-                  <div className="lg:hidden">
-                    <LayersPanel doc={doc} api={layerApi} />
-                  </div>
-                )}
+                {/* Tabs cross-fade; the panel's own scroll position starts at the top. */}
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div key={panel} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}>
+                    {panel === "properties" && <Slot>{propertiesPanel}</Slot>}
+                    {panel === "adjust" && <Slot>{adjustPanel}</Slot>}
+                    {panel === "looks" && <Slot>{looksPanel}</Slot>}
+                    {panel === "create" && <Slot>{createPanel}</Slot>}
+                    {panel === "history" && <HistoryPanel entries={hist!.entries} index={hist!.index} onJump={jump} />}
+                    {panel === "info" && <Slot>{infoPanel}</Slot>}
+                    {panel === "layers" && (
+                      <div className="lg:hidden">
+                        <LayersPanel doc={doc} api={layerApi} />
+                      </div>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
               </div>
-              <div className="hidden h-[44%] min-h-[220px] flex-col border-t border-line lg:flex">
-                <p className="label-mono flex items-center gap-1.5 border-b border-line bg-paper/60 px-3 py-2 text-ink-3">
+              <motion.div
+                initial={false}
+                animate={{ height: layersOpen ? "44%" : 36 }}
+                transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                className={cn("hidden shrink-0 flex-col overflow-hidden border-t border-line lg:flex", layersOpen && "min-h-[220px]")}
+              >
+                <button
+                  type="button"
+                  aria-expanded={layersOpen}
+                  onClick={() => setLayersOpen((o) => !o)}
+                  className="label-mono flex h-9 shrink-0 items-center gap-1.5 border-b border-line bg-paper/60 px-3 text-ink-3 transition-colors hover:text-ink"
+                >
                   <LayersIcon aria-hidden className="size-3.5" /> Layers
-                </p>
+                  <span className="ml-1 tabular-nums">{doc.layers.length}</span>
+                  {!layersOpen && <span className="ml-2 min-w-0 truncate normal-case tracking-normal text-ink-2">{active?.name}</span>}
+                  <ChevronDown aria-hidden className={cn("ml-auto size-3.5 transition-transform duration-300", !layersOpen && "rotate-180")} />
+                </button>
                 <LayersPanel doc={doc} api={layerApi} />
-              </div>
+              </motion.div>
             </aside>
           </div>
 

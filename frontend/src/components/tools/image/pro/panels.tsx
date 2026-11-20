@@ -13,18 +13,15 @@ import {
   Lock,
   PenTool,
   Plus,
-  Search,
   SlidersHorizontal,
   Sparkles,
   SquareDashed,
   Trash2,
   Unlock,
-  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CHECKER } from "../task";
 import { ADJUSTMENTS } from "./adjustments";
-import { groupIcon, groupLabel, opBlurb, opIcon } from "./catalog";
 import { ctx2d } from "./doc";
 import { curveLut, type Op, type Param } from "./ops";
 import type { BlendMode, Doc, Effects, VPath } from "./types";
@@ -470,7 +467,7 @@ export function ParamsEditor({ op, value, onChange, hist }: { op: Op; value: Rec
           case "range": {
             // A hue slider does nothing while its strength is 0, so moving it turns the strength up a little.
             const bump = p.bump && !Number(value[p.bump[0]]) ? { [p.bump[0]]: p.bump[1] } : {};
-            return <RangeRow key={p.key} label={p.label} value={Number(value[p.key])} min={p.min} max={p.max} step={p.step} unit={p.unit} signed={p.min < 0} onChange={(v) => onChange({ ...value, [p.key]: v, ...bump })} />;
+            return <RangeRow key={p.key} label={p.label} value={Number(value[p.key])} min={p.min} max={p.max} step={p.step} unit={p.unit} signed={p.min < 0} def={p.def} onChange={(v) => onChange({ ...value, [p.key]: v, ...bump })} />;
           }
           case "color":
             return (
@@ -691,73 +688,7 @@ const swap = <T,>(a: T[], i: number, j: number) => {
   return b;
 };
 
-/* ---------- The effects browser (Adjust tab) ---------- */
-
-/**
- * Every adjustment and filter as an icon tile with its name, grouped and searchable. A small bolt
- * marks the ones that apply in one tap; the rest open their settings in Properties.
- */
-export function EffectsBrowser({ sections, active, onPick }: { sections: { group: string; ops: Op[] }[]; active: string | null; onPick: (op: Op) => void }) {
-  const [q, setQ] = useState("");
-  const query = q.trim().toLowerCase();
-  const total = sections.reduce((n, s) => n + s.ops.length, 0);
-  const shown = sections
-    .map((s) => ({ ...s, ops: query ? s.ops.filter((o) => `${o.label} ${opBlurb(o)} ${groupLabel(s.group)}`.toLowerCase().includes(query)) : s.ops }))
-    .filter((s) => s.ops.length);
-  return (
-    <div className="space-y-4">
-      <label className="relative block">
-        <span className="sr-only">Search effects</span>
-        <Search aria-hidden className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-ink-3" />
-        <input
-          type="search"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder={`Search ${total} adjustments & filters`}
-          className="h-9 w-full rounded-md border border-line bg-surface pl-8 pr-2.5 text-[13px] text-ink outline-none placeholder:text-ink-3 focus:border-ink focus:ring-2 focus:ring-accent/20"
-        />
-      </label>
-      {shown.map((s) => {
-        const GroupIcon = groupIcon(s.group);
-        return (
-          <section key={s.group} aria-label={groupLabel(s.group)}>
-            <p className="label-mono mb-1.5 flex items-center gap-1.5 text-ink-3">
-              <GroupIcon aria-hidden className="size-3.5" />
-              {groupLabel(s.group)}
-              <span className="ml-auto tabular-nums">{s.ops.length}</span>
-            </p>
-            <div className="grid grid-cols-3 gap-1.5">
-              {s.ops.map((op) => {
-                const Icon = opIcon(op);
-                const on = active === op.id;
-                return (
-                  <button
-                    key={op.id}
-                    type="button"
-                    onClick={() => onPick(op)}
-                    title={`${op.label}: ${opBlurb(op)}${op.instant ? " (one tap)" : ""}`}
-                    aria-pressed={on}
-                    className={cn(
-                      "relative flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-sm border px-1 py-2 text-center transition-[background-color,border-color,color,transform] active:translate-y-px",
-                      on ? "border-ink bg-ink text-paper" : "border-line bg-surface text-ink-2 hover:border-ink-3 hover:text-ink",
-                    )}
-                  >
-                    <Icon aria-hidden className="size-[18px]" strokeWidth={1.75} />
-                    <span className="line-clamp-2 text-[12px] leading-tight [overflow-wrap:anywhere]">{op.label}</span>
-                    {op.instant && <Zap aria-label="One tap" className={cn("absolute right-1 top-1 size-3", on ? "text-paper/70" : "text-accent")} />}
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        );
-      })}
-      {!shown.length && <p className="py-6 text-center text-[13px] text-ink-3">Nothing matches “{q}”. Try “blur”, “warm” or “black”.</p>}
-    </div>
-  );
-}
-
-export const PanelTitle =({ children, icon: Icon = LayersIcon }: { children: React.ReactNode; icon?: typeof LayersIcon }) => (
+export const PanelTitle = ({ children, icon: Icon = LayersIcon }: { children: React.ReactNode; icon?: typeof LayersIcon }) => (
   <p className="label-mono flex items-center gap-1.5 text-ink-3">
     <Icon aria-hidden className="size-3.5" />
     {children}

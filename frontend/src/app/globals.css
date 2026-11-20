@@ -144,6 +144,57 @@
   letter-spacing: -0.01em;
 }
 
+/*
+ * The pro editor's sliders: a hairline track with the changed span filled in ink (from the
+ * neutral point, so ± sliders fill outwards from the middle), a tick at neutral, and an ink
+ * thumb that grows a little under the pointer. --a/--b/--h are set per slider (percentages).
+ */
+.pro-range {
+  appearance: none;
+  background: transparent;
+  outline: none;
+}
+.pro-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background:
+    linear-gradient(var(--color-ink-3), var(--color-ink-3)) var(--h) 50% / 1px 10px no-repeat,
+    linear-gradient(90deg, transparent var(--a), var(--color-ink) var(--a), var(--color-ink) var(--b), transparent var(--b)),
+    var(--color-line);
+}
+.pro-range::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, transparent var(--a), var(--color-ink) var(--a), var(--color-ink) var(--b), transparent var(--b)),
+    var(--color-line);
+}
+.pro-range::-webkit-slider-thumb {
+  appearance: none;
+  margin-top: -6px;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--color-surface);
+  border: 2px solid var(--color-ink);
+  box-shadow: 0 1px 3px rgb(21 20 15 / 0.2);
+  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.pro-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--color-surface);
+  border: 2px solid var(--color-ink);
+}
+.pro-range:hover::-webkit-slider-thumb,
+.pro-range:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+.pro-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgb(235 74 16 / 0.25);
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
