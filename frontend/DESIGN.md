@@ -336,11 +336,29 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
       IndexedDB, `inpaint.ts` heals in `public/photo/inpaint-worker.js` (the vendored OpenCV.js Telea, JS fallback).
       Layout: menu bar (File…View), tool options bar, a toolbar of flyout groups (ink = selected), the canvas on
       `paper-2`, and a right column of Properties / Adjust / History / Info tabs over the Layers panel (accent rule on
-      the active layer). Phones stack canvas, a scrolling tool row, then tabbed panels; two fingers pinch-zoom.
+      the active layer). Phones get a one-screen app layout (`100dvh` minus the sticky navbar, scrolled into view when a
+      picture opens): a single "Menu" button (menus as submenus) below `md`, the canvas taking the free height, a
+      scrolling tool row, then tab bar and a panel sheet that folds away (tap the open tab or the chevron); two fingers
+      pinch-zoom. Navigation: the background layer stays put (Move on it pans, as in Photoshop); a mouse wheel zooms at
+      the pointer, trackpad scrolling pans, Ctrl/pinch zooms; the view is clamped so 64 px of the picture always stays
+      on screen; a zoom pill (− % + fit) sits on the canvas at every size.
+      Adjustments, filters and looks have an **Applies to** switch: *This layer* or *Whole image*. The default is the
+      layer only when it's the photo (an opaque pixel layer covering half the canvas, `isPhotoLayer`); otherwise the
+      whole image, so effects never land silently on text, a sticker or an empty layer. Whole image = an adjustment
+      layer on top for per-pixel operations, or a stamped (merged + filtered) layer on top for the rest. Every operation
+      has an icon and a one-line description (`catalog.ts`); the Adjust tab is a searchable grid of icon tiles grouped
+      by family (a bolt marks one-tap ones), and menus show the same icons.
+      Vector (Illustrator) side, `vector.ts`: `vector` layers hold cubic-Bézier paths (`VPath`) and redraw their canvas
+      from them on every edit, so they stay sharp through moves, free transform, canvas rotation and resizing. Pen (P)
+      clicks corners and drags curves; Direct selection (A) drags points/handles (smooth points keep handles in line,
+      Alt breaks them), Alt-click toggles smooth/corner, double-click adds a point, Delete removes one. Shapes convert
+      to paths. SVG files open (or place) as editable paths after DOMPurify sanitising, resolved through the browser's
+      own layout (CSS classes, transforms, viewBoxes, arcs); File → Save as SVG writes paths, live text and embedded
+      PNGs for pixel layers. The accent marks path outlines and points on the canvas.
       Full screen portals to `<body>` (z-100; its dialogs at z-120). Keyboard shortcuts follow Photoshop except where
       browsers reserve them (free transform is Shift+T, not Ctrl+T).
       The panel tabs are Properties / Looks / Adjust / Create / History / Info: icons with tooltips, and only the open tab
-      shows its name (it widens to fit). Looks are a grid of live thumbnails of the active layer (drawn a few per frame),
+      shows its name (it widens to fit). Looks are a grid of live thumbnails of the whole picture (drawn a few per frame),
       each a recipe of the editor's own operations with an Amount slider. Create holds text styles (rendered as ink
       tiles), stickers (colour-emoji text layers), frames (a layer on top, in the foreground colour), background tools and
       collage. Menus, submenus and flyouts float in a portal on `<body>` (`Floating`, z-130) so no scrolling bar clips

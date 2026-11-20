@@ -11,20 +11,24 @@ import {
   FolderDown,
   Layers as LayersIcon,
   Lock,
+  PenTool,
   Plus,
+  Search,
   SlidersHorizontal,
   Sparkles,
   SquareDashed,
   Trash2,
   Unlock,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CHECKER } from "../task";
 import { ADJUSTMENTS } from "./adjustments";
+import { groupIcon, groupLabel, opBlurb, opIcon } from "./catalog";
 import { ctx2d } from "./doc";
 import { curveLut, type Op, type Param } from "./ops";
-import type { BlendMode, Doc, Effects } from "./types";
-import { Check2, ColorWell, IconBtn, MenuButton, NumField, RangeRow, Select, type MenuItem } from "./ui";
+import type { BlendMode, Doc, Effects, VPath } from "./types";
+import { Btn, Check2, ColorWell, IconBtn, MenuButton, NumField, RangeRow, Select, type MenuItem } from "./ui";
 
 export const BLEND_MODES: { value: BlendMode; label: string }[] = [
   { value: "normal", label: "Normal" },
@@ -229,7 +233,7 @@ export function LayersPanel({ doc, api }: { doc: Doc; api: LayerApi }) {
                   </p>
                 )}
                 <p className="flex items-center gap-1.5 font-mono text-[12px] uppercase text-ink-3">
-                  {l.kind !== "pixel" && <span>{l.kind === "adjustment" ? "adj" : l.kind}</span>}
+                  {l.kind !== "pixel" && <span>{l.kind === "adjustment" ? "adj" : l.kind === "vector" ? "vec" : l.kind}</span>}
                   {l.blend !== "normal" && <span>{BLEND_MODES.find((b) => b.value === l.blend)?.label}</span>}
                   {l.opacity < 1 && <span>{Math.round(l.opacity * 100)}%</span>}
                   {l.effects && <span className="text-accent">fx</span>}
@@ -463,8 +467,11 @@ export function ParamsEditor({ op, value, onChange, hist }: { op: Op; value: Rec
       {op.params.map((p: Param) => {
         if (p.when && value[p.when[0]] !== p.when[1]) return null;
         switch (p.type) {
-          case "range":
-            return <RangeRow key={p.key} label={p.label} value={Number(value[p.key])} min={p.min} max={p.max} step={p.step} unit={p.unit} signed={p.min < 0} onChange={(v) => set(p.key, v)} />;
+          case "range": {
+            // A hue slider does nothing while its strength is 0, so moving it turns the strength up a little.
+            const bump = p.bump && !Number(value[p.bump[0]]) ? { [p.bump[0]]: p.bump[1] } : {};
+            return <RangeRow key={p.key} label={p.label} value={Number(value[p.key])} min={p.min} max={p.max} step={p.step} unit={p.unit} signed={p.min < 0} onChange={(v) => onChange({ ...value, [p.key]: v, ...bump })} />;
+          }
           case "color":
             return (
               <div key={p.key} className="flex items-center justify-between py-1">
@@ -552,7 +559,205 @@ export function EffectsEditor({ value, onChange }: { value: Effects; onChange: (
   );
 }
 
-export const PanelTitle = ({ children, icon: Icon = LayersIcon }: { children: React.ReactNode; icon?: typeof LayersIcon }) => (
+/* ---------- Vector layer properties ---------- */
+
+function Segmented<T extends string>({ value, options, onChange, label }: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void; label: string }) {
+  return (
+    <div role="radiogroup" aria-label={label} className="inline-flex shrink-0 overflow-hidden rounded-sm border border-line">
+      {options.map((o) => (
+        <button key={o.value} type="button" role="radio" aria-checked={value === o.value} onClick={() => onChange(o.value)} className={cn("h-7 px-2 text-[12px]", value === o.value ? "bg-ink text-paper" : "text-ink-2 hover:bg-paper-2 hover:text-ink")}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * The Properties tab for a vector layer: its paths (pick one to style it), and the selected
+ * path's fill, stroke and line style. Changes go through `onChange` with the full path list.
+ */
+export function VectorPanel({
+  paths,
+  selected,
+  onSelect,
+  onChange,
+  onEditPoints,
+  onPen,
+}: {
+  paths: VPath[];
+  selected: number;
+  onSelect: (i: number) => void;
+  onChange: (paths: VPath[], label: string, key?: string) => void;
+  onEditPoints: () => void;
+  onPen: () => void;
+}) {
+  const i = Math.min(Math.max(0, selected), paths.length - 1);
+  const p = paths[i];
+  if (!p) return <p className="text-[13px] text-ink-3">This vector layer is empty. Draw with the Pen (P).</p>;
+  const set = (patch: Partial<VPath>, label = "Path Style", key = `vstyle:${p.id}`) => onChange(paths.map((q, j) => (j === i ? { ...q, ...patch } : q)), label, key);
+  const nodes = p.subs.reduce((n, s) => n + s.nodes.length, 0);
+  const closed = p.subs.every((s) => s.closed);
+  return (
+    <div className="space-y-3">
+      <div className="rounded-sm border border-line">
+        <p className="label-mono flex items-center gap-1.5 border-b border-line bg-paper px-2.5 py-1.5 text-ink-3">
+          <PenTool aria-hidden className="size-3.5" /> Paths <span className="ml-auto tabular-nums">{paths.length}</span>
+        </p>
+        <ul className="max-h-36 overflow-y-auto py-0.5" data-lenis-prevent>
+          {[...paths].reverse().map((q) => {
+            const j = paths.indexOf(q);
+            return (
+              <li key={q.id}>
+                <button type="button" onClick={() => onSelect(j)} aria-current={j === i} className={cn("flex h-8 w-full items-center gap-2 px-2.5 text-left text-[13px]", j === i ? "bg-paper-2 text-ink" : "text-ink-2 hover:bg-paper")}>
+                  <span aria-hidden className="size-3.5 shrink-0 rounded-[3px] border" style={{ background: q.fill ?? "transparent", borderColor: q.stroke ?? "var(--color-line)", borderWidth: q.stroke ? 2 : 1 }} />
+                  <span className="min-w-0 flex-1 truncate">{q.name || `Path ${j + 1}`}</span>
+                  <span className="font-mono text-[12px] text-ink-3">{q.subs.reduce((n, s) => n + s.nodes.length, 0)} pt</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
+      <div className="grid grid-cols-2 gap-1.5">
+        <Btn onClick={onEditPoints}>Edit points</Btn>
+        <Btn onClick={onPen}>
+          <PenTool aria-hidden className="size-4" /> Pen
+        </Btn>
+      </div>
+
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <Check2 checked={!!p.fill} onChange={(v) => set({ fill: v ? "#eb4a10" : null })} label="Fill" />
+          {p.fill && <ColorWell value={p.fill} onChange={(fill) => set({ fill })} label="Fill colour" hex />}
+        </div>
+        <div className="flex items-center justify-between">
+          <Check2 checked={!!p.stroke} onChange={(v) => set({ stroke: v ? "#15140f" : null, width: v && !p.width ? 2 : p.width })} label="Stroke" />
+          {p.stroke && <ColorWell value={p.stroke} onChange={(stroke) => set({ stroke })} label="Stroke colour" hex />}
+        </div>
+        {p.stroke && <RangeRow label="Stroke width" value={Math.round(p.width * 10) / 10} min={0.5} max={100} step={0.5} unit=" px" onChange={(width) => set({ width })} />}
+        <RangeRow label="Opacity" value={Math.round(p.opacity * 100)} min={0} max={100} unit="%" onChange={(v) => set({ opacity: v / 100 })} />
+      </div>
+
+      {p.stroke && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[12px] text-ink-2">Ends</span>
+            <Segmented label="Line ends" value={p.cap} onChange={(cap) => set({ cap })} options={[{ value: "butt", label: "Flat" }, { value: "round", label: "Round" }, { value: "square", label: "Square" }]} />
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[12px] text-ink-2">Corners</span>
+            <Segmented label="Line corners" value={p.join} onChange={(join) => set({ join })} options={[{ value: "miter", label: "Sharp" }, { value: "round", label: "Round" }, { value: "bevel", label: "Bevel" }]} />
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <Check2 checked={!!p.dash} onChange={(v) => set({ dash: v ? Math.max(2, Math.round(p.width * 3)) : null })} label="Dashed" />
+          </div>
+          {p.dash && <RangeRow label="Dash length" value={Math.round(p.dash)} min={1} max={200} unit=" px" onChange={(dash) => set({ dash })} />}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between gap-2">
+        <Check2 checked={closed} onChange={(v) => set({ subs: p.subs.map((s) => ({ ...s, closed: v })) }, v ? "Close Path" : "Open Path", undefined)} label="Closed path" />
+        {p.fill && <Check2 checked={p.rule === "evenodd"} onChange={(v) => set({ rule: v ? "evenodd" : "nonzero" })} label="Holes (even-odd)" />}
+      </div>
+
+      <div className="flex flex-wrap gap-1.5">
+        <IconBtn label="Bring path forward" disabled={i === paths.length - 1} onClick={() => onChange(swap(paths, i, i + 1), "Arrange Path")}>
+          <ArrowUp aria-hidden className="size-4" />
+        </IconBtn>
+        <IconBtn label="Send path backward" disabled={i === 0} onClick={() => onChange(swap(paths, i, i - 1), "Arrange Path")}>
+          <ArrowDown aria-hidden className="size-4" />
+        </IconBtn>
+        <IconBtn label="Duplicate path" onClick={() => onChange([...paths.slice(0, i + 1), { ...p, id: `${p.id}c${Date.now().toString(36)}`, name: p.name ? `${p.name} copy` : undefined }, ...paths.slice(i + 1)], "Duplicate Path")}>
+          <Copy aria-hidden className="size-4" />
+        </IconBtn>
+        <IconBtn label="Apply this style to every path" onClick={() => onChange(paths.map((q) => ({ ...q, fill: p.fill, stroke: p.stroke, width: p.width, opacity: p.opacity, cap: p.cap, join: p.join, dash: p.dash })), "Path Style")}>
+          <Sparkles aria-hidden className="size-4" />
+        </IconBtn>
+        <IconBtn label="Delete path" disabled={paths.length < 2} onClick={() => onChange(paths.filter((_, j) => j !== i), "Delete Path")}>
+          <Trash2 aria-hidden className="size-4" />
+        </IconBtn>
+        <span className="ml-auto self-center font-mono text-[12px] text-ink-3">{nodes} points</span>
+      </div>
+      <p className="text-[12px] leading-relaxed text-ink-3">Edit points (A): drag points and handles, Alt-click a point to switch smooth/corner, double-click a line to add a point, Delete removes one.</p>
+    </div>
+  );
+}
+
+const swap = <T,>(a: T[], i: number, j: number) => {
+  const b = [...a];
+  [b[i], b[j]] = [b[j], b[i]];
+  return b;
+};
+
+/* ---------- The effects browser (Adjust tab) ---------- */
+
+/**
+ * Every adjustment and filter as an icon tile with its name, grouped and searchable. A small bolt
+ * marks the ones that apply in one tap; the rest open their settings in Properties.
+ */
+export function EffectsBrowser({ sections, active, onPick }: { sections: { group: string; ops: Op[] }[]; active: string | null; onPick: (op: Op) => void }) {
+  const [q, setQ] = useState("");
+  const query = q.trim().toLowerCase();
+  const total = sections.reduce((n, s) => n + s.ops.length, 0);
+  const shown = sections
+    .map((s) => ({ ...s, ops: query ? s.ops.filter((o) => `${o.label} ${opBlurb(o)} ${groupLabel(s.group)}`.toLowerCase().includes(query)) : s.ops }))
+    .filter((s) => s.ops.length);
+  return (
+    <div className="space-y-4">
+      <label className="relative block">
+        <span className="sr-only">Search effects</span>
+        <Search aria-hidden className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-ink-3" />
+        <input
+          type="search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder={`Search ${total} adjustments & filters`}
+          className="h-9 w-full rounded-md border border-line bg-surface pl-8 pr-2.5 text-[13px] text-ink outline-none placeholder:text-ink-3 focus:border-ink focus:ring-2 focus:ring-accent/20"
+        />
+      </label>
+      {shown.map((s) => {
+        const GroupIcon = groupIcon(s.group);
+        return (
+          <section key={s.group} aria-label={groupLabel(s.group)}>
+            <p className="label-mono mb-1.5 flex items-center gap-1.5 text-ink-3">
+              <GroupIcon aria-hidden className="size-3.5" />
+              {groupLabel(s.group)}
+              <span className="ml-auto tabular-nums">{s.ops.length}</span>
+            </p>
+            <div className="grid grid-cols-3 gap-1.5">
+              {s.ops.map((op) => {
+                const Icon = opIcon(op);
+                const on = active === op.id;
+                return (
+                  <button
+                    key={op.id}
+                    type="button"
+                    onClick={() => onPick(op)}
+                    title={`${op.label}: ${opBlurb(op)}${op.instant ? " (one tap)" : ""}`}
+                    aria-pressed={on}
+                    className={cn(
+                      "relative flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-sm border px-1 py-2 text-center transition-[background-color,border-color,color,transform] active:translate-y-px",
+                      on ? "border-ink bg-ink text-paper" : "border-line bg-surface text-ink-2 hover:border-ink-3 hover:text-ink",
+                    )}
+                  >
+                    <Icon aria-hidden className="size-[18px]" strokeWidth={1.75} />
+                    <span className="line-clamp-2 text-[12px] leading-tight [overflow-wrap:anywhere]">{op.label}</span>
+                    {op.instant && <Zap aria-label="One tap" className={cn("absolute right-1 top-1 size-3", on ? "text-paper/70" : "text-accent")} />}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
+      {!shown.length && <p className="py-6 text-center text-[13px] text-ink-3">Nothing matches “{q}”. Try “blur”, “warm” or “black”.</p>}
+    </div>
+  );
+}
+
+export const PanelTitle =({ children, icon: Icon = LayersIcon }: { children: React.ReactNode; icon?: typeof LayersIcon }) => (
   <p className="label-mono flex items-center gap-1.5 text-ink-3">
     <Icon aria-hidden className="size-3.5" />
     {children}

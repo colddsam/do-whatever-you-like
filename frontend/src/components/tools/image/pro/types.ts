@@ -70,10 +70,36 @@ export const NO_EFFECTS: Effects = {
 
 export type AdjustMeta = { id: string; params: Record<string, unknown> };
 
+/*
+ * Vector layers (the Illustrator side): paths of cubic Béziers, drawn into the layer's canvas.
+ * A node's `i` and `o` are its incoming and outgoing handles, in the same space as the node
+ * (null = a sharp corner on that side).
+ */
+export type VNode = { x: number; y: number; i: Pt | null; o: Pt | null };
+export type VSub = { nodes: VNode[]; closed: boolean };
+export type VPath = {
+  id: string;
+  name?: string;
+  subs: VSub[];
+  fill: string | null;
+  stroke: string | null;
+  width: number;
+  opacity: number; // 0..1
+  cap: "butt" | "round" | "square";
+  join: "miter" | "round" | "bevel";
+  dash: number | null; // dash length (gap the same), null = solid
+  rule: "nonzero" | "evenodd";
+};
+/**
+ * Points are stored in document space as they were when the canvas was drawn, at (ox, oy).
+ * Moving the layer only changes its x/y; the paths follow by (x − ox, y − oy).
+ */
+export type VectorMeta = { paths: VPath[]; ox: number; oy: number };
+
 export type Layer = {
   id: string;
   name: string;
-  kind: "pixel" | "text" | "shape" | "adjustment";
+  kind: "pixel" | "text" | "shape" | "adjustment" | "vector";
   /** Pixels (not used by adjustment layers). Position in the document is x, y. */
   canvas: HTMLCanvasElement;
   x: number;
@@ -92,6 +118,7 @@ export type Layer = {
   text?: TextMeta;
   shape?: ShapeMeta;
   adjust?: AdjustMeta;
+  vector?: VectorMeta;
 };
 
 /** A selection is a document-sized alpha mask, plus its bounds for quick tests. */
@@ -138,6 +165,8 @@ export type ToolId =
   | "liquify"
   | "text"
   | "shape"
+  | "pen"
+  | "node"
   | "hand"
   | "zoom";
 

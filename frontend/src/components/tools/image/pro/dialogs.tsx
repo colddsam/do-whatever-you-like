@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, FileImage, Link2, Unlink2 } from "lucide-react";
+import { Download, FileImage, Link2, PenTool, Unlink2 } from "lucide-react";
 import { formatBytes } from "@/lib/media";
 import { cn } from "@/lib/utils";
 import { exportBlob, type ExportFormat } from "./io";
@@ -372,6 +372,7 @@ export function ExportDialog({
   onPsd,
   onProject,
   onCopy,
+  onSvg,
 }: {
   open: boolean;
   doc: Doc | null;
@@ -380,6 +381,7 @@ export function ExportDialog({
   onPsd: () => void;
   onProject: () => void;
   onCopy: () => void;
+  onSvg?: () => void;
 }) {
   const [format, setFormat] = useState<ExportFormat>("png");
   const [quality, setQuality] = useState(90);
@@ -466,6 +468,15 @@ export function ExportDialog({
           <Btn className="w-full" onClick={onProject}>
             Save project (.dwlp, everything editable)
           </Btn>
+          {onSvg && (
+            <>
+              <Btn className="w-full" onClick={onSvg}>
+                <PenTool aria-hidden className="size-4" />
+                Save as SVG (vectors stay editable)
+              </Btn>
+              <p className="text-[12px] leading-relaxed text-ink-3">Paths, shapes and text stay vector; photos are embedded as pictures. Opens in Illustrator, Figma, Inkscape and browsers.</p>
+            </>
+          )}
         </div>
       </div>
     </Dialog>
@@ -491,7 +502,10 @@ export const SHORTCUTS: [string, string][] = [
   ["Liquify (forward warp)", "Shift+Ctrl+X"],
   ["Text", "T"],
   ["Shape", "U"],
-  ["Hand (or hold Space)", "H"],
+  ["Pen (click for corners, drag for curves)", "P"],
+  ["Direct selection (edit points)", "A"],
+  ["Finish path / delete point", "Enter · Delete"],
+  ["Hand (or hold Space, or drag the background)", "H"],
   ["Zoom", "Z"],
   ["Brush size", "[  ]"],
   ["Brush hardness", "Shift+[  ]"],

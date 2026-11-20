@@ -5,17 +5,25 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import {
   Check,
+  ChevronDown,
   Download,
   FilePlus2,
+  FileImage,
   FolderOpen,
   History as HistoryIcon,
+  Image as ImageIcon,
   Info,
   Keyboard,
   Layers as LayersIcon,
   Loader2,
   Eye,
+  Maximize,
   Maximize2,
+  Minus,
   Palette,
+  PenTool,
+  Plus,
+  Spline,
   Sticker,
   ImageUpscale,
   Minimize2,
@@ -23,8 +31,10 @@ import {
   RotateCcw,
   SlidersHorizontal,
   Sparkles,
+  Trash2,
   Undo2,
   Wand2,
+  WandSparkles,
   X,
 } from "lucide-react";
 import { getLenis } from "@/lib/smooth-scroll";
@@ -44,6 +54,10 @@ import {
   alignLayer,
   applyMask,
   applyOp,
+  applyOpToImage,
+  defaultTarget,
+  previewOpImage,
+  type OpTarget,
   clearSelection,
   commitTransform,
   cropDoc,
@@ -92,12 +106,14 @@ import { inpaint } from "./inpaint";
 import { clearSession, copyToClipboard, decodeImage, deserialize, isProject, isPsd, loadSession, openFile, saveSession, writeProject, writePsdFile, PROJECT_EXT, type SavedSession } from "./io";
 import { blurImage, defaults, histogram, type Op } from "./ops";
 import { beginStroke, BUFFER_TOOLS, bucketFill, endStroke, gradientFill, liveFor, PIXEL_TOOLS, redEye, strokeTo, type StrokeState } from "./paint";
-import { EffectsEditor, HistogramChart, HistoryPanel, LayersPanel, ParamsEditor, type LayerApi } from "./panels";
+import { groupIcon, groupLabel, opBlurb, opIcon } from "./catalog";
+import { EffectsBrowser, EffectsEditor, HistogramChart, HistoryPanel, LayersPanel, ParamsEditor, VectorPanel, type LayerApi } from "./panels";
 import { compose, flatten, renderShape, renderText, shapePad, type Live } from "./render";
 import { colorMask, combine, drawAnts, edgeCanvas, ellipsePath, featherSelection, fromMask, growMask, polyPath, rectPath, selectAll, shapeMask, wandMask } from "./selection";
 import { DEFAULT_BRUSH, DEFAULT_OPTS, FONTS, OptionsBar, TOOLS, Toolbar, type GradPreset, type ToolOpts } from "./tools";
-import { NO_EFFECTS, type BrushSettings, type Doc, type Layer, type Pt, type Rect, type SelectMode, type ShapeMeta, type TextMeta, type ToolId } from "./types";
-import { Btn, Check2, ColorWell, MenuBar, RangeRow, Select, type MenuItem } from "./ui";
+import { NO_EFFECTS, type BrushSettings, type Doc, type Layer, type Pt, type Rect, type SelectMode, type ShapeMeta, type TextMeta, type ToolId, type VNode, type VPath } from "./types";
+import { Btn, Check2, ColorWell, CompactMenu, MenuBar, RangeRow, Select, type MenuItem } from "./ui";
+import { deleteNode, docToSvg, hitPath, importSvg, layerPaths, nearestOnPath, newPath, path2d, shapeToPaths, splitSegment, toggleSmooth, transformPaths as transformPathsFor, withPaths } from "./vector";
 
 /* ---------- History ---------- */
 
@@ -170,9 +186,16 @@ type Drag =
   | { type: "shape"; a: Pt; b: Pt }
   | { type: "crop"; handle: string; start: Pt; orig: Rect }
   | { type: "transform"; handle: string; start: Pt; orig: TransformState }
-  | { type: "pick"; bg: boolean };
+  | { type: "pick"; bg: boolean }
+  /** Pen: dragging out the handles of the node just placed. */
+  | { type: "pen"; idx: number; start: Pt }
+  /** Direct selection: a point or one of its handles, or the whole path, being dragged. */
+  | { type: "vnode"; layerId: string; path: number; sub: number; node: number; part: "node" | "i" | "o"; start: Pt; base: VPath[]; alt: boolean; next: VPath[] | null }
+  | { type: "vpath"; layerId: string; path: number; start: Pt; base: VPath[]; next: VPath[] | null };
 
-type OpEdit = { op: Op; params: Record<string, unknown>; asLayer: boolean };
+type OpEdit = { op: Op; params: Record<string, unknown>; asLayer: boolean; target: OpTarget };
+/** The path being edited with the Direct selection tool, and (optionally) one of its points. */
+type NodeSel = { layerId: string; path: number; sub: number | null; node: number | null };
 type Panel = "properties" | "looks" | "adjust" | "create" | "history" | "info" | "layers";
 type DialogName = null | "new" | "image-size" | "canvas-size" | "rotate" | "fill" | "stroke" | "feather" | "expand" | "contract" | "color-range" | "export" | "shortcuts";
 
@@ -182,14 +205,20 @@ const HANDLE_POS: Record<string, [number, number]> = { nw: [-1, -1], n: [0, -1],
 /** The transparency checkerboard (the QR tool's), for thumbnails. */
 const CHECKER_BG = "bg-[conic-gradient(var(--color-paper-2)_25%,var(--color-surface)_0_50%,var(--color-paper-2)_0_75%,var(--color-surface)_0)] bg-[length:12px_12px]";
 
-const QUICK_FIXES: { label: string; run: string; icon?: typeof Wand2 }[] = [
-  { label: "Auto tone", run: "auto-tone" },
-  { label: "Auto colour", run: "auto-color" },
+const QUICK_FIXES: { label: string; run: string; icon: typeof Wand2 }[] = [
+  { label: "Auto tone", run: "auto-tone", icon: WandSparkles },
+  { label: "Auto colour", run: "auto-color", icon: Palette },
   { label: "Camera Raw", run: "camera-raw", icon: Sparkles },
+  { label: "Sharpen", run: "unsharp-mask", icon: Spline },
   { label: "Remove BG", run: "remove-bg", icon: Wand2 },
-  { label: "Select subject", run: "subject", icon: Wand2 },
-  { label: "Sharpen", run: "unsharp-mask" },
+  { label: "Select subject", run: "subject", icon: ImageIcon },
 ];
+
+/** The Adjust tab's order: quick wins first, then light, colour, and the filter families. */
+const ADJUST_ORDER = ["Auto", "Basic", "Colour", "Special"];
+
+/** Keeps at least this much of the picture on screen, so it can never be panned out of reach. */
+const KEEP_VISIBLE = 64;
 
 /* ---------- The editor ---------- */
 
@@ -236,11 +265,18 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
   const [compare, setCompare] = useState(false);
   const [lookThumbs, setLookThumbs] = useState<{ src: HTMLCanvasElement | null; urls: Record<string, string> }>({ src: null, urls: {} });
   const [stickerSet, setStickerSet] = useState(0);
+  // Vector editing: the pen's path in progress, and the path (and point) picked for direct selection.
+  const [pen, setPen] = useState<VNode[] | null>(null);
+  const [nodeSel, setNodeSel] = useState<NodeSel | null>(null);
+  // Phones: the panel sheet under the canvas can fold away to give the picture the room.
+  const [sheetOpen, setSheetOpen] = useState(true);
+  const pannedHint = useRef(false);
   const compareRef = useRef(false);
   const collageRef = useRef<HTMLInputElement>(null);
   const subjectCache = useRef<{ canvas: HTMLCanvasElement; mask: HTMLCanvasElement } | null>(null);
 
   const wrapRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLCanvasElement>(null);
   const overRef = useRef<HTMLCanvasElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
@@ -312,12 +348,31 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
 
   /* ----- View ----- */
 
+  /** Keeps part of the picture in view however far it's dragged or zoomed. */
+  const clampView = (v: { z: number; x: number; y: number }) => {
+    const w = wrapRef.current;
+    const d = docRef.current;
+    if (!w || !d) return v;
+    const W = w.clientWidth;
+    const H = w.clientHeight;
+    const dw = d.w * v.z;
+    const dh = d.h * v.z;
+    const kx = Math.min(KEEP_VISIBLE, dw, W / 2);
+    const ky = Math.min(KEEP_VISIBLE, dh, H / 2);
+    return { z: v.z, x: clamp(v.x, kx - dw, W - kx), y: clamp(v.y, ky - dh, H - ky) };
+  };
+  const setView = (v: { z: number; x: number; y: number }) => {
+    view.current = clampView(v);
+    dirty.current = true;
+  };
+
   const fit = useCallback((d = docRef.current, cap = false) => {
     const w = wrapRef.current;
     if (!d || !w) return;
     const W = w.clientWidth;
     const H = w.clientHeight;
-    let z = Math.min((W - 48) / d.w, (H - 48) / d.h);
+    const pad = W < 640 ? 20 : 48; // phones: let the picture use the width
+    let z = Math.min((W - pad) / d.w, (H - pad) / d.h);
     if (cap) z = Math.min(1, z);
     z = Math.max(0.01, z);
     view.current = { z, x: (W - d.w * z) / 2, y: (H - d.h * z) / 2 };
@@ -331,8 +386,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     const cx = sx ?? w.clientWidth / 2;
     const cy = sy ?? w.clientHeight / 2;
     const z = clamp(v.z * factor, 0.01, 64);
-    view.current = { z, x: cx - ((cx - v.x) / v.z) * z, y: cy - ((cy - v.y) / v.z) * z };
-    dirty.current = true;
+    setView({ z, x: cx - ((cx - v.x) / v.z) * z, y: cy - ((cy - v.y) / v.z) * z });
     setZoom(view.current.z);
   };
   const actual = () => {
@@ -363,7 +417,24 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
       setExported(false);
       setRejected(null);
       live.current = undefined;
-      requestAnimationFrame(() => fit(d, true));
+      setPen(null);
+      setNodeSel(null);
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          fit(d, true);
+          // Phones: bring the whole editor into view, so the picture and its tools fill the screen.
+          const el = rootRef.current;
+          if (el && window.innerWidth < 1024) {
+            // Clear the site's sticky navbar, which stays on screen above the editor.
+            const nav = document.querySelector("header");
+            const navH = nav && /sticky|fixed/.test(getComputedStyle(nav).position) ? nav.getBoundingClientRect().height : 0;
+            const y = el.getBoundingClientRect().top + window.scrollY - navH - 6;
+            const lenis = getLenis();
+            if (lenis) lenis.scrollTo(y);
+            else window.scrollTo({ top: y, behavior: "smooth" });
+          }
+        }),
+      );
     },
     [fit],
   );
@@ -372,6 +443,14 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     setBusy("Opening…");
     await nextFrame();
     try {
+      if (isSvg(f)) {
+        try {
+          await openSvg(f, false);
+          return;
+        } catch {
+          // Not drawable as paths (only text or pictures inside): open it as a picture instead.
+        }
+      }
       start(await openFile(f));
     } catch (e) {
       setRejected(isPsd(f) ? `We couldn't read that PSD: ${(e as Error).message}` : isProject(f) ? (e as Error).message : "This browser can't open that file. Try a JPG, PNG, WebP, GIF, AVIF, BMP, SVG, PSD or a saved project.");
@@ -384,6 +463,13 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     const d = docRef.current;
     if (!d) return openAny(f);
     if (isPsd(f) || isProject(f)) return openAny(f);
+    if (isSvg(f)) {
+      try {
+        return await openSvg(f, true);
+      } catch {
+        // Falls through to placing it as a picture.
+      }
+    }
     try {
       const c = await decodeImage(f);
       commit(placeImage(d, c, f.name.replace(/\.[^.]+$/, "") || "Placed", at), "Place");
@@ -473,10 +559,17 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
   };
 
   // Things drawn over the picture: selection, crop, transform box, brush outline…
-  const overlayState = useRef({ crop, transform, poly, cloneSrc, showGrid, tool, brush });
+  const overlayState = useRef({ crop, transform, poly, cloneSrc, showGrid, tool, brush, pen, nodeSel });
   useLayoutEffect(() => {
-    overlayState.current = { crop, transform, poly, cloneSrc, showGrid, tool, brush };
+    overlayState.current = { crop, transform, poly, cloneSrc, showGrid, tool, brush, pen, nodeSel };
   });
+
+  /** The paths shown for direct selection: the live (dragged) version if there is one. */
+  const editedPaths = (d: Doc, layerId: string): VPath[] => {
+    const sw = live.current?.swap;
+    const l = sw?.id === layerId ? sw : d.layers.find((x) => x.id === layerId);
+    return l?.vector ? layerPaths(l) : [];
+  };
 
   function drawOverlay(o: HTMLCanvasElement, d: Doc, dpr: number, phase: number) {
     const g = ctx2d(o);
@@ -672,6 +765,96 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
       g.restore();
     }
 
+    // Vector editing: the selected path's outline, points and handles; the pen's path in progress.
+    const toS = (p: Pt) => ({ x: sx(p.x), y: sy(p.y) });
+    const drawHandles = (nodes: VNode[], selected: number | null) => {
+      g.lineWidth = 1;
+      nodes.forEach((n, k) => {
+        const p = toS(n);
+        for (const h of [n.i, n.o]) {
+          if (!h) continue;
+          const q = toS(h);
+          g.strokeStyle = T.accent;
+          g.beginPath();
+          g.moveTo(p.x, p.y);
+          g.lineTo(q.x, q.y);
+          g.stroke();
+          g.beginPath();
+          g.arc(q.x, q.y, 3.5, 0, Math.PI * 2);
+          g.fillStyle = "#fff";
+          g.fill();
+          g.stroke();
+        }
+        g.fillStyle = k === selected ? T.accent : "#fff";
+        g.strokeStyle = T.accent;
+        g.fillRect(p.x - 4, p.y - 4, 8, 8);
+        g.strokeRect(p.x - 4, p.y - 4, 8, 8);
+      });
+    };
+    if (st.tool === "node" || st.tool === "pen") {
+      // Every vector path gets a faint outline, so there's something to click on.
+      g.save();
+      for (const l of d.layers) {
+        if (!l.visible || !l.vector) continue;
+        const paths = editedPaths(d, l.id);
+        paths.forEach((p, pi) => {
+          const sel = st.nodeSel?.layerId === l.id && st.nodeSel.path === pi;
+          g.strokeStyle = sel ? T.accent : "rgba(235,74,16,0.35)";
+          g.lineWidth = sel ? 1.5 : 1;
+          g.stroke(path2d(p, toS));
+        });
+      }
+      g.restore();
+      const ns = st.nodeSel;
+      if (ns && st.tool === "node") {
+        const p = editedPaths(d, ns.layerId)[ns.path];
+        if (p) {
+          g.save();
+          p.subs.forEach((s, si) => drawHandles(s.nodes, ns.sub === si ? ns.node : null));
+          g.restore();
+        }
+      }
+    }
+    if (st.pen && st.pen.length) {
+      const pts = st.pen;
+      g.save();
+      g.strokeStyle = T.accent;
+      g.lineWidth = 1.5;
+      const sub = { nodes: pts, closed: false };
+      const path = new Path2D();
+      const f = toS;
+      const p0 = f(pts[0]);
+      path.moveTo(p0.x, p0.y);
+      for (let k = 1; k < pts.length; k++) {
+        const a = pts[k - 1];
+        const b = pts[k];
+        const c1 = f(a.o ?? a);
+        const c2 = f(b.i ?? b);
+        const q = f(b);
+        path.bezierCurveTo(c1.x, c1.y, c2.x, c2.y, q.x, q.y);
+      }
+      // Rubber band from the last point to the pointer.
+      if (hover.current && dr?.type !== "pen") {
+        const a = pts[pts.length - 1];
+        const c1 = f(a.o ?? a);
+        const q = f(hover.current);
+        path.bezierCurveTo(c1.x, c1.y, q.x, q.y, q.x, q.y);
+      }
+      g.stroke(path);
+      drawHandles(sub.nodes, pts.length - 1);
+      // The first point grows when the pointer is close enough to close the path.
+      if (pts.length > 2 && hover.current) {
+        const a = f(pts[0]);
+        const b = f(hover.current);
+        if (Math.hypot(a.x - b.x, a.y - b.y) < 12) {
+          g.beginPath();
+          g.arc(a.x, a.y, 7, 0, Math.PI * 2);
+          g.stroke();
+        }
+      }
+      g.restore();
+    }
+
     // Clone source and the brush outline.
     if (st.cloneSrc && (st.tool === "clone" || st.tool === "heal")) {
       const p = { x: sx(st.cloneSrc.x), y: sy(st.cloneSrc.y) };
@@ -823,6 +1006,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     if (transform && next !== "move") applyTransform();
     if (crop && next !== "crop") setCrop(null);
     if (poly) setPoly(null);
+    if (pen && next !== "pen") finishPen();
   };
   const setTool = (t: ToolId) => {
     finishModes(t);
@@ -830,32 +1014,51 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     const d = docRef.current;
     if (t === "crop" && d) setCrop({ x: 0, y: 0, w: d.w, h: d.h });
     if (t === "text") setPanel("properties");
+    if (t === "node" && d) {
+      // Start on the active vector layer's last path, so its points show straight away.
+      const l = activeLayer(d);
+      if (l.vector && nodeSel?.layerId !== l.id) setNodeSel({ layerId: l.id, path: Math.max(0, l.vector.paths.length - 1), sub: null, node: null });
+    }
   };
 
   /* ----- Adjustments and filters ----- */
 
+  const [previewTick, setPreviewTick] = useState(0);
+  // A blank stand-in, the document's size, for the stamped layer a "whole image" preview inserts.
+  const stampStandIn = useRef<HTMLCanvasElement | null>(null);
+  const standIn = (d: Doc) => {
+    const c = stampStandIn.current;
+    if (c && c.width === d.w && c.height === d.h) return c;
+    return (stampStandIn.current = makeCanvas(d.w, d.h));
+  };
+
   const openOp = (op: Op) => {
     const d = docRef.current;
     if (!d) return;
-    const l = activeLayer(d);
+    // Effects land where they'll show: the photo layer when it's active, otherwise the whole image
+    // (never silently on a text, sticker, shape or empty layer).
+    const target = defaultTarget(d);
     if (op.instant) {
-      if (l.kind === "adjustment") {
-        if (op.layerable) return commit(addAdjustmentLayer(d, op), `${op.label} layer`);
-        return say("Pick a pixel layer first: adjustment layers have no pixels of their own.");
-      }
       setBusy(`${op.label}…`);
       nextFrame().then(() => {
-        commit(applyOp(d, op, defaults(op), { fg, bg }), op.label);
-        setBusy(null);
+        try {
+          if (target === "image") {
+            commit(applyOpToImage(d, op, defaults(op), { fg, bg }), op.label);
+            say(op.layerable ? `${op.label} added as an adjustment layer on top: the whole image changes, nothing is lost.` : `${op.label} applied to the whole image, as a new layer on top.`);
+          } else commit(applyOp(d, op, defaults(op), { fg, bg }), op.label);
+        } finally {
+          setBusy(null);
+        }
       });
       return;
     }
     setStyleEdit(false);
-    setOpEdit({ op, params: defaults(op), asLayer: l.kind === "adjustment" && !!op.layerable });
+    setOpEdit({ op, params: defaults(op), asLayer: false, target });
     setPanel("properties");
+    setSheetOpen(true);
   };
 
-  // Live preview while settings change: a reduced copy of the layer with the operation applied.
+  // Live preview while settings change: a reduced copy with the operation applied.
   useEffect(() => {
     if (!opEdit || !doc) {
       if (live.current?.replace || live.current?.insert) {
@@ -865,18 +1068,30 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
       return;
     }
     const l = activeLayer(doc);
+    const top = doc.layers[doc.layers.length - 1];
+    const adjustmentPreview = (above: string) => {
+      // A selection limits the adjustment, as it will once applied.
+      const al = newLayer({ name: opEdit.op.label, kind: "adjustment", canvas: makeCanvas(1, 1), adjust: { id: opEdit.op.id, params: opEdit.params }, mask: doc.selection?.mask ?? null });
+      return { insert: { layer: al, above } };
+    };
     const t = setTimeout(() => {
-      if (opEdit.asLayer) {
-        const al = newLayer({ name: opEdit.op.label, kind: "adjustment", canvas: makeCanvas(1, 1), adjust: { id: opEdit.op.id, params: opEdit.params } });
-        live.current = { insert: { layer: al, above: l.id } };
-      } else if (l.kind !== "adjustment") {
+      if (opEdit.target === "image") {
+        if (opEdit.op.layerable) live.current = adjustmentPreview(top.id);
+        else {
+          const p = previewOpImage(doc, opEdit.op, opEdit.params, { fg, bg });
+          const stamp = newLayer({ name: "preview", canvas: standIn(doc) });
+          live.current = { insert: { layer: stamp, above: top.id }, replace: { layerId: stamp.id, canvas: p.canvas, scale: p.scale } };
+        }
+      } else if (opEdit.asLayer) live.current = adjustmentPreview(l.id);
+      else if (l.kind !== "adjustment") {
         const p = previewOp(doc, opEdit.op, opEdit.params, { fg, bg });
         live.current = { replace: { layerId: l.id, canvas: p.canvas, scale: p.scale } };
-      }
+      } else live.current = undefined;
       dirty.current = true;
     }, 30);
     return () => clearTimeout(t);
-  }, [opEdit, doc, fg, bg]);
+    // previewTick: redraw the preview after a pinch or stroke replaced it.
+  }, [opEdit, doc, fg, bg, previewTick]);
 
   // Curves and Levels draw the histogram of what they adjust.
   const opEditId = opEdit?.op.id;
@@ -896,13 +1111,16 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
   const applyOpEdit = async () => {
     const d = docRef.current;
     if (!d || !opEdit) return;
-    const { op, params, asLayer } = opEdit;
+    const { op, params, asLayer, target } = opEdit;
     setOpEdit(null);
-    if (asLayer) return commit(addAdjustmentLayer(d, op, params), `${op.label} layer`);
+    if (target === "layer" && asLayer) return commit(addAdjustmentLayer(d, op, params), `${op.label} layer`);
     setBusy(`Applying ${op.label}…`);
     await nextFrame();
     try {
-      commit(applyOp(d, op, params, { fg, bg }), op.label);
+      if (target === "image") commit(applyOpToImage(d, op, params, { fg, bg }), op.label);
+      else commit(applyOp(d, op, params, { fg, bg }), op.label);
+    } catch (e) {
+      say(`${op.label} couldn't be applied: ${(e as Error).message}`);
     } finally {
       live.current = undefined;
       setBusy(null);
@@ -922,21 +1140,26 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
 
   /* ----- Looks: live thumbnails of the active layer through each look ----- */
 
-  const lookSrc = doc && panel === "looks" ? activeLayer(doc) : null;
+  // Thumbnails show the whole picture as you see it (a look applies to the whole image unless the
+  // photo layer itself is picked), redrawn a moment after it changes.
+  const lookDoc = doc && panel === "looks" ? doc : null;
   useEffect(() => {
-    if (!lookSrc || lookSrc.kind === "adjustment") return;
-    const src = lookSrc.canvas;
+    if (!lookDoc) return;
     let cancelled = false;
-    const k = Math.min(1, 120 / Math.max(src.width, src.height));
-    const small = makeCanvas(src.width * k, src.height * k);
-    const sg = ctx2d(small, true);
-    sg.drawImage(src, 0, 0, small.width, small.height);
-    const base = sg.getImageData(0, 0, small.width, small.height);
     const urls: Record<string, string> = {};
     let i = 0;
+    let small: HTMLCanvasElement | null = null;
+    let base: ImageData | null = null;
+    let k = 1;
     // A few per frame, so the panel stays responsive while they fill in.
     const step = () => {
       if (cancelled) return;
+      if (!small || !base) {
+        k = Math.min(1, 120 / Math.max(lookDoc.w, lookDoc.h));
+        small = compose(lookDoc, { rect: { x: 0, y: 0, w: lookDoc.w, h: lookDoc.h }, scale: k });
+        base = ctx2d(small, true).getImageData(0, 0, small.width, small.height);
+      }
+      const sg = ctx2d(small, true);
       for (let n = 0; n < 4 && i < LOOK_OPS.length; n++, i++) {
         const op = LOOK_OPS[i];
         const img = new ImageData(new Uint8ClampedArray(base.data), base.width, base.height);
@@ -944,17 +1167,17 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
         sg.putImageData(res, 0, 0);
         urls[op.id] = small.toDataURL("image/jpeg", 0.8);
       }
-      setLookThumbs({ src, urls: { ...urls } });
+      setLookThumbs((prev) => ({ src: null, urls: { ...prev.urls, ...urls } }));
       if (i < LOOK_OPS.length) requestAnimationFrame(() => setTimeout(step, 0));
     };
-    const t = setTimeout(step, 60);
+    const t = setTimeout(step, 250);
     return () => {
       cancelled = true;
       clearTimeout(t);
     };
     // fg/bg only colour the Duotone look; thumbnails needn't redraw for them.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lookSrc?.canvas, lookSrc?.kind]);
+  }, [lookDoc]);
 
   /* ----- AI: cut-outs from the existing background-removal service ----- */
 
@@ -1027,7 +1250,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     try {
       const grown = coverDoc(l, d);
       const out = await inpaint(grown.canvas, selectionInLayer(d.selection, grown));
-      commit(replaceLayer(d, l.id, { ...grown, canvas: out, text: undefined, shape: undefined, kind: "pixel" }), "Content-Aware Fill");
+      commit(replaceLayer(d, l.id, { ...grown, canvas: out, text: undefined, shape: undefined, vector: undefined, kind: "pixel" }), "Content-Aware Fill");
     } catch (e) {
       say((e as Error).message);
     } finally {
@@ -1079,7 +1302,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     if (l.kind === "adjustment" && !(d.editMask && l.mask)) return (say("Adjustment layers have no pixels. Paint on its mask, or pick a pixel layer."), false);
     if (d.editMask && l.mask && (PIXEL_TOOLS.includes(t) || t === "spot-heal" || t === "red-eye")) return (say("That tool works on pixels: click the layer's picture thumbnail to leave the mask."), false);
     if (!l.visible) say("That layer is hidden: you're painting on it anyway.");
-    if (l.kind === "text" || l.kind === "shape") say(`“${l.name}” became pixels so it can be painted.`);
+    if (l.kind === "text" || l.kind === "shape" || l.kind === "vector") say(`“${l.name}” became pixels so it can be painted.`);
     return true;
   };
 
@@ -1091,8 +1314,15 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     // Two fingers: pinch to zoom and pan, whatever the tool (an unfinished stroke is dropped).
     if (pointers.current.size === 2) {
+      // Whatever the first finger started is dropped: a stroke, a layer or path being dragged, a
+      // shape being drawn, a pen point. Only a free transform in progress keeps its preview.
+      const was = drag.current?.type;
       stroke.current = null;
-      if (live.current?.stroke || live.current?.replace) live.current = transform ? live.current : undefined;
+      if (was === "pen") setPen((pts) => (pts ? pts.slice(0, -1) : pts));
+      if (was && ["stroke", "move", "shape", "vnode", "vpath", "gradient", "marquee", "lasso"].includes(was)) {
+        live.current = transform ? { transform: { layerId: transform.layerId, matrix: transformMatrix(transform) } } : undefined;
+        if (opEdit) setPreviewTick((t) => t + 1);
+      }
       const [a, b] = [...pointers.current.values()];
       const r = el.getBoundingClientRect();
       drag.current = { type: "pinch", d0: Math.hypot(a.x - b.x, a.y - b.y), z0: view.current.z, mid: { x: (a.x + b.x) / 2 - r.left, y: (a.y + b.y) / 2 - r.top }, vx: view.current.x, vy: view.current.y };
@@ -1137,9 +1367,80 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
             target = hit;
           }
         }
-        if (target.locked) return say("That layer is locked.");
-        if (target.kind === "adjustment") return say("Adjustment layers can't be moved. Their mask moves with them only.");
+        // The background (the bottom layer filling the canvas) stays put, as in Photoshop: dragging
+        // it moves the view instead, so a one-finger drag on a photo never shoves the whole picture.
+        const backdrop = target === d.layers[0] && target.kind === "pixel" && target.x <= 0 && target.y <= 0 && target.x + target.canvas.width >= d.w && target.y + target.canvas.height >= d.h;
+        if (backdrop || target.locked || target.kind === "adjustment") {
+          drag.current = { type: "pan", sx: e.clientX, sy: e.clientY, vx: view.current.x, vy: view.current.y };
+          if (!pannedHint.current) {
+            pannedHint.current = true;
+            say(target.locked ? "That layer is locked, so dragging moves the view." : target.kind === "adjustment" ? "Adjustment layers have nothing to move, so dragging moves the view." : "The background stays in place, so dragging moves the view. To move it anyway, use Free transform (Shift+T).");
+          }
+          return;
+        }
         drag.current = { type: "move", start: p, layerId: target.id, dx: 0, dy: 0 };
+        return;
+      }
+      case "pen": {
+        const pts = pen ?? [];
+        if (pts.length >= 2) {
+          const first = toScreen(pts[0]);
+          const s = screenOf(e);
+          if (Math.hypot(first.x - s.x, first.y - s.y) < 12) return finishPen(true);
+        }
+        setPen([...pts, { x: p.x, y: p.y, i: null, o: null }]);
+        drag.current = { type: "pen", idx: pts.length, start: p };
+        return;
+      }
+      case "node": {
+        const tol = 10 / view.current.z;
+        // 1. A point or handle of the path being edited (points win over handles sitting on them).
+        const ns = nodeSel;
+        const nl = ns && d.layers.find((x) => x.id === ns.layerId);
+        if (ns && nl?.vector && nl.visible) {
+          const paths = layerPaths(nl);
+          const path = paths[ns.path];
+          let hit: { sub: number; node: number; part: "node" | "i" | "o" } | null = null;
+          if (path)
+            outer: for (const part of ["node", "i", "o"] as const)
+              for (let si = 0; si < path.subs.length; si++)
+                for (let k = 0; k < path.subs[si].nodes.length; k++) {
+                  const n = path.subs[si].nodes[k];
+                  const q = part === "node" ? n : n[part];
+                  if (q && Math.hypot(q.x - p.x, q.y - p.y) < tol) {
+                    hit = { sub: si, node: k, part };
+                    break outer;
+                  }
+                }
+          const h = hit as { sub: number; node: number; part: "node" | "i" | "o" } | null;
+          if (h && path) {
+            if (nl.locked) return say("That layer is locked.");
+            if (e.altKey && h.part === "node") {
+              const next = paths.map((q, pi) => (pi !== ns.path ? q : { ...q, subs: q.subs.map((s, si) => (si === h.sub ? toggleSmooth(s, h.node) : s)) }));
+              commit(replaceLayer(d, nl.id, withPaths(nl, next)), "Convert Point");
+              setNodeSel({ ...ns, sub: h.sub, node: h.node });
+              return;
+            }
+            setNodeSel({ ...ns, sub: h.sub, node: h.node });
+            drag.current = { type: "vnode", layerId: nl.id, path: ns.path, sub: h.sub, node: h.node, part: h.part, start: p, base: paths, alt: e.altKey, next: null };
+            return;
+          }
+        }
+        // 2. Any path on a visible vector layer, top first: select it and drag to move it.
+        for (const vl of [...d.layers].reverse()) {
+          if (!vl.visible || !vl.vector) continue;
+          const paths = layerPaths(vl);
+          const pi = hitPath(paths, p, tol);
+          if (pi < 0) continue;
+          if (vl.id !== d.active) commit({ ...d, active: vl.id, editMask: false }, "Select Layer", "select");
+          setNodeSel({ layerId: vl.id, path: pi, sub: null, node: null });
+          setPanel("properties");
+          if (vl.locked) return say("That layer is locked.");
+          drag.current = { type: "vpath", layerId: vl.id, path: pi, start: p, base: paths, next: null };
+          return;
+        }
+        if (!d.layers.some((x) => x.vector)) say("No paths yet: draw one with the Pen (P), or turn a shape into a path from its properties.");
+        setNodeSel(null);
         return;
       }
       case "marquee-rect":
@@ -1275,14 +1576,12 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
         // Keep the point under the fingers where it was, then follow the fingers' movement.
         const docX = (dr.mid.x - dr.vx) / dr.z0;
         const docY = (dr.mid.y - dr.vy) / dr.z0;
-        view.current = { z, x: mid.x - docX * z, y: mid.y - docY * z };
-        bump();
+        setView({ z, x: mid.x - docX * z, y: mid.y - docY * z });
         setZoom(view.current.z);
         return;
       }
       case "pan":
-        view.current = { ...view.current, x: dr.vx + e.clientX - dr.sx, y: dr.vy + e.clientY - dr.sy };
-        bump();
+        setView({ ...view.current, x: dr.vx + e.clientX - dr.sx, y: dr.vy + e.clientY - dr.sy });
         return;
       case "stroke": {
         const s = stroke.current;
@@ -1358,6 +1657,51 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
         if (c) (dr.bg ? setBg : setFg)(c);
         return;
       }
+      case "pen": {
+        // Dragging from a new point pulls out symmetric handles: a smooth curve through it.
+        if (Math.hypot(p.x - dr.start.x, p.y - dr.start.y) * view.current.z < 3) return;
+        setPen((pts) => pts && pts.map((n, k) => (k === dr.idx ? { ...n, o: { x: p.x, y: p.y }, i: { x: 2 * n.x - p.x, y: 2 * n.y - p.y } } : n)));
+        return;
+      }
+      case "vnode":
+      case "vpath": {
+        let dx = p.x - dr.start.x;
+        let dy = p.y - dr.start.y;
+        if (!dr.next && Math.hypot(dx, dy) * view.current.z < 2) return;
+        if (e.shiftKey) {
+          if (Math.abs(dx) > Math.abs(dy)) dy = 0;
+          else dx = 0;
+        }
+        const l = d.layers.find((x) => x.id === dr.layerId);
+        if (!l) return;
+        const shift = (q: Pt) => ({ x: q.x + dx, y: q.y + dy });
+        let next: VPath[];
+        if (dr.type === "vpath") {
+          next = dr.base.map((q, pi) => (pi !== dr.path ? q : { ...q, subs: q.subs.map((s) => ({ ...s, nodes: s.nodes.map((n) => ({ ...shift(n), i: n.i && shift(n.i), o: n.o && shift(n.o) })) })) }));
+        } else {
+          const move = (n: VNode): VNode => {
+            if (dr.part === "node") return { ...shift(n), i: n.i && shift(n.i), o: n.o && shift(n.o) };
+            const own = dr.part === "i" ? n.i! : n.o!;
+            const moved = shift(own);
+            const other = dr.part === "i" ? n.o : n.i;
+            // A smooth point keeps its handles in line (Alt breaks them apart).
+            let mirrored = other;
+            if (other && !dr.alt) {
+              const len = Math.hypot(other.x - n.x, other.y - n.y);
+              const vx = n.x - moved.x;
+              const vy = n.y - moved.y;
+              const vl = Math.hypot(vx, vy) || 1;
+              mirrored = { x: n.x + (vx / vl) * len, y: n.y + (vy / vl) * len };
+            }
+            return dr.part === "i" ? { ...n, i: moved, o: mirrored } : { ...n, o: moved, i: mirrored };
+          };
+          next = dr.base.map((q, pi) => (pi !== dr.path ? q : { ...q, subs: q.subs.map((s, si) => (si !== dr.sub ? s : { ...s, nodes: s.nodes.map((n, k) => (k === dr.node ? move(n) : n)) })) }));
+        }
+        dr.next = next;
+        live.current = { swap: withPaths(l, next) };
+        bump();
+        return;
+      }
     }
   };
 
@@ -1390,7 +1734,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
             }
             const out = await inpaint(s.layer.canvas, mask);
             live.current = undefined;
-            commit(replaceLayer(d, s.layer.id, { ...s.layer, canvas: out, text: undefined, shape: undefined, kind: "pixel" }), "Spot Healing Brush");
+            commit(replaceLayer(d, s.layer.id, { ...s.layer, canvas: out, text: undefined, shape: undefined, vector: undefined, kind: "pixel" }), "Spot Healing Brush");
           } catch (err) {
             live.current = undefined;
             say((err as Error).message);
@@ -1446,6 +1790,14 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
         setBusy(null);
         return;
       }
+      case "vnode":
+      case "vpath": {
+        live.current = undefined;
+        const l = d.layers.find((x) => x.id === dr.layerId);
+        if (!dr.next || !l) return bump();
+        commit(replaceLayer(d, l.id, withPaths(l, dr.next)), dr.type === "vpath" ? "Move Path" : dr.part === "node" ? "Move Point" : "Edit Curve");
+        return;
+      }
       case "shape": {
         live.current = undefined;
         const meta = shapeFor(dr.a, dr.b);
@@ -1489,6 +1841,140 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     const mask = shapeMask(d, polyPath(poly.pts), opts.feather);
     commit({ ...d, selection: combine(d.selection, mask, poly.mode) }, "Polygonal Lasso");
     setPoly(null);
+  };
+
+  /* ----- Vector paths ----- */
+
+  /** Ends the pen's path: added to the active vector layer, or as a new vector layer. */
+  function finishPen(close = false) {
+    const d = docRef.current;
+    const raw = pen;
+    setPen(null);
+    if (!d || !raw) return;
+    // A double-click lands two extra clicks on the same spot: drop the repeats.
+    const pts = raw.filter((n, k) => k === 0 || Math.hypot(n.x - raw[k - 1].x, n.y - raw[k - 1].y) * view.current.z > 2 || n.o);
+    if (pts.length < 2) return bump();
+    const path = newPath([{ nodes: pts, closed: close }], { fill: opts.vecFill, stroke: opts.vecStroke, width: opts.vecStroke ? opts.vecWidth : 0 });
+    if (!path.fill && !path.stroke) {
+      path.stroke = fg;
+      path.width = opts.vecWidth;
+    }
+    const a = activeLayer(d);
+    if (a.vector && !a.locked && a.visible) {
+      const paths = [...layerPaths(a), path];
+      commit(replaceLayer(d, a.id, withPaths(a, paths)), close ? "Pen: Closed Path" : "Pen: Path");
+      setNodeSel({ layerId: a.id, path: paths.length - 1, sub: null, node: null });
+    } else {
+      const vl = withPaths(newLayer({ name: freshName(d, "Vector"), kind: "vector", canvas: makeCanvas(1, 1) }), [path]);
+      commit(insertAbove(d, vl), close ? "Pen: Closed Path" : "Pen: Path");
+      setNodeSel({ layerId: vl.id, path: 0, sub: null, node: null });
+    }
+    setPanel("properties");
+  }
+
+  /** Direct selection: a double-click on the selected path's line adds a point there. */
+  const addPointAt = (e: { clientX: number; clientY: number }) => {
+    const d = docRef.current;
+    const ns = nodeSel;
+    const l = ns && d?.layers.find((x) => x.id === ns.layerId);
+    if (!d || !ns || !l?.vector || l.locked) return;
+    const paths = layerPaths(l);
+    const path = paths[ns.path];
+    if (!path) return;
+    const near = nearestOnPath(path, toDoc(e));
+    if (!near || near.d * view.current.z > 12) return;
+    const next = paths.map((q, pi) => (pi !== ns.path ? q : { ...q, subs: q.subs.map((s, si) => (si === near.sub ? splitSegment(s, near.seg, near.t) : s)) }));
+    commit(replaceLayer(d, l.id, withPaths(l, next)), "Add Point");
+    setNodeSel({ ...ns, sub: near.sub, node: near.seg + 1 });
+  };
+
+  /** Delete with the Direct selection tool: the picked point, or the whole path. */
+  const deleteVector = () => {
+    const d = docRef.current;
+    const ns = nodeSel;
+    const l = ns && d?.layers.find((x) => x.id === ns.layerId);
+    if (!d || !ns || !l?.vector) return false;
+    if (l.locked) return (say("That layer is locked."), true);
+    const paths = layerPaths(l);
+    if (!paths[ns.path]) return false;
+    let next: VPath[];
+    if (ns.sub !== null && ns.node !== null) {
+      const p = deleteNode(paths[ns.path], ns.sub, ns.node);
+      next = p ? paths.map((q, i) => (i === ns.path ? p : q)) : paths.filter((_, i) => i !== ns.path);
+      setNodeSel(p ? { ...ns, node: null } : null);
+    } else {
+      next = paths.filter((_, i) => i !== ns.path);
+      setNodeSel(null);
+    }
+    if (!next.length) commit({ ...d, layers: d.layers.filter((x) => x.id !== l.id), active: d.layers.find((x) => x.id !== l.id)?.id ?? d.active }, "Delete Path");
+    else commit(replaceLayer(d, l.id, withPaths(l, next)), ns.node !== null ? "Delete Point" : "Delete Path");
+    return true;
+  };
+
+  /** Shape layer → vector layer with the same geometry, ready for point editing. */
+  const shapeToVector = () => {
+    const d = docRef.current;
+    const l = d && activeLayer(d);
+    if (!d || !l?.shape) return;
+    const paths = shapeToPaths(l);
+    commit(replaceLayer(d, l.id, withPaths({ ...l, shape: undefined }, paths)), "Convert to Path");
+    setToolState("node");
+    setNodeSel({ layerId: l.id, path: 0, sub: null, node: null });
+    say("It's a path now: drag its points, or Alt-click one to switch between smooth and corner.");
+  };
+
+  const isSvg = (f: File) => f.type === "image/svg+xml" || /\.svg$/i.test(f.name);
+
+  /** An SVG becomes editable paths: a new document, or (`place`) a vector layer fitted into this one. */
+  const openSvg = async (f: File, place: boolean) => {
+    const res = await importSvg(await f.text());
+    if (!res.paths.length) throw new Error("No shapes in that SVG could be turned into paths.");
+    const name = f.name.replace(/\.[^.]+$/, "") || "Vector";
+    const d = docRef.current;
+    if (place && d) {
+      const k = Math.min(1, (d.w * 0.8) / res.w, (d.h * 0.8) / res.h);
+      const m = new DOMMatrix().translate((d.w - res.w * k) / 2, (d.h - res.h * k) / 2).scale(k);
+      const vl = withPaths(newLayer({ name: freshName(d, name), kind: "vector", canvas: makeCanvas(1, 1) }), transformPathsFor(res.paths, m));
+      commit(insertAbove(d, vl), "Place SVG");
+      say(`Placed as ${res.paths.length} editable path${res.paths.length === 1 ? "" : "s"}. Use Direct selection (A) to reshape them.${res.notes.length ? " " + res.notes.join(" ") : ""}`);
+      return;
+    }
+    const vl = withPaths(newLayer({ name, kind: "vector", canvas: makeCanvas(1, 1) }), res.paths);
+    const layers: Layer[] = [vl];
+    if (res.notes.length) {
+      // Keep the original drawing too (hidden), so nothing the paths couldn't carry is lost.
+      try {
+        const pic = await decodeImage(f);
+        const c = makeCanvas(res.w, res.h);
+        ctx2d(c).drawImage(pic, 0, 0, res.w, res.h);
+        layers.unshift(newLayer({ name: "Original SVG (picture)", canvas: c, visible: false }));
+      } catch {
+        // The browser couldn't draw it as a picture either; the paths are what there is.
+      }
+    }
+    start({ w: res.w, h: res.h, layers, active: vl.id, selection: null, editMask: false, name });
+    setToolState("node");
+    setNodeSel({ layerId: vl.id, path: 0, sub: null, node: null });
+    setTimeout(() => say(`Opened as ${res.paths.length} editable path${res.paths.length === 1 ? "" : "s"}.${res.notes.length ? " " + res.notes.join(" ") + " The original picture is kept as a hidden layer." : " Pick one with Direct selection (A)."}`), 50);
+  };
+
+  const fontName = (family: string) => {
+    const f = FONTS.find((x) => x.family === family);
+    if (!f) return family;
+    const label = f.label.replace(/\s*\(.*\)$/, "");
+    const generic = /mono|courier/i.test(label) ? "monospace" : /serif|georgia|times/i.test(label) && !/sans/i.test(label) ? "serif" : "sans-serif";
+    return `'${label}', ${generic}`;
+  };
+  const saveSvg = () => {
+    const d = docRef.current;
+    if (!d) return;
+    try {
+      const { svg, notes } = docToSvg(d, fontName);
+      download(new Blob([svg], { type: "image/svg+xml" }), `${d.name || "image"}.svg`);
+      say(notes.length ? `Saved as SVG. ${notes.join(" ")}` : "Saved as SVG: paths, shapes and text stay editable.");
+    } catch (e) {
+      say(`Couldn't write the SVG: ${(e as Error).message}`);
+    }
   };
 
   /* ----- Crop and transform maths ----- */
@@ -1597,13 +2083,18 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const r = w.getBoundingClientRect();
-      if (e.ctrlKey || e.metaKey) {
-        zoomAt(Math.exp(-e.deltaY * (e.ctrlKey && Math.abs(e.deltaY) < 30 ? 0.01 : 0.0025)), e.clientX - r.left, e.clientY - r.top);
+      // A mouse wheel moves in whole notches (no sideways part); a trackpad sends small, smooth
+      // deltas, often with some sideways movement. Wheels zoom at the pointer (what people expect
+      // from a picture), trackpads pan with two fingers, and pinch (Ctrl+wheel) always zooms.
+      const lines = e.deltaMode === 1;
+      const trackpad = !lines && (e.deltaX !== 0 || !Number.isInteger(e.deltaY) || Math.abs(e.deltaY) < 40);
+      if (e.ctrlKey || e.metaKey || (!trackpad && !e.shiftKey)) {
+        const dy = lines ? e.deltaY * 33 : e.deltaY;
+        zoomAt(Math.exp(-dy * (e.ctrlKey && Math.abs(dy) < 30 ? 0.01 : 0.0018)), e.clientX - r.left, e.clientY - r.top);
       } else {
         const dx = e.shiftKey ? e.deltaY : e.deltaX;
         const dy = e.shiftKey ? 0 : e.deltaY;
-        view.current = { ...view.current, x: view.current.x - dx, y: view.current.y - dy };
-        dirty.current = true;
+        setView({ ...view.current, x: view.current.x - dx, y: view.current.y - dy });
       }
     };
     w.addEventListener("wheel", onWheel, { passive: false });
@@ -1705,7 +2196,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     addAdjustment: (id) => {
       const op = adjustmentById(id);
       if (!op) return;
-      setOpEdit({ op, params: defaults(op), asLayer: true });
+      setOpEdit({ op, params: defaults(op), asLayer: true, target: "layer" });
       setPanel("properties");
     },
     addMask: () => {
@@ -1824,7 +2315,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
       sub.globalCompositeOperation = "destination-in";
       sub.drawImage(mask, 0, 0);
       g.drawImage(subject, 0, 0);
-      commit(replaceLayer(d, l.id, { canvas: out, text: undefined, shape: undefined, kind: "pixel" }), how === "blur" ? "Blur Background" : how === "color" ? "Replace Background" : "Remove Background");
+      commit(replaceLayer(d, l.id, { canvas: out, text: undefined, shape: undefined, vector: undefined, kind: "pixel" }), how === "blur" ? "Blur Background" : how === "color" ? "Replace Background" : "Remove Background");
     } catch (e) {
       say(`This needs our server: ${(e as Error).message}`);
     } finally {
@@ -1967,6 +2458,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     if (e.key === "F5" && e.shiftKey) return go(() => setDialog("fill"));
     if (e.key === "F6" && e.shiftKey) return go(() => d.selection && setDialog("feather"));
     if (e.key === "Enter") {
+      if (pen) return go(() => finishPen());
       if (transform) return go(applyTransform);
       if (crop && tool === "crop") return go(applyCrop);
       if (poly) return go(closePoly);
@@ -1974,6 +2466,8 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
       return;
     }
     if (e.key === "Escape") {
+      if (pen) return go(() => finishPen());
+      if (tool === "node" && nodeSel) return go(() => setNodeSel(nodeSel.node !== null ? { ...nodeSel, node: null, sub: null } : null));
       if (transform) return go(cancelTransform);
       if (poly) return go(() => setPoly(null));
       if (crop && tool === "crop") return go(() => setCrop({ x: 0, y: 0, w: d.w, h: d.h }));
@@ -1982,9 +2476,26 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
       return;
     }
     if (e.key === "Delete" || e.key === "Backspace") {
+      if (pen) return go(() => setPen(pen.length > 1 ? pen.slice(0, -1) : null));
+      if (tool === "node" && nodeSel) return go(() => void deleteVector());
       if (poly && e.key === "Backspace") return go(() => setPoly({ ...poly, pts: poly.pts.slice(0, -1) }));
       if (d.selection) return go(() => commit(clearSelection(d), "Clear"));
       return;
+    }
+    if (e.key.startsWith("Arrow") && tool === "node" && nodeSel) {
+      // Nudge the picked point, or the whole path.
+      const step = e.shiftKey ? 10 : 1;
+      const dx = e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
+      const dy = e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
+      const l = d.layers.find((x) => x.id === nodeSel.layerId);
+      const paths = l?.vector ? layerPaths(l) : [];
+      if (!l || l.locked || !paths[nodeSel.path]) return;
+      const sh = (q: Pt) => ({ x: q.x + dx, y: q.y + dy });
+      const mv = (n: VNode) => ({ ...sh(n), i: n.i && sh(n.i), o: n.o && sh(n.o) });
+      const next = paths.map((q, pi) =>
+        pi !== nodeSel.path ? q : { ...q, subs: q.subs.map((s, si) => ({ ...s, nodes: s.nodes.map((n, k) => (nodeSel.node === null || (si === nodeSel.sub && k === nodeSel.node) ? mv(n) : n)) })) },
+      );
+      return go(() => commit(replaceLayer(d, l.id, withPaths(l, next)), "Nudge", `vnudge:${l.id}`));
     }
     if (e.key.startsWith("Arrow") && tool === "move") {
       const step = e.shiftKey ? 10 : 1;
@@ -2028,6 +2539,10 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
         return go(() => (e.shiftKey ? beginTransform() : setTool("text")));
       case "u":
         return go(() => setTool("shape"));
+      case "p":
+        return go(() => setTool("pen"));
+      case "a":
+        return go(() => setTool("node"));
       case "h":
         return go(() => setTool("hand"));
       case "z":
@@ -2122,10 +2637,11 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
   const adjItems = (asLayer: boolean): MenuItem[] =>
     ADJUSTMENTS.filter((a) => !asLayer || a.layerable).map((a) => ({
       label: a.label + (a.instant || asLayer ? "" : "…"),
+      icon: opIcon(a),
       onSelect: () => (asLayer ? layerApi.addAdjustment(a.id) : openOp(a)),
     }));
   const filterGroups = [...new Set(FILTERS.map((f) => f.group))];
-  const filterItems = (g: string): MenuItem[] => FILTERS.filter((f) => f.group === g).map((f) => ({ label: f.label + (f.instant ? "" : "…"), onSelect: () => openOp(f) }));
+  const filterItems = (g: string): MenuItem[] => FILTERS.filter((f) => f.group === g).map((f) => ({ label: f.label + (f.instant ? "" : "…"), icon: opIcon(f), onSelect: () => openOp(f) }));
   const menus: { label: string; items: MenuItem[] }[] = doc
     ? [
         {
@@ -2133,11 +2649,12 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
           items: [
             { label: "New…", onSelect: () => setDialog("new") },
             { label: "Open… (replaces this)", shortcut: "Ctrl+O", onSelect: () => fileRef.current?.click() },
-            { label: "Place image as layer…", onSelect: () => placeRef.current?.click() },
+            { label: "Place image or SVG as layer…", onSelect: () => placeRef.current?.click() },
             { label: "New collage from photos…", onSelect: () => collageRef.current?.click() },
             { type: "sep" },
             { label: "Save project (.dwlp)", shortcut: "Ctrl+S", onSelect: () => void saveProject() },
-            { label: "Save as PSD", shortcut: "Shift+Ctrl+S", onSelect: () => void savePsd() },
+            { label: "Save as PSD", shortcut: "Shift+Ctrl+S", icon: FileImage, onSelect: () => void savePsd() },
+            { label: "Save as SVG (vector)", icon: PenTool, onSelect: saveSvg },
             { label: "Export as…", shortcut: "Alt+Shift+Ctrl+W", onSelect: () => setDialog("export") },
             { label: "Quick export as PNG", onSelect: () => void quickPng() },
             { label: "Copy image to clipboard", onSelect: () => copyToClipboard(doc).then(() => say("Copied to the clipboard."), () => say("This browser won't let us use the clipboard.")) },
@@ -2229,7 +2746,9 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
           items: [
             { label: "New layer", shortcut: "Shift+Ctrl+N", onSelect: layerApi.add },
             { label: "New fill layer (foreground colour)", onSelect: () => commit(insertAbove(doc, newLayer({ name: freshName(doc, "Color Fill"), canvas: (() => { const c = makeCanvas(doc.w, doc.h); const g = ctx2d(c); g.fillStyle = fg; g.fillRect(0, 0, c.width, c.height); return c; })() })), "New Fill Layer") },
-            { type: "sub", label: "New adjustment layer", items: adjItems(true) },
+            { type: "sub", label: "New adjustment layer", icon: SlidersHorizontal, items: adjItems(true) },
+            { label: "New vector path (Pen)", shortcut: "P", icon: PenTool, onSelect: () => setTool("pen") },
+            { label: "Convert shape to editable path", disabled: active?.kind !== "shape", onSelect: shapeToVector },
             { label: "Duplicate layer", onSelect: layerApi.duplicate },
             { label: "Delete layer", disabled: doc.layers.length < 2, onSelect: layerApi.remove },
             { type: "sep" },
@@ -2297,7 +2816,8 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
           items: [
             ...filterGroups.map((g) => ({
               type: "sub" as const,
-              label: g,
+              label: groupLabel(g),
+              icon: groupIcon(g),
               items: filterItems(g),
             })),
             { type: "sep" },
@@ -2330,6 +2850,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     if (tool === "zoom") return "zoom-in";
     if (tool === "move") return "move";
     if (tool === "text") return "text";
+    if (tool === "node") return "default";
     if (BUFFER_TOOLS.includes(tool) || PIXEL_TOOLS.includes(tool) || tool === "red-eye") return "none";
     return "crosshair";
   };
@@ -2337,31 +2858,68 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
   const propertiesPanel = () => {
     if (!doc || !active) return null;
     if (opEdit) {
-      const { op } = opEdit;
+      const { op, target } = opEdit;
+      const Icon = opIcon(op);
+      const layerOk = active.kind !== "adjustment";
+      const pixelsOnly = target === "layer" && !opEdit.asLayer;
       return (
         <div className="space-y-3 p-3">
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="text-[14px] font-medium text-ink">{op.label}</p>
-              {op.hint && <p className="mt-0.5 text-[12px] leading-relaxed text-ink-3">{op.hint}</p>}
+          <div className="flex items-start gap-2.5">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-sm bg-ink text-paper">
+              <Icon aria-hidden className="size-[18px]" strokeWidth={1.75} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[14px] font-medium leading-tight text-ink">{op.label}</p>
+              <p className="mt-0.5 text-[12px] leading-relaxed text-ink-3">{op.hint ?? opBlurb(op)}</p>
             </div>
-            <button type="button" aria-label="Reset settings" title="Reset" onClick={() => setOpEdit({ ...opEdit, params: defaults(op) })} className="inline-flex size-7 shrink-0 items-center justify-center rounded-sm text-ink-2 hover:bg-paper-2 hover:text-ink">
+            <button type="button" aria-label="Reset settings" title="Reset settings" onClick={() => setOpEdit({ ...opEdit, params: defaults(op) })} className="inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-ink-2 hover:bg-paper-2 hover:text-ink">
               <RotateCcw aria-hidden className="size-3.5" />
             </button>
           </div>
+          <div>
+            <p className="mb-1 text-[12px] text-ink-2">Applies to</p>
+            <div role="radiogroup" aria-label="Applies to" className="grid grid-cols-2 overflow-hidden rounded-sm border border-line">
+              {(
+                [
+                  ["image", "Whole image", true],
+                  ["layer", "This layer", layerOk],
+                ] as const
+              ).map(([v, label, ok]) => (
+                <button
+                  key={v}
+                  type="button"
+                  role="radio"
+                  aria-checked={target === v}
+                  disabled={!ok}
+                  onClick={() => setOpEdit({ ...opEdit, target: v, asLayer: false })}
+                  className={cn("h-8 text-[12px] transition-colors disabled:opacity-40", target === v ? "bg-ink text-paper" : "text-ink-2 hover:bg-paper-2 hover:text-ink")}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1.5 text-[12px] leading-relaxed text-ink-3">
+              {target === "image"
+                ? op.layerable
+                  ? "Added as an adjustment layer on top: everything below changes, and you can edit or delete it later."
+                  : "Applied to a merged copy on a new layer on top: your layers stay as they are."
+                : `Only “${active.name}” changes.`}
+            </p>
+          </div>
           <ParamsEditor op={op} value={opEdit.params} onChange={(params) => setOpEdit({ ...opEdit, params })} hist={opHist} />
-          {op.layerable && (
+          {op.layerable && target === "layer" && (
             <div className="rounded-sm border border-line bg-paper px-2.5 py-2">
               <Check2 checked={opEdit.asLayer} onChange={(asLayer) => setOpEdit({ ...opEdit, asLayer })} label="As an adjustment layer (editable later)" />
             </div>
           )}
-          {!opEdit.asLayer && (active.kind === "text" || active.kind === "shape") && <p className="text-[12px] text-warning">Applying turns “{active.name}” into pixels.</p>}
-          {!opEdit.asLayer && doc.selection && <p className="text-[12px] text-ink-3">Only the selected area changes.</p>}
-          <div className="flex gap-2">
+          {pixelsOnly && (active.kind === "text" || active.kind === "shape" || active.kind === "vector") && <p className="text-[12px] text-warning">Applying turns “{active.name}” into pixels.</p>}
+          {doc.selection && <p className="text-[12px] text-ink-3">Only the selected area changes.</p>}
+          {/* Stays in reach at the bottom of the panel, however long the settings are. */}
+          <div className="sticky bottom-0 -mx-3 -mb-3 flex gap-2 border-t border-line bg-surface/95 px-3 py-2.5 backdrop-blur">
             <Btn onClick={() => setOpEdit(null)} className="flex-1">
               Cancel
             </Btn>
-            <Btn primary onClick={() => void applyOpEdit()} className="flex-1" disabled={!opEdit.asLayer && active.kind === "adjustment"}>
+            <Btn primary onClick={() => void applyOpEdit()} className="flex-1" disabled={target === "layer" && !opEdit.asLayer && !layerOk}>
               <Check aria-hidden className="size-4" /> Apply
             </Btn>
           </div>
@@ -2436,11 +2994,39 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
         </div>
       );
     }
+    if (active.kind === "vector" && active.vector) {
+      const paths = layerPaths(active);
+      const picked = nodeSel?.layerId === active.id ? nodeSel.path : paths.length - 1;
+      return (
+        <div className="space-y-3 p-3">
+          <div>
+            <p className="text-[14px] font-medium text-ink">{active.name}</p>
+            <p className="font-mono text-[12px] text-ink-3">vector layer · stays sharp at any size</p>
+          </div>
+          <VectorPanel
+            paths={paths}
+            selected={picked}
+            onSelect={(i) => setNodeSel({ layerId: active.id, path: i, sub: null, node: null })}
+            onChange={(next, label, key) => commit(replaceLayer(doc, active.id, withPaths(active, next)), label, key)}
+            onEditPoints={() => {
+              setTool("node");
+              setNodeSel({ layerId: active.id, path: Math.max(0, picked), sub: null, node: null });
+            }}
+            onPen={() => setTool("pen")}
+          />
+        </div>
+      );
+    }
     if (active.kind === "shape" && active.shape) {
       const s = active.shape;
       return (
         <div className="space-y-2 p-3">
-          <p className="text-[14px] font-medium text-ink">Shape</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[14px] font-medium text-ink">Shape</p>
+            <button type="button" onClick={shapeToVector} className="inline-flex h-7 items-center gap-1.5 rounded-sm border border-line px-2 text-[12px] text-ink-2 hover:border-ink-3 hover:text-ink">
+              <PenTool aria-hidden className="size-3.5" /> Edit as path
+            </button>
+          </div>
           <RangeRow label="Width" value={Math.round(Math.abs(s.w))} min={2} max={Math.max(doc.w, Math.abs(s.w))} unit=" px" onChange={(w) => setShape({ w: Math.sign(s.w || 1) * w })} />
           <RangeRow label="Height" value={Math.round(Math.abs(s.h))} min={2} max={Math.max(doc.h, Math.abs(s.h))} unit=" px" onChange={(h) => setShape({ h: Math.sign(s.h || 1) * h })} />
           {s.kind !== "line" && s.kind !== "arrow" && (
@@ -2502,60 +3088,37 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     if (op) openOp(op);
   };
 
+  const effectSections = [
+    ...ADJUST_ORDER.map((g) => ({ group: g, ops: ADJUSTMENTS.filter((a) => a.group === g) })),
+    ...filterGroups.map((g) => ({ group: g, ops: FILTERS.filter((f) => f.group === g) })),
+  ];
   const adjustPanel = () => (
     <div className="space-y-4 p-3">
       <div>
         <p className="label-mono mb-2 text-ink-3">Quick fixes</p>
         <div className="grid grid-cols-2 gap-1.5">
           {QUICK_FIXES.map((q) => (
-            <button key={q.label} type="button" onClick={() => quickFix(q.run)} className="flex h-9 items-center justify-center gap-1.5 rounded-sm border border-line bg-surface text-[12px] text-ink-2 hover:border-ink-3 hover:text-ink">
-              {q.icon && <q.icon aria-hidden className="size-3.5" />}
-              {q.label}
+            <button key={q.label} type="button" onClick={() => quickFix(q.run)} className="flex h-9 items-center gap-2 rounded-sm border border-line bg-surface px-2.5 text-left text-[12px] text-ink-2 transition-colors hover:border-ink-3 hover:text-ink">
+              <q.icon aria-hidden className="size-4 shrink-0 text-accent" strokeWidth={1.75} />
+              <span className="truncate">{q.label}</span>
             </button>
           ))}
         </div>
       </div>
-      {[...new Set(ADJUSTMENTS.map((a) => a.group))].map((g) => (
-        <div key={g}>
-          <p className="label-mono mb-1.5 text-ink-3">{g === "Basic" ? "Light" : g}</p>
-          <div className="flex flex-wrap gap-1">
-            {ADJUSTMENTS.filter((a) => a.group === g).map((a) => (
-              <button key={a.id} type="button" onClick={() => openOp(a)} className={cn("h-7 rounded-sm border px-2 text-[12px]", opEdit?.op.id === a.id ? "border-ink bg-ink text-paper" : "border-line text-ink-2 hover:border-ink-3 hover:text-ink")}>
-                {a.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      ))}
-      <div className="h-px bg-line" />
-      {filterGroups.map((g) => (
-        <div key={g}>
-          <p className="label-mono mb-1.5 text-ink-3">Filter · {g}</p>
-          <div className="flex flex-wrap gap-1">
-            {FILTERS.filter((f) => f.group === g).map((f) => (
-              <button key={f.id} type="button" onClick={() => openOp(f)} className={cn("h-7 rounded-sm border px-2 text-[12px]", opEdit?.op.id === f.id ? "border-ink bg-ink text-paper" : "border-line text-ink-2 hover:border-ink-3 hover:text-ink")}>
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      ))}
+      <EffectsBrowser sections={effectSections} active={opEdit?.op.id ?? null} onPick={openOp} />
     </div>
   );
 
   const looksPanel = () => {
     if (!doc || !active) return null;
-    const thumbs = lookThumbs.src === active.canvas ? lookThumbs.urls : {};
+    const thumbs = lookThumbs.urls;
     return (
       <div className="space-y-3 p-3">
         <div className="flex items-baseline justify-between">
           <p className="label-mono text-ink-3">Looks</p>
           <p className="text-[12px] text-ink-3">Tap one, then set the amount</p>
         </div>
-        {active.kind === "adjustment" ? (
-          <p className="text-[13px] text-ink-2">Pick a photo layer to try looks on it.</p>
-        ) : (
-          <div className="grid grid-cols-3 gap-1.5">
+        <div className="grid grid-cols-3 gap-1.5">
             {LOOK_OPS.map((op, i) => (
               <motion.button
                 key={op.id}
@@ -2578,7 +3141,6 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
               </motion.button>
             ))}
           </div>
-        )}
       </div>
     );
   };
@@ -2801,6 +3363,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
         onPsd={() => (setDialog(null), void savePsd())}
         onProject={() => (setDialog(null), void saveProject())}
         onCopy={() => doc && copyToClipboard(doc).then(() => say("Copied to the clipboard."), () => say("This browser won't let us use the clipboard."))}
+        onSvg={() => (setDialog(null), saveSvg())}
       />
       <ShortcutsDialog open={dialog === "shortcuts"} onClose={() => setDialog(null)} />
     </>
@@ -2932,10 +3495,13 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
           )
         }
       >
-        <div className={cn("flex flex-col", fullscreen ? "min-h-0 flex-1" : "lg:h-[min(86vh,920px)] lg:min-h-[620px]")}>
-          {/* Menu bar */}
+        <div ref={rootRef} className={cn("flex flex-col", fullscreen ? "min-h-0 flex-1" : "h-[calc(100dvh-76px)] min-h-[520px] lg:h-[min(86vh,920px)] lg:min-h-[620px]")}>
+          {/* Menu bar (one "Menu" button on narrow screens, so nothing hides off the edge) */}
           <div className="flex items-center gap-1 border-b border-line bg-paper/60 px-1.5 py-1" data-lenis-prevent>
-            <div className="min-w-0 flex-1 overflow-x-auto">
+            <div className="min-w-0 flex-1 md:hidden">
+              <CompactMenu menus={menus} />
+            </div>
+            <div className="hidden min-w-0 flex-1 overflow-x-auto md:block">
               <MenuBar menus={menus} />
             </div>
             <span className="hidden max-w-40 truncate font-mono text-[12px] text-ink-3 md:inline" title={doc.name}>
@@ -2994,6 +3560,15 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
                 actual,
                 setText,
                 cloneSet: !!cloneSrc,
+                penOpen: !!pen && pen.length > 0,
+                finishPen: () => finishPen(),
+                cancelPen: () => setPen(null),
+                nodeHint: nodeSel ? (nodeSel.node !== null ? "Point picked: drag it, Delete removes it, arrows nudge." : "Path picked: drag to move, drag a point to reshape.") : "Click a path to edit its points.",
+                nodeActions: nodeSel ? (
+                  <button type="button" onClick={() => void deleteVector()} className="inline-flex h-7 shrink-0 items-center gap-1 rounded-sm border border-line px-2.5 text-[12px] text-ink-2 hover:border-ink-3 hover:text-ink">
+                    <Trash2 aria-hidden className="size-3.5" /> {nodeSel.node !== null ? "Delete point" : "Delete path"}
+                  </button>
+                ) : null,
               }}
             />
           </div>
@@ -3007,7 +3582,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
             {/* Canvas */}
             <div
               ref={wrapRef}
-              className="relative h-[58vh] min-h-[320px] min-w-0 flex-1 overflow-hidden bg-paper-2 lg:h-auto"
+              className="relative min-h-[200px] min-w-0 flex-1 overflow-hidden bg-paper-2"
               data-lenis-prevent
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
@@ -3030,7 +3605,11 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
                 onPointerLeave={() => {
                   hover.current = null;
                 }}
-                onDoubleClick={() => tool === "lasso-poly" && closePoly()}
+                onDoubleClick={(e) => {
+                  if (tool === "lasso-poly") closePoly();
+                  else if (tool === "pen") finishPen();
+                  else if (tool === "node") addPointAt(e);
+                }}
                 onContextMenu={(e) => e.preventDefault()}
               />
               {transform && (
@@ -3088,11 +3667,21 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
                   </motion.p>
                 )}
               </AnimatePresence>
-              {/* Zoom controls on the canvas, handy on phones */}
-              <div className="absolute bottom-2 right-2 flex items-center rounded-md border border-line bg-surface/90 shadow-card backdrop-blur lg:hidden">
-                <button type="button" aria-label="Zoom out" onClick={() => zoomAt(0.8)} className="size-9 text-ink-2">−</button>
-                <button type="button" onClick={() => fit()} className="h-9 px-1 font-mono text-[12px] text-ink">{Math.round(z * 100)}%</button>
-                <button type="button" aria-label="Zoom in" onClick={() => zoomAt(1.25)} className="size-9 text-ink-2">+</button>
+              {/* Zoom controls on the canvas: out, the zoom (tap for 100%), in, and fit. */}
+              <div className="absolute bottom-2 right-2 flex items-center rounded-md border border-line bg-surface/90 text-ink-2 shadow-card backdrop-blur">
+                <button type="button" aria-label="Zoom out" title="Zoom out (Ctrl −)" onClick={() => zoomAt(0.8)} className="inline-flex size-9 items-center justify-center hover:text-ink">
+                  <Minus aria-hidden className="size-4" />
+                </button>
+                <button type="button" title="Actual pixels (Ctrl 1)" aria-label={`Zoom ${Math.round(z * 100)}%, show actual pixels`} onClick={actual} className="h-9 min-w-12 px-1 font-mono text-[12px] tabular-nums text-ink">
+                  {Math.round(z * 100)}%
+                </button>
+                <button type="button" aria-label="Zoom in" title="Zoom in (Ctrl +)" onClick={() => zoomAt(1.25)} className="inline-flex size-9 items-center justify-center hover:text-ink">
+                  <Plus aria-hidden className="size-4" />
+                </button>
+                <span aria-hidden className="h-5 w-px bg-line" />
+                <button type="button" aria-label="Fit on screen" title="Fit on screen (Ctrl 0)" onClick={() => fit()} className="inline-flex size-9 items-center justify-center hover:text-ink">
+                  <Maximize aria-hidden className="size-4" />
+                </button>
               </div>
             </div>
 
@@ -3111,17 +3700,33 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
                     aria-selected={panel === t.id}
                     aria-label={t.label}
                     title={t.label}
-                    onClick={() => setPanel(t.id)}
-                    className={cn("relative flex h-9 min-w-0 basis-0 items-center justify-center gap-1 text-[12px] transition-[flex-grow,color] duration-300", t.id === "layers" && "lg:hidden", panel === t.id ? "grow-[3] text-ink" : "grow text-ink-3 hover:text-ink")}
+                    onClick={() => {
+                      // Phones: tapping the open tab folds the sheet away (and back).
+                      if (panel === t.id) setSheetOpen((o) => !o);
+                      else {
+                        setPanel(t.id);
+                        setSheetOpen(true);
+                      }
+                    }}
+                    className={cn("relative flex h-10 min-w-0 basis-0 items-center justify-center gap-1 text-[12px] transition-[flex-grow,color] duration-300 lg:h-9", t.id === "layers" && "lg:hidden", panel === t.id ? "grow-[3] text-ink" : "grow text-ink-3 hover:text-ink")}
                   >
-                    <t.icon aria-hidden className="size-3.5" />
+                    <t.icon aria-hidden className="size-4 lg:size-3.5" />
                     {/* Only the open tab shows its name: seven tabs never fit with labels. */}
                     <span className={panel === t.id ? "inline" : "sr-only"}>{t.label}</span>
                     {panel === t.id && <motion.span layoutId="pro-panel-tab" aria-hidden className="absolute inset-x-1 -bottom-px h-0.5 bg-ink" />}
                   </button>
                 ))}
+                <button
+                  type="button"
+                  aria-label={sheetOpen ? "Hide the panel" : "Show the panel"}
+                  aria-expanded={sheetOpen}
+                  onClick={() => setSheetOpen((o) => !o)}
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center border-l border-line text-ink-2 hover:text-ink lg:hidden"
+                >
+                  <ChevronDown aria-hidden className={cn("size-4 transition-transform duration-300", !sheetOpen && "rotate-180")} />
+                </button>
               </div>
-              <div className={cn("min-h-0 overflow-y-auto max-lg:max-h-[60vh] lg:flex-1", panel === "layers" && "lg:block")} data-lenis-prevent>
+              <div className={cn("min-h-0 overflow-y-auto overscroll-contain max-lg:h-[min(36dvh,340px)] lg:flex-1", !sheetOpen && "max-lg:hidden")} data-lenis-prevent>
                 {panel === "properties" && <Slot>{propertiesPanel}</Slot>}
                 {panel === "adjust" && <Slot>{adjustPanel}</Slot>}
                 {panel === "looks" && <Slot>{looksPanel}</Slot>}
@@ -3144,7 +3749,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
           </div>
 
           {/* Status bar */}
-          <div className="flex h-7 items-center gap-3 overflow-hidden border-t border-line bg-paper/60 px-3 font-mono text-[12px] text-ink-3">
+          <div className="hidden h-7 items-center gap-3 overflow-hidden border-t border-line bg-paper/60 px-3 font-mono text-[12px] text-ink-3 md:flex">
             <span className="shrink-0">
               {doc.w} × {doc.h} px
             </span>

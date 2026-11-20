@@ -26,8 +26,10 @@ import {
   Italic,
   Lasso,
   LassoSelect,
+  MousePointer2,
   Move,
   PaintBucket,
+  PenTool,
   Pencil,
   Pipette,
   RotateCcw,
@@ -79,6 +81,8 @@ export const TOOLS: Record<ToolId, ToolDef> = {
   liquify: { id: "liquify", label: "Liquify (forward warp)", icon: Waves, hint: "Drag to push pixels: slim, reshape, bend." },
   text: { id: "text", label: "Text", icon: Type, key: "T", hint: "Click to add text. Click a text layer to edit it." },
   shape: { id: "shape", label: "Shape", icon: Shapes, key: "U", hint: "Drag to draw a shape. Shift keeps it even." },
+  pen: { id: "pen", label: "Pen", icon: PenTool, key: "P", hint: "Click for corners, drag for curves. Click the first point to close; Enter or double-click finishes an open path." },
+  node: { id: "node", label: "Direct selection", icon: MousePointer2, key: "A", hint: "Click a path, then drag its points and handles. Alt-click a point: smooth/corner. Double-click a line: add a point. Delete removes one." },
   hand: { id: "hand", label: "Hand", icon: Hand, key: "H", hint: "Drag to move around. Hold Space for this from any tool." },
   zoom: { id: "zoom", label: "Zoom", icon: ZoomIn, key: "Z", hint: "Click to zoom in, Alt-click to zoom out. Ctrl + scroll zooms anywhere." },
 };
@@ -101,6 +105,7 @@ export const GROUPS: ToolId[][] = [
   ["liquify"],
   ["text"],
   ["shape"],
+  ["pen", "node"],
   ["hand"],
   ["zoom"],
 ];
@@ -253,6 +258,10 @@ export type ToolOpts = {
   shapeStrokeW: number;
   shapeRadius: number;
   shapeSides: number;
+  /** The pen's style for new paths. */
+  vecFill: string | null;
+  vecStroke: string | null;
+  vecWidth: number;
   text: Omit<TextMeta, "text">;
 };
 
@@ -289,6 +298,9 @@ export const DEFAULT_OPTS: ToolOpts = {
   shapeStrokeW: 6,
   shapeRadius: 0,
   shapeSides: 5,
+  vecFill: null,
+  vecStroke: "#15140f",
+  vecWidth: 4,
   text: { font: FONTS[0].family, size: 96, weight: 700, italic: false, color: "#15140f", align: "left", lineHeight: 1.2, letterSpacing: 0, stroke: null, background: null },
 };
 
@@ -339,6 +351,11 @@ export function OptionsBar({
     actual: () => void;
     setText: (p: Partial<TextMeta>) => void;
     cloneSet: boolean;
+    penOpen: boolean;
+    finishPen: () => void;
+    cancelPen: () => void;
+    nodeHint: string;
+    nodeActions: React.ReactNode;
   };
   textTarget: TextMeta | null;
 }) {
@@ -547,6 +564,31 @@ export function OptionsBar({
           <NumField label="Width" value={opts.shapeStrokeW} min={1} max={200} onChange={(shapeStrokeW) => setOpts({ shapeStrokeW })} unit="px" width="w-14" />
           {opts.shape === "rect" && <NumField label="Corners" value={opts.shapeRadius} min={0} max={1000} onChange={(shapeRadius) => setOpts({ shapeRadius })} unit="px" width="w-14" />}
           {(opts.shape === "polygon" || opts.shape === "star") && <NumField label="Sides" value={opts.shapeSides} min={3} max={40} onChange={(shapeSides) => setOpts({ shapeSides })} width="w-12" />}
+        </>
+      )}
+      {tool === "pen" && (
+        <>
+          <Check2 checked={opts.vecFill !== null} onChange={(v) => setOpts({ vecFill: v ? "#eb4a10" : null })} label="Fill" />
+          {opts.vecFill && <ColorWell value={opts.vecFill} onChange={(vecFill) => setOpts({ vecFill })} label="Path fill colour" />}
+          <Check2 checked={opts.vecStroke !== null} onChange={(v) => setOpts({ vecStroke: v ? "#15140f" : null })} label="Stroke" />
+          {opts.vecStroke && <ColorWell value={opts.vecStroke} onChange={(vecStroke) => setOpts({ vecStroke })} label="Path stroke colour" />}
+          <NumField label="Width" value={opts.vecWidth} min={0.5} max={200} step={0.5} onChange={(vecWidth) => setOpts({ vecWidth })} unit="px" width="w-14" />
+          {actions.penOpen && (
+            <>
+              <button type="button" onClick={actions.finishPen} className="inline-flex h-7 shrink-0 items-center gap-1 rounded-sm bg-ink px-2.5 text-[12px] text-paper">
+                <Check aria-hidden className="size-3.5" /> Finish path
+              </button>
+              <button type="button" onClick={actions.cancelPen} className="inline-flex h-7 shrink-0 items-center gap-1 rounded-sm border border-line px-2.5 text-[12px] text-ink-2">
+                <X aria-hidden className="size-3.5" /> Discard
+              </button>
+            </>
+          )}
+        </>
+      )}
+      {tool === "node" && (
+        <>
+          <span className="shrink-0 text-[12px] text-ink-3">{actions.nodeHint}</span>
+          {actions.nodeActions}
         </>
       )}
       {(tool === "hand" || tool === "zoom") && (

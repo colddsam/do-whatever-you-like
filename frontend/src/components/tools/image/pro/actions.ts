@@ -16,8 +16,9 @@ import {
   solidCanvas,
 } from "./doc";
 import { defaults, scaled, type Op, type OpContext } from "./ops";
-import { flatten, layerAsDoc, renderShape, renderText, shapePad } from "./render";
+import { compose, flatten, layerAsDoc, renderShape, renderText, shapePad } from "./render";
 import { fromMask, growMask, invert } from "./selection";
+import { layerPaths, transformPaths, withPaths } from "./vector";
 import type { Doc, Layer, Pt, Rect } from "./types";
 
 /*
@@ -65,6 +66,8 @@ export function commitTransform(doc: Doc, t: TransformState): Doc {
   const moveOnly = t.sx === 1 && t.sy === 1 && t.rot === 0;
   if (moveOnly) return replaceLayer(doc, l.id, { x: Math.round(l.x + t.tx), y: Math.round(l.y + t.ty) });
   const m = transformMatrix(t);
+  // Vector paths go through the matrix themselves: they stay sharp and editable at any angle.
+  if (l.vector) return replaceLayer(doc, l.id, withPaths(l, transformPaths(layerPaths(l), m)));
   if (l.text && t.rot === 0 && Math.abs(t.sx) === Math.abs(t.sy) && t.sx > 0) {
     const text = { ...l.text, size: Math.max(1, l.text.size * t.sx), stroke: l.text.stroke ? { ...l.text.stroke, width: l.text.stroke.width * t.sx } : null };
     const p = new DOMPoint(l.x, l.y).matrixTransform(m);
@@ -76,7 +79,7 @@ export function commitTransform(doc: Doc, t: TransformState): Doc {
     const p = new DOMPoint(l.x + pad, l.y + pad).matrixTransform(m);
     return replaceLayer(doc, l.id, { shape, canvas: renderShape(shape), x: Math.round(p.x - shapePad(shape)), y: Math.round(p.y - shapePad(shape)) });
   }
-  return replaceLayer(doc, l.id, { ...transformLayer(l, m), text: undefined, shape: undefined, kind: l.kind === "adjustment" ? "adjustment" : "pixel" });
+  return replaceLayer(doc, l.id, { ...transformLayer(l, m), text: undefined, shape: undefined, vector: undefined, kind: l.kind === "adjustment" ? "adjustment" : "pixel" });
 }
 
 /** Rotates or flips the whole canvas (every layer, and the document's size). */
@@ -108,7 +111,11 @@ export function transformCanvas(doc: Doc, kind: "cw" | "ccw" | "180" | "flipH" |
     w: nw,
     h: nh,
     selection: null,
-    layers: doc.layers.map((l) => (l.kind === "adjustment" && !l.mask ? l : { ...transformLayer(l, m, quality), text: undefined, shape: undefined, kind: l.kind === "adjustment" ? "adjustment" : "pixel" })),
+    layers: doc.layers.map((l) => {
+      if (l.kind === "adjustment" && !l.mask) return l;
+      if (l.vector && !l.mask) return withPaths(l, transformPaths(layerPaths(l), m));
+      return { ...transformLayer(l, m, quality), text: undefined, shape: undefined, vector: undefined, kind: l.kind === "adjustment" ? "adjustment" : "pixel" };
+    }),
   };
 }
 
@@ -128,7 +135,8 @@ export function resizeImage(doc: Doc, nw: number, nh: number): Doc {
         return { ...l, text, canvas: renderText(text), x: Math.round(l.x * kx), y: Math.round(l.y * ky), mask: null };
       }
       if (l.kind === "adjustment" && !l.mask) return l;
-      return { ...transformLayer(l, m), text: undefined, shape: undefined, kind: l.kind === "adjustment" ? "adjustment" : "pixel" };
+      if (l.vector && !l.mask) return withPaths(l, transformPaths(layerPaths(l), m));
+      return { ...transformLayer(l, m), text: undefined, shape: undefined, vector: undefined, kind: l.kind === "adjustment" ? "adjustment" : "pixel" };
     }),
   };
 }
@@ -154,6 +162,8 @@ export function cropDoc(doc: Doc, r: Rect): Doc {
   // Pixels outside the crop are deleted, as Photoshop does by default.
   const layers = doc.layers.map((l) => {
     if (l.kind === "adjustment" && !l.mask) return l;
+    // Vectors aren't cut: they just shift (paths beyond the edge are still there to move back in).
+    if (l.vector && !l.mask) return { ...l, x: l.x - x, y: l.y - y };
     const lx = l.x - x;
     const ly = l.y - y;
     const cut = (src: HTMLCanvasElement) => {
@@ -174,7 +184,7 @@ export function cropDoc(doc: Doc, r: Rect): Doc {
       x: cp.ox,
       y: cp.oy,
       mask: l.mask ? cut(l.mask).c : null,
-      ...(keepMeta ? {} : { text: undefined, shape: undefined, kind: l.kind === "adjustment" ? ("adjustment" as const) : ("pixel" as const) }),
+      ...(keepMeta ? {} : { text: undefined, shape: undefined, vector: undefined, kind: l.kind === "adjustment" ? ("adjustment" as const) : ("pixel" as const) }),
     };
   });
   return { ...doc, w, h, layers, selection: null };
@@ -209,7 +219,7 @@ export function layerVia(doc: Doc, cut: boolean): Doc {
     const rg = ctx2d(rest);
     rg.globalCompositeOperation = "destination-out";
     rg.drawImage(clip, 0, 0);
-    next = replaceLayer(doc, l.id, { canvas: rest, text: undefined, shape: undefined, kind: "pixel" });
+    next = replaceLayer(doc, l.id, { canvas: rest, text: undefined, shape: undefined, vector: undefined, kind: "pixel" });
   }
   return { ...insertAbove(next, nl), selection: null };
 }
@@ -221,7 +231,7 @@ export function mergeDown(doc: Doc): Doc | null {
   const below = doc.layers[i - 1];
   // Draw both as they look, then keep the lower layer's place, name and blend mode.
   const flat = flatten({ ...doc, layers: [{ ...below, blend: "normal", opacity: 1 }, top] });
-  const merged: Layer = { ...below, canvas: flat, x: 0, y: 0, mask: null, effects: null, text: undefined, shape: undefined, kind: "pixel", clip: false };
+  const merged: Layer = { ...below, canvas: flat, x: 0, y: 0, mask: null, effects: null, text: undefined, shape: undefined, vector: undefined, kind: "pixel", clip: false };
   const layers = [...doc.layers];
   layers.splice(i - 1, 2, merged);
   return { ...doc, layers, active: merged.id, editMask: false };
@@ -244,8 +254,8 @@ export function flattenDoc(doc: Doc): Doc {
 export function rasterize(doc: Doc): Doc {
   const l = activeLayer(doc);
   if (l.kind === "adjustment") return doc;
-  if (!l.effects) return replaceLayer(doc, l.id, { text: undefined, shape: undefined, kind: "pixel" });
-  return replaceLayer(doc, l.id, { canvas: layerAsDoc(doc, { ...l, opacity: 1, blend: "normal" }), x: 0, y: 0, mask: null, effects: null, text: undefined, shape: undefined, kind: "pixel" });
+  if (!l.effects) return replaceLayer(doc, l.id, { text: undefined, shape: undefined, vector: undefined, kind: "pixel" });
+  return replaceLayer(doc, l.id, { canvas: layerAsDoc(doc, { ...l, opacity: 1, blend: "normal" }), x: 0, y: 0, mask: null, effects: null, text: undefined, shape: undefined, vector: undefined, kind: "pixel" });
 }
 
 export function addMask(doc: Doc, mode: "reveal" | "hide" | "selection"): Doc {
@@ -267,7 +277,7 @@ export function applyMask(doc: Doc): Doc {
   const g = ctx2d(c);
   g.globalCompositeOperation = "destination-in";
   g.drawImage(l.mask, 0, 0);
-  return { ...replaceLayer(doc, l.id, { canvas: c, mask: null, text: undefined, shape: undefined, kind: "pixel" }), editMask: false };
+  return { ...replaceLayer(doc, l.id, { canvas: c, mask: null, text: undefined, shape: undefined, vector: undefined, kind: "pixel" }), editMask: false };
 }
 
 /** Moves the active layer's content to an edge or centre of the document (or the selection). */
@@ -305,7 +315,7 @@ export function clearSelection(doc: Doc): Doc {
   const g = ctx2d(c);
   g.globalCompositeOperation = "destination-out";
   g.drawImage(clip, 0, 0);
-  return replaceLayer(doc, l.id, { ...grown, canvas: c, text: undefined, shape: undefined, kind: "pixel" });
+  return replaceLayer(doc, l.id, { ...grown, canvas: c, text: undefined, shape: undefined, vector: undefined, kind: "pixel" });
 }
 
 /** Edit > Fill: a colour in the selection (or the whole layer). */
@@ -324,7 +334,7 @@ export function fillSelection(doc: Doc, color: string, opacity: number, blend: G
   g.globalAlpha = opacity;
   g.globalCompositeOperation = l.lockAlpha ? "source-atop" : blend;
   g.drawImage(fill, 0, 0);
-  return replaceLayer(doc, l.id, { ...grown, canvas: c, text: undefined, shape: undefined, kind: "pixel" });
+  return replaceLayer(doc, l.id, { ...grown, canvas: c, text: undefined, shape: undefined, vector: undefined, kind: "pixel" });
 }
 
 /** Edit > Stroke: a band along the selection's edge. */
@@ -357,7 +367,7 @@ export function applyOp(doc: Doc, op: Op, params: Record<string, unknown>, ctx: 
   const out = makeCanvas(src.width, src.height);
   ctx2d(out).putImageData(res, 0, 0);
   const final = blendThroughSelection(src, out, doc.selection, l);
-  return replaceLayer(doc, l.id, { canvas: final, text: undefined, shape: undefined, kind: "pixel" });
+  return replaceLayer(doc, l.id, { canvas: final, text: undefined, shape: undefined, vector: undefined, kind: "pixel" });
 }
 
 /** The same, on a reduced copy, for live previews. Returns the preview canvas and its scale. */
@@ -391,6 +401,71 @@ export function previewOp(doc: Doc, op: Op, params: Record<string, unknown>, ctx
   mg.globalCompositeOperation = "source-over";
   mg.drawImage(inside, 0, 0);
   return { canvas: merged, scale: s };
+}
+
+/* ---------- Operations on the whole picture ---------- */
+
+/** Where an adjustment, filter or look lands: the active layer's own pixels, or the picture as a whole. */
+export type OpTarget = "layer" | "image";
+
+/**
+ * Does this layer look like "the photo": a pixel layer whose opaque pixels cover at least half the
+ * canvas? When the active layer is text, a sticker, a shape, an empty layer or an adjustment, an
+ * effect applied to it alone would barely show, so the whole picture is the better default.
+ */
+export function isPhotoLayer(doc: Doc, l: Layer) {
+  if (l.kind !== "pixel" || !l.visible) return false;
+  const k = Math.min(1, 64 / Math.max(l.canvas.width, l.canvas.height));
+  const c = makeCanvas(l.canvas.width * k, l.canvas.height * k);
+  const g = ctx2d(c, true);
+  g.drawImage(l.canvas, 0, 0, c.width, c.height);
+  const d = g.getImageData(0, 0, c.width, c.height).data;
+  let n = 0;
+  for (let i = 3; i < d.length; i += 4) if (d[i] > 160) n++;
+  const covered = (n / (c.width * c.height)) * l.canvas.width * l.canvas.height;
+  return covered >= 0.5 * doc.w * doc.h;
+}
+
+export const defaultTarget = (doc: Doc): OpTarget => (isPhotoLayer(doc, activeLayer(doc)) ? "layer" : "image");
+
+/**
+ * Applies an operation to everything you see. Per-pixel operations become an adjustment layer on
+ * top (editable later, nothing below is touched); the rest are run on a merged copy placed as a new
+ * layer on top, so the original layers stay as they were.
+ */
+export function applyOpToImage(doc: Doc, op: Op, params: Record<string, unknown>, ctx: Omit<OpContext, "scale">): Doc {
+  const top = doc.layers[doc.layers.length - 1];
+  const onTop = { ...doc, active: top.id, editMask: false };
+  if (op.layerable) return addAdjustmentLayer(onTop, op, params);
+  const flat = flatten(doc);
+  const g = ctx2d(flat, true);
+  const img = g.getImageData(0, 0, flat.width, flat.height);
+  const res = op.apply(img, params, { ...ctx, scale: 1 }) ?? img;
+  const out = makeCanvas(flat.width, flat.height);
+  const og = ctx2d(out);
+  og.putImageData(res, 0, 0);
+  if (doc.selection) {
+    og.globalCompositeOperation = "destination-in";
+    og.drawImage(doc.selection.mask, 0, 0);
+  }
+  return insertAbove(onTop, newLayer({ name: freshName(doc, op.label.replace(/ look$/, "")), canvas: out }));
+}
+
+/** The same on a reduced copy of the whole picture, for the live preview of a stamped layer. */
+export function previewOpImage(doc: Doc, op: Op, params: Record<string, unknown>, ctx: Omit<OpContext, "scale">, maxPixels = 2_000_000) {
+  const s = Math.min(1, Math.sqrt(maxPixels / (doc.w * doc.h)));
+  const small = compose(doc, { rect: { x: 0, y: 0, w: doc.w, h: doc.h }, scale: s });
+  const g = ctx2d(small, true);
+  const img = g.getImageData(0, 0, small.width, small.height);
+  const res = op.apply(img, scaled(op, params, s), { ...ctx, scale: s }) ?? img;
+  const out = makeCanvas(small.width, small.height);
+  const og = ctx2d(out);
+  og.putImageData(res, 0, 0);
+  if (doc.selection) {
+    og.globalCompositeOperation = "destination-in";
+    og.drawImage(doc.selection.mask, 0, 0, out.width, out.height);
+  }
+  return { canvas: out, scale: s };
 }
 
 export function addAdjustmentLayer(doc: Doc, op: Op, params?: Record<string, unknown>): Doc {

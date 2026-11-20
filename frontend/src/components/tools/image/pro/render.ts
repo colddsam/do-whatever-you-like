@@ -310,8 +310,13 @@ export function compose(doc: Doc, o: ComposeOpts): HTMLCanvasElement {
     }
     const px = drawLayerPixels(l, o);
     // Layers clipped to this one are painted only where it has pixels.
-    while (layers[i + 1]?.clip && layers[i + 1].kind !== "adjustment") {
+    while (layers[i + 1]?.clip) {
       const c = layers[++i];
+      // A clipped adjustment layer changes only the layer it's clipped to.
+      if (c.kind === "adjustment") {
+        applyAdjustmentLayer(px, c, o);
+        continue;
+      }
       const cp = drawLayerPixels(c, o);
       const pg = ctx2d(px);
       pg.globalAlpha = c.opacity;

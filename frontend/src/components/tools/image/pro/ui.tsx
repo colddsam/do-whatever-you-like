@@ -3,7 +3,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { Check, ChevronRight, X } from "lucide-react";
+import { Check, ChevronRight, Menu as MenuGlyph, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /*
@@ -12,9 +12,9 @@ import { cn } from "@/lib/utils";
  */
 
 export type MenuItem =
-  | { type?: "item"; label: string; shortcut?: string; onSelect: () => void; disabled?: boolean; checked?: boolean }
+  | { type?: "item"; label: string; shortcut?: string; onSelect: () => void; disabled?: boolean; checked?: boolean; icon?: LucideIcon }
   | { type: "sep" }
-  | { type: "sub"; label: string; items: MenuItem[]; disabled?: boolean };
+  | { type: "sub"; label: string; items: MenuItem[]; disabled?: boolean; icon?: LucideIcon };
 
 /** Menus, flyouts and their submenus carry this attribute, so "click outside" knows what's inside. */
 export const FLOAT_ATTR = "data-pro-float";
@@ -147,7 +147,7 @@ function MenuList({ items, onClose, anchor, side }: { items: MenuItem[]; onClose
                 }}
                 className="flex h-8 w-full items-center gap-2 rounded-sm px-2.5 text-left text-[13px] text-ink-2 outline-none hover:bg-paper-2 hover:text-ink focus-visible:bg-paper-2 focus-visible:text-ink disabled:opacity-40"
               >
-                <span aria-hidden className="size-3.5 shrink-0" />
+                <span aria-hidden className="flex size-3.5 shrink-0 items-center">{it.icon && <it.icon className="size-3.5" />}</span>
                 <span className="flex-1 truncate">{it.label}</span>
                 <ChevronRight aria-hidden className="size-3.5 text-ink-3" />
               </button>
@@ -177,13 +177,42 @@ function MenuList({ items, onClose, anchor, side }: { items: MenuItem[]; onClose
             }}
             className="flex h-8 w-full items-center gap-2 rounded-sm px-2.5 text-left text-[13px] text-ink-2 outline-none hover:bg-paper-2 hover:text-ink focus-visible:bg-paper-2 focus-visible:text-ink disabled:opacity-40"
           >
-            <span className="flex size-3.5 shrink-0 items-center">{it.checked && <Check aria-hidden className="size-3.5" />}</span>
+            <span className="flex size-3.5 shrink-0 items-center">{it.checked ? <Check aria-hidden className="size-3.5" /> : it.icon ? <it.icon aria-hidden className="size-3.5" /> : null}</span>
             <span className="flex-1 truncate">{it.label}</span>
             {it.shortcut && <span className="font-mono text-[12px] text-ink-3">{it.shortcut}</span>}
           </button>
         );
       })}
     </Floating>
+  );
+}
+
+/**
+ * On narrow screens the seven menus don't fit side by side: one "Menu" button opens them as
+ * submenus instead (nothing is hidden off the edge).
+ */
+export function CompactMenu({ menus }: { menus: { label: string; items: MenuItem[] }[] }) {
+  const [open, setOpen] = useState<HTMLElement | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && !insideFloat(e.target) && setOpen(null);
+    window.addEventListener("pointerdown", close);
+    return () => window.removeEventListener("pointerdown", close);
+  }, [open]);
+  return (
+    <div ref={ref}>
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={!!open}
+        onClick={(e) => setOpen(open ? null : e.currentTarget)}
+        className={cn("inline-flex h-8 items-center gap-1.5 rounded-sm px-2.5 text-[13px] transition-colors", open ? "bg-ink text-paper" : "text-ink-2 hover:bg-paper-2 hover:text-ink")}
+      >
+        <MenuGlyph aria-hidden className="size-4" /> Menu
+      </button>
+      {open && <MenuList items={menus.map((m) => ({ type: "sub" as const, label: m.label, items: m.items }))} anchor={open} side="below" onClose={() => setOpen(null)} />}
+    </div>
   );
 }
 

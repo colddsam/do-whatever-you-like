@@ -322,7 +322,7 @@ function pixelStamp(s: StrokeState, g: CanvasRenderingContext2D, p: Pt, r: numbe
 
 /** Merges the stroke into a new layer object (the old one stays untouched for undo). */
 export function endStroke(s: StrokeState): Layer {
-  if (s.work) return s.onMask ? { ...s.layer, mask: s.work } : { ...s.layer, canvas: s.work, text: undefined, shape: undefined, kind: "pixel" };
+  if (s.work) return s.onMask ? { ...s.layer, mask: s.work } : { ...s.layer, canvas: s.work, text: undefined, shape: undefined, vector: undefined, kind: "pixel" };
   const base = s.onMask ? s.layer.mask! : s.layer.canvas;
   const out = cloneCanvas(base);
   const g = ctx2d(out);
@@ -337,7 +337,7 @@ export function endStroke(s: StrokeState): Layer {
   g.globalCompositeOperation = s.erase ? "destination-out" : !s.onMask && s.layer.lockAlpha ? "source-atop" : "source-over";
   g.drawImage(buf, 0, 0);
   if (s.onMask) return { ...s.layer, mask: out };
-  return { ...s.layer, canvas: out, text: undefined, shape: undefined, kind: "pixel" };
+  return { ...s.layer, canvas: out, text: undefined, shape: undefined, vector: undefined, kind: "pixel" };
 }
 
 /** Red-eye: pulls the red out of reddish pixels around a click. */
@@ -360,7 +360,7 @@ export function redEye(layer: Layer, p: Pt, size: number): Layer {
     if (d[i] > gb * 1.35 && d[i] > 60) d[i] = gb * 0.9;
   }
   g.putImageData(img, x0, y0);
-  return { ...layer, canvas: c, text: undefined, shape: undefined, kind: "pixel" };
+  return { ...layer, canvas: c, text: undefined, shape: undefined, vector: undefined, kind: "pixel" };
 }
 
 /**
@@ -385,7 +385,7 @@ export function bucketFill(layer: Layer, doc: Doc, p: Pt, color: string, toleran
   og.globalAlpha = opacity;
   og.globalCompositeOperation = layer.lockAlpha ? "source-atop" : "source-over";
   og.drawImage(region, 0, 0);
-  return { ...grown, canvas: out, text: undefined, shape: undefined, kind: "pixel" };
+  return { ...grown, canvas: out, text: undefined, shape: undefined, vector: undefined, kind: "pixel" };
 }
 
 export type GradientKind = "linear" | "radial" | "angle" | "reflected" | "diamond";
@@ -474,5 +474,5 @@ export function gradientFill(
   og.globalAlpha = opacity;
   og.globalCompositeOperation = layer.lockAlpha ? "source-atop" : "source-over";
   og.drawImage(fill, 0, 0);
-  return { ...grown, canvas: out, text: undefined, shape: undefined, kind: "pixel" };
+  return { ...grown, canvas: out, text: undefined, shape: undefined, vector: undefined, kind: "pixel" };
 }

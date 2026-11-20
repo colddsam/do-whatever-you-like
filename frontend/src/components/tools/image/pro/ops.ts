@@ -7,7 +7,7 @@
 type When = { when?: [string, string] };
 export type Param = When &
   (
-    | { type: "range"; key: string; label: string; min: number; max: number; step?: number; def: number; unit?: string; px?: boolean }
+    | { type: "range"; key: string; label: string; min: number; max: number; step?: number; def: number; unit?: string; px?: boolean; bump?: [key: string, value: number] }
     | { type: "color"; key: string; label: string; def: string }
     | { type: "choice"; key: string; label: string; options: { value: string; label: string }[]; def: string }
     | { type: "toggle"; key: string; label: string; def: boolean }
