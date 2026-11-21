@@ -198,3 +198,46 @@ export function makeCollage(photos: HTMLCanvasElement[], size: number, gap: numb
   });
   return next;
 }
+
+/** Add a repeating tiled or clean bottom-right corner watermark layer. */
+export function addWatermark(
+  doc: Doc,
+  opts: { text: string; color: string; opacity: number; mode: "tile" | "corner"; angle: number; size: number },
+): Doc {
+  const label = opts.text.trim() || "© Watermark";
+  const c = makeCanvas(doc.w, doc.h);
+  const g = ctx2d(c);
+  const fontPx = Math.max(12, Math.round((Math.min(doc.w, doc.h) * Math.max(2, Math.min(24, opts.size))) / 100));
+  g.font = `600 ${fontPx}px system-ui, -apple-system, sans-serif`;
+  g.fillStyle = opts.color;
+  g.textBaseline = "middle";
+  if (opts.mode === "corner") {
+    g.textAlign = "right";
+    const pad = Math.max(12, Math.round(Math.min(doc.w, doc.h) * 0.03));
+    g.shadowColor = "rgba(0,0,0,0.35)";
+    g.shadowBlur = Math.max(2, fontPx * 0.12);
+    g.fillText(label, doc.w - pad, doc.h - pad - fontPx * 0.45);
+  } else {
+    g.textAlign = "center";
+    const metrics = g.measureText(label);
+    const stepX = Math.max(metrics.width + fontPx * 1.4, fontPx * 3.5);
+    const stepY = fontPx * 3.2;
+    const diag = Math.hypot(doc.w, doc.h);
+    g.translate(doc.w / 2, doc.h / 2);
+    g.rotate((opts.angle * Math.PI) / 180);
+    let row = 0;
+    for (let y = -diag * 0.7; y <= diag * 0.7; y += stepY) {
+      const offset = row % 2 === 0 ? 0 : stepX / 2;
+      for (let x = -diag * 0.7 - stepX; x <= diag * 0.7 + stepX; x += stepX) {
+        g.fillText(label, x + offset, y);
+      }
+      row++;
+    }
+  }
+  const layer = newLayer({
+    name: freshName(doc, "Watermark"),
+    canvas: c,
+    opacity: Math.max(5, Math.min(100, opts.opacity)),
+  });
+  return insertAbove(doc, layer);
+}

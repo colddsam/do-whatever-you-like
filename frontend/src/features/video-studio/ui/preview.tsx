@@ -2,14 +2,14 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { Camera, ChevronFirst, ChevronLast, Grid3x3, Pause, Play, Repeat, StepBack, StepForward, Upload } from "lucide-react";
+import { Camera, ChevronFirst, ChevronLast, Pause, Play, Repeat, SquareSplitHorizontal, StepBack, StepForward, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { IMPORT_ACCEPT } from "../constants";
 import { evalAnim } from "../lib/keyframes";
 import { clamp, frameRound, timecode } from "../lib/time";
 import { projectDuration } from "../lib/timeline";
 import { getStudio, usePrimaryClip, useStudio } from "../store/studio-store";
-import type { Clip, Project } from "../types";
+import type { Clip, GuideMode, Project } from "../types";
 import { importFiles } from "../engine/importer";
 import { trackPoint } from "../engine/ai/tracker";
 import { getEngine, PlaybackEngine } from "../engine/playback";
@@ -64,7 +64,9 @@ function TransformOverlay({ w, h }: { w: number; h: number }) {
   const project = useStudio((s) => s.project);
   const playhead = useStudio((s) => s.playhead);
   const playing = useStudio((s) => s.playing);
-  const showGuides = useStudio((s) => s.guides);
+  const guideMode = useStudio((s) => s.guides);
+  const compare = useStudio((s) => s.compare);
+  const compareX = useStudio((s) => s.compareX);
   const picking = useStudio((s) => !!s.picking || !!s.trackingPick);
   const clip = usePrimaryClip();
   const k = w / project.settings.width;
@@ -81,7 +83,16 @@ function TransformOverlay({ w, h }: { w: number; h: number }) {
   const locked = active && !!project.tracks.find((t) => t.id === clip!.trackId)?.locked;
 
   const onPointerDown = (e: React.PointerEvent) => {
-    if (e.button !== 0 || playing) return;
+    if (e.button !== 0) return;
+    if ((e.target as Element).closest("[data-compare-wipe]")) {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      const r = ref.current!.getBoundingClientRect();
+      const nx = clamp((e.clientX - r.left) / Math.max(1, r.width), 0.04, 0.96);
+      getStudio().set({ compareX: nx });
+      drag.current = { mode: "compare", id: "", px0: 0, py0: 0, g0: { x: 0, y: 0, sx: 1, sy: 1, bw: 1, bh: 1, rotDeg: 0 } };
+      return;
+    }
+    if (playing) return;
     const [px, py] = toProject(e);
     const handle = (e.target as Element).closest("[data-handle]")?.getAttribute("data-handle");
     const st = getStudio();
@@ -141,6 +152,12 @@ function TransformOverlay({ w, h }: { w: number; h: number }) {
   const onPointerMove = (e: React.PointerEvent) => {
     const d = drag.current;
     if (!d) return;
+    if (d.mode === "compare") {
+      const r = ref.current!.getBoundingClientRect();
+      const nx = clamp((e.clientX - r.left) / Math.max(1, r.width), 0.04, 0.96);
+      getStudio().set({ compareX: Math.round(nx * 1000) / 1000 });
+      return;
+    }
     const [px, py] = toProject(e);
     const st = getStudio();
     const g0 = d.g0;
@@ -182,8 +199,10 @@ function TransformOverlay({ w, h }: { w: number; h: number }) {
   };
 
   const onPointerUp = () => {
-    if (!drag.current) return;
+    const d = drag.current;
+    if (!d) return;
     drag.current = null;
+    if (d.mode === "compare") return;
     setGuides({ x: false, y: false });
     getStudio().end();
   };
@@ -205,10 +224,16 @@ function TransformOverlay({ w, h }: { w: number; h: number }) {
         {!locked && (
           <>
             <line x1={top[0]} y1={top[1]} x2={rot[0]} y2={rot[1]} className="stroke-accent" strokeWidth={1} />
-            <circle data-handle="rot" cx={rot[0]} cy={rot[1]} r={6} className="pointer-events-auto cursor-grab fill-ink stroke-accent" strokeWidth={1.5} />
+            <circle data-handle="rot" cx={rot[0]} cy={rot[1]} r={16} className="pointer-events-auto cursor-grab fill-transparent" />
+            <circle cx={rot[0]} cy={rot[1]} r={6} className="pointer-events-none fill-ink stroke-accent" strokeWidth={1.5} />
             {HANDLES.map(([id, u, v]) => {
               const [x, y] = pt(u * hw, v * hh);
-              return <rect key={id} data-handle={id} x={x - 5} y={y - 5} width={10} height={10} className="pointer-events-auto fill-paper stroke-accent" strokeWidth={1.5} style={{ cursor: id.length === 2 ? "nwse-resize" : u ? "ew-resize" : "ns-resize" }} />;
+              return (
+                <g key={id}>
+                  <rect data-handle={id} x={x - 12} y={y - 12} width={24} height={24} className="pointer-events-auto fill-transparent" style={{ cursor: id.length === 2 ? "nwse-resize" : u ? "ew-resize" : "ns-resize" }} />
+                  <rect x={x - 5} y={y - 5} width={10} height={10} className="pointer-events-none fill-paper stroke-accent" strokeWidth={1.5} />
+                </g>
+              );
             })}
             <circle cx={cx} cy={cy} r={3} className="fill-accent" />
           </>
@@ -226,7 +251,7 @@ function TransformOverlay({ w, h }: { w: number; h: number }) {
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
-      {showGuides && (
+      {guideMode === "broadcast" && (
         <svg className="pointer-events-none absolute inset-0 size-full" aria-hidden>
           <rect x={w * 0.05} y={h * 0.05} width={w * 0.9} height={h * 0.9} className="fill-none stroke-paper/35" strokeDasharray="4 4" />
           <rect x={w * 0.1} y={h * 0.1} width={w * 0.8} height={h * 0.8} className="fill-none stroke-paper/25" strokeDasharray="2 4" />
@@ -238,6 +263,35 @@ function TransformOverlay({ w, h }: { w: number; h: number }) {
           ))}
         </svg>
       )}
+      {guideMode === "golden" && (
+        <svg className="pointer-events-none absolute inset-0 size-full" aria-hidden>
+          {[0.382, 0.618].map((f) => (
+            <g key={f}>
+              <line x1={w * f} y1={0} x2={w * f} y2={h} className="stroke-warning/50" strokeDasharray="4 3" />
+              <line x1={0} y1={h * f} x2={w} y2={h * f} className="stroke-warning/50" strokeDasharray="4 3" />
+            </g>
+          ))}
+          <line x1={w / 2} y1={0} x2={w / 2} y2={h} className="stroke-paper/20" strokeDasharray="2 4" />
+          <line x1={0} y1={h / 2} x2={w} y2={h / 2} className="stroke-paper/20" strokeDasharray="2 4" />
+        </svg>
+      )}
+      {(guideMode === "reels" || guideMode === "tiktok" || guideMode === "shorts") && (
+        <svg className="pointer-events-none absolute inset-0 size-full" aria-hidden>
+          {(() => {
+            const topF = guideMode === "reels" ? 0.14 : 0.12;
+            const botF = guideMode === "tiktok" ? 0.26 : guideMode === "shorts" ? 0.24 : 0.22;
+            const rightF = guideMode === "tiktok" ? 0.17 : 0.16;
+            return (
+              <>
+                <rect x={0} y={0} width={w} height={h * topF} className="fill-danger/20" />
+                <rect x={0} y={h * (1 - botF)} width={w} height={h * botF} className="fill-danger/20" />
+                <rect x={w * (1 - rightF)} y={h * topF} width={w * rightF} height={h * (1 - topF - botF)} className="fill-danger/20" />
+                <rect x={w * 0.04} y={h * topF} width={w * (1 - rightF - 0.04)} height={h * (1 - topF - botF)} className="fill-none stroke-success/80" strokeDasharray="5 4" strokeWidth={1.25} />
+              </>
+            );
+          })()}
+        </svg>
+      )}
       {(guides.x || guides.y) && (
         <svg className="pointer-events-none absolute inset-0 size-full" aria-hidden>
           {guides.x && <line x1={w / 2} y1={0} x2={w / 2} y2={h} className="stroke-accent" strokeDasharray="5 4" />}
@@ -245,6 +299,29 @@ function TransformOverlay({ w, h }: { w: number; h: number }) {
         </svg>
       )}
       {box}
+      {compare && (
+        <div
+          data-compare-wipe
+          role="slider"
+          aria-label="Before and after split wipe"
+          aria-valuemin={4}
+          aria-valuemax={96}
+          aria-valuenow={Math.round(compareX * 100)}
+          className="absolute inset-y-0 z-30 -ml-4 w-8 cursor-ew-resize touch-none"
+          style={{ left: `${compareX * 100}%` }}
+        >
+          <span className="pointer-events-none absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 bg-paper shadow-[0_0_6px_rgba(0,0,0,0.75)]" />
+          <span className="pointer-events-none absolute left-1/2 top-1/2 flex h-7 -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-full border border-paper/80 bg-ink/90 px-2 font-mono text-[10px] font-medium uppercase tracking-wider text-paper shadow-float">
+            ↔
+          </span>
+        </div>
+      )}
+      {compare && (
+        <>
+          <span className="pointer-events-none absolute left-2 top-2 z-20 rounded-sm bg-ink/80 px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-wider text-paper">Before</span>
+          <span className="pointer-events-none absolute right-2 top-2 z-20 rounded-sm bg-ink/80 px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-wider text-accent">After</span>
+        </>
+      )}
     </div>
   );
 }
@@ -282,8 +359,8 @@ function Meter() {
 }
 
 function Transport() {
-  const { playing, playhead, fps, loop, quality, guides } = useStudio(
-    useShallow((s) => ({ playing: s.playing, playhead: s.playhead, fps: s.project.settings.fps, loop: s.loop, quality: s.quality, guides: s.guides })),
+  const { playing, playhead, fps, loop, quality, guides, compare } = useStudio(
+    useShallow((s) => ({ playing: s.playing, playhead: s.playhead, fps: s.project.settings.fps, loop: s.loop, quality: s.quality, guides: s.guides, compare: s.compare })),
   );
   const duration = useStudio((s) => projectDuration(s.project));
   const st = getStudio();
@@ -303,8 +380,8 @@ function Transport() {
     }
   };
   return (
-    // A size container: what fits depends on the monitor's width, not the window's.
-    <div className="@container flex items-center gap-1 border-t border-line-dark bg-ink-raised px-2 py-1">
+    // A size container with horizontal scroll on very narrow viewports so nothing disappears.
+    <div className="@container flex items-center gap-1 overflow-x-auto no-scrollbar border-t border-line-dark bg-ink-raised px-2 py-1" data-lenis-prevent>
       <div className="flex shrink-0 items-center">
         <IconButton label="Go to start (Home)" onClick={() => st.set({ playhead: 0, playing: false })}>
           <ChevronFirst aria-hidden className="size-4" />
@@ -317,7 +394,7 @@ function Transport() {
           aria-label={playing ? "Pause (Space)" : "Play (Space)"}
           title={playing ? "Pause (Space)" : "Play (Space)"}
           onClick={() => st.togglePlay()}
-          className="mx-0.5 inline-flex size-9 items-center justify-center rounded-full bg-paper text-ink transition-transform hover:scale-105 max-sm:size-11"
+          className="mx-0.5 inline-flex size-10 items-center justify-center rounded-full bg-paper text-ink transition-transform hover:scale-105 sm:size-9"
         >
           {playing ? <Pause aria-hidden className="size-4 fill-current" /> : <Play aria-hidden className="ml-0.5 size-4 fill-current" />}
         </button>
@@ -332,22 +409,36 @@ function Transport() {
         {timecode(playhead, fps)}
         <span className="text-paper-dim @max-[34rem]:hidden"> / {timecode(duration, fps)}</span>
       </p>
-      <div className="ml-auto flex items-center gap-1">
+      <div className="ml-auto flex shrink-0 items-center gap-1">
         <Meter />
         <IconButton label="Loop playback" active={loop} onClick={() => st.set({ loop: !loop })}>
           <Repeat aria-hidden className="size-4" />
         </IconButton>
-        <IconButton label="Safe areas and thirds" active={guides} onClick={() => st.set({ guides: !guides })} className="@max-[30rem]:hidden">
-          <Grid3x3 aria-hidden className="size-4" />
+        <IconButton label="Before / After split grade wipe (Shift+C)" active={compare} onClick={() => st.set({ compare: !compare })}>
+          <SquareSplitHorizontal aria-hidden className="size-4" />
         </IconButton>
-        <IconButton label="Save this frame as PNG" onClick={() => void snapshot()} className="@max-[30rem]:hidden">
+        <Select<GuideMode>
+          label="Safe zones and guides"
+          value={guides}
+          onChange={(v) => st.set({ guides: v })}
+          className="w-[86px] flex-none"
+          options={[
+            { value: "off", label: "Guides: Off" },
+            { value: "broadcast", label: "Safe / 3rds" },
+            { value: "golden", label: "Golden Phi" },
+            { value: "reels", label: "IG Reels" },
+            { value: "tiktok", label: "TikTok UI" },
+            { value: "shorts", label: "YT Shorts" },
+          ]}
+        />
+        <IconButton label="Save this frame as PNG" onClick={() => void snapshot()}>
           <Camera aria-hidden className="size-4" />
         </IconButton>
         <Select
           label="Preview quality"
           value={quality}
           onChange={(v) => st.set({ quality: v })}
-          className="w-[76px] flex-none"
+          className="w-[70px] flex-none"
           options={[
             { value: "full", label: "Full" },
             { value: "half", label: "1/2" },

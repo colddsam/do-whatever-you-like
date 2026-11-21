@@ -89,6 +89,7 @@ const ENTRIES: Record<string, Entry> = {
   "channel-mixer": { icon: SlidersVertical, blurb: "Remix the red, green and blue channels" },
   "selective-color": { icon: Pipette, blurb: "Shift just one range of colours" },
   "gradient-map": { icon: Blend, blurb: "Map brightness to a colour gradient" },
+  "cube-lut": { icon: Film, blurb: "Apply 3D film LUTs or load your own .cube file" },
   // Tone & special
   posterize: { icon: Layers2, blurb: "Reduce to a few flat tones" },
   threshold: { icon: Binary, blurb: "Pure black and white at a cut-off" },
@@ -109,6 +110,8 @@ const ENTRIES: Record<string, Entry> = {
   orton: { icon: Cloud, blurb: "Soft, dreamy glow" },
   "light-leak": { icon: Sunrise, blurb: "A warm flare from the edge" },
   "pop-art": { icon: Gem, blurb: "Bold, saturated poster colours" },
+  halation: { icon: Sunrise, blurb: "Warm 35mm film scatter around bright highlights" },
+  bloom: { icon: Sparkles, blurb: "Silky Pro-Mist highlight bloom" },
   // Blur
   "gaussian-blur": { icon: Droplets, blurb: "Soften everything evenly" },
   "motion-blur": { icon: Wind, blurb: "Streaks, as if moving fast" },
@@ -138,6 +141,8 @@ const ENTRIES: Record<string, Entry> = {
   wave: { icon: Waves, blurb: "Wavy distortion" },
   ripple: { icon: Radar, blurb: "Rings like a dropped stone" },
   polar: { icon: Circle, blurb: "Bend into a circle (tiny planet)" },
+  perspective: { icon: Scan, blurb: "Straighten leaning verticals & keystone tilt" },
+  "lens-correct": { icon: Aperture, blurb: "Remove wide-angle barrel or pincushion bowing" },
   // Render
   vignette: { icon: Scan, blurb: "Darken or lighten the corners" },
   clouds: { icon: Cloudy, blurb: "Soft clouds in your two colours" },
@@ -189,6 +194,11 @@ const DEMO: Record<string, Record<string, unknown>> = {
   "add-noise": { amount: 30 },
   vignette: { amount: 80 },
   glitch: { amount: 70 },
+  "cube-lut": { lutId: "kodak-2383", intensity: 100 },
+  halation: { amount: 80, threshold: 175, spread: 18 },
+  bloom: { amount: 70, threshold: 155, radius: 22, warmth: 15 },
+  perspective: { vertical: 22, horizontal: 0, zoom: 112 },
+  "lens-correct": { distortion: -45, scale: 108, vignette: 0 },
 };
 
 /** An operation's defaults with its preview settings on top. */

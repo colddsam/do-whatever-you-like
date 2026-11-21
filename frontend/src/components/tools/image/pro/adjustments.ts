@@ -1,4 +1,5 @@
 import { hexToRgb } from "./doc";
+import { apply3dLut } from "./luts";
 import {
   applyLut,
   blurImage,
@@ -721,6 +722,21 @@ export const ADJUSTMENTS: Op[] = [
       const kb = avg / (b / n || 1);
       applyLut(img, lut((v) => v * kr), lut((v) => v * kg), lut((v) => v * kb));
       autoLevels(img, false);
+    },
+  },
+  {
+    id: "cube-lut",
+    label: "3D LUT (.cube)",
+    group: "Colour",
+    layerable: true,
+    hint: "Apply built-in film LUTs or import your own Adobe .cube look.",
+    params: [
+      { type: "lut", key: "lutId", label: "Look-Up Table", def: "kodak-2383" },
+      { type: "range", key: "intensity", label: "Intensity", min: 0, max: 100, def: 100, unit: "%" },
+    ],
+    apply(img, p) {
+      const res = apply3dLut(img, String(p.lutId || "kodak-2383"), num(p, "intensity") / 100);
+      img.data.set(res.data);
     },
   },
 ];

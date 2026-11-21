@@ -37,11 +37,11 @@ export function PageBackdrop() {
  * Standard page frame for everything except the home page: pulled up under the transparent
  * navbar (like the hero) so the rules run to the top edge, then the ruled container.
  */
-export function Page({ className, children }: { className?: string; children: React.ReactNode }) {
+export function Page({ className, wide = false, children }: { className?: string; wide?: boolean; children: React.ReactNode }) {
   return (
     <div className="relative isolate -mt-16 overflow-x-clip pt-16">
       <PageBackdrop />
-      <Container className={cn("pb-20 md:pb-28", className)}>{children}</Container>
+      <Container wide={wide} className={cn("pb-20 md:pb-28", className)}>{children}</Container>
     </div>
   );
 }

@@ -8,6 +8,8 @@ import {
   Bookmark,
   ChevronDown,
   ChevronUp,
+  ClipboardCopy,
+  ClipboardPaste,
   Copy,
   Eye,
   EyeOff,
@@ -26,6 +28,7 @@ import {
   Scissors,
   Shapes,
   Snowflake,
+  Sparkles,
   SquareSplitHorizontal,
   Trash2,
   Type,
@@ -51,10 +54,24 @@ import { TOOL_ICON } from "./catalog";
 import { IconButton } from "./controls";
 import { canTake, EFFECT_MIME } from "./effects-panel";
 
-const HEADER_W = 156;
 const RULER_H = 28;
 const TRACK_H: Record<TrackKind, number> = { video: 60, overlay: 46, audio: 54 };
 const MEDIA_MIME = "application/x-studio-media";
+
+function readHeaderW() {
+  if (typeof window === "undefined") return 156;
+  return window.innerWidth < 640 ? 84 : window.innerWidth < 1024 ? 120 : 156;
+}
+function useHeaderW() {
+  return useSyncExternalStore(
+    (fn) => {
+      window.addEventListener("resize", fn);
+      return () => window.removeEventListener("resize", fn);
+    },
+    readHeaderW,
+    () => 156,
+  );
+}
 
 type View = { left: number; width: number };
 type MoveDrag = { kind: "move"; grabbed: string; ids: string[]; x0: number; y0: number; starts: Record<string, number>; tracks: Record<string, string>; moved: boolean };
@@ -319,8 +336,8 @@ function ClipView({
           style={{ left: -(tr.duration * zoom) / 2, width: tr.duration * zoom }}
         />
       )}
-      <span data-edge="start" title="Drag to trim the start" className="absolute inset-y-0 left-0 z-[4] w-2 cursor-ew-resize rounded-l-[4px] bg-accent/60 opacity-0 hover:opacity-100 group-hover:opacity-60" />
-      <span data-edge="end" title="Drag to trim the end" className="absolute inset-y-0 right-0 z-[4] w-2 cursor-ew-resize rounded-r-[4px] bg-accent/60 opacity-0 hover:opacity-100 group-hover:opacity-60" />
+      <span data-edge="start" title="Drag to trim the start" className="absolute inset-y-0 -left-1 z-[4] w-3.5 cursor-ew-resize rounded-l-[4px] after:absolute after:inset-y-0 after:left-1 after:w-1.5 after:bg-accent/60 after:opacity-0 group-hover:after:opacity-60 hover:after:opacity-100 max-lg:w-4" />
+      <span data-edge="end" title="Drag to trim the end" className="absolute inset-y-0 -right-1 z-[4] w-3.5 cursor-ew-resize rounded-r-[4px] after:absolute after:inset-y-0 after:right-1 after:w-1.5 after:bg-accent/60 after:opacity-0 group-hover:after:opacity-60 hover:after:opacity-100 max-lg:w-4" />
     </div>
   );
 }
@@ -329,6 +346,7 @@ function ClipView({
 
 function ClipMenu({ menu, onClose }: { menu: Menu; onClose: () => void }) {
   const c = useStudio((s) => s.project.clips[menu.clipId]);
+  const hasAttr = useStudio((s) => !!s.attrClipboard);
   const st = getStudio();
   useEffect(() => {
     const close = (e: PointerEvent) => {
@@ -363,12 +381,17 @@ function ClipMenu({ menu, onClose }: { menu: Menu; onClose: () => void }) {
     <div
       data-clip-menu
       role="menu"
-      className="fixed z-[90] w-60 overflow-hidden rounded-md border border-line-dark bg-ink-raised py-1 shadow-float"
-      style={{ left: Math.min(menu.x, window.innerWidth - 250), top: Math.min(menu.y, window.innerHeight - 380) }}
+      className="fixed z-[90] max-h-[80vh] w-64 overflow-y-auto rounded-md border border-line-dark bg-ink-raised py-1 shadow-float"
+      style={{ left: Math.min(menu.x, window.innerWidth - 264), top: Math.min(menu.y, window.innerHeight - 420) }}
     >
       {item("Split at the playhead", <Scissors className="size-3.5" />, () => st.splitAtPlayhead(), "S")}
       {item("Duplicate", <Copy className="size-3.5" />, () => st.duplicateSelection(), "Ctrl+D")}
       {item("Copy", <Copy className="size-3.5" />, () => st.copySelection(), "Ctrl+C")}
+      {item("Copy attributes", <ClipboardCopy className="size-3.5" />, () => st.copyAttributes(c.id), "Ctrl+Alt+C")}
+      {item("Paste attributes", <ClipboardPaste className="size-3.5" />, () => st.pasteAttributes(), "Ctrl+Alt+V", !hasAttr)}
+      {item("Paste effects & grade", <Sparkles className="size-3.5" />, () => st.pasteAttributes({ effects: true, transform: false, audio: false }), undefined, !hasAttr)}
+      {(c.kind === "video" || c.kind === "image") && item("Sync grade to all clips", <Sparkles className="size-3.5" />, () => st.applyGradeToAllClips(c.id))}
+      <div className="my-1 border-t border-line-dark" />
       {c.kind === "video" && item("Freeze frame (2 s)", <Snowflake className="size-3.5" />, () => void runJob("cliptool", "Capturing the frame", () => freezeFrame(c.id)), "Shift+F")}
       {(c.kind === "video" || c.kind === "audio") &&
         item("Reverse", <Rewind className="size-3.5" />, () =>
@@ -378,6 +401,7 @@ function ClipMenu({ menu, onClose }: { menu: Menu; onClose: () => void }) {
           }),
         )}
       {visual && item(c.flipH ? "Unflip" : "Flip horizontally", <FlipHorizontal2 className="size-3.5" />, () => st.flip(st.selection.length ? st.selection : [c.id], "h"))}
+      {c.kind === "video" && item(c.linkId ? "Detach audio" : "Extract audio", <AudioLines className="size-3.5" />, () => st.detachAudio(c.id))}
       {c.linkId && item("Unlink picture and sound", <Link2Off className="size-3.5" />, () => st.unlink(c.id))}
       {item("Add a marker here", <Bookmark className="size-3.5" />, () => st.addMarker(), "M")}
       <div className="my-1 border-t border-line-dark" />
@@ -390,6 +414,7 @@ function ClipMenu({ menu, onClose }: { menu: Menu; onClose: () => void }) {
 /* ---------- The timeline ---------- */
 
 export function Timeline() {
+  const headerW = useHeaderW();
   const { project, zoom, selection, playhead, silence, playing, inPoint, outPoint } = useStudio(
     useShallow((s) => ({ project: s.project, zoom: s.zoom, selection: s.selection, playhead: s.playhead, silence: s.silence, playing: s.playing, inPoint: s.inPoint, outPoint: s.outPoint })),
   );
@@ -403,6 +428,8 @@ export function Timeline() {
   const [marquee, setMarquee] = useState<Marquee | null>(null);
   const [menu, setMenu] = useState<Menu | null>(null);
   const drag = useRef<MoveDrag | TrimDrag | ToolDrag | null>(null);
+  const touchPts = useRef(new Map<number, { x: number; y: number }>());
+  const pinch = useRef<{ dist: number; zoom: number; tMid: number } | null>(null);
   const pendingScroll = useRef<number | null>(null);
   const fps = project.settings.fps;
   const duration = TL.projectDuration(project);
@@ -424,7 +451,7 @@ export function Timeline() {
     let raf = 0;
     const update = () => {
       cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => setView({ left: el.scrollLeft, width: Math.max(100, el.clientWidth - HEADER_W) }));
+      raf = requestAnimationFrame(() => setView({ left: el.scrollLeft, width: Math.max(100, el.clientWidth - headerW) }));
     };
     update();
     el.addEventListener("scroll", update, { passive: true });
@@ -435,7 +462,7 @@ export function Timeline() {
       ro.disconnect();
       cancelAnimationFrame(raf);
     };
-  }, []);
+  }, [headerW]);
 
   // Ctrl/⌘ + wheel zooms around the pointer (the time under it stays put).
   useEffect(() => {
@@ -445,7 +472,7 @@ export function Timeline() {
       e.preventDefault();
       const st = getStudio();
       const r = el.getBoundingClientRect();
-      const px = e.clientX - r.left - HEADER_W;
+      const px = e.clientX - r.left - headerW;
       const t = (el.scrollLeft + px) / st.zoom;
       const z = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, st.zoom * Math.exp(-e.deltaY * 0.0018)));
       pendingScroll.current = Math.max(0, t * z - px);
@@ -453,7 +480,7 @@ export function Timeline() {
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, []);
+  }, [headerW]);
   useLayoutEffect(() => {
     if (pendingScroll.current === null) return;
     scrollRef.current!.scrollLeft = pendingScroll.current;
@@ -465,14 +492,17 @@ export function Timeline() {
     if (!playing) return;
     const el = scrollRef.current!;
     const x = playhead * zoom;
-    const w = el.clientWidth - HEADER_W;
+    const w = el.clientWidth - headerW;
     if (x > el.scrollLeft + w - 24 || x < el.scrollLeft) el.scrollLeft = Math.max(0, x - w * 0.1);
-  }, [playhead, playing, zoom]);
+  }, [playhead, playing, zoom, headerW]);
 
-  const timeAt = useCallback((clientX: number) => {
-    const r = contentRef.current!.getBoundingClientRect();
-    return Math.max(0, (clientX - r.left - HEADER_W) / getStudio().zoom);
-  }, []);
+  const timeAt = useCallback(
+    (clientX: number) => {
+      const r = contentRef.current!.getBoundingClientRect();
+      return Math.max(0, (clientX - r.left - headerW) / getStudio().zoom);
+    },
+    [headerW],
+  );
 
   const trackAt = useCallback(
     (clientY: number) => {
@@ -557,12 +587,25 @@ export function Timeline() {
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
+    if (e.pointerType === "touch" && touchPts.current.has(e.pointerId)) {
+      touchPts.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (touchPts.current.size === 2 && pinch.current && scrollRef.current) {
+        const [a, b] = [...touchPts.current.values()];
+        const dist = Math.max(8, Math.hypot(b.x - a.x, b.y - a.y));
+        const nextZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, pinch.current.zoom * (dist / pinch.current.dist)));
+        const r = scrollRef.current.getBoundingClientRect();
+        const pxMid = (a.x + b.x) / 2 - r.left - headerW;
+        pendingScroll.current = Math.max(0, pinch.current.tMid * nextZoom - pxMid);
+        getStudio().setZoom(nextZoom);
+        return;
+      }
+    }
     if (marquee) {
       const r = contentRef.current!.getBoundingClientRect();
       const next = { ...marquee, x1: e.clientX - r.left, y1: e.clientY - r.top };
       setMarquee(next);
-      const t0 = Math.max(0, (Math.min(next.x0, next.x1) - HEADER_W) / zoom);
-      const t1 = Math.max(0, (Math.max(next.x0, next.x1) - HEADER_W) / zoom);
+      const t0 = Math.max(0, (Math.min(next.x0, next.x1) - headerW) / zoom);
+      const t1 = Math.max(0, (Math.max(next.x0, next.x1) - headerW) / zoom);
       const y0 = Math.min(next.y0, next.y1);
       const y1 = Math.max(next.y0, next.y1);
       const hit = Object.values(project.clips)
@@ -628,7 +671,14 @@ export function Timeline() {
     setGhost({ dt, target, snapAt, grabbed: d.grabbed, ids: d.ids, starts: d.starts, tracks: d.tracks });
   };
 
-  const onPointerUp = () => {
+  const onPointerUp = (e?: React.PointerEvent) => {
+    if (e) {
+      touchPts.current.delete(e.pointerId);
+      if (touchPts.current.size < 2) pinch.current = null;
+    } else {
+      touchPts.current.clear();
+      pinch.current = null;
+    }
     if (marquee) {
       setMarquee(null);
       return;
@@ -708,11 +758,29 @@ export function Timeline() {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-ink">
-      <TimelineToolbar />
+      <TimelineToolbar headerW={headerW} />
       <div
         ref={scrollRef}
         data-lenis-prevent
         className="relative min-h-0 flex-1 overflow-auto overscroll-contain"
+        onPointerDown={(e) => {
+          if (e.pointerType !== "touch") return;
+          touchPts.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+          if (touchPts.current.size === 2 && scrollRef.current) {
+            drag.current = null;
+            setGhost(null);
+            setMarquee(null);
+            const [a, b] = [...touchPts.current.values()];
+            const r = scrollRef.current.getBoundingClientRect();
+            const pxMid = (a.x + b.x) / 2 - r.left - headerW;
+            const st = getStudio();
+            pinch.current = {
+              dist: Math.max(8, Math.hypot(b.x - a.x, b.y - a.y)),
+              zoom: st.zoom,
+              tMid: Math.max(0, (scrollRef.current.scrollLeft + pxMid) / st.zoom),
+            };
+          }
+        }}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
@@ -725,10 +793,10 @@ export function Timeline() {
         }}
         onDrop={onDrop}
       >
-        <div ref={contentRef} className="relative" style={{ width: HEADER_W + lanesW, minHeight: "100%" }}>
+        <div ref={contentRef} className="relative" style={{ width: headerW + lanesW, minHeight: "100%" }}>
           {/* Ruler */}
           <div className="sticky top-0 z-30 flex" style={{ height: RULER_H }}>
-            <div className="sticky left-0 z-40 flex shrink-0 items-center border-b border-r border-line-dark bg-ink-raised px-2 font-mono text-[12px] tabular-nums text-paper" style={{ width: HEADER_W }}>
+            <div className="sticky left-0 z-40 flex shrink-0 items-center truncate border-b border-r border-line-dark bg-ink-raised px-1.5 font-mono text-[11px] tabular-nums text-paper sm:px-2 sm:text-[12px]" style={{ width: headerW }}>
               {timecode(playhead, fps)}
             </div>
             <Ruler zoom={zoom} fps={fps} width={lanesW} view={view} markers={project.markers} inPoint={inPoint} outPoint={outPoint} onScrub={onScrub} />
@@ -737,7 +805,7 @@ export function Timeline() {
           {/* Tracks */}
           {project.tracks.map((track, i) => (
             <div key={track.id} className="flex" style={{ height: TRACK_H[track.kind] }}>
-              <TrackHeader track={track} label={labels[track.id]} canUp={i > 0 && (project.tracks[i - 1].kind === "audio") === (track.kind === "audio")} canDown={i < project.tracks.length - 1 && (project.tracks[i + 1].kind === "audio") === (track.kind === "audio")} />
+              <TrackHeader headerW={headerW} track={track} label={labels[track.id]} canUp={i > 0 && (project.tracks[i - 1].kind === "audio") === (track.kind === "audio")} canDown={i < project.tracks.length - 1 && (project.tracks[i + 1].kind === "audio") === (track.kind === "audio")} />
               <div
                 className={cn("relative shrink-0 border-b border-line-dark", track.kind === "audio" ? "bg-paper/[0.02]" : "bg-transparent", track.locked && "bg-[repeating-linear-gradient(135deg,transparent_0_6px,rgb(243_240_232/0.03)_6px_12px)]")}
                 style={{ width: lanesW }}
@@ -780,16 +848,16 @@ export function Timeline() {
 
           {/* Add-track row */}
           <div className="flex h-12">
-            <div className="sticky left-0 z-20 flex shrink-0 items-center gap-1 border-r border-line-dark bg-ink-raised px-2" style={{ width: HEADER_W }}>
-              <span className="label-mono text-paper-dim">Add</span>
-              <IconButton label="Add a video track" onClick={() => st.addTrack("video")}>
-                <Film aria-hidden className="size-4" />
+            <div className="sticky left-0 z-20 flex shrink-0 items-center gap-0.5 border-r border-line-dark bg-ink-raised px-1.5 sm:gap-1 sm:px-2" style={{ width: headerW }}>
+              {headerW >= 110 && <span className="label-mono text-paper-dim">Add</span>}
+              <IconButton label="Add a video track" onClick={() => st.addTrack("video")} className="max-sm:size-7">
+                <Film aria-hidden className="size-3.5 sm:size-4" />
               </IconButton>
-              <IconButton label="Add a text and overlay track" onClick={() => st.addTrack("overlay")}>
-                <Type aria-hidden className="size-4" />
+              <IconButton label="Add a text and overlay track" onClick={() => st.addTrack("overlay")} className="max-sm:size-7">
+                <Type aria-hidden className="size-3.5 sm:size-4" />
               </IconButton>
-              <IconButton label="Add an audio track" onClick={() => st.addTrack("audio")}>
-                <AudioLines aria-hidden className="size-4" />
+              <IconButton label="Add an audio track" onClick={() => st.addTrack("audio")} className="max-sm:size-7">
+                <AudioLines aria-hidden className="size-3.5 sm:size-4" />
               </IconButton>
             </div>
             <div className="flex-1" />
@@ -797,7 +865,7 @@ export function Timeline() {
 
           {/* Markers across the lanes */}
           {project.markers.map((m) => (
-            <div key={m.id} className="pointer-events-none absolute z-[1] w-px opacity-50" style={{ left: HEADER_W + m.t * zoom, top: RULER_H, height: tracksY.bottom - RULER_H, background: m.color ?? "var(--color-warning)" }} />
+            <div key={m.id} className="pointer-events-none absolute z-[1] w-px opacity-50" style={{ left: headerW + m.t * zoom, top: RULER_H, height: tracksY.bottom - RULER_H, background: m.color ?? "var(--color-warning)" }} />
           ))}
 
           {/* Ghosts of clips being moved */}
@@ -812,7 +880,7 @@ export function Timeline() {
                 <div
                   key={id}
                   className="pointer-events-none absolute z-[18] rounded-[5px] border-2 border-accent bg-accent/15"
-                  style={{ left: HEADER_W + (ghost.starts[id] + ghost.dt) * zoom, top: tracksY.ys[trackId] + 4, width: Math.max(2, c.duration * zoom), height: TRACK_H[tr.kind] - 8 }}
+                  style={{ left: headerW + (ghost.starts[id] + ghost.dt) * zoom, top: tracksY.ys[trackId] + 4, width: Math.max(2, c.duration * zoom), height: TRACK_H[tr.kind] - 8 }}
                 >
                   <span className="block truncate px-1.5 text-[12px] leading-[18px] text-paper">{c.name}</span>
                 </div>
@@ -829,11 +897,11 @@ export function Timeline() {
 
           {/* Snap line */}
           {(snapLine ?? ghost?.snapAt) != null && (
-            <div className="pointer-events-none absolute top-0 z-[19] w-px bg-warning" style={{ left: HEADER_W + (snapLine ?? ghost!.snapAt!) * zoom, height: tracksY.bottom }} />
+            <div className="pointer-events-none absolute top-0 z-[19] w-px bg-warning" style={{ left: headerW + (snapLine ?? ghost!.snapAt!) * zoom, height: tracksY.bottom }} />
           )}
 
           {/* Playhead */}
-          <div className="pointer-events-none absolute top-0 z-[25]" style={{ left: HEADER_W + playhead * zoom, height: tracksY.bottom }}>
+          <div className="pointer-events-none absolute top-0 z-[25]" style={{ left: headerW + playhead * zoom, height: tracksY.bottom }}>
             <span className="absolute -left-[5px] top-0 h-3 w-[11px] bg-accent [clip-path:polygon(0_0,100%_0,100%_55%,50%_100%,0_55%)]" />
             <span className="absolute left-0 top-0 h-full w-px bg-accent" />
           </div>
@@ -844,41 +912,46 @@ export function Timeline() {
   );
 }
 
-function TrackHeader({ track, label, canUp, canDown }: { track: Track; label: string; canUp: boolean; canDown: boolean }) {
+function TrackHeader({ headerW, track, label, canUp, canDown }: { headerW: number; track: Track; label: string; canUp: boolean; canDown: boolean }) {
   const st = getStudio();
   const visual = track.kind !== "audio";
+  const compact = headerW < 110;
   return (
-    <div className="group sticky left-0 z-20 flex shrink-0 items-center gap-0.5 border-b border-r border-line-dark bg-ink-raised pl-2 pr-1" style={{ width: HEADER_W }}>
+    <div className="group sticky left-0 z-20 flex shrink-0 items-center gap-0.5 border-b border-r border-line-dark bg-ink-raised pl-1.5 pr-1 sm:pl-2" style={{ width: headerW }}>
       {/* Reorder and delete float over the name on hover, so they never take the name's room. */}
-      <span className="absolute right-[60px] top-1/2 z-10 flex -translate-y-1/2 items-center gap-0.5 rounded-sm bg-ink-raised opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-        {canUp && (
-          <IconButton label="Move track up" onClick={() => st.moveTrack(track.id, -1)} className="size-6">
-            <ChevronUp aria-hidden className="size-3.5" />
+      {!compact && (
+        <span className="absolute right-[60px] top-1/2 z-10 flex -translate-y-1/2 items-center gap-0.5 rounded-sm bg-ink-raised opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+          {canUp && (
+            <IconButton label="Move track up" onClick={() => st.moveTrack(track.id, -1)} className="size-6 sm:size-6">
+              <ChevronUp aria-hidden className="size-3.5" />
+            </IconButton>
+          )}
+          {canDown && (
+            <IconButton label="Move track down" onClick={() => st.moveTrack(track.id, 1)} className="size-6 sm:size-6">
+              <ChevronDown aria-hidden className="size-3.5" />
+            </IconButton>
+          )}
+          <IconButton label="Delete track" onClick={() => st.removeTrack(track.id)} className="size-6 sm:size-6">
+            <Trash2 aria-hidden className="size-3.5" />
           </IconButton>
-        )}
-        {canDown && (
-          <IconButton label="Move track down" onClick={() => st.moveTrack(track.id, 1)} className="size-6">
-            <ChevronDown aria-hidden className="size-3.5" />
-          </IconButton>
-        )}
-        <IconButton label="Delete track" onClick={() => st.removeTrack(track.id)} className="size-6">
-          <Trash2 aria-hidden className="size-3.5" />
-        </IconButton>
-      </span>
-      <span className={cn("label-mono w-7 shrink-0", track.kind === "audio" ? "text-success" : track.kind === "overlay" ? "text-warning" : "text-paper")}>{label}</span>
-      <span className="min-w-0 flex-1 truncate text-[12px] text-paper-dim" title={track.name}>
-        {track.name}
-      </span>
+        </span>
+      )}
+      <span className={cn("label-mono shrink-0", compact ? "w-6 text-[11px]" : "w-7", track.kind === "audio" ? "text-success" : track.kind === "overlay" ? "text-warning" : "text-paper")}>{label}</span>
+      {!compact && (
+        <span className="min-w-0 flex-1 truncate text-[12px] text-paper-dim" title={track.name}>
+          {track.name}
+        </span>
+      )}
       {visual ? (
-        <IconButton label={track.hidden ? "Show track" : "Hide track"} active={track.hidden} onClick={() => st.toggleTrack(track.id, "hidden")} className="size-7">
+        <IconButton label={track.hidden ? "Show track" : "Hide track"} active={track.hidden} onClick={() => st.toggleTrack(track.id, "hidden")} className={cn("sm:size-7", compact ? "ml-auto size-7" : "size-7")}>
           {track.hidden ? <EyeOff aria-hidden className="size-3.5" /> : <Eye aria-hidden className="size-3.5" />}
         </IconButton>
       ) : (
-        <IconButton label={track.muted ? "Unmute track" : "Mute track"} active={track.muted} onClick={() => st.toggleTrack(track.id, "muted")} className="size-7">
+        <IconButton label={track.muted ? "Unmute track" : "Mute track"} active={track.muted} onClick={() => st.toggleTrack(track.id, "muted")} className={cn("sm:size-7", compact ? "ml-auto size-7" : "size-7")}>
           {track.muted ? <VolumeX aria-hidden className="size-3.5" /> : <Volume2 aria-hidden className="size-3.5" />}
         </IconButton>
       )}
-      <IconButton label={track.locked ? "Unlock track" : "Lock track"} active={track.locked} onClick={() => st.toggleTrack(track.id, "locked")} className="size-7">
+      <IconButton label={track.locked ? "Unlock track" : "Lock track"} active={track.locked} onClick={() => st.toggleTrack(track.id, "locked")} className="size-7 sm:size-7">
         {track.locked ? <Lock aria-hidden className="size-3.5" /> : <LockOpen aria-hidden className="size-3.5" />}
       </IconButton>
     </div>
@@ -895,16 +968,16 @@ const TOOLS: { id: Tool; label: string; key: string; hint: string }[] = [
   { id: "rate", label: "Rate stretch", key: "R", hint: "change speed by dragging an edge" },
 ];
 
-function TimelineToolbar() {
+function TimelineToolbar({ headerW }: { headerW: number }) {
   const { tool, snapping, zoom, hasSel, inPoint, outPoint } = useStudio(useShallow((s) => ({ tool: s.tool, snapping: s.snapping, zoom: s.zoom, hasSel: s.selection.length > 0, inPoint: s.inPoint, outPoint: s.outPoint })));
   const st = getStudio();
   const fit = () => {
     const el = document.querySelector<HTMLElement>("[data-studio-timeline-width]");
-    const w = (el?.clientWidth ?? 900) - HEADER_W - 40;
+    const w = (el?.clientWidth ?? 900) - headerW - 40;
     st.setZoom(w / Math.max(5, TL.projectDuration(st.project)));
   };
   return (
-    <div data-studio-timeline-width className="flex items-center gap-0.5 overflow-x-auto border-b border-line-dark bg-ink-raised px-1.5 py-1" data-lenis-prevent>
+    <div data-studio-timeline-width className="flex items-center gap-0.5 overflow-x-auto no-scrollbar border-b border-line-dark bg-ink-raised px-1.5 py-1" data-lenis-prevent>
       {TOOLS.map((t) => {
         const Icon = TOOL_ICON[t.id];
         return (

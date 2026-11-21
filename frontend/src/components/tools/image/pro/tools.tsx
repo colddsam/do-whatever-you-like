@@ -22,6 +22,8 @@ import {
   Eye,
   Fingerprint,
   Flame,
+  FlipHorizontal,
+  Grid3x3,
   Hand,
   Italic,
   Lasso,
@@ -49,7 +51,7 @@ import {
 import { cn } from "@/lib/utils";
 import { familyFor } from "../fonts";
 import type { GradientKind } from "./paint";
-import type { BrushSettings, SelectMode, ShapeKind, TextMeta, ToolId } from "./types";
+import type { BrushSettings, CropGuide, SelectMode, ShapeKind, SymmetryMode, TextMeta, ToolId } from "./types";
 import { Check2, ColorWell, Floating, insideFloat, NumField, Select } from "./ui";
 
 export type ToolDef = { id: ToolId; label: string; icon: LucideIcon; key?: string; hint: string };
@@ -79,6 +81,7 @@ export const TOOLS: Record<ToolId, ToolDef> = {
   burn: { id: "burn", label: "Burn", icon: Flame, key: "O", hint: "Paint to darken." },
   sponge: { id: "sponge", label: "Sponge", icon: Droplets, key: "O", hint: "Paint to add or remove colour." },
   liquify: { id: "liquify", label: "Liquify (forward warp)", icon: Waves, hint: "Drag to push pixels: slim, reshape, bend." },
+  "mosaic-brush": { id: "mosaic-brush", label: "Mosaic / Censor brush", icon: Grid3x3, key: "R", hint: "Paint pixelated mosaic blocks over faces, plates or sensitive info." },
   text: { id: "text", label: "Text", icon: Type, key: "T", hint: "Click to add text. Click a text layer to edit it." },
   shape: { id: "shape", label: "Shape", icon: Shapes, key: "U", hint: "Drag to draw a shape. Shift keeps it even." },
   pen: { id: "pen", label: "Pen", icon: PenTool, key: "P", hint: "Click for corners, drag for curves. Click the first point to close; Enter or double-click finishes an open path." },
@@ -100,7 +103,7 @@ export const GROUPS: ToolId[][] = [
   ["clone"],
   ["eraser"],
   ["gradient", "bucket"],
-  ["blur-brush", "sharpen-brush", "smudge"],
+  ["blur-brush", "sharpen-brush", "smudge", "mosaic-brush"],
   ["dodge", "burn", "sponge"],
   ["liquify"],
   ["text"],
@@ -134,6 +137,7 @@ export function Toolbar({
   const [last, setLast] = useState<Record<number, ToolId>>({});
   const [fly, setFly] = useState<{ gi: number; el: HTMLElement } | null>(null);
   const press = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressed = useRef(false);
   const ref = useRef<HTMLDivElement>(null);
   // Each slot remembers the last tool used from it (however it was picked).
   const [seen, setSeen] = useState(tool);
@@ -154,7 +158,8 @@ export function Toolbar({
       role="toolbar"
       aria-label="Tools"
       aria-orientation={horizontal ? "horizontal" : "vertical"}
-      className={cn("flex gap-0.5", horizontal ? "items-center overflow-x-auto px-1.5 py-1" : "flex-col items-center px-1 py-1.5")}
+      className={cn("no-scrollbar flex gap-0.5", horizontal ? "items-center overflow-x-auto px-1.5 py-1" : "flex-col items-center px-1 py-1.5")}
+      data-lenis-prevent
     >
       {GROUPS.map((g, gi) => {
         const shown = g.includes(tool) ? tool : (last[gi] ?? g[0]);
@@ -167,21 +172,38 @@ export function Toolbar({
               type="button"
               aria-label={def.label}
               aria-pressed={on}
-              title={`${def.label}${def.key ? ` (${def.key})` : ""}${g.length > 1 ? " — hold or right-click for more" : ""}`}
-              onClick={() => onTool(shown)}
+              title={`${def.label}${def.key ? ` (${def.key})` : ""}${g.length > 1 ? " — tap again, hold or right-click for more" : ""}`}
+              onClick={(e) => {
+                if (longPressed.current) {
+                  longPressed.current = false;
+                  return;
+                }
+                if (on && g.length > 1) {
+                  const el = e.currentTarget;
+                  setFly((cur) => (cur?.gi === gi ? null : { gi, el }));
+                } else {
+                  setFly(null);
+                  onTool(shown);
+                }
+              }}
               onContextMenu={(e) => {
                 if (g.length < 2) return;
                 e.preventDefault();
                 setFly({ gi, el: e.currentTarget });
               }}
               onPointerDown={(e) => {
+                longPressed.current = false;
                 if (g.length < 2) return;
                 const el = e.currentTarget;
-                press.current = setTimeout(() => setFly({ gi, el }), 450);
+                press.current = setTimeout(() => {
+                  longPressed.current = true;
+                  setFly({ gi, el });
+                }, 400);
               }}
               onPointerUp={() => press.current && clearTimeout(press.current)}
+              onPointerCancel={() => press.current && clearTimeout(press.current)}
               onPointerLeave={() => press.current && clearTimeout(press.current)}
-              className={cn("relative inline-flex size-9 items-center justify-center rounded-sm transition-colors", on ? "bg-ink text-paper" : "text-ink-2 hover:bg-paper-2 hover:text-ink")}
+              className={cn("relative inline-flex size-10 items-center justify-center rounded-sm transition-colors md:size-9", on ? "bg-ink text-paper" : "text-ink-2 hover:bg-paper-2 hover:text-ink")}
             >
               <Icon aria-hidden className="size-[18px]" strokeWidth={1.75} />
               {g.length > 1 && <span aria-hidden className={cn("absolute bottom-0.5 right-0.5 size-0 border-l-[4px] border-t-[4px] border-l-transparent", on ? "border-t-paper/70" : "border-t-ink-3")} style={{ transform: "rotate(-90deg)" }} />}
@@ -251,6 +273,7 @@ export type ToolOpts = {
   gradPreset: GradPreset;
   gradReverse: boolean;
   cropRatio: number; // 0 free, -1 the picture's own
+  cropGuide: CropGuide;
   autoSelect: boolean;
   shape: ShapeKind;
   shapeFill: string | null;
@@ -291,6 +314,7 @@ export const DEFAULT_OPTS: ToolOpts = {
   gradPreset: "fg-bg",
   gradReverse: false,
   cropRatio: 0,
+  cropGuide: "thirds",
   autoSelect: false,
   shape: "rect",
   shapeFill: "#eb4a10",
@@ -304,7 +328,7 @@ export const DEFAULT_OPTS: ToolOpts = {
   text: { font: FONTS[0].family, size: 96, weight: 700, italic: false, color: "#15140f", align: "left", lineHeight: 1.2, letterSpacing: 0, stroke: null, background: null },
 };
 
-export const DEFAULT_BRUSH: BrushSettings = { size: 40, hardness: 70, opacity: 100, flow: 100, spacing: 12, strength: 50, sampleAll: false, spongeMode: "desaturate", range: "midtones" };
+export const DEFAULT_BRUSH: BrushSettings = { size: 40, hardness: 70, opacity: 100, flow: 100, spacing: 12, strength: 50, sampleAll: false, spongeMode: "desaturate", range: "midtones", symmetry: "off", mosaicSize: 16 };
 
 const Sep = () => <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-line" />;
 
@@ -334,6 +358,7 @@ export function OptionsBar({
   setOpts,
   actions,
   textTarget,
+  fonts = FONTS,
 }: {
   tool: ToolId;
   brush: BrushSettings;
@@ -345,6 +370,9 @@ export function OptionsBar({
     applyCrop: () => void;
     cancelCrop: () => void;
     cropping: boolean;
+    cropAngle: number;
+    setCropAngle: (deg: number) => void;
+    applyStraighten: () => void;
     transform: () => void;
     align: (how: "left" | "hcenter" | "right" | "top" | "vcenter" | "bottom") => void;
     fit: () => void;
@@ -358,13 +386,14 @@ export function OptionsBar({
     nodeActions: React.ReactNode;
   };
   textTarget: TextMeta | null;
+  fonts?: { label: string; family: string }[];
 }) {
   const def = TOOLS[tool];
   const Icon = def.icon;
-  const brushish = ["brush", "pencil", "eraser", "clone", "heal", "spot-heal", "red-eye", "smudge", "blur-brush", "sharpen-brush", "dodge", "burn", "sponge", "liquify"].includes(tool);
+  const brushish = ["brush", "pencil", "eraser", "clone", "heal", "spot-heal", "red-eye", "smudge", "blur-brush", "sharpen-brush", "dodge", "burn", "sponge", "liquify", "mosaic-brush"].includes(tool);
   const t = textTarget ?? { ...opts.text, text: "" };
   return (
-    <div className="flex h-11 items-center gap-2 overflow-x-auto px-2.5" data-lenis-prevent>
+    <div className="no-scrollbar flex h-11 items-center gap-2 overflow-x-auto px-2.5" data-lenis-prevent>
       <span className="inline-flex shrink-0 items-center gap-1.5 text-[12px] font-medium text-ink">
         <Icon aria-hidden className="size-4" />
         <span className="hidden xl:inline">{def.label}</span>
@@ -377,11 +406,29 @@ export function OptionsBar({
           {tool !== "pencil" && tool !== "red-eye" && tool !== "spot-heal" && <NumField label="Hardness" value={brush.hardness} min={0} max={100} onChange={(hardness) => setBrush({ hardness })} unit="%" width="w-14" />}
         </>
       )}
-      {["brush", "pencil", "eraser", "clone", "heal"].includes(tool) && (
+      {["brush", "pencil", "eraser", "clone", "heal", "mosaic-brush"].includes(tool) && (
         <>
           <NumField label="Opacity" value={brush.opacity} min={1} max={100} onChange={(opacity) => setBrush({ opacity })} unit="%" width="w-14" />
-          <NumField label="Flow" value={brush.flow} min={1} max={100} onChange={(flow) => setBrush({ flow })} unit="%" width="w-14" />
+          {tool !== "mosaic-brush" && <NumField label="Flow" value={brush.flow} min={1} max={100} onChange={(flow) => setBrush({ flow })} unit="%" width="w-14" />}
         </>
+      )}
+      {tool === "mosaic-brush" && (
+        <NumField label="Block" value={brush.mosaicSize} min={4} max={80} onChange={(mosaicSize) => setBrush({ mosaicSize })} unit="px" width="w-14" />
+      )}
+      {(tool === "brush" || tool === "pencil" || tool === "eraser") && (
+        <Select
+          label="Symmetry"
+          value={brush.symmetry}
+          onChange={(symmetry) => setBrush({ symmetry: symmetry as SymmetryMode })}
+          options={[
+            { value: "off", label: "Off" },
+            { value: "vertical", label: "Vertical mirror" },
+            { value: "horizontal", label: "Horizontal mirror" },
+            { value: "quad", label: "4-way quad" },
+            { value: "radial6", label: "Radial ×6" },
+            { value: "radial8", label: "Radial ×8" },
+          ]}
+        />
       )}
       {["smudge", "blur-brush", "sharpen-brush", "dodge", "burn", "sponge", "liquify"].includes(tool) && (
         <NumField label={tool === "dodge" || tool === "burn" ? "Exposure" : "Strength"} value={brush.strength} min={1} max={100} onChange={(strength) => setBrush({ strength })} unit="%" width="w-14" />
@@ -483,6 +530,23 @@ export function OptionsBar({
               { value: String(9 / 16), label: "9:16 story" },
             ]}
           />
+          <Select
+            label="Guides"
+            value={opts.cropGuide}
+            onChange={(v) => setOpts({ cropGuide: v as CropGuide })}
+            options={[
+              { value: "thirds", label: "Rule of thirds" },
+              { value: "grid", label: "3×3 / Grid" },
+              { value: "golden", label: "Golden ratio" },
+              { value: "diagonal", label: "Diagonals" },
+            ]}
+          />
+          <NumField label="Straighten" value={actions.cropAngle} min={-45} max={45} step={0.5} onChange={actions.setCropAngle} unit="°" width="w-16" />
+          {actions.cropAngle !== 0 && (
+            <button type="button" onClick={actions.applyStraighten} className="inline-flex h-7 shrink-0 items-center gap-1 rounded-sm border border-line px-2.5 text-[12px] text-ink hover:border-ink">
+              <FlipHorizontal aria-hidden className="size-3.5" /> Apply angle
+            </button>
+          )}
           {actions.cropping && (
             <>
               <button type="button" onClick={actions.applyCrop} className="inline-flex h-7 shrink-0 items-center gap-1 rounded-sm bg-ink px-2.5 text-[12px] text-paper">
@@ -521,7 +585,7 @@ export function OptionsBar({
       )}
       {tool === "text" && (
         <>
-          <Select label="Font" value={t.font} onChange={(font) => actions.setText({ font })} options={FONTS.map((f) => ({ value: f.family, label: f.label }))} className="max-w-40" />
+          <Select label="Font" value={t.font} onChange={(font) => actions.setText({ font })} options={fonts.map((f) => ({ value: f.family, label: f.label }))} className="max-w-40" />
           <NumField label="Size" value={Math.round(t.size)} min={4} max={2000} onChange={(size) => actions.setText({ size })} unit="px" width="w-16" />
           <button type="button" aria-label="Bold" aria-pressed={t.weight === 700} onClick={() => actions.setText({ weight: t.weight === 700 ? 400 : 700 })} className={cn("inline-flex size-7 shrink-0 items-center justify-center rounded-sm", t.weight === 700 ? "bg-ink text-paper" : "text-ink-2 hover:bg-paper-2")}>
             <Bold aria-hidden className="size-3.5" />

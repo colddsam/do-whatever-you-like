@@ -9,6 +9,7 @@ export function Container({
   children,
   ruled = true,
   dark = false,
+  wide = false,
 }: {
   className?: string;
   children: React.ReactNode;
@@ -16,11 +17,16 @@ export function Container({
   ruled?: boolean;
   /** Use the dark-band rule colour. */
   dark?: boolean;
+  /** Expand container bounds generously on large/ultrawide screens for studio workspaces. */
+  wide?: boolean;
 }) {
   return (
     <div
       className={cn(
-        "mx-auto w-full max-w-[1200px] px-5 md:px-8",
+        "mx-auto w-full",
+        wide
+          ? "max-w-[min(1760px,100%)] 2xl:max-w-[min(2240px,100%)] px-3 sm:px-5 md:px-6 xl:px-8"
+          : "max-w-[1200px] px-5 md:px-8",
         ruled && "lg:border-x",
         ruled && (dark ? "lg:border-line-dark" : "lg:border-line"),
         className,

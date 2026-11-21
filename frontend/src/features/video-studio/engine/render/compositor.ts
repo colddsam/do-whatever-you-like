@@ -79,7 +79,7 @@ const TRANSITION_ID: Record<TransitionType, number> = {
 const DIR = { left: [-1, 0], right: [1, 0], up: [0, 1], down: [0, -1] } as const;
 
 type Tex = { tex: WebGLTexture; version: string | number | null; w: number; h: number; used: number; mip: boolean };
-type ScratchName = "layerA" | "layerB" | "layerT" | "tmp" | "glow" | "back" | "matte";
+type ScratchName = "layerA" | "layerB" | "layerT" | "tmp" | "glow" | "back" | "matte" | "compare";
 
 function rgb(hex: string): [number, number, number] {
   const h = hex.replace("#", "");
@@ -220,14 +220,11 @@ export class WebGLCompositor {
     gl.clear(gl.COLOR_BUFFER_BIT);
   }
 
-  /** Draws the frame. `t` is timeline time (noise, glitches and leaks are keyed to it, so exports match previews). */
-  render(p: Project, t: number, scene: SceneLayer[], src: SourceProvider) {
+  private renderSceneToAccum(p: Project, t: number, scene: SceneLayer[], src: SourceProvider) {
     const gl = this.gl;
-    if (this.lost || gl.isContextLost() || !this.accum.length) return;
-    this.frameNo++;
     const scale = this.width / p.settings.width;
-    gl.bindVertexArray(this.vao);
     const [r, g, b] = rgb(p.settings.background);
+    this.cur = 0;
     this.bind(this.accum[this.cur]);
     gl.disable(gl.BLEND);
     gl.clearColor(r, g, b, 1);
@@ -236,9 +233,43 @@ export class WebGLCompositor {
       if (layer.kind === "clip") this.drawClip(p, layer.d, src, scale, t);
       else this.drawTransition(p, layer, src, scale, t);
     }
-    this.bind(null);
-    gl.disable(gl.BLEND);
-    this.copy(this.accum[this.cur].tex, 1);
+  }
+
+  /** Draws the frame. `t` is timeline time (noise, glitches and leaks are keyed to it, so exports match previews). */
+  render(p: Project, t: number, scene: SceneLayer[], src: SourceProvider, compare?: { x: number; rawScene: SceneLayer[] }) {
+    const gl = this.gl;
+    if (this.lost || gl.isContextLost() || !this.accum.length) return;
+    this.frameNo++;
+    gl.bindVertexArray(this.vao);
+    if (compare) {
+      this.renderSceneToAccum(p, t, compare.rawScene, src);
+      const cmp = this.scratch("compare");
+      this.bind(cmp);
+      gl.disable(gl.BLEND);
+      this.copy(this.accum[this.cur].tex, 1);
+      this.renderSceneToAccum(p, t, scene, src);
+      this.bind(null);
+      gl.disable(gl.BLEND);
+      const splitPx = Math.max(0, Math.min(this.width, Math.round(compare.x * this.width)));
+      gl.enable(gl.SCISSOR_TEST);
+      try {
+        if (splitPx > 0) {
+          gl.scissor(0, 0, splitPx, this.height);
+          this.copy(cmp.tex, 1);
+        }
+        if (splitPx < this.width) {
+          gl.scissor(splitPx, 0, this.width - splitPx, this.height);
+          this.copy(this.accum[this.cur].tex, 1);
+        }
+      } finally {
+        gl.disable(gl.SCISSOR_TEST);
+      }
+    } else {
+      this.renderSceneToAccum(p, t, scene, src);
+      this.bind(null);
+      gl.disable(gl.BLEND);
+      this.copy(this.accum[this.cur].tex, 1);
+    }
     gl.bindVertexArray(null);
     this.gc();
   }

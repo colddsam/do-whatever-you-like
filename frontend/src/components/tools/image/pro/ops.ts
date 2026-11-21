@@ -13,6 +13,7 @@ export type Param = When &
     | { type: "toggle"; key: string; label: string; def: boolean }
     | { type: "curve"; key: string; label: string }
     | { type: "levels"; key: string; label: string }
+    | { type: "lut"; key: string; label: string; def: string }
   );
 
 export type OpContext = {

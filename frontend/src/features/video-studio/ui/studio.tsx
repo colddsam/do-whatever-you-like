@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Workbench } from "@/components/tools/workbench";
 import { clamp } from "../lib/time";
@@ -17,16 +18,21 @@ import { LEFT_TABS, LeftPanel, LeftPanelBody } from "./left-panel";
 import { Preview } from "./preview";
 import { Timeline } from "./timeline";
 
-const WIDE = "(min-width: 1024px)";
-function useWide() {
+type DeviceTier = "phone" | "tablet" | "desktop";
+function getTier(): DeviceTier {
+  if (typeof window === "undefined") return "desktop";
+  if (window.innerWidth >= 1200) return "desktop";
+  if (window.innerWidth >= 768) return "tablet";
+  return "phone";
+}
+function useDeviceTier(): DeviceTier {
   return useSyncExternalStore(
     (fn) => {
-      const m = window.matchMedia(WIDE);
-      m.addEventListener("change", fn);
-      return () => m.removeEventListener("change", fn);
+      window.addEventListener("resize", fn);
+      return () => window.removeEventListener("resize", fn);
     },
-    () => window.matchMedia(WIDE).matches,
-    () => true,
+    getTier,
+    () => "desktop",
   );
 }
 
@@ -43,15 +49,21 @@ type MobileTab = LeftTab | "inspector";
 
 function Editor({ fullscreen, setFullscreen }: { fullscreen: boolean; setFullscreen: (f: boolean | ((x: boolean) => boolean)) => void }) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const wide = useWide();
+  const tier = useDeviceTier();
   const ready = useStudio((s) => s.ready);
   const hasClips = useStudio((s) => Object.keys(s.project.clips).length > 0);
   const [exportOpen, setExportOpen] = useState(false);
   const [help, setHelp] = useState(false);
   const [exported, setExported] = useState(false);
-  const [timelineH, setTimelineH] = useState(() => readNumber("studio:timeline-h", 280));
-  const [mobileTab, setMobileTab] = useState<MobileTab | null>("media");
-  const resize = useRef<{ y: number; h: number } | null>(null);
+  const [timelineH, setTimelineH] = useState(() => readNumber("studio:timeline-h", 260));
+  const [timelineCollapsed, setTimelineCollapsed] = useState(false);
+  const [leftW, setLeftW] = useState(() => readNumber("studio:left-w", 288));
+  const [rightW, setRightW] = useState(() => readNumber("studio:right-w", 320));
+  const [leftOpen, setLeftOpen] = useState(true);
+  const [rightOpen, setRightOpen] = useState(true);
+  const [tabletTab, setTabletTab] = useState<"library" | "inspector" | null>("library");
+  const [mobileTab, setMobileTab] = useState<MobileTab | null>(null);
+  const resize = useRef<{ kind: "tl" | "left" | "right"; start: number; val: number } | null>(null);
 
   // Going in or out of full screen moves the editor in the DOM, which drops keyboard focus to the
   // page: take it back so shortcuts keep working without a click.
@@ -65,10 +77,12 @@ function Editor({ fullscreen, setFullscreen }: { fullscreen: boolean; setFullscr
   useEffect(() => {
     try {
       localStorage.setItem("studio:timeline-h", String(Math.round(timelineH)));
+      localStorage.setItem("studio:left-w", String(Math.round(leftW)));
+      localStorage.setItem("studio:right-w", String(Math.round(rightW)));
     } catch {
       /* private mode: fine */
     }
-  }, [timelineH]);
+  }, [timelineH, leftW, rightW]);
 
   const fitTimeline = () => {
     const st = getStudio();
@@ -88,6 +102,16 @@ function Editor({ fullscreen, setFullscreen }: { fullscreen: boolean; setFullscr
       e.stopPropagation();
     };
     if (mod) {
+      if (e.altKey && lower === "c") {
+        take();
+        st.copyAttributes();
+        return;
+      }
+      if (e.altKey && lower === "v") {
+        take();
+        st.pasteAttributes();
+        return;
+      }
       const actions: Record<string, () => void> = {
         z: () => (e.shiftKey ? st.redo() : st.undo()),
         y: st.redo,
@@ -175,6 +199,7 @@ function Editor({ fullscreen, setFullscreen }: { fullscreen: boolean; setFullscr
     }
     if (e.shiftKey) {
       const shifted: Record<string, () => void> = {
+        c: () => st.set({ compare: !st.compare }),
         s: () => {
           st.set({ snapping: !st.snapping });
           st.notify(`Snapping ${st.snapping ? "off" : "on"}.`, "info");
@@ -241,27 +266,113 @@ function Editor({ fullscreen, setFullscreen }: { fullscreen: boolean; setFullscr
         onPointerDownCapture={(e) => {
           if (!(e.target as HTMLElement).closest("input, textarea, select, [contenteditable='true']")) rootRef.current?.focus({ preventScroll: true });
         }}
-        className={cn("relative flex flex-col bg-ink text-paper outline-none", fullscreen ? "min-h-0 flex-1" : "h-[calc(100dvh-76px)] min-h-[600px] lg:h-[min(90vh,980px)] lg:min-h-[680px]")}
+        className={cn(
+          "relative flex flex-col bg-ink text-paper outline-none",
+          fullscreen
+            ? "min-h-0 flex-1 safe-bottom"
+            : "h-[calc(100dvh-68px)] min-h-[520px] md:h-[min(86dvh,1040px)] lg:h-[min(88dvh,1180px)] 2xl:h-[min(90dvh,1340px)]",
+        )}
       >
-        <TopBar fullscreen={fullscreen} onFullscreen={() => setFullscreen((f) => !f)} onExport={() => setExportOpen(true)} onHelp={() => setHelp(true)} />
-        {wide ? (
+        <TopBar
+          fullscreen={fullscreen}
+          onFullscreen={() => setFullscreen((f) => !f)}
+          onExport={() => setExportOpen(true)}
+          onHelp={() => setHelp(true)}
+          tier={tier}
+          leftOpen={leftOpen}
+          rightOpen={tier === "desktop" ? rightOpen : tabletTab !== null}
+          onToggleLeft={() => setLeftOpen((o) => !o)}
+          onToggleRight={() => (tier === "desktop" ? setRightOpen((o) => !o) : setTabletTab((t) => (t ? null : "inspector")))}
+        />
+        {tier === "desktop" && (
           <div className="flex min-h-0 flex-1">
-            <div className="w-[284px] shrink-0 border-r border-line-dark">
-              <LeftPanel />
-            </div>
+            {leftOpen && (
+              <>
+                <div className="shrink-0 border-r border-line-dark" style={{ width: leftW }}>
+                  <LeftPanel />
+                </div>
+                <div
+                  role="separator"
+                  aria-orientation="vertical"
+                  aria-label="Resize library panel"
+                  className="w-1 shrink-0 cursor-col-resize touch-none bg-transparent transition-colors hover:bg-accent/60"
+                  onPointerDown={(e) => {
+                    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+                    resize.current = { kind: "left", start: e.clientX, val: leftW };
+                  }}
+                  onPointerMove={(e) => {
+                    const r = resize.current;
+                    if (!r || r.kind !== "left") return;
+                    setLeftW(clamp(r.val + (e.clientX - r.start), 236, 440));
+                  }}
+                  onPointerUp={() => (resize.current = null)}
+                />
+              </>
+            )}
             <div className="flex min-w-0 flex-1 flex-col">
               <Preview />
             </div>
-            <div className="w-[316px] shrink-0 border-l border-line-dark">
-              <Inspector />
-            </div>
+            {rightOpen && (
+              <>
+                <div
+                  role="separator"
+                  aria-orientation="vertical"
+                  aria-label="Resize inspector panel"
+                  className="w-1 shrink-0 cursor-col-resize touch-none bg-transparent transition-colors hover:bg-accent/60"
+                  onPointerDown={(e) => {
+                    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+                    resize.current = { kind: "right", start: e.clientX, val: rightW };
+                  }}
+                  onPointerMove={(e) => {
+                    const r = resize.current;
+                    if (!r || r.kind !== "right") return;
+                    setRightW(clamp(r.val - (e.clientX - r.start), 270, 480));
+                  }}
+                  onPointerUp={() => (resize.current = null)}
+                />
+                <div className="shrink-0 border-l border-line-dark" style={{ width: rightW }}>
+                  <Inspector />
+                </div>
+              </>
+            )}
           </div>
-        ) : (
-          <div className="flex min-h-0 flex-1 flex-col">
-            <div className="flex min-h-[180px] flex-[1.3] flex-col">
+        )}
+
+        {tier === "tablet" && (
+          <div className="flex min-h-0 flex-1">
+            <div className="flex min-w-0 flex-1 flex-col">
               <Preview />
             </div>
-            <div role="tablist" aria-label="Panels" className="flex shrink-0 overflow-x-auto border-y border-line-dark bg-ink-raised" data-lenis-prevent>
+            {tabletTab !== null && (
+              <div className="flex w-[304px] shrink-0 flex-col border-l border-line-dark bg-ink-raised md:w-[328px]">
+                <div className="flex shrink-0 border-b border-line-dark p-1">
+                  <button
+                    type="button"
+                    onClick={() => setTabletTab("library")}
+                    className={cn("h-8 flex-1 rounded-sm text-[12px] font-medium transition-colors", tabletTab === "library" ? "bg-paper text-ink" : "text-paper-dim hover:text-paper")}
+                  >
+                    Library & FX
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTabletTab("inspector")}
+                    className={cn("h-8 flex-1 rounded-sm text-[12px] font-medium transition-colors", tabletTab === "inspector" ? "bg-paper text-ink" : "text-paper-dim hover:text-paper")}
+                  >
+                    Inspector
+                  </button>
+                </div>
+                <div className="min-h-0 flex-1">{tabletTab === "inspector" ? <Inspector /> : <LeftPanel />}</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {tier === "phone" && (
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="flex min-h-[168px] flex-1 flex-col">
+              <Preview />
+            </div>
+            <div role="tablist" aria-label="Panels" className="flex shrink-0 items-center overflow-x-auto no-scrollbar border-y border-line-dark bg-ink-raised" data-lenis-prevent>
               {[...LEFT_TABS, { id: "inspector" as const, label: "Edit" }].map((t) => (
                 <button
                   key={t.id}
@@ -278,38 +389,52 @@ function Editor({ fullscreen, setFullscreen }: { fullscreen: boolean; setFullscr
                   {mobileTab === t.id && <span className="absolute inset-x-3 bottom-0 h-0.5 bg-accent" />}
                 </button>
               ))}
+              <button
+                type="button"
+                aria-label={timelineCollapsed ? "Expand timeline" : "Collapse timeline"}
+                onClick={() => setTimelineCollapsed((c) => !c)}
+                className="inline-flex h-10 shrink-0 items-center gap-1 border-l border-line-dark px-2.5 text-[12px] text-paper-dim hover:text-paper"
+              >
+                {timelineCollapsed ? <ChevronUp aria-hidden className="size-3.5" /> : <ChevronDown aria-hidden className="size-3.5" />}
+                TL
+              </button>
             </div>
-            {mobileTab && <div className="min-h-[170px] flex-1 bg-ink-raised">{mobileTab === "inspector" ? <Inspector /> : <LeftPanelBody tab={mobileTab} />}</div>}
+            {mobileTab && <div className="h-[min(42dvh,300px)] min-h-[170px] shrink-0 bg-ink-raised">{mobileTab === "inspector" ? <Inspector /> : <LeftPanelBody tab={mobileTab} />}</div>}
           </div>
         )}
-        <div
-          role="separator"
-          aria-orientation="horizontal"
-          aria-label="Resize the timeline"
-          tabIndex={0}
-          className="group relative z-10 h-1.5 shrink-0 cursor-row-resize touch-none bg-line-dark hover:bg-accent/60 focus-visible:bg-accent"
-          onPointerDown={(e) => {
-            (e.target as HTMLElement).setPointerCapture(e.pointerId);
-            resize.current = { y: e.clientY, h: timelineH };
-          }}
-          onPointerMove={(e) => {
-            const r = resize.current;
-            if (!r) return;
-            const max = (rootRef.current?.clientHeight ?? 800) * 0.7;
-            setTimelineH(clamp(r.h - (e.clientY - r.y), 140, max));
-          }}
-          onPointerUp={() => (resize.current = null)}
-          onKeyDown={(e) => {
-            if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-              e.preventDefault();
-              e.stopPropagation();
-              setTimelineH((h) => clamp(h + (e.key === "ArrowUp" ? 24 : -24), 140, (rootRef.current?.clientHeight ?? 800) * 0.7));
-            }
-          }}
-        />
-        <div className="shrink-0" style={{ height: wide ? timelineH : Math.min(timelineH, 240) }}>
-          <Timeline />
-        </div>
+
+        {!(tier === "phone" && timelineCollapsed) && (
+          <>
+            <div
+              role="separator"
+              aria-orientation="horizontal"
+              aria-label="Resize the timeline"
+              tabIndex={0}
+              className="group relative z-10 h-1.5 shrink-0 cursor-row-resize touch-none bg-line-dark hover:bg-accent/60 focus-visible:bg-accent max-md:h-2"
+              onPointerDown={(e) => {
+                (e.target as HTMLElement).setPointerCapture(e.pointerId);
+                resize.current = { kind: "tl", start: e.clientY, val: timelineH };
+              }}
+              onPointerMove={(e) => {
+                const r = resize.current;
+                if (!r || r.kind !== "tl") return;
+                const max = (rootRef.current?.clientHeight ?? 800) * 0.7;
+                setTimelineH(clamp(r.val - (e.clientY - r.start), 132, max));
+              }}
+              onPointerUp={() => (resize.current = null)}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setTimelineH((h) => clamp(h + (e.key === "ArrowUp" ? 24 : -24), 132, (rootRef.current?.clientHeight ?? 800) * 0.7));
+                }
+              }}
+            />
+            <div className="shrink-0" style={{ height: tier === "phone" ? Math.min(timelineH, mobileTab ? 160 : 220) : timelineH }}>
+              <Timeline />
+            </div>
+          </>
+        )}
         <Toasts />
         {exportOpen && <ExportDialog onClose={() => setExportOpen(false)} onDone={() => setExported(true)} />}
         {help && <Shortcuts onClose={() => setHelp(false)} />}

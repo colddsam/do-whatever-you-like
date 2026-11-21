@@ -97,7 +97,7 @@ import {
   ZoomIn,
   type LucideIcon,
 } from "lucide-react";
-import type { EffectCategory, EffectType, LookId, ShapeType, TextAnimation, TransitionType, VoiceEffect } from "../types";
+import type { ClipMotionPresetId, EffectCategory, EffectType, LookId, ShapeType, TextAnimation, TransitionType, VoiceEffect } from "../types";
 import type { SfxId } from "../engine/sfx";
 import type { Tool } from "../store/studio-store";
 
@@ -339,3 +339,18 @@ export const TOOL_ICON: Record<Tool, LucideIcon> = {
 };
 
 export const MISC_ICON = { shapes: Shapes, reverse: Rewind, magic: Wand2, ghost: Ghost };
+
+export const MOTION_ICON: Record<ClipMotionPresetId, LucideIcon> = {
+  kenBurnsIn: ZoomIn,
+  kenBurnsOut: Target,
+  panLeft: ArrowRightLeft,
+  panRight: ArrowRight,
+  zoomPunch: Maximize2,
+  slideLeft: ArrowRightLeft,
+  slideBottom: ChevronsUp,
+  spinIn: RotateCw,
+  floatLoop: Waves,
+  pulseLoop: HeartPulse,
+  impactShake: Vibrate,
+  none: Minus,
+};

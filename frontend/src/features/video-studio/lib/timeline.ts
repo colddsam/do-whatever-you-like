@@ -1,5 +1,5 @@
 import { ASPECTS, BASE_TEXT_STYLE, MIN_CLIP, STILL_DURATION, TEXT_DURATION, type TextPreset } from "../constants";
-import type { AspectId, Clip, ClipKind, FitMode, LayoutId, MediaAsset, Project, Track, TrackKind, TransformProp } from "../types";
+import type { AspectId, Clip, ClipKind, ClipMotionPresetId, Ease, FitMode, Keyframe, LayoutId, MediaAsset, Project, Track, TrackKind, TransformProp } from "../types";
 import { TRANSFORM_PROPS } from "../types";
 import { anim, scaleAnim, shiftAnim, splitAnim } from "./keyframes";
 import { cropRamp, localForSrc, rampFromShape, shapeAverage, srcOffset, srcSpan } from "./speed";
@@ -959,6 +959,106 @@ export function applyLayout(p: Project, ids: string[], layout: Layout): Project 
   return next;
 }
 
+const kfs = (...pts: [number, number, Ease?][]) => ({
+  v: pts[0]?.[1] ?? 0,
+  k: pts.map(([t, v, ease = "easeInOut"]): Keyframe => ({ id: uid("k"), t: rt(t), v, ease })),
+});
+
+/** Applies a 1-click keyframe motion preset to any visual clip (`none` clears keyframes). */
+export function applyClipMotion(p: Project, clipId: string, presetId: ClipMotionPresetId): Project {
+  const c = p.clips[clipId];
+  if (!c || c.kind === "audio") return p;
+  const W = p.settings.width;
+  const H = p.settings.height;
+  const cx = W / 2;
+  const cy = H / 2;
+  const D = Math.max(0.25, c.duration);
+  const base = baseTransform(p, 0.5);
+  let tr: Clip["transform"];
+  switch (presetId) {
+    case "kenBurnsIn":
+      tr = { ...base, scaleX: kfs([0, 1], [D, 1.18, "easeInOut"]), scaleY: kfs([0, 1], [D, 1.18, "easeInOut"]) };
+      break;
+    case "kenBurnsOut":
+      tr = { ...base, scaleX: kfs([0, 1.18], [D, 1, "easeInOut"]), scaleY: kfs([0, 1.18], [D, 1, "easeInOut"]) };
+      break;
+    case "panLeft": {
+      const dx = W * 0.055;
+      tr = { ...base, x: kfs([0, cx + dx], [D, cx - dx, "linear"]), scaleX: anim(1.12), scaleY: anim(1.12) };
+      break;
+    }
+    case "panRight": {
+      const dx = W * 0.055;
+      tr = { ...base, x: kfs([0, cx - dx], [D, cx + dx, "linear"]), scaleX: anim(1.12), scaleY: anim(1.12) };
+      break;
+    }
+    case "zoomPunch": {
+      const d = Math.min(0.45, D * 0.6);
+      tr = { ...base, scaleX: kfs([0, 1.38, "easeOut"], [d, 1, "easeOut"]), scaleY: kfs([0, 1.38, "easeOut"], [d, 1, "easeOut"]) };
+      break;
+    }
+    case "slideLeft": {
+      const d = Math.min(0.55, D * 0.55);
+      tr = { ...base, x: kfs([0, W * 1.45, "easeOut"], [d, cx, "easeOut"]), opacity: kfs([0, 0, "easeOut"], [d * 0.4, 1, "linear"]) };
+      break;
+    }
+    case "slideBottom": {
+      const d = Math.min(0.55, D * 0.55);
+      tr = { ...base, y: kfs([0, H * 1.45, "easeOut"], [d, cy, "easeOut"]), opacity: kfs([0, 0, "easeOut"], [d * 0.4, 1, "linear"]) };
+      break;
+    }
+    case "spinIn": {
+      const d = Math.min(0.65, D * 0.6);
+      tr = {
+        ...base,
+        rotation: kfs([0, -180, "back"], [d, 0, "easeOut"]),
+        scaleX: kfs([0, 0.3, "back"], [d, 1, "easeOut"]),
+        scaleY: kfs([0, 0.3, "back"], [d, 1, "easeOut"]),
+        opacity: kfs([0, 0, "easeOut"], [d * 0.35, 1, "linear"]),
+      };
+      break;
+    }
+    case "floatLoop": {
+      const dy = H * 0.018;
+      tr = {
+        ...base,
+        y: kfs([0, cy - dy, "easeInOut"], [D * 0.5, cy + dy, "easeInOut"], [D, cy - dy, "easeInOut"]),
+        rotation: kfs([0, -1.5, "easeInOut"], [D * 0.5, 1.5, "easeInOut"], [D, -1.5, "easeInOut"]),
+      };
+      break;
+    }
+    case "pulseLoop":
+      tr = {
+        ...base,
+        scaleX: kfs([0, 1, "easeInOut"], [D * 0.5, 1.07, "easeInOut"], [D, 1, "easeInOut"]),
+        scaleY: kfs([0, 1, "easeInOut"], [D * 0.5, 1.07, "easeInOut"], [D, 1, "easeInOut"]),
+      };
+      break;
+    case "impactShake": {
+      const t1 = Math.min(0.06, D * 0.12);
+      const t2 = Math.min(0.12, D * 0.24);
+      const t3 = Math.min(0.18, D * 0.36);
+      const t4 = Math.min(0.26, D * 0.52);
+      const t5 = Math.min(0.36, D * 0.72);
+      const ax = W * 0.016;
+      const ay = H * 0.014;
+      tr = {
+        ...base,
+        x: kfs([0, cx - ax], [t1, cx + ax * 0.9], [t2, cx - ax * 0.65], [t3, cx + ax * 0.4], [t4, cx - ax * 0.2], [t5, cx]),
+        y: kfs([0, cy + ay], [t1, cy - ay * 0.85], [t2, cy + ay * 0.55], [t3, cy - ay * 0.35], [t4, cy + ay * 0.15], [t5, cy]),
+        scaleX: anim(1.04),
+        scaleY: anim(1.04),
+      };
+      break;
+    }
+    case "none":
+    default:
+      tr = base;
+      break;
+  }
+  return updateClip(p, clipId, { transform: tr });
+}
+
 export const TimelineEngine = {
   clipEnd,
   clipsOnTrack,
@@ -997,5 +1097,6 @@ export const TimelineEngine = {
   insertGap,
   moveTrack,
   applyLayout,
+  applyClipMotion,
   applySpeedRamp,
 };

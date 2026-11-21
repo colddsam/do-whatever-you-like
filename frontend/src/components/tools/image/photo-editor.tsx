@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { handOffToProEditor, PRO_EDITOR_HREF } from "@/lib/handoff";
 import { AnimatePresence, motion } from "motion/react";
-import { Check, Download, FlipHorizontal2, FlipVertical2, Plus, RotateCcw, RotateCw, Trash2, Type } from "lucide-react";
+import { Check, Download, Eye, FlipHorizontal2, FlipVertical2, Plus, RotateCcw, RotateCw, Trash2, Type } from "lucide-react";
 import { checkFile, saveBlob } from "@/lib/files";
 import { acceptFor, formatList, IMAGE_INPUTS } from "@/lib/image";
 import { formatBytes } from "@/lib/media";
@@ -19,8 +19,18 @@ import { CHECKER } from "./task";
 
 /* ---------- The edit, as data ---------- */
 
-type Adjust = { brightness: number; contrast: number; saturation: number; warmth: number; fade: number; vignette: number };
-const NEUTRAL: Adjust = { brightness: 0, contrast: 0, saturation: 0, warmth: 0, fade: 0, vignette: 0 };
+type Adjust = {
+  brightness: number;
+  contrast: number;
+  saturation: number;
+  warmth: number;
+  fade: number;
+  vignette: number;
+  highlights: number;
+  shadows: number;
+  sharpness: number;
+};
+const NEUTRAL: Adjust = { brightness: 0, contrast: 0, saturation: 0, warmth: 0, fade: 0, vignette: 0, highlights: 0, shadows: 0, sharpness: 0 };
 
 /** Filters are starting points: each one is just a set of adjustments people can keep tuning. */
 const FILTERS: { value: string; label: string; adjust: Adjust; mono?: boolean; sepia?: boolean }[] = [
@@ -35,7 +45,7 @@ const FILTERS: { value: string; label: string; adjust: Adjust; mono?: boolean; s
   { value: "vintage", label: "Vintage", adjust: { ...NEUTRAL, warmth: 20, fade: 30, saturation: -25, vignette: 35 } },
 ];
 
-type Overlay = { id: string; kind: "text" | "sticker"; text: string; x: number; y: number; size: number; color: string; font: FontKey };
+type Overlay = { id: string; kind: "text" | "sticker"; text: string; x: number; y: number; size: number; color: string; font: string };
 type Frame = { style: "none" | "thin" | "thick" | "polaroid" | "rounded"; color: string };
 type Edit = {
   rotate: 0 | 90 | 180 | 270;
@@ -78,6 +88,8 @@ function applyPixels(g: CanvasRenderingContext2D, w: number, h: number, edit: Ed
   const sat = 1 + a.saturation / 100;
   const warm = a.warmth * 0.4;
   const fade = a.fade / 100;
+  const hiAdj = a.highlights / 100;
+  const shAdj = a.shadows / 100;
   for (let i = 0; i < p.length; i += 4) {
     let r = p[i];
     let gg = p[i + 1];
@@ -89,17 +101,27 @@ function applyPixels(g: CanvasRenderingContext2D, w: number, h: number, edit: Ed
     gg = c * (gg - 128) + 128;
     b = c * (b - 128) + 128;
     const lum = 0.299 * r + 0.587 * gg + 0.114 * b;
+    if (shAdj || hiAdj) {
+      const nl = Math.max(0, Math.min(1, lum / 255));
+      const dSh = shAdj * (1 - nl) * (1 - nl) * 72;
+      const dHi = hiAdj * nl * nl * 72;
+      const delta = dSh + dHi;
+      r += delta;
+      gg += delta;
+      b += delta;
+    }
+    const lum2 = 0.299 * r + 0.587 * gg + 0.114 * b;
     if (f?.mono || f?.sepia) {
-      r = gg = b = lum;
+      r = gg = b = lum2;
       if (f.sepia) {
-        r = lum * 1.07 + 18;
-        gg = lum * 0.95 + 6;
-        b = lum * 0.78 - 8;
+        r = lum2 * 1.07 + 18;
+        gg = lum2 * 0.95 + 6;
+        b = lum2 * 0.78 - 8;
       }
     } else {
-      r = lum + (r - lum) * sat;
-      gg = lum + (gg - lum) * sat;
-      b = lum + (b - lum) * sat;
+      r = lum2 + (r - lum2) * sat;
+      gg = lum2 + (gg - lum2) * sat;
+      b = lum2 + (b - lum2) * sat;
     }
     r += warm;
     b -= warm;
@@ -112,6 +134,22 @@ function applyPixels(g: CanvasRenderingContext2D, w: number, h: number, edit: Ed
     p[i + 1] = gg < 0 ? 0 : gg > 255 ? 255 : gg;
     p[i + 2] = b < 0 ? 0 : b > 255 ? 255 : b;
   }
+  if (a.sharpness > 0) {
+    const k = (a.sharpness / 100) * 1.1;
+    const src = new Uint8ClampedArray(p);
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        const o = (y * w + x) * 4;
+        const up = o - w * 4;
+        const dn = o + w * 4;
+        for (let ch = 0; ch < 3; ch++) {
+          const blur = (src[up + ch] + src[dn + ch] + src[o - 4 + ch] + src[o + 4 + ch]) * 0.25;
+          const v = src[o + ch] + (src[o + ch] - blur) * k;
+          p[o + ch] = v < 0 ? 0 : v > 255 ? 255 : v;
+        }
+      }
+    }
+  }
   g.putImageData(data, 0, 0);
   if (a.vignette) {
     const grad = g.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.35, w / 2, h / 2, Math.hypot(w, h) / 2);
@@ -123,7 +161,7 @@ function applyPixels(g: CanvasRenderingContext2D, w: number, h: number, edit: Ed
 }
 
 /** Draws the edited photo. `maxSide` bounds the picture (not counting the frame). */
-function renderPhoto(canvas: HTMLCanvasElement, img: HTMLImageElement, edit: Edit, maxSide: number, withOverlays: boolean) {
+function renderPhoto(canvas: HTMLCanvasElement, img: HTMLImageElement, edit: Edit, maxSide: number, withOverlays: boolean, customFonts: { value: string; label: string; family: string }[] = []) {
   const turned = edit.rotate % 180 !== 0;
   const srcW = turned ? img.naturalHeight : img.naturalWidth;
   const srcH = turned ? img.naturalWidth : img.naturalHeight;
@@ -151,7 +189,7 @@ function renderPhoto(canvas: HTMLCanvasElement, img: HTMLImageElement, edit: Edi
   g.drawImage(img, -dw / 2, -dh / 2, dw, dh);
   g.restore();
   applyPixels(g, w, h, edit);
-  if (withOverlays) drawOverlays(g, w, h, edit.overlays);
+  if (withOverlays) drawOverlays(g, w, h, edit.overlays, customFonts);
 
   const pads = framePads(edit.frame);
   const pl = Math.round(pads.l * w);
@@ -173,7 +211,13 @@ function renderPhoto(canvas: HTMLCanvasElement, img: HTMLImageElement, edit: Edi
   return { w, h, pads };
 }
 
-function drawOverlays(g: CanvasRenderingContext2D, w: number, h: number, overlays: Overlay[]) {
+function resolveOverlayFont(font: string, text: string, customFonts: { value: string; label: string; family: string }[]) {
+  const custom = customFonts.find((f) => f.value === font);
+  if (custom) return custom.family;
+  return familyFor(font as FontKey, text);
+}
+
+function drawOverlays(g: CanvasRenderingContext2D, w: number, h: number, overlays: Overlay[], customFonts: { value: string; label: string; family: string }[] = []) {
   for (const o of overlays) {
     const px = Math.max(6, o.size * w);
     g.save();
@@ -183,7 +227,7 @@ function drawOverlays(g: CanvasRenderingContext2D, w: number, h: number, overlay
       g.font = `${px}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;
       g.fillText(o.text, o.x * w, o.y * h);
     } else {
-      g.font = `700 ${px}px ${familyFor(o.font, o.text)}`;
+      g.font = `700 ${px}px ${resolveOverlayFont(o.font, o.text, customFonts)}`;
       g.shadowColor = "rgba(0,0,0,0.45)";
       g.shadowBlur = px * 0.12;
       g.shadowOffsetY = px * 0.04;
@@ -207,7 +251,10 @@ export function PhotoEditorTool({ toolId }: { toolId: string }) {
   const [edit, setEdit] = useState<Edit>(FRESH);
   const [tab, setTab] = useState<Tab>("adjust");
   const [selected, setSelected] = useState<string | null>(null);
-  const [format, setFormat] = useState<"jpg" | "png">("jpg");
+  const [format, setFormat] = useState<"jpg" | "png" | "webp">("jpg");
+  const [comparing, setComparing] = useState(false);
+  const [customFonts, setCustomFonts] = useState<{ value: string; label: string; family: string }[]>([]);
+  const [fontError, setFontError] = useState<string | null>(null);
   const [out, setOut] = useState<{ blob: Blob; saved: boolean } | null>(null);
   const [layout, setLayout] = useState<{ w: number; h: number; pads: ReturnType<typeof framePads> } | null>(null);
   // State, not a ref: the canvas mounts after the drop zone animates out, and drawing must wait for it.
@@ -244,31 +291,50 @@ export function PhotoEditorTool({ toolId }: { toolId: string }) {
     let cancelled = false;
     const timer = setTimeout(() => {
       if (cancelled) return;
-      setLayout(renderPhoto(canvas, img, { ...(JSON.parse(lookKey) as Omit<Edit, "overlays">), overlays: [] }, 1000, false));
+      const shownEdit = comparing
+        ? ({ ...FRESH, rotate: edit.rotate, flipH: edit.flipH, flipV: edit.flipV, ratio: edit.ratio, frame: edit.frame, overlays: [] } as Edit)
+        : ({ ...(JSON.parse(lookKey) as Omit<Edit, "overlays">), overlays: [] } as Edit);
+      setLayout(renderPhoto(canvas, img, shownEdit, 1000, false, customFonts));
     }, 30);
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [img, lookKey, canvas]);
+  }, [img, lookKey, canvas, comparing, edit.rotate, edit.flipH, edit.flipV, edit.ratio, edit.frame, customFonts]);
 
   // The real file, at full size, once edits pause: that's what the Download button's size describes.
   useEffect(() => {
     if (!img) return;
     let cancelled = false;
     const timer = setTimeout(async () => {
-      await Promise.all(edit.overlays.filter((o) => o.kind === "text").map((o) => loadFont(familyFor(o.font, o.text), 700)));
+      await Promise.all(edit.overlays.filter((o) => o.kind === "text").map((o) => loadFont(resolveOverlayFont(o.font, o.text, customFonts), 700)));
       if (cancelled) return;
       const full = document.createElement("canvas");
-      renderPhoto(full, img, edit, 4096, true);
-      const type = format === "png" || edit.frame.style === "rounded" ? "image/png" : "image/jpeg";
+      renderPhoto(full, img, edit, 4096, true, customFonts);
+      const type = format === "png" || edit.frame.style === "rounded" ? "image/png" : format === "webp" ? "image/webp" : "image/jpeg";
       full.toBlob((blob) => !cancelled && blob && setOut({ blob, saved: false }), type, 0.92);
     }, 450);
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [img, edit, format]);
+  }, [img, edit, format, customFonts]);
+
+  const uploadCustomFont = async (f: File) => {
+    try {
+      const label = f.name.replace(/\.[^.]+$/, "").trim() || "Custom font";
+      const fam = `PhotoUpload ${label} ${nextId()}`;
+      const face = new FontFace(fam, await f.arrayBuffer());
+      await face.load();
+      document.fonts.add(face);
+      const entry = { value: fam, label, family: `"${fam}", sans-serif` };
+      setCustomFonts((prev) => [...prev, entry]);
+      setFontError(null);
+      if (current?.kind === "text") patch(current.id, { font: fam });
+    } catch {
+      setFontError("Could not load font. Try a TTF, OTF, WOFF or WOFF2 file.");
+    }
+  };
 
   const setAdjust = (k: keyof Adjust, v: number) => setEdit((e) => ({ ...e, adjust: { ...e.adjust, [k]: v } }));
   const addOverlay = (kind: Overlay["kind"], text: string) => {
@@ -368,15 +434,15 @@ export function PhotoEditorTool({ toolId }: { toolId: string }) {
                                   "absolute -translate-x-1/2 -translate-y-1/2 cursor-move touch-none whitespace-pre rounded-[3px] px-0.5 text-center leading-[1.15] outline-none",
                                   selected === o.id ? "ring-1 ring-ink ring-offset-1 ring-offset-surface" : "hover:ring-1 hover:ring-surface/80",
                                 )}
-                                style={{
-                                  left: `${o.x * 100}%`,
-                                  top: `${o.y * 100}%`,
-                                  fontSize: px,
-                                  color: o.color,
-                                  fontFamily: o.kind === "text" ? familyFor(o.font, o.text) : undefined,
-                                  fontWeight: 700,
-                                  textShadow: o.kind === "text" ? `0 ${px * 0.04}px ${px * 0.12}px rgba(0,0,0,0.45)` : undefined,
-                                }}
+                                  style={{
+                                    left: `${o.x * 100}%`,
+                                    top: `${o.y * 100}%`,
+                                    fontSize: px,
+                                    color: o.color,
+                                    fontFamily: o.kind === "text" ? resolveOverlayFont(o.font, o.text, customFonts) : undefined,
+                                    fontWeight: 700,
+                                    textShadow: o.kind === "text" ? `0 ${px * 0.04}px ${px * 0.12}px rgba(0,0,0,0.45)` : undefined,
+                                  }}
                               >
                                 {o.text}
                               </button>
@@ -386,14 +452,24 @@ export function PhotoEditorTool({ toolId }: { toolId: string }) {
                       )}
                     </div>
                   </div>
-                  <p className="label-mono flex items-center justify-between gap-2 text-ink-3">
+                  <p className="label-mono flex flex-wrap items-center justify-between gap-2 text-ink-3">
                     <span className="flex min-w-0 items-center gap-2">
                       <span aria-hidden className="h-px w-6 shrink-0 bg-ink-3" />
                       <span className="truncate">Fig. 01 — {file?.name}</span>
                     </span>
-                    <button type="button" onClick={() => setImg(null)} className="shrink-0 normal-case tracking-normal text-ink-2 underline-offset-4 hover:text-ink hover:underline">
-                      Change photo
-                    </button>
+                    <span className="flex shrink-0 items-center gap-3">
+                      <button
+                        type="button"
+                        aria-pressed={comparing}
+                        onClick={() => setComparing((c) => !c)}
+                        className={cn("inline-flex h-7 items-center gap-1 rounded-sm border px-2 font-sans text-xs normal-case tracking-normal transition-colors", comparing ? "border-ink bg-ink text-paper" : "border-line bg-surface text-ink-2 hover:text-ink")}
+                      >
+                        <Eye aria-hidden className="size-3.5" /> {comparing ? "Original" : "Compare"}
+                      </button>
+                      <button type="button" onClick={() => setImg(null)} className="shrink-0 normal-case tracking-normal text-ink-2 underline-offset-4 hover:text-ink hover:underline">
+                        Change photo
+                      </button>
+                    </span>
                   </p>
                 </div>
 
@@ -430,10 +506,13 @@ export function PhotoEditorTool({ toolId }: { toolId: string }) {
                         [
                           ["brightness", "Brightness", -100, 100],
                           ["contrast", "Contrast", -100, 100],
+                          ["highlights", "Highlights", -100, 100],
+                          ["shadows", "Shadows", -100, 100],
                           ["saturation", "Saturation", -100, 100],
                           ["warmth", "Warmth", -100, 100],
                           ["fade", "Fade", 0, 100],
                           ["vignette", "Vignette", 0, 100],
+                          ["sharpness", "Sharpness", 0, 100],
                         ] as const
                       ).map(([k, label, min, max]) => (
                         <Row key={k} label={label}>
@@ -513,7 +592,28 @@ export function PhotoEditorTool({ toolId }: { toolId: string }) {
                               <TextField value={current.text} onChange={(v) => patch(current.id, { text: v.slice(0, 120) })} label="Text" />
                             </Row>
                             <Row label="Font">
-                              <Chips label="Font" value={current.font} onChange={(v) => patch(current.id, { font: v })} options={FONT_OPTIONS} />
+                              <Chips
+                                label="Font"
+                                value={current.font}
+                                onChange={(v) => patch(current.id, { font: v })}
+                                options={[...FONT_OPTIONS, ...customFonts.map((f) => ({ value: f.value, label: f.label }))]}
+                              />
+                              <div className="mt-2 flex items-center gap-2">
+                                <label className="inline-flex h-8 cursor-pointer items-center rounded-sm border border-line bg-surface px-2.5 text-xs text-ink-2 hover:border-ink-3 hover:text-ink">
+                                  Upload custom font (.ttf/.otf/.woff2)
+                                  <input
+                                    type="file"
+                                    accept=".ttf,.otf,.woff,.woff2"
+                                    className="sr-only"
+                                    onChange={(e) => {
+                                      const f = e.target.files?.[0];
+                                      e.target.value = "";
+                                      if (f) void uploadCustomFont(f);
+                                    }}
+                                  />
+                                </label>
+                                {fontError && <span className="text-xs text-accent">{fontError}</span>}
+                              </div>
                             </Row>
                             <Row label="Size">
                               <Slider label="Text size" value={Math.round(current.size * 100)} min={2} max={30} onChange={(v) => patch(current.id, { size: v / 100 })} format={(v) => `${v}%`} />
@@ -584,6 +684,7 @@ export function PhotoEditorTool({ toolId }: { toolId: string }) {
                       options={[
                         { value: "jpg", label: "JPG", disabled: pngOnly, title: pngOnly ? "Rounded corners need PNG transparency" : undefined },
                         { value: "png", label: "PNG" },
+                        { value: "webp", label: "WebP", disabled: pngOnly, title: pngOnly ? "Rounded corners use PNG transparency" : undefined },
                       ]}
                     />
                     <button type="button" onClick={() => setEdit(FRESH)} className="inline-flex h-9 items-center gap-1.5 rounded-sm px-2 text-sm text-ink-2 underline-offset-4 hover:text-ink hover:underline">

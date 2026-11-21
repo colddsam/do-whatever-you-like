@@ -188,7 +188,7 @@ export function VideoScopes() {
   }, [mode, playhead, playing, project]);
 
   return (
-    <div className="pointer-events-auto absolute right-2 top-2 z-20 w-[264px] rounded-md border border-line-dark bg-ink-raised/95 p-2 shadow-float backdrop-blur-sm">
+    <div className="pointer-events-auto absolute right-2 top-2 z-20 w-[min(264px,calc(100%-16px))] rounded-md border border-line-dark bg-ink-raised/95 p-2 shadow-float backdrop-blur-sm">
       <div className="mb-1.5 flex items-center gap-1">
         <Segmented<ScopeMode>
           label="Video scope"
@@ -201,11 +201,11 @@ export function VideoScopes() {
             { value: "vectorscope", label: "Vec" },
           ]}
         />
-        <IconButton label="Close video scopes" onClick={() => getStudio().set({ scopes: false })} className="size-7 shrink-0">
+        <IconButton label="Close video scopes" onClick={() => getStudio().set({ scopes: false })} className="size-7 shrink-0 sm:size-7">
           <X aria-hidden className="size-3.5" />
         </IconButton>
       </div>
-      <canvas ref={canvasRef} width={248} height={124} className="block h-[124px] w-full rounded-sm border border-line-dark bg-ink" />
+      <canvas ref={canvasRef} width={248} height={124} className="block h-[96px] w-full rounded-sm border border-line-dark bg-ink sm:h-[124px]" />
     </div>
   );
 }

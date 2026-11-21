@@ -110,9 +110,9 @@ export function ToolsMenu({
             initial={{ opacity: 0, y: -6, scale: 0.985 }}
             animate={{ opacity: 1, y: 0, scale: 1, transition: { duration: 0.28, ease: EASE } }}
             exit={{ opacity: 0, y: -4, transition: { duration: 0.15 } }}
-            className="absolute left-1/2 top-[calc(100%+10px)] z-50 w-[min(940px,calc(100vw-24px))] -translate-x-1/2 origin-top overflow-hidden rounded-lg border border-line bg-surface shadow-float"
+            className="absolute left-1/2 top-[calc(100%+10px)] z-50 max-h-[calc(100dvh-84px)] w-[min(940px,calc(100vw-24px))] -translate-x-1/2 origin-top overflow-y-auto overscroll-contain rounded-lg border border-line bg-surface shadow-float"
           >
-            <div className="grid grid-cols-[230px_1fr]">
+            <div className="grid grid-cols-[184px_1fr] lg:grid-cols-[230px_1fr]">
               {/* Collections */}
               <ul className="border-r border-line bg-paper/60 p-2">
                 {CLUSTERS.map((c, i) => {
@@ -122,11 +122,18 @@ export function ToolsMenu({
                     <li key={c.id}>
                       <Link
                         href={clusterHref(c.id)}
-                        onPointerEnter={() => setCurrent(c.id)}
+                        onPointerEnter={(e) => e.pointerType === "mouse" && setCurrent(c.id)}
                         onFocus={() => setCurrent(c.id)}
-                        onClick={() => close()}
+                        onClick={(e) => {
+                          if (!on && window.matchMedia("(pointer: coarse)").matches) {
+                            e.preventDefault();
+                            setCurrent(c.id);
+                            return;
+                          }
+                          close();
+                        }}
                         className={cn(
-                          "relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent/40",
+                          "relative flex items-center gap-2.5 rounded-md px-2.5 py-2.5 text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent/40 lg:gap-3 lg:px-3",
                           on ? "text-paper" : "text-ink-2 hover:text-ink",
                         )}
                       >
@@ -191,7 +198,7 @@ function ClusterPreview({ cluster, onNavigate }: { cluster: Cluster; onNavigate:
       </div>
 
       {cluster.groups ? (
-        <div className="mt-4 grid grid-cols-3 gap-x-6 gap-y-5">
+        <div className="mt-4 grid grid-cols-2 gap-x-5 gap-y-5 lg:grid-cols-3 lg:gap-x-6">
           {cluster.groups.map((g) => (
             <div key={g}>
               <p className="label-mono mb-1.5 text-ink-3">{g}</p>

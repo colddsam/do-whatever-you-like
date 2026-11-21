@@ -407,6 +407,20 @@ export interface MediaAsset {
 }
 
 export type AspectId = "16:9" | "9:16" | "1:1" | "4:5" | "21:9";
+export type GuideMode = "off" | "broadcast" | "reels" | "tiktok" | "shorts" | "golden";
+export type ClipMotionPresetId =
+  | "none"
+  | "kenBurnsIn"
+  | "kenBurnsOut"
+  | "panLeft"
+  | "panRight"
+  | "zoomPunch"
+  | "slideLeft"
+  | "slideBottom"
+  | "spinIn"
+  | "floatLoop"
+  | "pulseLoop"
+  | "impactShake";
 
 export interface ProjectSettings {
   aspect: AspectId;

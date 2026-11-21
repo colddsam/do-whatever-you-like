@@ -794,4 +794,36 @@ export function audioAt(p: Project, t: number): AudioDraw[] {
   return out;
 }
 
+/** Strips colour grading, LUTs, optical filters and adjustment layers for Before/After comparison while keeping geometry, crops, masks and keys. */
+export function stripVisualFx(scene: SceneLayer[]): SceneLayer[] {
+  const cleanFx = (fx: FxValues): FxValues => ({
+    ...emptyFx(),
+    key: fx.key,
+    luma: fx.luma,
+    unmult: fx.unmult,
+    bg: fx.bg,
+    mask: fx.mask,
+    crop: fx.crop,
+  });
+  const cleanDraw = (d: LayerDraw): LayerDraw => ({
+    ...d,
+    fx: cleanFx(d.fx),
+    matteDraw: d.matteDraw ? cleanDraw(d.matteDraw) : null,
+  });
+  const out: SceneLayer[] = [];
+  for (const l of scene) {
+    if (l.kind === "clip") {
+      if (l.d.clip.kind === "adjustment") continue;
+      out.push({ kind: "clip", d: cleanDraw(l.d) });
+    } else {
+      out.push({
+        ...l,
+        a: l.a ? cleanDraw(l.a) : null,
+        b: cleanDraw(l.b),
+      });
+    }
+  }
+  return out;
+}
+
 export { trackClips };

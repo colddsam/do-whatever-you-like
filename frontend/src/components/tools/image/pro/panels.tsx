@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { CHECKER } from "../task";
 import { ADJUSTMENTS } from "./adjustments";
 import { ctx2d } from "./doc";
+import { getPhotoLuts, importPhotoCubeFile, subscribePhotoLuts } from "./luts";
 import { curveLut, type Op, type Param } from "./ops";
 import type { BlendMode, Doc, Effects, VPath } from "./types";
 import { Btn, Check2, ColorWell, IconBtn, MenuButton, NumField, RangeRow, Select, type MenuItem } from "./ui";
@@ -456,6 +457,47 @@ function LevelsEditor({ value, onChange, hist }: { value: Levels; onChange: (v: 
 
 /* ---------- Any operation's settings ---------- */
 
+function LutPickerRow({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const luts = useSyncExternalStore(subscribePhotoLuts, getPhotoLuts, getPhotoLuts);
+  const [err, setErr] = useState<string | null>(null);
+  return (
+    <div className="space-y-1.5 py-1">
+      <div className="flex items-end gap-1.5">
+        <Select
+          label={label}
+          value={luts.some((l) => l.id === value) ? value : luts[0]?.id ?? "kodak-2383"}
+          onChange={onChange}
+          options={luts.map((l) => ({ value: l.id, label: l.custom ? `${l.label} (.cube)` : l.label }))}
+          className="min-w-0 flex-1"
+        />
+        <label className="inline-flex h-8 shrink-0 cursor-pointer items-center rounded-sm border border-line px-2.5 text-[12px] text-ink-2 transition-colors hover:border-line-2 hover:text-ink">
+          Load .cube
+          <input
+            type="file"
+            accept=".cube,text/plain"
+            className="sr-only"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (!file) return;
+              void file.text().then((txt) => {
+                try {
+                  const imported = importPhotoCubeFile(file.name, txt);
+                  setErr(null);
+                  onChange(imported.id);
+                } catch (ex) {
+                  setErr(ex instanceof Error ? ex.message : "Could not read .cube file.");
+                }
+              });
+            }}
+          />
+        </label>
+      </div>
+      {err && <p className="text-[12px] text-accent">{err}</p>}
+    </div>
+  );
+}
+
 export function ParamsEditor({ op, value, onChange, hist }: { op: Op; value: Record<string, unknown>; onChange: (v: Record<string, unknown>) => void; hist: Hist | null }) {
   const set = (k: string, v: unknown) => onChange({ ...value, [k]: v });
   if (!op.params.length) return <p className="text-[13px] text-ink-3">No settings: it applies as it is.</p>;
@@ -499,6 +541,8 @@ export function ParamsEditor({ op, value, onChange, hist }: { op: Op; value: Rec
             return <CurvesEditor key={p.key} value={value[p.key] as Curves} onChange={(v) => set(p.key, v)} hist={hist} />;
           case "levels":
             return <LevelsEditor key={p.key} value={value[p.key] as Levels} onChange={(v) => set(p.key, v)} hist={hist} />;
+          case "lut":
+            return <LutPickerRow key={p.key} label={p.label} value={String(value[p.key] || p.def)} onChange={(v) => set(p.key, v)} />;
         }
       })}
     </div>

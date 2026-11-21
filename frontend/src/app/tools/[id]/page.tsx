@@ -71,36 +71,52 @@ function ToolTitle({ name }: { name: string }) {
 
 export default function ToolPage({ params }: PageProps<"/tools/[id]">) {
   return (
-    <Page className="pt-5 md:pt-6">
+    <Suspense
+      fallback={
+        <Page className="pt-5 md:pt-6">
+          <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-x-2 gap-y-1 sm:flex-nowrap sm:gap-3">
+            <span className="inline-flex h-11 items-center gap-1.5 px-2 text-sm text-ink-3">All tools</span>
+            <span aria-hidden className="h-4 w-px bg-line" />
+            <span aria-hidden className="h-3.5 w-20 rounded-sm bg-paper-2" />
+          </nav>
+          <ToolDetailsSkeleton />
+        </Page>
+      }
+    >
+      <ToolPageContent params={params} />
+    </Suspense>
+  );
+}
+
+async function ToolPageContent({ params }: Pick<PageProps<"/tools/[id]">, "params">) {
+  const { id } = await params;
+  const tool = getTool(id);
+  if (!tool) notFound();
+
+  return (
+    <Page wide={Boolean(tool.wide)} className="pt-5 md:pt-6">
       {/* Breadcrumb / back link */}
-      <nav aria-label="Breadcrumb" className="flex items-center gap-3">
+      <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-x-2 gap-y-1 sm:flex-nowrap sm:gap-3">
         <Link
           href="/tools"
-          className="group -ml-2 inline-flex h-11 items-center gap-1.5 rounded-md px-2 text-sm text-ink-2 transition-colors hover:bg-paper-2 hover:text-ink"
+          className="group -ml-2 inline-flex h-11 shrink-0 items-center gap-1.5 rounded-md px-2 text-sm text-ink-2 transition-colors hover:bg-paper-2 hover:text-ink"
         >
           <ArrowLeft aria-hidden className="size-4 transition-transform duration-150 ease-out-soft group-hover:-translate-x-0.5" />
           All tools
         </Link>
-        <span aria-hidden className="h-4 w-px bg-line" />
-        <Suspense fallback={<span aria-hidden className="h-3.5 w-20 rounded-sm bg-paper-2" />}>
-          <ToolCategory params={params} />
-        </Suspense>
+        <span aria-hidden className="h-4 w-px shrink-0 bg-line" />
+        <ToolCategory tool={tool} />
       </nav>
 
-      <Suspense fallback={<ToolDetailsSkeleton />}>
-        <ToolDetails params={params} />
-      </Suspense>
+      <ToolDetails tool={tool} />
     </Page>
   );
 }
 
-async function ToolCategory({ params }: Pick<PageProps<"/tools/[id]">, "params">) {
-  const { id } = await params;
-  const tool = getTool(id);
-  if (!tool) return null;
+function ToolCategory({ tool }: { tool: Tool }) {
   const cluster = getCluster(clusterOf(tool));
   // min-h-11: a 44px touch target around the small label.
-  const crumb = "label-mono inline-flex min-h-11 items-center text-ink-3 transition-colors hover:text-ink";
+  const crumb = "label-mono inline-flex min-h-11 min-w-0 items-center truncate text-ink-3 transition-colors hover:text-ink";
   return (
     <>
       {/* Where this tool lives: its collection, and its group within it. */}
@@ -115,7 +131,7 @@ async function ToolCategory({ params }: Pick<PageProps<"/tools/[id]">, "params">
           </Link>
         </>
       )}
-      <div className="ml-auto flex items-center gap-2.5">
+      <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-2.5">
         <ToolHopperSearch mode="compact" currentToolId={tool.id} contextClusterId={cluster.id} />
         {tool.status === "live" ? (
           <Badge variant="live">Live</Badge>
@@ -127,10 +143,7 @@ async function ToolCategory({ params }: Pick<PageProps<"/tools/[id]">, "params">
   );
 }
 
-async function ToolDetails({ params }: Pick<PageProps<"/tools/[id]">, "params">) {
-  const { id } = await params;
-  const tool = getTool(id);
-  if (!tool) notFound();
+function ToolDetails({ tool }: { tool: Tool }) {
 
   const Icon = tool.icon;
   const live = tool.status === "live";
@@ -196,7 +209,7 @@ async function ToolDetails({ params }: Pick<PageProps<"/tools/[id]">, "params">)
           <Playground toolId={tool.id} />
         </div>
 
-        <Reveal delay={0.12} className={tool.wide ? "lg:col-span-12" : "lg:col-span-4"}>
+        <Reveal delay={0.12} className={tool.wide ? "mx-auto w-full max-w-[1200px] lg:col-span-12" : "lg:col-span-4"}>
           <aside className={tool.wide ? "grid gap-10 md:grid-cols-2" : "space-y-10"}>
             <section aria-labelledby="spec-title">
               <h2 id="spec-title" className="label-mono text-ink-3">
@@ -233,7 +246,7 @@ async function ToolDetails({ params }: Pick<PageProps<"/tools/[id]">, "params">)
       {live && <ToolGuide tool={tool} />}
 
       {/* Related tools: a full-width row under the workbench, same category first. */}
-      <section aria-labelledby="more-title" className="mt-20 md:mt-24">
+      <section aria-labelledby="more-title" className={cn("mt-20 md:mt-24", tool.wide && "mx-auto max-w-[1200px]")}>
         <div className="flex items-end justify-between gap-6 border-b border-line pb-4">
           <div>
             <p className="label-mono text-ink-3">More in {cluster.name}</p>
@@ -273,7 +286,7 @@ function ToolGuide({ tool }: { tool: Tool }) {
   const steps = howTo(tool);
   const see = (guide?.see ?? []).map(getTool).filter((t): t is Tool => !!t && t.status === "live");
   return (
-    <section aria-labelledby="guide-title" className="mt-20 grid gap-12 md:mt-24 lg:grid-cols-12 lg:gap-10 [&>*]:min-w-0">
+    <section aria-labelledby="guide-title" className={cn("mt-20 grid gap-12 md:mt-24 lg:grid-cols-12 lg:gap-10 [&>*]:min-w-0", tool.wide && "mx-auto max-w-[1200px]")}>
       <div className="lg:col-span-5">
         <p className="label-mono text-ink-3">Guide</p>
         <h2 id="guide-title" className="mt-2 text-2xl font-semibold tracking-[-0.02em]">

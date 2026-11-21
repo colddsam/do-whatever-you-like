@@ -3,7 +3,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { Check, ChevronRight, Menu as MenuGlyph, RotateCcw, X, type LucideIcon } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Menu as MenuGlyph, RotateCcw, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /*
@@ -193,25 +193,120 @@ function MenuList({ items, onClose, anchor, side }: { items: MenuItem[]; onClose
  */
 export function CompactMenu({ menus }: { menus: { label: string; items: MenuItem[] }[] }) {
   const [open, setOpen] = useState<HTMLElement | null>(null);
+  const [stack, setStack] = useState<{ title: string; items: MenuItem[] }[]>([]);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
-    const close = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && !insideFloat(e.target) && setOpen(null);
+    const close = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node) && !insideFloat(e.target)) {
+        setOpen(null);
+        setStack([]);
+      }
+    };
     window.addEventListener("pointerdown", close);
     return () => window.removeEventListener("pointerdown", close);
   }, [open]);
+  const top = stack[stack.length - 1];
+  const closeAll = () => {
+    setOpen(null);
+    setStack([]);
+  };
   return (
     <div ref={ref}>
       <button
         type="button"
         aria-haspopup="menu"
         aria-expanded={!!open}
-        onClick={(e) => setOpen(open ? null : e.currentTarget)}
+        onClick={(e) => {
+          if (open) closeAll();
+          else {
+            setStack([]);
+            setOpen(e.currentTarget);
+          }
+        }}
         className={cn("inline-flex h-8 items-center gap-1.5 rounded-sm px-2.5 text-[13px] transition-colors", open ? "bg-ink text-paper" : "text-ink-2 hover:bg-paper-2 hover:text-ink")}
       >
         <MenuGlyph aria-hidden className="size-4" /> Menu
       </button>
-      {open && <MenuList items={menus.map((m) => ({ type: "sub" as const, label: m.label, items: m.items }))} anchor={open} side="below" onClose={() => setOpen(null)} />}
+      {open && (
+        <Floating
+          anchor={open}
+          side="below"
+          role="menu"
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              e.preventDefault();
+              e.stopPropagation();
+              if (stack.length > 0) setStack((s) => s.slice(0, -1));
+              else closeAll();
+            }
+          }}
+          className="w-[min(280px,calc(100vw-24px))] rounded-md border border-line bg-surface p-1 shadow-float"
+        >
+          {top ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setStack((s) => s.slice(0, -1))}
+                className="flex h-9 w-full items-center gap-1.5 rounded-sm border-b border-line px-2 text-left text-[13px] font-medium text-ink hover:bg-paper-2"
+              >
+                <ChevronLeft aria-hidden className="size-4 shrink-0 text-ink-3" />
+                <span className="truncate">{top.title}</span>
+              </button>
+              <div className="pt-1">
+                {top.items.map((it, i) => {
+                  if (it.type === "sep") return <div key={i} role="separator" className="my-1 h-px bg-line" />;
+                  if (it.type === "sub")
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        role="menuitem"
+                        disabled={it.disabled}
+                        onClick={() => setStack((s) => [...s, { title: it.label, items: it.items }])}
+                        className="flex h-9 w-full items-center gap-2 rounded-sm px-2.5 text-left text-[13px] text-ink-2 hover:bg-paper-2 hover:text-ink disabled:opacity-40"
+                      >
+                        <span aria-hidden className="flex size-3.5 shrink-0 items-center">{it.icon && <it.icon className="size-3.5" />}</span>
+                        <span className="flex-1 truncate">{it.label}</span>
+                        <ChevronRight aria-hidden className="size-3.5 text-ink-3" />
+                      </button>
+                    );
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      role="menuitem"
+                      disabled={it.disabled}
+                      onClick={() => {
+                        closeAll();
+                        it.onSelect();
+                      }}
+                      className="flex h-9 w-full items-center gap-2 rounded-sm px-2.5 text-left text-[13px] text-ink-2 hover:bg-paper-2 hover:text-ink disabled:opacity-40"
+                    >
+                      <span className="flex size-3.5 shrink-0 items-center">{it.checked ? <Check aria-hidden className="size-3.5" /> : it.icon ? <it.icon aria-hidden className="size-3.5" /> : null}</span>
+                      <span className="flex-1 truncate">{it.label}</span>
+                      {it.shortcut && <span className="hidden font-mono text-[12px] text-ink-3 sm:inline">{it.shortcut}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            menus.map((m) => (
+              <button
+                key={m.label}
+                type="button"
+                role="menuitem"
+                onClick={() => setStack([{ title: m.label, items: m.items }])}
+                className="flex h-9 w-full items-center justify-between gap-2 rounded-sm px-2.5 text-left text-[13px] text-ink-2 hover:bg-paper-2 hover:text-ink"
+              >
+                <span className="truncate font-medium text-ink">{m.label}</span>
+                <ChevronRight aria-hidden className="size-4 text-ink-3" />
+              </button>
+            ))
+          )}
+        </Floating>
+      )}
     </div>
   );
 }

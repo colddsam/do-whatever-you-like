@@ -6,7 +6,22 @@ import { anim, editAnim, evalAnim, toggleAnimated, toggleKeyAt } from "../lib/ke
 import { getAnim, withAnim, type PropPath } from "../lib/props";
 import { frameRound, rt, uid } from "../lib/time";
 import * as TL from "../lib/timeline";
-import type { AspectId, AudioFx, CaptionStyleId, Clip, Effect, EffectType, LookId, Marker, Project, TextStyle, TrackKind, Transition } from "../types";
+import type { AspectId, AudioFx, CaptionStyleId, Clip, ClipMotionPresetId, Effect, EffectType, GuideMode, LookId, Marker, Project, TextStyle, TrackKind, Transition } from "../types";
+
+export interface AttrClipboard {
+  sourceName: string;
+  kind: Clip["kind"];
+  transform?: Clip["transform"];
+  flipH?: boolean;
+  flipV?: boolean;
+  fit?: Clip["fit"];
+  blend?: Clip["blend"];
+  effects: Effect[];
+  audioFx?: Partial<AudioFx>;
+  volume?: Clip["volume"];
+}
+
+const GRADE_EFFECT_TYPES = new Set<EffectType>(["colorGrade", "colorWheels", "curves", "hsl", "colorKey", "lut"]);
 
 /** Timeline tools, as in Premiere: V select, C razor, B ripple, N roll, Y slip, U slide, R rate stretch. */
 export type Tool = "select" | "blade" | "ripple" | "roll" | "slip" | "slide" | "rate";
@@ -38,13 +53,16 @@ type State = {
   activeProp: PropPath | null;
   selectedKey: string | null;
   quality: "full" | "half" | "quarter";
-  guides: boolean;
+  guides: GuideMode;
+  compare: boolean;
+  compareX: number;
   useProxies: boolean;
   media: Record<string, MediaStatus>;
   jobs: Record<string, Job>;
   silence: { trackIds: string[]; ranges: [number, number][]; saved: number } | null;
   toast: Toast | null;
   clipboard: Clip[] | null;
+  attrClipboard: AttrClipboard | null;
   saveState: "saved" | "saving" | "error";
   /** The chroma-key eyedropper is armed: the next click on the preview samples a colour. */
   picking: { clipId: string; effectId: string } | null;
@@ -133,6 +151,11 @@ type Actions = {
   updateMarker: (id: string, patch: Partial<Marker>) => void;
   removeMarker: (id: string) => void;
   jumpMarker: (dir: 1 | -1) => void;
+  copyAttributes: (clipId?: string) => void;
+  pasteAttributes: (opts?: { effects?: boolean; transform?: boolean; audio?: boolean }) => number;
+  applyGradeToAllClips: (clipId: string) => number;
+  applyMotionPreset: (clipId: string, presetId: ClipMotionPresetId) => void;
+  detachAudio: (clipId: string) => void;
 };
 
 export type StudioStore = State & Actions;
@@ -160,13 +183,16 @@ function initial(): State {
     activeProp: null,
     selectedKey: null,
     quality: "half",
-    guides: false,
+    guides: "off",
+    compare: false,
+    compareX: 0.5,
     useProxies: true,
     media: {},
     jobs: {},
     silence: null,
     toast: null,
     clipboard: null,
+    attrClipboard: null,
     saveState: "saved",
     picking: null,
     trackingPick: null,
@@ -683,6 +709,158 @@ export const useStudio = create<StudioStore>()((set, get) => {
       const list = s.project.markers.map((m) => m.t).sort((a, b) => a - b);
       const to = dir > 0 ? list.find((x) => x > t + 1e-3) : [...list].reverse().find((x) => x < t - 1e-3);
       if (to !== undefined) set({ playing: false, playhead: to });
+    },
+    copyAttributes: (clipId) => {
+      const s = get();
+      const targetId = clipId ?? s.selection[0];
+      const c = targetId ? s.project.clips[targetId] : undefined;
+      if (!c) {
+        s.notify("Select a clip to copy its attributes.", "info");
+        return;
+      }
+      const linkedAudio = c.linkId ? Object.values(s.project.clips).find((x) => x.linkId === c.linkId && x.kind === "audio" && x.id !== c.id) : undefined;
+      const audioSrc = c.kind === "audio" ? c : linkedAudio;
+      set({
+        attrClipboard: {
+          sourceName: c.name,
+          kind: c.kind,
+          transform: c.kind !== "audio" ? structuredClone(c.transform) : undefined,
+          flipH: c.flipH,
+          flipV: c.flipV,
+          fit: c.fit,
+          blend: c.blend,
+          effects: structuredClone(c.effects),
+          audioFx: audioSrc?.audioFx ? structuredClone(audioSrc.audioFx) : undefined,
+          volume: audioSrc?.volume ? structuredClone(audioSrc.volume) : undefined,
+        },
+      });
+      s.notify(`Copied attributes from “${c.name}”.`, "success");
+    },
+    pasteAttributes: (opts = { effects: true, transform: true, audio: true }) => {
+      const s = get();
+      const attr = s.attrClipboard;
+      if (!attr) {
+        s.notify("Copy attributes from a clip first (Ctrl+Alt+C).", "info");
+        return 0;
+      }
+      const targets = s.selection.filter((id) => s.project.clips[id]);
+      if (!targets.length) {
+        s.notify("Select one or more clips to paste attributes onto.", "info");
+        return 0;
+      }
+      const wantEffects = opts.effects !== false;
+      const wantTransform = opts.transform !== false;
+      const wantAudio = opts.audio !== false;
+      let count = 0;
+      const cloneEffects = (list: Effect[]) =>
+        list.map((e) => ({
+          ...structuredClone(e),
+          id: uid("fx"),
+        }));
+      commit((p) => {
+        let next = p;
+        for (const id of targets) {
+          const cur = next.clips[id];
+          if (!cur) continue;
+          if (cur.kind !== "audio") {
+            next = TL.updateClip(next, id, (x) => ({
+              ...x,
+              ...(wantEffects ? { effects: cloneEffects(attr.effects) } : {}),
+              ...(wantTransform && attr.transform
+                ? { transform: structuredClone(attr.transform), flipH: attr.flipH, flipV: attr.flipV, blend: attr.blend ?? x.blend, ...(attr.fit && (x.kind === "video" || x.kind === "image") ? { fit: attr.fit } : {}) }
+                : {}),
+            }));
+            count++;
+            if (wantAudio && (attr.audioFx || attr.volume) && cur.linkId) {
+              const linkedA = TL.linked(next, cur).find((l) => l.kind === "audio");
+              if (linkedA) {
+                next = TL.updateClip(next, linkedA.id, (a) => ({
+                  ...a,
+                  ...(attr.audioFx ? { audioFx: structuredClone(attr.audioFx) } : {}),
+                  ...(attr.volume ? { volume: structuredClone(attr.volume) } : {}),
+                }));
+              }
+            }
+          } else if (wantAudio && (attr.audioFx || attr.volume)) {
+            next = TL.updateClip(next, id, (x) => ({
+              ...x,
+              ...(attr.audioFx ? { audioFx: structuredClone(attr.audioFx) } : {}),
+              ...(attr.volume ? { volume: structuredClone(attr.volume) } : {}),
+            }));
+            count++;
+          }
+        }
+        return next;
+      });
+      if (count) s.notify(`Pasted attributes onto ${count} clip${count === 1 ? "" : "s"}.`, "success");
+      return count;
+    },
+    applyGradeToAllClips: (clipId) => {
+      const s = get();
+      const src = s.project.clips[clipId];
+      if (!src) return 0;
+      const gradeFx = src.effects.filter((e) => GRADE_EFFECT_TYPES.has(e.type));
+      let count = 0;
+      commit((p) => {
+        let next = p;
+        for (const c of Object.values(p.clips)) {
+          if (c.id === clipId || (c.kind !== "video" && c.kind !== "image")) continue;
+          const preserved = c.effects.filter((e) => !GRADE_EFFECT_TYPES.has(e.type));
+          const cloned = gradeFx.map((e) => ({ ...structuredClone(e), id: uid("fx") }));
+          next = TL.updateClip(next, c.id, { effects: [...cloned, ...preserved] });
+          count++;
+        }
+        return next;
+      });
+      s.notify(
+        count
+          ? `Synced ${gradeFx.length ? "colour grade" : "neutral grade"} to ${count} visual clip${count === 1 ? "" : "s"}.`
+          : "No other video or image clips on the timeline to update.",
+        count ? "success" : "info",
+      );
+      return count;
+    },
+    applyMotionPreset: (clipId, presetId) => {
+      commit((p) => TL.applyClipMotion(p, clipId, presetId));
+    },
+    detachAudio: (clipId) => {
+      const s = get();
+      const c = s.project.clips[clipId];
+      if (!c) return;
+      if (c.linkId) {
+        const linkedAudio = TL.linked(s.project, c).find((x) => x.kind === "audio");
+        get().unlink(clipId);
+        if (linkedAudio) set({ selection: [linkedAudio.id] });
+        s.notify("Detached audio from video onto an independent track.", "success");
+        return;
+      }
+      const m = c.mediaId ? s.project.media[c.mediaId] : undefined;
+      if (c.kind !== "video" || !m?.hasAudio) {
+        s.notify("This clip doesn't have an audio stream to extract.", "info");
+        return;
+      }
+      let audioId = "";
+      commit((p) => {
+        const [withTrack, trackId] = TL.freeTrack(p, "audio", c.start, c.start + c.duration);
+        const audioClip = TL.newClip(withTrack, {
+          trackId,
+          kind: "audio",
+          mediaId: c.mediaId,
+          name: `${c.name} (Audio)`,
+          start: c.start,
+          duration: c.duration,
+          in: c.in,
+          speed: c.speed,
+          speedRamp: c.speedRamp ? structuredClone(c.speedRamp) : undefined,
+          reversed: c.reversed,
+        });
+        audioId = audioClip.id;
+        return TL.placeClips(withTrack, [audioClip]);
+      });
+      if (audioId) {
+        set({ selection: [audioId] });
+        s.notify("Extracted audio track independently.", "success");
+      }
     },
   };
 });

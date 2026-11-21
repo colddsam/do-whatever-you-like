@@ -163,12 +163,16 @@ export type ToolId =
   | "burn"
   | "sponge"
   | "liquify"
+  | "mosaic-brush"
   | "text"
   | "shape"
   | "pen"
   | "node"
   | "hand"
   | "zoom";
+
+export type SymmetryMode = "off" | "vertical" | "horizontal" | "quad" | "radial6" | "radial8";
+export type CropGuide = "thirds" | "grid" | "golden" | "diagonal";
 
 export type BrushSettings = {
   size: number;
@@ -180,6 +184,8 @@ export type BrushSettings = {
   sampleAll: boolean;
   spongeMode: "saturate" | "desaturate";
   range: "shadows" | "midtones" | "highlights";
+  symmetry: SymmetryMode;
+  mosaicSize: number;
 };
 
 export type SelectMode = "new" | "add" | "subtract" | "intersect";

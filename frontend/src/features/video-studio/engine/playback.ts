@@ -5,7 +5,7 @@ import type { Clip, Project } from "../types";
 import { audioFxOf, buildChain, fxKey, type FxChain } from "./audio-fx";
 import { mediaRuntime } from "./media";
 import { WebGLCompositor, type FrameRef, type MaskRef, type SourceProvider } from "./render/compositor";
-import { audioAt, buildScene, layerDraws, trackClips, type LayerDraw } from "./render/scene";
+import { audioAt, buildScene, layerDraws, stripVisualFx, trackClips, type LayerDraw } from "./render/scene";
 import { segmenterReady, segmentFrame, loadSegmenter } from "./ai/segmenter";
 
 /**
@@ -80,6 +80,9 @@ export class PlaybackEngine {
           // Another project opened, or proxies toggled: the old <video>/<audio> elements are stale.
           if (s.useProxies !== prev.useProxies || s.project.id !== prev.project.id) this.releaseAll();
           this.applySize();
+          this.invalidate();
+        }
+        if (s.compare !== prev.compare || s.compareX !== prev.compareX) {
           this.invalidate();
         }
       }),
@@ -476,7 +479,10 @@ export class PlaybackEngine {
 
   private draw(p: Project, t: number) {
     try {
-      this.compositor.render(p, t, buildScene(p, t), this.provider);
+      const scene = buildScene(p, t);
+      const s = useStudio.getState();
+      const compare = s.compare ? { x: s.compareX, rawScene: stripVisualFx(scene) } : undefined;
+      this.compositor.render(p, t, scene, this.provider, compare);
     } catch (e) {
       console.error("[studio] render failed", e);
     }

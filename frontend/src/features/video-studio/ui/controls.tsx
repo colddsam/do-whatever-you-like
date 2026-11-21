@@ -18,7 +18,7 @@ export function IconButton({ label, active, className, children, ...rest }: Butt
       title={label}
       aria-pressed={active}
       className={cn(
-        "inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-paper-dim transition-colors hover:bg-paper/10 hover:text-paper disabled:pointer-events-none disabled:opacity-35",
+        "inline-flex size-9 shrink-0 items-center justify-center rounded-sm text-paper-dim transition-colors hover:bg-paper/10 hover:text-paper disabled:pointer-events-none disabled:opacity-35 sm:size-8",
         active && "bg-paper text-ink hover:bg-paper hover:text-ink",
         className,
       )}

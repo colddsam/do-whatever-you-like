@@ -1,7 +1,7 @@
 import { cloneCanvas, coverDoc, ctx2d, hexToRgb, luminance, makeCanvas, selectionInLayer } from "./doc";
 import { blurImage, clamp255, rgbToHsl, hslToRgb } from "./ops";
 import type { Live } from "./render";
-import type { BrushSettings, Doc, Layer, Pt, ToolId } from "./types";
+import type { BrushSettings, Doc, Layer, Pt, SymmetryMode, ToolId } from "./types";
 
 /*
  * Strokes. Brush, pencil, eraser and spot healing paint into a buffer the size of the layer: the
@@ -11,7 +11,7 @@ import type { BrushSettings, Doc, Layer, Pt, ToolId } from "./types";
  */
 
 export const BUFFER_TOOLS: ToolId[] = ["brush", "pencil", "eraser", "spot-heal"];
-export const PIXEL_TOOLS: ToolId[] = ["clone", "heal", "smudge", "blur-brush", "sharpen-brush", "dodge", "burn", "sponge", "liquify"];
+export const PIXEL_TOOLS: ToolId[] = ["clone", "heal", "smudge", "blur-brush", "sharpen-brush", "dodge", "burn", "sponge", "liquify", "mosaic-brush"];
 
 const tips = new Map<string, HTMLCanvasElement>();
 /** A round brush tip: solid to `hardness`, then fading to clear at the edge. */
@@ -56,6 +56,8 @@ const falloff = (t: number, hardness: number) => {
 export type StrokeState = {
   tool: ToolId;
   set: BrushSettings;
+  docW: number;
+  docH: number;
   /** The layer as it was (undo keeps it), and the layer grown to cover the document. */
   before: Layer;
   layer: Layer;
@@ -93,6 +95,8 @@ export function beginStroke(
   const state: StrokeState = {
     tool,
     set,
+    docW: doc.w,
+    docH: doc.h,
     before: layer,
     layer: grown,
     onMask,
@@ -141,12 +145,41 @@ export function liveFor(s: StrokeState): Live {
   return { swap: s.onMask ? { ...s.layer, mask: s.work! } : s.layer, replace: s.onMask ? undefined : { layerId: s.layer.id, canvas: s.work!, scale: 1 } };
 }
 
+const SYMMETRY_TOOLS: ToolId[] = ["brush", "pencil", "eraser"];
+
+function symmetryPoints(pt: Pt, docW: number, docH: number, layer: Layer, mode: SymmetryMode): Pt[] {
+  if (mode === "off") return [pt];
+  const cx = docW / 2 - layer.x;
+  const cy = docH / 2 - layer.y;
+  const mx = 2 * cx - pt.x;
+  const my = 2 * cy - pt.y;
+  if (mode === "vertical") return [pt, { x: mx, y: pt.y }];
+  if (mode === "horizontal") return [pt, { x: pt.x, y: my }];
+  if (mode === "quad") return [pt, { x: mx, y: pt.y }, { x: pt.x, y: my }, { x: mx, y: my }];
+  const n = mode === "radial6" ? 6 : 8;
+  const dx = pt.x - cx;
+  const dy = pt.y - cy;
+  const pts: Pt[] = [];
+  for (let i = 0; i < n; i++) {
+    const a = (i * Math.PI * 2) / n;
+    const ca = Math.cos(a);
+    const sa = Math.sin(a);
+    pts.push({ x: cx + dx * ca - dy * sa, y: cy + dx * sa + dy * ca });
+  }
+  return pts;
+}
+
 /** Adds stamps from the last point to `p` (document space). `pressure` is 0..1 from a pen. */
 export function strokeTo(s: StrokeState, p: Pt, pressure = 1) {
   const pt = { x: p.x - s.layer.x, y: p.y - s.layer.y };
   const size = Math.max(1, s.set.size * (pressure > 0 && pressure < 1 ? 0.25 + pressure * 0.75 : 1));
+  const sym = SYMMETRY_TOOLS.includes(s.tool) ? s.set.symmetry : "off";
   const put = (q: Pt) => {
-    stamp(s, q, size, s.lastStamp ?? q);
+    const prev = s.lastStamp ?? q;
+    if (sym === "off") stamp(s, q, size, prev);
+    else {
+      for (const mq of symmetryPoints(q, s.docW, s.docH, s.layer, sym)) stamp(s, mq, size, prev);
+    }
     s.lastStamp = q;
   };
   if (!s.last) {
@@ -270,7 +303,8 @@ function pixelStamp(s: StrokeState, g: CanvasRenderingContext2D, p: Pt, r: numbe
     blurImage(b, Math.max(1.5, r * 0.18));
     ref = b.data;
   }
-  const src = s.tool === "liquify" ? new Uint8ClampedArray(d) : null;
+  const src = s.tool === "liquify" || s.tool === "mosaic-brush" ? new Uint8ClampedArray(d) : null;
+  const blockSize = Math.max(4, Math.round(s.set.mosaicSize || 16));
   const ldx = p.x - prev.x;
   const ldy = p.y - prev.y;
   const range = s.set.range;
@@ -279,6 +313,16 @@ function pixelStamp(s: StrokeState, g: CanvasRenderingContext2D, p: Pt, r: numbe
     if (k <= 0.001) continue;
     const i = (y * w + x) * 4;
     switch (s.tool) {
+      case "mosaic-brush": {
+        const bx = Math.floor((x0 + x) / blockSize) * blockSize + Math.floor(blockSize / 2) - x0;
+        const by = Math.floor((y0 + y) / blockSize) * blockSize + Math.floor(blockSize / 2) - y0;
+        const xi = Math.max(0, Math.min(w - 1, bx));
+        const yi = Math.max(0, Math.min(h - 1, by));
+        const j = (yi * w + xi) * 4;
+        const mixK = Math.min(1, weight(x, y) * (s.set.opacity / 100));
+        for (let c = 0; c < 3; c++) d[i + c] = clamp255(d[i + c] + (src![j + c] - d[i + c]) * mixK);
+        break;
+      }
       case "blur-brush":
         for (let c = 0; c < 4; c++) d[i + c] += (ref![i + c] - d[i + c]) * k;
         break;

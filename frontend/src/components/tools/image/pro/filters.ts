@@ -899,6 +899,137 @@ export const FILTERS: Op[] = [
       }
     },
   },
+  {
+    id: "halation",
+    label: "35mm Halation",
+    group: "Effects",
+    hint: "Authentic red-orange analog film scatter around specular highlights.",
+    params: [
+      { type: "range", key: "amount", label: "Amount", min: 0, max: 100, def: 55, unit: "%" },
+      { type: "range", key: "threshold", label: "Threshold", min: 120, max: 250, def: 200 },
+      { type: "range", key: "spread", label: "Scatter radius", min: 4, max: 48, def: 16, unit: " px", px: true },
+    ],
+    apply(img, p) {
+      const glow = copyImage(img);
+      const gd = glow.data;
+      const d = img.data;
+      const thr = num(p, "threshold");
+      const span = Math.max(1, 255 - thr);
+      const amt = num(p, "amount") / 100;
+      for (let i = 0; i < gd.length; i += 4) {
+        const l = luma(d[i], d[i + 1], d[i + 2]);
+        const hi = Math.max(0, (l - thr) / span);
+        gd[i] = clamp255(d[i] * hi * 1.05);
+        gd[i + 1] = clamp255(d[i + 1] * hi * 0.28);
+        gd[i + 2] = clamp255(d[i + 2] * hi * 0.06);
+      }
+      blurImage(glow, num(p, "spread"));
+      for (let i = 0; i < d.length; i += 4) {
+        for (let c = 0; c < 3; c++) {
+          const base = d[i + c] / 255;
+          const halo = (gd[i + c] / 255) * amt;
+          d[i + c] = clamp255((1 - (1 - base) * (1 - halo)) * 255);
+        }
+      }
+    },
+  },
+  {
+    id: "bloom",
+    label: "Pro-Mist Bloom",
+    group: "Effects",
+    hint: "Silky optical diffusion around bright highlights without crushing shadows.",
+    params: [
+      { type: "range", key: "amount", label: "Strength", min: 0, max: 100, def: 48, unit: "%" },
+      { type: "range", key: "threshold", label: "Threshold", min: 100, max: 245, def: 170 },
+      { type: "range", key: "radius", label: "Bloom radius", min: 4, max: 64, def: 22, unit: " px", px: true },
+      { type: "range", key: "warmth", label: "Warmth", min: -50, max: 50, def: 10 },
+    ],
+    apply(img, p) {
+      const glow = copyImage(img);
+      const gd = glow.data;
+      const d = img.data;
+      const thr = num(p, "threshold");
+      const span = Math.max(1, 255 - thr);
+      const amt = num(p, "amount") / 100;
+      const warm = num(p, "warmth") / 100;
+      for (let i = 0; i < gd.length; i += 4) {
+        const l = luma(d[i], d[i + 1], d[i + 2]);
+        const hi = Math.max(0, (l - thr) / span);
+        gd[i] = clamp255(d[i] * hi * (1 + Math.max(0, warm) * 0.35));
+        gd[i + 1] = clamp255(d[i + 1] * hi * (1 + Math.abs(warm) * 0.08));
+        gd[i + 2] = clamp255(d[i + 2] * hi * (1 + Math.max(0, -warm) * 0.35 - Math.max(0, warm) * 0.12));
+      }
+      blurImage(glow, num(p, "radius"));
+      for (let i = 0; i < d.length; i += 4) {
+        for (let c = 0; c < 3; c++) {
+          const base = d[i + c] / 255;
+          const b = (gd[i + c] / 255) * amt;
+          d[i + c] = clamp255((1 - (1 - base) * (1 - b)) * 255);
+        }
+      }
+    },
+  },
+  {
+    id: "perspective",
+    label: "Perspective / Keystone",
+    group: "Distort",
+    hint: "Straighten leaning buildings or add dramatic tilt.",
+    params: [
+      { type: "range", key: "vertical", label: "Vertical tilt", min: -60, max: 60, def: 0, unit: "%" },
+      { type: "range", key: "horizontal", label: "Horizontal tilt", min: -60, max: 60, def: 0, unit: "%" },
+      { type: "range", key: "zoom", label: "Zoom fill", min: 70, max: 140, def: 100, unit: "%" },
+    ],
+    apply(img, p) {
+      const { width: w, height: h } = img;
+      const kv = (num(p, "vertical") / 100) * 0.55;
+      const kh = (num(p, "horizontal") / 100) * 0.55;
+      const z = Math.max(0.25, num(p, "zoom") / 100);
+      const hw = w / 2 || 1;
+      const hh = h / 2 || 1;
+      displace(img, (x, y) => {
+        const u = (x - hw) / hw;
+        const v = (y - hh) / hh;
+        const denom = Math.max(0.25, (1 - kv * v - kh * u) * z);
+        return [hw + (u / denom) * hw, hh + (v / denom) * hh];
+      });
+    },
+  },
+  {
+    id: "lens-correct",
+    label: "Lens Distortion",
+    group: "Distort",
+    hint: "Correct wide-angle barrel bowing or pincushion warping.",
+    params: [
+      { type: "range", key: "distortion", label: "Distortion", min: -100, max: 100, def: -25, unit: "%" },
+      { type: "range", key: "scale", label: "Scale", min: 80, max: 130, def: 100, unit: "%" },
+      { type: "range", key: "vignette", label: "Edge brightness", min: -50, max: 50, def: 0 },
+    ],
+    apply(img, p) {
+      const { width: w, height: h } = img;
+      const k = (num(p, "distortion") / 100) * 0.45;
+      const z = Math.max(0.3, num(p, "scale") / 100);
+      const vig = num(p, "vignette") / 100;
+      const hw = w / 2 || 1;
+      const hh = h / 2 || 1;
+      const norm = Math.max(hw, hh);
+      displace(img, (x, y) => {
+        const dx = (x - hw) / norm;
+        const dy = (y - hh) / norm;
+        const r2 = dx * dx + dy * dy;
+        const f = (1 + k * r2) / z;
+        return [hw + dx * f * norm, hh + dy * f * norm];
+      });
+      if (vig !== 0) {
+        const d = img.data;
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+          const r2 = ((x - hw) / hw) ** 2 + ((y - hh) / hh) ** 2;
+          const m = Math.max(0, 1 + vig * r2 * 0.65);
+          const o = (y * w + x) * 4;
+          for (let c = 0; c < 3; c++) d[o + c] = clamp255(d[o + c] * m);
+        }
+      }
+    },
+  },
 ];
 
 export const filterById = (id: string) => FILTERS.find((f) => f.id === id);

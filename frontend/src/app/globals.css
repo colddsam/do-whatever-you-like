@@ -248,6 +248,53 @@
   to { transform: translateX(300%); }
 }
 
+/* Touch-friendly range sliders across phones and tablets */
+@media (pointer: coarse) {
+  .pro-range,
+  .studio-range {
+    height: 32px;
+  }
+  .pro-range::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+    margin-top: -8px;
+  }
+  .pro-range::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+  }
+  .studio-range::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+    margin-top: -8.5px;
+  }
+  .studio-range::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Subtle panel scrollbars and cross-device viewport utilities */
+[data-lenis-prevent] {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(132 126 112 / 0.35) transparent;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

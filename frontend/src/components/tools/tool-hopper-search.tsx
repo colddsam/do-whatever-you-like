@@ -561,7 +561,7 @@ export function ToolHopperSearch({
             transition={SPRING}
             onMouseEnter={() => setPillHovered(true)}
             onMouseLeave={() => setPillHovered(false)}
-            className="fixed bottom-5 right-5 z-[45] flex max-w-[calc(100vw-2.5rem)] items-center gap-1 rounded-full border border-line bg-surface/95 p-1 shadow-float backdrop-blur-xl"
+            className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-4 z-[45] flex max-w-[calc(100vw-24px)] items-center gap-1 rounded-full border border-line bg-surface/95 p-1 shadow-float backdrop-blur-xl sm:right-5 sm:max-w-[calc(100vw-2.5rem)]"
           >
             <button
               type="button"

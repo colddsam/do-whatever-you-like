@@ -1,4 +1,4 @@
-import type { AspectId, AudioFx, CaptionStyleId, EffectCategory, EffectType, LookId, ShapeContent, TextAnimation, TextStyle, TransitionType, VoiceEffect } from "./types";
+import type { AspectId, AudioFx, CaptionStyleId, ClipMotionPresetId, EffectCategory, EffectType, LookId, ShapeContent, TextAnimation, TextStyle, TransitionType, VoiceEffect } from "./types";
 
 /** Where the editor lives: the COOP/COEP headers in next.config.ts are scoped to this path. */
 export const STUDIO_PATH = "/tools/video-editor";
@@ -673,6 +673,23 @@ export const VOICE_EFFECTS: Record<VoiceEffect, { label: string; hint: string }>
 };
 
 export const DEFAULT_AUDIO_FX: AudioFx = { low: 0, mid: 0, high: 0, highpass: 0, lowpass: 0, compressor: 0, reverb: 0, echo: 0, pan: 0, voice: "none", denoise: false };
+
+/* ---------- 1-Click Clip Motion Presets ---------- */
+
+export const CLIP_MOTION_PRESETS: { id: ClipMotionPresetId; label: string; hint: string }[] = [
+  { id: "kenBurnsIn", label: "Slow zoom in", hint: "Smooth Ken Burns push-in across clip" },
+  { id: "kenBurnsOut", label: "Slow pull out", hint: "Smooth Ken Burns zoom-out across clip" },
+  { id: "panLeft", label: "Pan left", hint: "Cinematic horizontal pan left" },
+  { id: "panRight", label: "Pan right", hint: "Cinematic horizontal pan right" },
+  { id: "zoomPunch", label: "Zoom punch", hint: "Snappy impact punch into frame" },
+  { id: "slideLeft", label: "Slide in ←", hint: "Enters smoothly from the right edge" },
+  { id: "slideBottom", label: "Slide up ↑", hint: "Rises cleanly from the bottom edge" },
+  { id: "spinIn", label: "Spin pop", hint: "Rotates and scales in with overshoot" },
+  { id: "floatLoop", label: "Float hover", hint: "Gentle continuous floating drift" },
+  { id: "pulseLoop", label: "Beat pulse", hint: "Subtle breathing scale rhythm" },
+  { id: "impactShake", label: "Impact shake", hint: "Short camera hit shake at clip start" },
+  { id: "none", label: "Reset motion", hint: "Clear transform keyframes" },
+];
 
 /* ---------- Text animations ---------- */
 

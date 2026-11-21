@@ -3,7 +3,10 @@
 import { createElement, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useShallow } from "zustand/react/shallow";
 import {
+  AudioLines,
   Bookmark,
+  ClipboardCopy,
+  ClipboardPaste,
   Copy,
   Crosshair,
   Download,
@@ -21,6 +24,7 @@ import {
   RotateCcw,
   Scissors,
   Snowflake,
+  Sparkles,
   Trash2,
   Upload,
   X,
@@ -31,6 +35,7 @@ import {
   ASPECTS,
   CAPTION_STYLES,
   CHROMA_PRESETS,
+  CLIP_MOTION_PRESETS,
   DEFAULT_TRANSITION_DURATION,
   EFFECT_CATEGORIES,
   EFFECT_CHOICES,
@@ -51,7 +56,7 @@ import { rateAt } from "../lib/speed";
 import { clamp, dbToGain, formatBytes, gainToDb, rt, shortTime } from "../lib/time";
 import * as TL from "../lib/timeline";
 import { getStudio, usePrimaryClip, useStudio } from "../store/studio-store";
-import type { AspectId, AudioFx, CaptionStyleId, Clip, Effect, EffectType, ShapeType, TextAnimation, TrackMatteMode, TransitionType, VoiceEffect } from "../types";
+import type { AspectId, AudioFx, CaptionStyleId, Clip, ClipMotionPresetId, Effect, EffectType, ShapeType, TextAnimation, TrackMatteMode, TransitionType, VoiceEffect } from "../types";
 import { applyTrackToClip } from "../engine/ai/tracker";
 import { audioFxOf } from "../engine/audio-fx";
 import { freezeFrame, reverseClip } from "../engine/clip-tools";
@@ -64,7 +69,7 @@ import { listProjects, newProject, openProject } from "../engine/persistence";
 import { storageEstimate } from "../engine/storage";
 import { download } from "../engine/subtitles";
 import { JobLine, runJob } from "./ai-panel";
-import { ANIMATION_ICON, CATEGORY_ICON, LAYOUT_ICON, SHAPE_ICON, SPEED_ICON, TRANSITION_ICON, VOICE_ICON } from "./catalog";
+import { ANIMATION_ICON, CATEGORY_ICON, LAYOUT_ICON, MOTION_ICON, SHAPE_ICON, SPEED_ICON, TRANSITION_ICON, VOICE_ICON } from "./catalog";
 import { ColorWheelsControl, CurvesControl, HslMixerControl } from "./color-grading";
 import { ColorField, Empty, IconButton, KeyButton, Row, Scrub, Section, Segmented, Select, Slider, TextButton, Toggle } from "./controls";
 import { canTake, EffectGlyph, EffectTile, LooksGrid } from "./effects-panel";
@@ -567,6 +572,16 @@ function TransformSection({ c }: { c: Clip }) {
           />
         </>
       )}
+      <p className="label-mono mb-1 mt-3 text-paper-dim">1-Click motion presets</p>
+      <IconGrid
+        cols={3}
+        value={null}
+        onPick={(id: ClipMotionPresetId) => {
+          st.applyMotionPreset(c.id, id);
+          st.notify(id === "none" ? "Cleared motion keyframes." : `Applied ${CLIP_MOTION_PRESETS.find((x) => x.id === id)?.label ?? id} animation.`, "success");
+        }}
+        options={CLIP_MOTION_PRESETS.map((m) => ({ id: m.id, label: m.label, hint: m.hint, icon: MOTION_ICON[m.id] }))}
+      />
     </Section>
   );
 }
@@ -1220,6 +1235,8 @@ const LABELS = ["", "#eb4a10", "#e0b100", "#2fa86b", "#2f80ed", "#9b51e0", "#e84
 function ClipTab() {
   const c = usePrimaryClip();
   const linkedAudio = useStudio((s) => (c?.linkId ? Object.values(s.project.clips).find((x) => x.linkId === c.linkId && x.kind === "audio" && x.id !== c.id) : undefined));
+  const hasAudioStream = useStudio((s) => (c?.kind === "video" && c.mediaId ? Boolean(s.project.media[c.mediaId]?.hasAudio) : false));
+  const hasAttrClip = useStudio((s) => !!s.attrClipboard);
   const busy = useStudio((s) => !!s.jobs.cliptool);
   const st = getStudio();
   if (!c) return <Empty>Select a clip on the timeline or in the preview to edit it. Shift-click to select more than one.</Empty>;
@@ -1250,6 +1267,22 @@ function ClipTab() {
         <IconButton label="Duplicate (Ctrl+D)" onClick={() => st.duplicateSelection()} className="size-7">
           <Copy aria-hidden className="size-3.5" />
         </IconButton>
+        <IconButton label="Copy attributes & effects (Ctrl+Alt+C)" onClick={() => st.copyAttributes(c.id)} className="size-7">
+          <ClipboardCopy aria-hidden className="size-3.5" />
+        </IconButton>
+        <IconButton label="Paste attributes & effects (Ctrl+Alt+V)" disabled={!hasAttrClip} onClick={() => st.pasteAttributes()} className="size-7">
+          <ClipboardPaste aria-hidden className="size-3.5" />
+        </IconButton>
+        {(c.kind === "video" || c.kind === "image") && (
+          <IconButton label="Sync colour grade to all clips on timeline" onClick={() => st.applyGradeToAllClips(c.id)} className="size-7">
+            <Sparkles aria-hidden className="size-3.5" />
+          </IconButton>
+        )}
+        {(c.kind === "video" && (linkedAudio || hasAudioStream)) && (
+          <IconButton label="Detach / extract audio track" onClick={() => st.detachAudio(c.id)} className="size-7">
+            <AudioLines aria-hidden className="size-3.5" />
+          </IconButton>
+        )}
         {c.kind === "video" && (
           <IconButton
             label="Freeze frame: hold this frame for 2 s (Shift+F)"

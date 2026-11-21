@@ -41,7 +41,7 @@ export function Workbench({
               key={title}
               aria-current={state === "active" ? "step" : undefined}
               className={cn(
-                "relative flex min-w-0 items-center gap-2.5 px-4 py-3.5 sm:flex-1 sm:px-5 [&+&]:border-l [&+&]:border-line",
+                "relative flex min-w-0 items-center gap-2 px-3 py-2.5 sm:flex-1 sm:gap-2.5 sm:px-5 sm:py-3.5 [&+&]:border-l [&+&]:border-line",
                 // On phones only the current step shows its name; the others shrink to their number.
                 state === "active" || (current < 0 && i === 0) ? "flex-1" : "shrink-0",
               )}

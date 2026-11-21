@@ -2,14 +2,34 @@
 
 import { useEffect } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { Activity, Download, Keyboard, Maximize2, Minimize2, Redo2, Undo2, X } from "lucide-react";
+import { Activity, Download, Keyboard, Maximize2, Minimize2, PanelLeft, PanelRight, Redo2, Undo2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ASPECTS } from "../constants";
 import { getStudio, useStudio } from "../store/studio-store";
 import type { AspectId } from "../types";
 import { IconButton, Select } from "./controls";
 
-export function TopBar({ fullscreen, onFullscreen, onExport, onHelp }: { fullscreen: boolean; onFullscreen: () => void; onExport: () => void; onHelp: () => void }) {
+export function TopBar({
+  fullscreen,
+  onFullscreen,
+  onExport,
+  onHelp,
+  tier = "desktop",
+  leftOpen = true,
+  rightOpen = true,
+  onToggleLeft,
+  onToggleRight,
+}: {
+  fullscreen: boolean;
+  onFullscreen: () => void;
+  onExport: () => void;
+  onHelp: () => void;
+  tier?: "phone" | "tablet" | "desktop";
+  leftOpen?: boolean;
+  rightOpen?: boolean;
+  onToggleLeft?: () => void;
+  onToggleRight?: () => void;
+}) {
   const { name, canUndo, canRedo, saveState, aspect, busy, scopes } = useStudio(
     useShallow((s) => ({
       name: s.project.name,
@@ -23,7 +43,12 @@ export function TopBar({ fullscreen, onFullscreen, onExport, onHelp }: { fullscr
   );
   const st = getStudio();
   return (
-    <div className="flex h-11 shrink-0 items-center gap-1 border-b border-line-dark bg-ink-raised px-2">
+    <div className="flex h-11 shrink-0 items-center gap-0.5 border-b border-line-dark bg-ink-raised px-1.5 sm:gap-1 sm:px-2">
+      {tier === "desktop" && onToggleLeft && (
+        <IconButton label={leftOpen ? "Hide library panel" : "Show library panel"} active={leftOpen} onClick={onToggleLeft}>
+          <PanelLeft aria-hidden className="size-4" />
+        </IconButton>
+      )}
       <span aria-hidden className="mr-1 hidden size-2 shrink-0 rounded-full bg-accent sm:block" />
       <input
         aria-label="Project name"
@@ -33,37 +58,42 @@ export function TopBar({ fullscreen, onFullscreen, onExport, onHelp }: { fullscr
           e.stopPropagation();
           if (e.key === "Enter") (e.target as HTMLInputElement).blur();
         }}
-        className="h-8 w-full min-w-0 max-w-[220px] rounded-sm border border-transparent bg-transparent px-1.5 text-[14px] font-medium text-paper outline-none hover:border-line-dark focus-visible:border-accent"
+        className="h-8 w-full min-w-[72px] max-w-[140px] rounded-sm border border-transparent bg-transparent px-1.5 text-[14px] font-medium text-paper outline-none hover:border-line-dark focus-visible:border-accent sm:max-w-[220px]"
       />
-      <span className={cn("label-mono hidden shrink-0 md:inline", saveState === "error" ? "text-danger" : "text-paper-dim")} aria-live="polite">
+      <span className={cn("label-mono hidden shrink-0 lg:inline", saveState === "error" ? "text-danger" : "text-paper-dim")} aria-live="polite">
         {saveState === "saving" ? "Saving…" : saveState === "error" ? "Not saved" : "Saved here"}
       </span>
-      <IconButton label="Undo (Ctrl+Z)" disabled={!canUndo || busy} onClick={() => st.undo()} className="ml-1">
+      <IconButton label="Undo (Ctrl+Z)" disabled={!canUndo || busy} onClick={() => st.undo()} className="sm:ml-1">
         <Undo2 aria-hidden className="size-4" />
       </IconButton>
       <IconButton label="Redo (Ctrl+Shift+Z)" disabled={!canRedo || busy} onClick={() => st.redo()}>
         <Redo2 aria-hidden className="size-4" />
       </IconButton>
-      <div className="ml-auto flex shrink-0 items-center gap-1">
+      <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1">
         <Select<AspectId>
-          label="Frame"
+          label="Frame aspect ratio"
           value={aspect}
           onChange={(v) => st.setAspect(v)}
           options={(Object.keys(ASPECTS) as AspectId[]).map((a) => ({ value: a, label: a }))}
-          className="hidden w-[72px] flex-none sm:block"
+          className="w-[62px] flex-none sm:w-[72px]"
         />
-        <IconButton label="Video scopes (Waveform, RGB Parade, Histogram, Vectorscope)" active={scopes} onClick={() => st.set({ scopes: !scopes })} className="max-sm:hidden">
+        <IconButton label="Video scopes (Waveform, RGB Parade, Histogram, Vectorscope)" active={scopes} onClick={() => st.set({ scopes: !scopes })}>
           <Activity aria-hidden className="size-4" />
         </IconButton>
         <IconButton label="Keyboard shortcuts (?)" onClick={onHelp} className="max-sm:hidden">
           <Keyboard aria-hidden className="size-4" />
         </IconButton>
+        {(tier === "desktop" || tier === "tablet") && onToggleRight && (
+          <IconButton label={rightOpen ? "Hide side panel" : "Show side panel"} active={rightOpen} onClick={onToggleRight}>
+            <PanelRight aria-hidden className="size-4" />
+          </IconButton>
+        )}
         <IconButton label={fullscreen ? "Exit full screen (F)" : "Full screen (F)"} onClick={onFullscreen}>
           {fullscreen ? <Minimize2 aria-hidden className="size-4" /> : <Maximize2 aria-hidden className="size-4" />}
         </IconButton>
-        <button type="button" onClick={onExport} className="ml-1 inline-flex h-8 items-center gap-1.5 rounded-md bg-paper px-3 text-[13px] font-medium text-ink transition-colors hover:bg-paper/85">
+        <button type="button" onClick={onExport} className="ml-0.5 inline-flex h-8 items-center gap-1.5 rounded-md bg-paper px-2.5 text-[13px] font-medium text-ink transition-colors hover:bg-paper/85 sm:ml-1 sm:px-3">
           <Download aria-hidden className="size-4" />
-          Export
+          <span className="max-[400px]:hidden">Export</span>
         </button>
       </div>
     </div>
@@ -108,6 +138,8 @@ const SHORTCUTS: [string, [string, string][]][] = [
       ["Shift Delete", "Ripple delete (close the gap)"],
       ["Alt ← →", "Nudge selected clips a frame"],
       ["Ctrl C · Ctrl V", "Copy · paste at the playhead"],
+      ["Ctrl Alt C · V", "Copy · paste clip effects & transforms"],
+      ["Shift C", "Before / after split grade wipe"],
       ["Ctrl D", "Duplicate after itself"],
       ["Ctrl A", "Select everything"],
       ["Ctrl Z · Ctrl Shift Z", "Undo · redo"],

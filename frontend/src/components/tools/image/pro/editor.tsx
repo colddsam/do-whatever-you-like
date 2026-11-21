@@ -21,9 +21,11 @@ import {
   Maximize2,
   Minus,
   Palette,
+  PanelRight,
   PenTool,
   Plus,
   Spline,
+  SquareSplitHorizontal,
   Sticker,
   ImageUpscale,
   Minimize2,
@@ -46,7 +48,7 @@ import { FileDrop } from "../../file-drop";
 import { Workbench } from "../../workbench";
 import { familyFor, FONT_CLASSES, loadFont } from "../fonts";
 import { takeHandoff } from "@/lib/handoff";
-import { addFrame, addSticker, addStyledText, FRAMES, makeCollage, STICKER_SETS, TEXT_STYLES, type FrameId } from "./create";
+import { addFrame, addSticker, addStyledText, addWatermark, FRAMES, makeCollage, STICKER_SETS, TEXT_STYLES, type FrameId } from "./create";
 import { LOOK_OPS } from "./looks";
 import {
   addAdjustmentLayer,
@@ -222,6 +224,33 @@ const ALL_OPS: Op[] = [...ADJUSTMENTS, ...FILTERS];
 
 /** Keeps at least this much of the picture on screen, so it can never be panned out of reach. */
 const KEEP_VISIBLE = 64;
+const POPULAR_GOOGLE_FONTS = ["Montserrat", "Playfair Display", "Oswald", "Space Grotesk", "Dancing Script"] as const;
+
+/** Largest axis-aligned rectangle inside a rotated w×h image (prevents blank corners when straightening). */
+function inscribedCropRect(w: number, h: number, deg: number): Rect {
+  const rad = Math.abs((deg * Math.PI) / 180);
+  if (rad < 1e-4) return { x: 0, y: 0, w, h };
+  const cosA = Math.abs(Math.cos(rad));
+  const sinA = Math.abs(Math.sin(rad));
+  const nw = Math.ceil(w * cosA + h * sinA);
+  const nh = Math.ceil(w * sinA + h * cosA);
+  const longSide = Math.max(w, h);
+  const shortSide = Math.min(w, h);
+  let wr: number;
+  let hr: number;
+  if (shortSide <= 2 * sinA * cosA * longSide || Math.abs(sinA - cosA) < 1e-6) {
+    const half = 0.5 * shortSide;
+    wr = w >= h ? half / Math.max(1e-4, sinA) : half / Math.max(1e-4, cosA);
+    hr = w >= h ? half / Math.max(1e-4, cosA) : half / Math.max(1e-4, sinA);
+  } else {
+    const cos2 = cosA * cosA - sinA * sinA;
+    wr = (w * cosA - h * sinA) / cos2;
+    hr = (h * cosA - w * sinA) / cos2;
+  }
+  const cw = Math.max(1, Math.min(nw, Math.floor(wr)));
+  const ch = Math.max(1, Math.min(nh, Math.floor(hr)));
+  return { x: Math.max(0, Math.round((nw - cw) / 2)), y: Math.max(0, Math.round((nh - ch) / 2)), w: cw, h: ch };
+}
 
 /* ---------- The editor ---------- */
 
@@ -266,6 +295,27 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
   const [zoom, setZoom] = useState(1);
   const [hasClip, setHasClip] = useState(false);
   const [compare, setCompare] = useState(false);
+  const [splitCompare, setSplitCompare] = useState(false);
+  const [splitX, setSplitX] = useState(0.5);
+  const [cropAngle, setCropAngle] = useState(0);
+  const [fontsList, setFontsList] = useState<{ label: string; family: string }[]>(() => [...FONTS]);
+  const [gFontInput, setGFontInput] = useState("");
+  const [wmText, setWmText] = useState("© Studio");
+  const [wmMode, setWmMode] = useState<"tile" | "corner">("tile");
+  const [wmColor, setWmColor] = useState("#ffffff");
+  const [wmOpacity, setWmOpacity] = useState(32);
+  const [wmAngle, setWmAngle] = useState(-30);
+  const [wmSize, setWmSize] = useState(5);
+  const [panelOpen, setPanelOpen] = useState(true);
+  const [panelW, setPanelW] = useState(() => {
+    if (typeof window === "undefined") return 312;
+    try {
+      const savedW = Number(localStorage.getItem("dw-pro-panel-w"));
+      return savedW >= 260 && savedW <= 460 ? savedW : 312;
+    } catch {
+      return 312;
+    }
+  });
   // Live previews for the Adjust tab: your picture through each effect, while that tab is open.
   const effectPreviews = useEffectPreviews(doc && panel === "adjust" ? doc : null, ALL_OPS, { fg, bg });
   const [lookThumbs, setLookThumbs] = useState<{ src: HTMLCanvasElement | null; urls: Record<string, string> }>({ src: null, urls: {} });
@@ -289,6 +339,9 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
   const peekRef = useRef(false);
   const [peeking, setPeeking] = useState(false);
   const compareRef = useRef(false);
+  const splitCompareRef = useRef(false);
+  const splitXRef = useRef(0.5);
+  const splitHandleRef = useRef<HTMLDivElement>(null);
   const collageRef = useRef<HTMLInputElement>(null);
   const subjectCache = useRef<{ canvas: HTMLCanvasElement; mask: HTMLCanvasElement } | null>(null);
 
@@ -576,9 +629,9 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
   };
 
   // Things drawn over the picture: selection, crop, transform box, brush outline…
-  const overlayState = useRef({ crop, transform, poly, cloneSrc, showGrid, tool, brush, pen, nodeSel });
+  const overlayState = useRef({ crop, transform, poly, cloneSrc, showGrid, tool, brush, pen, nodeSel, cropGuide: opts.cropGuide, cropAngle });
   useLayoutEffect(() => {
-    overlayState.current = { crop, transform, poly, cloneSrc, showGrid, tool, brush, pen, nodeSel };
+    overlayState.current = { crop, transform, poly, cloneSrc, showGrid, tool, brush, pen, nodeSel, cropGuide: opts.cropGuide, cropAngle };
   });
 
   /** The paths shown for direct selection: the live (dragged) version if there is one. */
@@ -708,7 +761,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
       g.restore();
     }
 
-    // Crop: dim outside, thirds inside, eight handles.
+    // Crop: dim outside, guide overlay inside, eight handles, and straighten grid.
     if (st.crop) {
       const r = st.crop;
       g.save();
@@ -717,15 +770,55 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
       g.rect(sx(-1e5), sy(-1e5), 2e5 * v.z, 2e5 * v.z);
       g.rect(sx(r.x), sy(r.y), r.w * v.z, r.h * v.z);
       g.fill("evenodd");
-      g.strokeStyle = "rgba(255,255,255,0.45)";
+      g.strokeStyle = "rgba(255,255,255,0.48)";
       g.beginPath();
-      for (const f of [1 / 3, 2 / 3]) {
-        g.moveTo(sx(r.x + r.w * f), sy(r.y));
-        g.lineTo(sx(r.x + r.w * f), sy(r.y + r.h));
-        g.moveTo(sx(r.x), sy(r.y + r.h * f));
-        g.lineTo(sx(r.x + r.w), sy(r.y + r.h * f));
+      if (st.cropGuide === "thirds") {
+        for (const f of [1 / 3, 2 / 3]) {
+          g.moveTo(sx(r.x + r.w * f), sy(r.y));
+          g.lineTo(sx(r.x + r.w * f), sy(r.y + r.h));
+          g.moveTo(sx(r.x), sy(r.y + r.h * f));
+          g.lineTo(sx(r.x + r.w), sy(r.y + r.h * f));
+        }
+      } else if (st.cropGuide === "grid") {
+        for (let i = 1; i < 4; i++) {
+          const f = i / 4;
+          g.moveTo(sx(r.x + r.w * f), sy(r.y));
+          g.lineTo(sx(r.x + r.w * f), sy(r.y + r.h));
+          g.moveTo(sx(r.x), sy(r.y + r.h * f));
+          g.lineTo(sx(r.x + r.w), sy(r.y + r.h * f));
+        }
+      } else if (st.cropGuide === "golden") {
+        for (const f of [0.382, 0.618]) {
+          g.moveTo(sx(r.x + r.w * f), sy(r.y));
+          g.lineTo(sx(r.x + r.w * f), sy(r.y + r.h));
+          g.moveTo(sx(r.x), sy(r.y + r.h * f));
+          g.lineTo(sx(r.x + r.w), sy(r.y + r.h * f));
+        }
+      } else if (st.cropGuide === "diagonal") {
+        g.moveTo(sx(r.x), sy(r.y));
+        g.lineTo(sx(r.x + r.w), sy(r.y + r.h));
+        g.moveTo(sx(r.x + r.w), sy(r.y));
+        g.lineTo(sx(r.x), sy(r.y + r.h));
       }
       g.stroke();
+      if (st.cropAngle !== 0) {
+        const cx = sx(r.x + r.w / 2);
+        const cy = sy(r.y + r.h / 2);
+        const rw = (r.w * v.z) / 2;
+        const rh = (r.h * v.z) / 2;
+        g.save();
+        g.translate(cx, cy);
+        g.rotate((st.cropAngle * Math.PI) / 180);
+        g.strokeStyle = "rgba(235,74,16,0.75)";
+        g.setLineDash([4, 4]);
+        g.beginPath();
+        g.moveTo(-rw, 0);
+        g.lineTo(rw, 0);
+        g.moveTo(0, -rh);
+        g.lineTo(0, rh);
+        g.stroke();
+        g.restore();
+      }
       g.strokeStyle = "#fff";
       g.lineWidth = 1.5;
       g.strokeRect(sx(r.x), sy(r.y), r.w * v.z, r.h * v.z);
@@ -734,14 +827,14 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
         const px = sx(r.x + ((hx + 1) / 2) * r.w);
         const py = sy(r.y + ((hy + 1) / 2) * r.h);
         g.fillStyle = "#fff";
-        g.fillRect(px - 4, py - 4, 8, 8);
+        g.fillRect(px - 4.5, py - 4.5, 9, 9);
         g.strokeStyle = T.ink;
         g.lineWidth = 1;
-        g.strokeRect(px - 4, py - 4, 8, 8);
+        g.strokeRect(px - 4.5, py - 4.5, 9, 9);
       }
       g.fillStyle = "#fff";
       g.font = "12px ui-monospace, monospace";
-      g.fillText(`${Math.round(r.w)} × ${Math.round(r.h)}`, sx(r.x) + 6, sy(r.y) - 8);
+      g.fillText(`${Math.round(r.w)} × ${Math.round(r.h)}${st.cropAngle ? ` · ${st.cropAngle.toFixed(1)}°` : ""}`, sx(r.x) + 6, sy(r.y) - 8);
       g.restore();
     }
 
@@ -887,6 +980,35 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
       g.restore();
     }
     const brushy = BUFFER_TOOLS.includes(st.tool) || PIXEL_TOOLS.includes(st.tool) || st.tool === "red-eye";
+    if ((st.tool === "brush" || st.tool === "pencil" || st.tool === "eraser") && st.brush.symmetry !== "off") {
+      g.save();
+      g.strokeStyle = T.accent;
+      g.lineWidth = 1;
+      g.setLineDash([5, 5]);
+      g.beginPath();
+      const sym = st.brush.symmetry;
+      const cx = sx(d.w / 2);
+      const cy = sy(d.h / 2);
+      if (sym === "vertical" || sym === "quad") {
+        g.moveTo(cx, sy(0));
+        g.lineTo(cx, sy(d.h));
+      }
+      if (sym === "horizontal" || sym === "quad") {
+        g.moveTo(sx(0), cy);
+        g.lineTo(sx(d.w), cy);
+      }
+      if (sym === "radial6" || sym === "radial8") {
+        const rays = sym === "radial6" ? 6 : 8;
+        const rad = Math.hypot(d.w, d.h) * 0.65 * v.z;
+        for (let i = 0; i < rays; i++) {
+          const a = (i * Math.PI * 2) / rays;
+          g.moveTo(cx, cy);
+          g.lineTo(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad);
+        }
+      }
+      g.stroke();
+      g.restore();
+    }
     if (brushy && hover.current && !space.current) {
       const r = Math.max(1.5, (st.brush.size * v.z) / 2);
       const p = { x: sx(hover.current.x), y: sy(hover.current.y) };
@@ -900,6 +1022,9 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
       g.lineWidth = 0.75;
       g.stroke();
       g.restore();
+    }
+    if (splitHandleRef.current && splitCompareRef.current && histRef.current && histRef.current.index > 0) {
+      splitHandleRef.current.style.left = `${v.x + d.w * splitXRef.current * v.z}px`;
     }
   }
 
@@ -958,12 +1083,35 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
         const ry = clamp(Math.floor(-v.y / v.z), 0, d.h);
         const rx1 = clamp(Math.ceil((W - v.x) / v.z), 0, d.w);
         const ry1 = clamp(Math.ceil((H - v.y) / v.z), 0, d.h);
+        const splitComparing = !comparing && splitCompareRef.current && !!histRef.current && histRef.current.index > 0;
         if (rx1 > rx && ry1 > ry) {
           const s = Math.min(1, v.z * dpr);
           const comp = compose(d, { rect: { x: rx, y: ry, w: rx1 - rx, h: ry1 - ry }, scale: s, live: comparing || peekRef.current ? undefined : live.current });
           g.imageSmoothingEnabled = v.z * dpr < 2;
           g.imageSmoothingQuality = "high";
-          g.drawImage(comp, (v.x + rx * v.z) * dpr, (v.y + ry * v.z) * dpr, (rx1 - rx) * v.z * dpr, (ry1 - ry) * v.z * dpr);
+          const dstX = (v.x + rx * v.z) * dpr;
+          const dstY = (v.y + ry * v.z) * dpr;
+          const dstW = (rx1 - rx) * v.z * dpr;
+          const dstH = (ry1 - ry) * v.z * dpr;
+          if (splitComparing) {
+            const origDoc = histRef.current!.entries[0].doc;
+            const origComp = compose(origDoc, { rect: { x: rx, y: ry, w: rx1 - rx, h: ry1 - ry }, scale: s });
+            const splitScreenPx = clamp(Math.round((v.x + d.w * splitXRef.current * v.z) * dpr), 0, c.width);
+            g.save();
+            g.beginPath();
+            g.rect(0, 0, splitScreenPx, c.height);
+            g.clip();
+            g.drawImage(origComp, dstX, dstY, dstW, dstH);
+            g.restore();
+            g.save();
+            g.beginPath();
+            g.rect(splitScreenPx, 0, c.width - splitScreenPx, c.height);
+            g.clip();
+            g.drawImage(comp, dstX, dstY, dstW, dstH);
+            g.restore();
+          } else {
+            g.drawImage(comp, dstX, dstY, dstW, dstH);
+          }
           lastComp.current = { canvas: comp, rx, ry, s };
         }
       }
@@ -1028,6 +1176,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
   const setTool = (t: ToolId) => {
     finishModes(t);
     setToolState(t);
+    setCropAngle(0);
     const d = docRef.current;
     if (t === "crop" && d) setCrop({ x: 0, y: 0, w: d.w, h: d.h });
     if (t === "text") setPanel("properties");
@@ -1406,14 +1555,14 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
         if (pts.length >= 2) {
           const first = toScreen(pts[0]);
           const s = screenOf(e);
-          if (Math.hypot(first.x - s.x, first.y - s.y) < 12) return finishPen(true);
+          if (Math.hypot(first.x - s.x, first.y - s.y) < (e.pointerType === "touch" ? 22 : 12)) return finishPen(true);
         }
         setPen([...pts, { x: p.x, y: p.y, i: null, o: null }]);
         drag.current = { type: "pen", idx: pts.length, start: p };
         return;
       }
       case "node": {
-        const tol = 10 / view.current.z;
+        const tol = (e.pointerType === "touch" ? 22 : 10) / view.current.z;
         // 1. A point or handle of the path being edited (points win over handles sitting on them).
         const ns = nodeSel;
         const nl = ns && d.layers.find((x) => x.id === ns.layerId);
@@ -1480,7 +1629,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
         if (pts.length >= 3) {
           const first = toScreen(pts[0]);
           const r = el.getBoundingClientRect();
-          if (Math.hypot(first.x - (e.clientX - r.left), first.y - (e.clientY - r.top)) < 10) return closePoly();
+          if (Math.hypot(first.x - (e.clientX - r.left), first.y - (e.clientY - r.top)) < (e.pointerType === "touch" ? 22 : 10)) return closePoly();
         }
         setPoly({ pts: [...pts, p], mode: poly?.mode ?? selectModeFor(e) });
         return;
@@ -1979,7 +2128,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
   };
 
   const fontName = (family: string) => {
-    const f = FONTS.find((x) => x.family === family);
+    const f = fontsList.find((x) => x.family === family) ?? FONTS.find((x) => x.family === family);
     if (!f) return family;
     const label = f.label.replace(/\s*\(.*\)$/, "");
     const generic = /mono|courier/i.test(label) ? "monospace" : /serif|georgia|times/i.test(label) && !/sans/i.test(label) ? "serif" : "sans-serif";
@@ -2003,12 +2152,13 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     const r = overRef.current!.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   };
-  function cropHit(e: { clientX: number; clientY: number }, r: Rect): string | null {
+  function cropHit(e: { clientX: number; clientY: number; pointerType?: string }, r: Rect): string | null {
     const s = screenOf(e);
+    const tol = e.pointerType === "touch" ? 22 : 10;
     for (const h of HANDLES) {
       const [hx, hy] = HANDLE_POS[h];
       const p = toScreen({ x: r.x + ((hx + 1) / 2) * r.w, y: r.y + ((hy + 1) / 2) * r.h });
-      if (Math.abs(p.x - s.x) < 10 && Math.abs(p.y - s.y) < 10) return h;
+      if (Math.abs(p.x - s.x) < tol && Math.abs(p.y - s.y) < tol) return h;
     }
     const a = toScreen({ x: r.x, y: r.y });
     const b = toScreen({ x: r.x + r.w, y: r.y + r.h });
@@ -2044,18 +2194,19 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     }
     return { x: r.x, y: r.y, w: Math.max(1, r.w), h: Math.max(1, r.h) };
   }
-  function transformHit(e: { clientX: number; clientY: number }): string | null {
+  function transformHit(e: { clientX: number; clientY: number; pointerType?: string }): string | null {
     if (!transform) return null;
     const s = screenOf(e);
+    const tol = e.pointerType === "touch" ? 22 : 10;
     const m = transformMatrix(transform);
     const b = transform.box;
     const knob = rotateKnob(transform);
-    if (Math.hypot(knob.x - s.x, knob.y - s.y) < 10) return "rotate";
+    if (Math.hypot(knob.x - s.x, knob.y - s.y) < tol) return "rotate";
     for (const h of HANDLES) {
       const [hx, hy] = HANDLE_POS[h];
       const q = new DOMPoint(b.x + ((hx + 1) / 2) * b.w, b.y + ((hy + 1) / 2) * b.h).matrixTransform(m);
       const p = toScreen(q);
-      if (Math.abs(p.x - s.x) < 9 && Math.abs(p.y - s.y) < 9) return h;
+      if (Math.abs(p.x - s.x) < tol && Math.abs(p.y - s.y) < tol) return h;
     }
     // Inside the box moves it; just outside rotates (as in Photoshop).
     const inv = m.inverse();
@@ -2268,6 +2419,23 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     setCompare(on);
     dirty.current = true;
   };
+  const toggleSplitCompare = () => {
+    const next = !splitCompareRef.current;
+    splitCompareRef.current = next;
+    setSplitCompare(next);
+    dirty.current = true;
+  };
+  const updateSplitX = (v: number) => {
+    const clamped = clamp(v, 0.02, 0.98);
+    splitXRef.current = clamped;
+    setSplitX(clamped);
+    dirty.current = true;
+  };
+  useEffect(() => {
+    if (!splitCompare || !splitHandleRef.current || !docRef.current) return;
+    const v = view.current;
+    splitHandleRef.current.style.left = `${v.x + docRef.current.w * splitX * v.z}px`;
+  }, [splitCompare, splitX, doc]);
 
   /* ----- Upscale (the existing AI service) ----- */
 
@@ -2399,12 +2567,29 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     download(await exportBlob(d, "png", 1, 1, "#fff"), `${d.name || "image"}.png`);
   };
 
+  const applyStraighten = () => {
+    const d = docRef.current;
+    if (!d || !cropAngle) return;
+    const rot = transformCanvas(d, { angle: cropAngle });
+    const next = cropDoc(rot, inscribedCropRect(d.w, d.h, cropAngle));
+    commit(next, "Straighten");
+    setCropAngle(0);
+    setCrop({ x: 0, y: 0, w: next.w, h: next.h });
+    requestAnimationFrame(() => fit(next, true));
+  };
+
   const applyCrop = () => {
     const d = docRef.current;
     if (!d || !crop) return;
-    if (crop.x === 0 && crop.y === 0 && Math.round(crop.w) === d.w && Math.round(crop.h) === d.h) return say("Drag the crop's edges first.");
-    const next = cropDoc(d, crop);
-    commit(next, "Crop");
+    const untrimmed = crop.x === 0 && crop.y === 0 && Math.round(crop.w) === d.w && Math.round(crop.h) === d.h;
+    if (untrimmed && cropAngle === 0) return say("Drag the crop's edges or dial Straighten first.");
+    let next = untrimmed ? d : cropDoc(d, crop);
+    if (cropAngle !== 0) {
+      const rot = transformCanvas(next, { angle: cropAngle });
+      next = cropDoc(rot, inscribedCropRect(next.w, next.h, cropAngle));
+    }
+    commit(next, untrimmed && cropAngle !== 0 ? "Straighten" : "Crop");
+    setCropAngle(0);
     setCrop({ x: 0, y: 0, w: next.w, h: next.h });
     requestAnimationFrame(() => fit(next, true));
   };
@@ -2639,15 +2824,45 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
   };
   const uploadFont = async (f: File) => {
     try {
-      const fam = `Upload ${f.name.replace(/\.[^.]+$/, "")}`;
+      const label = f.name.replace(/\.[^.]+$/, "").trim() || "Custom font";
+      const fam = `Upload ${label}`;
       const face = new FontFace(fam, await f.arrayBuffer());
       await face.load();
       document.fonts.add(face);
-      FONTS.push({ label: fam.replace(/^Upload /, ""), family: `"${fam}"` });
-      setText({ font: `"${fam}"` });
-      say("Font added for this session.");
+      const entry = { label, family: `"${fam}"` };
+      if (!FONTS.some((x) => x.family === entry.family)) FONTS.push(entry);
+      setFontsList((prev) => (prev.some((x) => x.family === entry.family) ? prev : [...prev, entry]));
+      setText({ font: entry.family });
+      say(`Font “${label}” added for this session.`);
     } catch {
       say("That font file couldn't be read. Try a TTF, OTF or WOFF.");
+    }
+  };
+  const loadGoogleFont = async (raw: string) => {
+    const name = raw.trim().replace(/[^a-zA-Z0-9\s-]/g, "");
+    if (!name) return;
+    try {
+      const slug = name.replace(/\s+/g, "+");
+      const id = `dw-pro-gf-${slug.toLowerCase()}`;
+      if (!document.getElementById(id)) {
+        const link = document.createElement("link");
+        link.id = id;
+        link.rel = "stylesheet";
+        link.href = `https://fonts.googleapis.com/css2?family=${slug}:wght@400;700&display=swap`;
+        document.head.appendChild(link);
+      }
+      await Promise.race([
+        document.fonts.load(`700 32px "${name}"`),
+        new Promise((r) => setTimeout(r, 1500)),
+      ]);
+      const entry = { label: name, family: `"${name}", sans-serif` };
+      if (!FONTS.some((x) => x.family === entry.family)) FONTS.push(entry);
+      setFontsList((prev) => (prev.some((x) => x.family === entry.family) ? prev : [...prev, entry]));
+      setText({ font: entry.family });
+      setGFontInput("");
+      say(`Loaded Google Font “${name}”.`);
+    } catch {
+      say(`Couldn't load Google Font “${name}”. Check the exact font name.`);
     }
   };
 
@@ -3025,11 +3240,59 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
             className="w-full resize-y rounded-sm border border-line bg-surface px-2 py-1.5 text-[14px] text-ink outline-none focus:border-ink focus:ring-2 focus:ring-accent/20"
           />
           <div className="flex items-center gap-1.5">
-            <Select label="Font" value={t.font} onChange={(font) => setText({ font })} options={FONTS.map((f) => ({ value: f.family, label: f.label }))} className="min-w-0 flex-1" />
+            <Select label="Font" value={t.font} onChange={(font) => setText({ font })} options={fontsList.map((f) => ({ value: f.family, label: f.label }))} className="min-w-0 flex-1" />
             <label className="inline-flex h-7 shrink-0 cursor-pointer items-center rounded-sm border border-line px-2 text-[12px] text-ink-2 hover:text-ink">
               Upload…
-              <input type="file" accept=".ttf,.otf,.woff,.woff2" className="sr-only" onChange={(e) => e.target.files?.[0] && void uploadFont(e.target.files[0])} />
+              <input
+                type="file"
+                accept=".ttf,.otf,.woff,.woff2"
+                className="sr-only"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) void uploadFont(file);
+                }}
+              />
             </label>
+          </div>
+          <div className="space-y-1.5 rounded-sm border border-line bg-paper/40 p-2">
+            <p className="label-mono text-ink-3">Google Fonts</p>
+            <div className="flex gap-1">
+              <input
+                type="text"
+                value={gFontInput}
+                onChange={(e) => setGFontInput(e.target.value)}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void loadGoogleFont(gFontInput);
+                  }
+                }}
+                placeholder="e.g. Bebas Neue"
+                aria-label="Google Font name"
+                className="h-7 min-w-0 flex-1 rounded-sm border border-line bg-surface px-2 text-[12px] text-ink outline-none focus:border-ink"
+              />
+              <button
+                type="button"
+                onClick={() => void loadGoogleFont(gFontInput)}
+                className="h-7 shrink-0 rounded-sm border border-line bg-surface px-2 text-[12px] text-ink-2 hover:text-ink"
+              >
+                Load
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {POPULAR_GOOGLE_FONTS.map((gf) => (
+                <button
+                  key={gf}
+                  type="button"
+                  onClick={() => void loadGoogleFont(gf)}
+                  className="h-6 rounded-sm border border-line bg-surface px-1.5 text-[12px] text-ink-2 hover:border-ink-3 hover:text-ink"
+                >
+                  {gf}
+                </button>
+              ))}
+            </div>
           </div>
           <RangeRow label="Size" value={Math.round(t.size)} min={6} max={600} unit=" px" onChange={(size) => setText({ size })} />
           <RangeRow label="Line height" value={t.lineHeight} min={0.7} max={3} step={0.05} onChange={(lineHeight) => setText({ lineHeight })} />
@@ -3304,6 +3567,50 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
           <p className="mt-1.5 text-[12px] text-ink-3">Replace uses the background colour (the lower swatch in the toolbar).</p>
         </section>
         <section>
+          <p className="label-mono mb-2 text-ink-3">Watermark</p>
+          <div className="space-y-2 rounded-sm border border-line bg-paper/40 p-2.5">
+            <div className="flex items-center gap-1.5">
+              <input
+                type="text"
+                value={wmText}
+                onChange={(e) => setWmText(e.target.value.slice(0, 60))}
+                onKeyDown={(e) => e.stopPropagation()}
+                aria-label="Watermark text"
+                placeholder="© Studio"
+                className="h-8 min-w-0 flex-1 rounded-sm border border-line bg-surface px-2 text-[13px] text-ink outline-none focus:border-ink"
+              />
+              <ColorWell value={wmColor} onChange={setWmColor} label="Watermark colour" />
+            </div>
+            <div className="grid grid-cols-2 gap-1">
+              {(
+                [
+                  ["tile", "Tiled pattern"],
+                  ["corner", "Bottom-right"],
+                ] as const
+              ).map(([m, label]) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setWmMode(m)}
+                  className={cn("h-7 rounded-sm text-[12px]", wmMode === m ? "bg-ink text-paper" : "border border-line bg-surface text-ink-2 hover:text-ink")}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <RangeRow label="Opacity" value={wmOpacity} min={5} max={100} unit="%" onChange={setWmOpacity} />
+            <RangeRow label="Text size" value={wmSize} min={2} max={18} unit="%" onChange={setWmSize} />
+            {wmMode === "tile" && <RangeRow label="Angle" value={wmAngle} min={-45} max={45} unit="°" signed onChange={setWmAngle} />}
+            <Btn
+              primary
+              className="w-full"
+              onClick={() => commit(addWatermark(doc, { text: wmText, color: wmColor, opacity: wmOpacity, mode: wmMode, angle: wmAngle, size: wmSize }), "Add Watermark")}
+            >
+              Add watermark layer
+            </Btn>
+          </div>
+        </section>
+        <section>
           <p className="label-mono mb-2 text-ink-3">More</p>
           <div className="grid grid-cols-2 gap-1.5">
             <Btn onClick={() => collageRef.current?.click()}>Collage from photos</Btn>
@@ -3556,7 +3863,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
           )
         }
       >
-        <div ref={rootRef} className={cn("flex flex-col", fullscreen ? "min-h-0 flex-1" : "h-[calc(100dvh-76px)] min-h-[520px] lg:h-[min(86vh,920px)] lg:min-h-[620px]")}>
+        <div ref={rootRef} className={cn("flex flex-col", fullscreen ? "min-h-0 flex-1" : "h-[calc(100dvh-76px)] min-h-[520px] lg:h-[min(86vh,980px)] lg:min-h-[620px] 2xl:h-[min(90dvh,1340px)]")}>
           {/* Menu bar (one "Menu" button on narrow screens, so nothing hides off the edge) */}
           <div className="flex items-center gap-1 border-b border-line bg-paper/60 px-1.5 py-1" data-lenis-prevent>
             <div className="min-w-0 flex-1 md:hidden">
@@ -3589,6 +3896,27 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
             >
               <Eye aria-hidden className="size-4" />
             </button>
+            <button
+              type="button"
+              aria-label="Before / After split wipe"
+              aria-pressed={splitCompare}
+              title="Toggle interactive Before / After split wipe"
+              disabled={hist!.index === 0}
+              onClick={toggleSplitCompare}
+              className={cn("inline-flex size-8 items-center justify-center rounded-sm transition-colors disabled:opacity-35", splitCompare ? "bg-ink text-paper" : "text-ink-2 hover:bg-paper-2 hover:text-ink")}
+            >
+              <SquareSplitHorizontal aria-hidden className="size-4" />
+            </button>
+            <button
+              type="button"
+              aria-label={panelOpen ? "Hide side panels" : "Show side panels"}
+              aria-pressed={panelOpen}
+              title="Toggle panels"
+              onClick={() => setPanelOpen((o) => !o)}
+              className={cn("hidden size-8 items-center justify-center rounded-sm transition-colors md:inline-flex lg:hidden", panelOpen ? "bg-ink text-paper" : "text-ink-2 hover:bg-paper-2 hover:text-ink")}
+            >
+              <PanelRight aria-hidden className="size-4" />
+            </button>
             <button type="button" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)" onClick={() => setDialog("shortcuts")} className="hidden size-8 items-center justify-center rounded-sm text-ink-2 hover:bg-paper-2 hover:text-ink sm:inline-flex">
               <Keyboard aria-hidden className="size-4" />
             </button>
@@ -3610,11 +3938,18 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
               opts={opts}
               setOpts={setOpts}
               textTarget={active?.text ?? null}
+              fonts={fontsList}
               actions={{
                 selectSubject: () => void selectSubject(),
                 applyCrop,
-                cancelCrop: () => setCrop({ x: 0, y: 0, w: doc.w, h: doc.h }),
-                cropping: !!crop && (crop.x !== 0 || crop.y !== 0 || Math.round(crop.w) !== doc.w || Math.round(crop.h) !== doc.h),
+                cancelCrop: () => {
+                  setCropAngle(0);
+                  setCrop({ x: 0, y: 0, w: doc.w, h: doc.h });
+                },
+                cropping: !!crop && (crop.x !== 0 || crop.y !== 0 || Math.round(crop.w) !== doc.w || Math.round(crop.h) !== doc.h || cropAngle !== 0),
+                cropAngle,
+                setCropAngle,
+                applyStraighten,
                 transform: beginTransform,
                 align: (how) => commit(alignLayer(doc, how), "Align"),
                 fit: () => fit(),
@@ -3634,9 +3969,9 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
             />
           </div>
 
-          <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-            {/* Tools: a column on desktop, a scrolling row on phones */}
-            <div className="hidden shrink-0 overflow-y-auto border-r border-line bg-paper/40 lg:block" data-lenis-prevent>
+          <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+            {/* Tools: a column on tablet/desktop, a scrolling bottom row on phones */}
+            <div className="hidden shrink-0 overflow-y-auto border-r border-line bg-paper/40 md:block" data-lenis-prevent>
               <Toolbar tool={tool} onTool={setTool} fg={fg} bg={bg} onFg={setFg} onBg={setBg} onSwap={() => (setFg(bg), setBg(fg))} onReset={() => (setFg("#000000"), setBg("#ffffff"))} />
             </div>
 
@@ -3673,6 +4008,43 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
                 }}
                 onContextMenu={(e) => e.preventDefault()}
               />
+              {splitCompare && hist!.index > 0 && (
+                <div
+                  ref={splitHandleRef}
+                  role="slider"
+                  aria-label="Before and after split divider"
+                  aria-valuemin={2}
+                  aria-valuemax={98}
+                  aria-valuenow={Math.round(splitX * 100)}
+                  tabIndex={0}
+                  style={{ left: "50%" }}
+                  onKeyDown={(e) => {
+                    if (e.key === "ArrowLeft") {
+                      e.preventDefault();
+                      updateSplitX(splitX - 0.03);
+                    } else if (e.key === "ArrowRight") {
+                      e.preventDefault();
+                      updateSplitX(splitX + 0.03);
+                    }
+                  }}
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                    e.currentTarget.setPointerCapture(e.pointerId);
+                  }}
+                  onPointerMove={(e) => {
+                    if (!(e.buttons & 1) || !wrapRef.current) return;
+                    const r = wrapRef.current.getBoundingClientRect();
+                    const v = view.current;
+                    updateSplitX((e.clientX - r.left - v.x) / Math.max(1, doc.w * v.z));
+                  }}
+                  className="absolute inset-y-0 z-10 w-6 -translate-x-1/2 cursor-ew-resize touch-none select-none"
+                >
+                  <span aria-hidden className="mx-auto block h-full w-0.5 bg-paper shadow-[0_0_0_1px_rgba(21,20,15,0.7)]" />
+                  <span className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 whitespace-nowrap rounded-full border border-line bg-ink px-2 py-0.5 font-mono text-[12px] text-paper shadow-card">
+                    Before · After
+                  </span>
+                </div>
+              )}
               {transform && (
                 <div className="absolute left-2 top-2 flex items-center gap-1.5 rounded-md border border-line bg-surface/95 p-1 text-[12px] shadow-card backdrop-blur">
                   <span className="px-1.5 font-mono text-ink-2">
@@ -3746,12 +4118,45 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
               </div>
             </div>
 
-            <div className="border-t border-line bg-paper/40 lg:hidden" data-lenis-prevent>
+            <div className="border-t border-line bg-paper/40 md:hidden" data-lenis-prevent>
               <Toolbar horizontal tool={tool} onTool={setTool} fg={fg} bg={bg} onFg={setFg} onBg={setBg} onSwap={() => (setFg(bg), setBg(fg))} onReset={() => (setFg("#000000"), setBg("#ffffff"))} />
             </div>
 
             {/* Panels */}
-            <aside className="flex min-h-0 shrink-0 flex-col border-t border-line lg:w-[300px] lg:border-l lg:border-t-0 xl:w-[320px]">
+            <aside
+              style={{ "--pro-panel-w": `${panelW}px` } as React.CSSProperties}
+              className={cn(
+                "relative flex min-h-0 shrink-0 flex-col border-t border-line md:w-[300px] md:border-l md:border-t-0 lg:w-[var(--pro-panel-w)]",
+                !panelOpen && "md:max-lg:hidden",
+              )}
+            >
+              <div
+                role="separator"
+                aria-orientation="vertical"
+                aria-label="Resize side panel"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  const sx = e.clientX;
+                  const sw = panelW;
+                  let latest = sw;
+                  const move = (ev: PointerEvent) => {
+                    latest = clamp(sw + (sx - ev.clientX), 260, 460);
+                    setPanelW(latest);
+                  };
+                  const up = () => {
+                    window.removeEventListener("pointermove", move);
+                    window.removeEventListener("pointerup", up);
+                    try {
+                      localStorage.setItem("dw-pro-panel-w", String(Math.round(latest)));
+                    } catch {
+                      // Ignore storage failures.
+                    }
+                  };
+                  window.addEventListener("pointermove", move);
+                  window.addEventListener("pointerup", up);
+                }}
+                className="absolute inset-y-0 left-0 z-20 hidden w-1.5 -translate-x-1/2 cursor-col-resize transition-colors hover:bg-accent/50 lg:block"
+              />
               <div role="tablist" aria-label="Panels" className="flex border-b border-line bg-paper/60">
                 {[...tabs, { id: "layers" as Panel, label: "Layers", icon: LayersIcon }].map((t) => (
                   <button
@@ -3769,9 +4174,9 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
                         setSheetOpen(true);
                       }
                     }}
-                    className={cn("relative flex h-10 min-w-0 basis-0 items-center justify-center gap-1 text-[12px] transition-[flex-grow,color] duration-300 lg:h-9", t.id === "layers" && "lg:hidden", panel === t.id ? "grow-[3] text-ink" : "grow text-ink-3 hover:text-ink")}
+                    className={cn("relative flex h-10 min-w-0 basis-0 items-center justify-center gap-1 text-[12px] transition-[flex-grow,color] duration-300 md:h-9", t.id === "layers" && "lg:hidden", panel === t.id ? "grow-[3] text-ink" : "grow text-ink-3 hover:text-ink")}
                   >
-                    <t.icon aria-hidden className="size-4 lg:size-3.5" />
+                    <t.icon aria-hidden className="size-4 md:size-3.5" />
                     {/* Only the open tab shows its name: seven tabs never fit with labels. */}
                     <span className={panel === t.id ? "inline" : "sr-only"}>{t.label}</span>
                     {panel === t.id && <motion.span layoutId="pro-panel-tab" aria-hidden className="absolute inset-x-1 -bottom-px h-0.5 bg-ink" />}
@@ -3782,12 +4187,12 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
                   aria-label={sheetOpen ? "Hide the panel" : "Show the panel"}
                   aria-expanded={sheetOpen}
                   onClick={() => setSheetOpen((o) => !o)}
-                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center border-l border-line text-ink-2 hover:text-ink lg:hidden"
+                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center border-l border-line text-ink-2 hover:text-ink md:hidden"
                 >
                   <ChevronDown aria-hidden className={cn("size-4 transition-transform duration-300", !sheetOpen && "rotate-180")} />
                 </button>
               </div>
-              <div className={cn("min-h-0 overflow-y-auto overscroll-contain max-lg:h-[min(36dvh,340px)] lg:flex-1", !sheetOpen && "max-lg:hidden")} data-lenis-prevent>
+              <div className={cn("min-h-0 overflow-y-auto overscroll-contain max-md:h-[min(36dvh,340px)] md:flex-1", !sheetOpen && "max-md:hidden")} data-lenis-prevent>
                 {/* Tabs cross-fade; the panel's own scroll position starts at the top. */}
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div key={panel} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}>
