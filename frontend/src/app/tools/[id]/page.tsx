@@ -132,7 +132,7 @@ function ToolCategory({ tool }: { tool: Tool }) {
         </>
       )}
       <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-2.5">
-        <ToolHopperSearch mode="compact" currentToolId={tool.id} contextClusterId={cluster.id} />
+        <ToolHopperSearch mode="compact" currentToolId={tool.id} contextClusterId={cluster.id} hideFloatingPill={Boolean(tool.wide)} />
         {tool.status === "live" ? (
           <Badge variant="live">Live</Badge>
         ) : (
@@ -173,7 +173,7 @@ function ToolDetails({ tool }: { tool: Tool }) {
       */}
       {live && <JsonLd data={toolGraph(tool)} />}
       {/* Painted straight away, not faded in: the heading is the page's largest content. */}
-      <div className="mt-5 flex items-start gap-4 md:mt-7 md:gap-5">
+      <div className={cn("mt-5 flex items-start gap-4 md:mt-7 md:gap-5", tool.wide && "max-md:mt-2")}>
         <span className="flex size-11 shrink-0 items-center justify-center rounded-md border border-line bg-surface text-ink md:size-14">
           <Icon aria-hidden className="size-5 md:size-6" />
         </span>
@@ -204,7 +204,7 @@ function ToolDetails({ tool }: { tool: Tool }) {
         </div>
       )}
 
-      <div className="mt-8 grid grid-cols-1 gap-12 md:mt-10 lg:grid-cols-12 lg:gap-10 [&>*]:min-w-0">
+      <div className={cn("mt-8 grid grid-cols-1 gap-12 md:mt-10 lg:grid-cols-12 lg:gap-10 [&>*]:min-w-0", tool.wide && "max-md:mt-4")}>
         <div className={tool.wide ? "lg:col-span-12" : "lg:col-span-8"}>
           <Playground toolId={tool.id} />
         </div>

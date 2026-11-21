@@ -143,7 +143,7 @@ export function ExportDialog({ onClose, onDone }: { onClose: () => void; onDone:
         if (e.key === "Escape" && phase !== "running") close();
       }}
     >
-      <div role="dialog" aria-modal="true" aria-labelledby="studio-export-title" className="max-h-full w-full max-w-lg overflow-y-auto rounded-lg border border-line-dark bg-ink-raised shadow-float" data-lenis-prevent>
+      <div role="dialog" aria-modal="true" aria-labelledby="studio-export-title" className="safe-bottom max-h-full w-full max-w-lg overflow-y-auto rounded-lg border border-line-dark bg-ink-raised shadow-float" data-lenis-prevent>
         <div className="flex items-center justify-between border-b border-line-dark px-4 py-3">
           <h2 id="studio-export-title" className="text-[15px] font-semibold text-paper">
             Export <span className="serif-em">video</span>
@@ -157,11 +157,11 @@ export function ExportDialog({ onClose, onDone }: { onClose: () => void; onDone:
 
         {phase === "setup" && (
           <div className="px-4 py-3">
-            <Row label="Format">
+            <Row label="Format" className="max-sm:grid-cols-1 max-sm:gap-1 max-sm:py-1.5">
               <Segmented label="Format" value={format} onChange={setFormat} options={FORMATS.map((f) => ({ value: f.id, label: f.label, title: f.hint }))} />
             </Row>
             {!audioOnly && (
-              <Row label="Size">
+              <Row label="Size" className="max-sm:grid-cols-1 max-sm:gap-1 max-sm:py-1.5">
                 <Segmented
                   label="Resolution"
                   value={size}
@@ -174,16 +174,16 @@ export function ExportDialog({ onClose, onDone }: { onClose: () => void; onDone:
               </Row>
             )}
             {!audioOnly && (
-              <Row label="Frame rate">
+              <Row label="Frame rate" className="max-sm:grid-cols-1 max-sm:gap-1 max-sm:py-1.5">
                 <Segmented label="Frame rate" value={String(fps)} onChange={(v) => setFps(Number(v))} options={fpsChoices.map((f) => ({ value: String(f), label: `${f}` }))} />
               </Row>
             )}
             {(format === "mp4" || format === "webm") && (
-              <Row label="Quality">
+              <Row label="Quality" className="max-sm:grid-cols-1 max-sm:gap-1 max-sm:py-1.5">
                 <Segmented label="Quality" value={quality} onChange={setQuality} options={EXPORT_QUALITY.map((q) => ({ value: q.id, label: q.label, title: q.hint }))} />
               </Row>
             )}
-            <Row label="Range">
+            <Row label="Range" className="max-sm:grid-cols-1 max-sm:gap-1 max-sm:py-1.5">
               <Segmented
                 label="Range"
                 value={range}
@@ -194,12 +194,12 @@ export function ExportDialog({ onClose, onDone }: { onClose: () => void; onDone:
                 ]}
               />
             </Row>
-            <Row label="File name">
+            <Row label="File name" className="max-sm:grid-cols-1 max-sm:gap-1 max-sm:py-1.5">
               <input
                 aria-label="File name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="h-7 min-w-0 flex-1 rounded-sm border border-line-dark bg-ink px-1.5 text-[12px] text-paper outline-none focus-visible:border-accent"
+                className="h-9 min-w-0 flex-1 rounded-sm border border-line-dark bg-ink px-2 text-[12px] text-paper outline-none focus-visible:border-accent sm:h-7"
               />
             </Row>
             <p className="mt-3 font-mono text-[12px] leading-relaxed text-paper-dim">

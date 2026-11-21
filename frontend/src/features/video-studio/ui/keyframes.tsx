@@ -12,7 +12,7 @@ import * as TL from "../lib/timeline";
 import { getStudio, usePrimaryClip, useStudio } from "../store/studio-store";
 import type { Bezier, Clip, Ease, Keyframe } from "../types";
 import { TRANSFORM_PROPS } from "../types";
-import { Empty, IconButton, Section, Segmented } from "./controls";
+import { Empty, IconButton, Section } from "./controls";
 
 /**
  * The animation panel, After Effects' timeline in miniature: one lane per property with its keyframe
@@ -48,14 +48,14 @@ function Lane({ c, path, active }: { c: Clip; path: PropPath; active: boolean })
   if (!a) return null;
   const toX = (t: number) => (clamp(t, 0, c.duration) / Math.max(1e-6, c.duration)) * w;
   return (
-    <div ref={ref} className={cn("relative h-6 rounded-sm", active ? "bg-paper/10" : "bg-paper/[0.03]")}>
+    <div ref={ref} className={cn("relative h-7 rounded-sm sm:h-6", active ? "bg-paper/10" : "bg-paper/[0.03]")}>
       <span className="absolute inset-y-0 w-px bg-accent/70" style={{ left: toX(playhead - c.start) }} />
       {a.k?.map((k) => (
         <button
           key={k.id}
           type="button"
           aria-label={`Keyframe at ${k.t.toFixed(2)} s`}
-          className={cn("absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rotate-45 touch-none border", k.id === selectedKey ? "border-paper bg-accent" : "border-accent bg-ink hover:bg-accent/50")}
+          className={cn("absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rotate-45 touch-none border sm:size-3", k.id === selectedKey ? "border-paper bg-accent" : "border-accent bg-ink hover:bg-accent/50")}
           style={{ left: toX(k.t) }}
           onPointerDown={(e) => {
             e.stopPropagation();
@@ -276,8 +276,22 @@ export function KeyframeEditor() {
           <p className="text-[12px] leading-relaxed text-paper-dim">This is the last keyframe: easing shapes the move to the next key, and there isn&apos;t one.</p>
         ) : (
           <>
-            <div className="mb-2 flex items-center gap-1">
-              <Segmented label="Easing" value={key.ease} onChange={(v) => editKey(c, focus, key.id, { ease: v, ...(v === "bezier" ? { bezier: bezierOf(key) } : {}) })} options={EASES} />
+            <div role="radiogroup" aria-label="Easing" className="mb-2 grid grid-cols-3 gap-1">
+              {EASES.map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={key.ease === o.value}
+                  onClick={() => editKey(c, focus, key.id, { ease: o.value, ...(o.value === "bezier" ? { bezier: bezierOf(key) } : {}) })}
+                  className={cn(
+                    "h-8 rounded-sm border text-[12px] transition-colors sm:h-7",
+                    key.ease === o.value ? "border-paper bg-paper text-ink" : "border-line-dark text-paper-dim hover:border-paper/40 hover:text-paper",
+                  )}
+                >
+                  {o.label}
+                </button>
+              ))}
             </div>
             {key.ease !== "hold" && (
               <BezierEditor

@@ -11,6 +11,7 @@ import {
   ClipboardCopy,
   ClipboardPaste,
   Copy,
+  Ellipsis,
   Eye,
   EyeOff,
   Film,
@@ -27,6 +28,7 @@ import {
   Rewind,
   Scissors,
   Shapes,
+  SlidersHorizontal,
   Snowflake,
   Sparkles,
   SquareSplitHorizontal,
@@ -34,6 +36,8 @@ import {
   Type,
   Volume2,
   VolumeX,
+  Wrench,
+  X,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
@@ -60,7 +64,7 @@ const MEDIA_MIME = "application/x-studio-media";
 
 function readHeaderW() {
   if (typeof window === "undefined") return 156;
-  return window.innerWidth < 640 ? 84 : window.innerWidth < 1024 ? 120 : 156;
+  return window.innerWidth < 640 ? 64 : window.innerWidth < 1024 ? 120 : 156;
 }
 function useHeaderW() {
   return useSyncExternalStore(
@@ -377,44 +381,70 @@ function ClipMenu({ menu, onClose }: { menu: Menu; onClose: () => void }) {
     </button>
   );
   const visual = c.kind !== "audio";
-  return (
-    <div
-      data-clip-menu
-      role="menu"
-      className="fixed z-[90] max-h-[80vh] w-64 overflow-y-auto rounded-md border border-line-dark bg-ink-raised py-1 shadow-float"
-      style={{ left: Math.min(menu.x, window.innerWidth - 264), top: Math.min(menu.y, window.innerHeight - 420) }}
-    >
-      {item("Split at the playhead", <Scissors className="size-3.5" />, () => st.splitAtPlayhead(), "S")}
-      {item("Duplicate", <Copy className="size-3.5" />, () => st.duplicateSelection(), "Ctrl+D")}
-      {item("Copy", <Copy className="size-3.5" />, () => st.copySelection(), "Ctrl+C")}
-      {item("Copy attributes", <ClipboardCopy className="size-3.5" />, () => st.copyAttributes(c.id), "Ctrl+Alt+C")}
-      {item("Paste attributes", <ClipboardPaste className="size-3.5" />, () => st.pasteAttributes(), "Ctrl+Alt+V", !hasAttr)}
-      {item("Paste effects & grade", <Sparkles className="size-3.5" />, () => st.pasteAttributes({ effects: true, transform: false, audio: false }), undefined, !hasAttr)}
-      {(c.kind === "video" || c.kind === "image") && item("Sync grade to all clips", <Sparkles className="size-3.5" />, () => st.applyGradeToAllClips(c.id))}
+  const body = (
+    <>
+      {item("Split at the playhead", <Scissors className="size-4 sm:size-3.5" />, () => st.splitAtPlayhead(), "S")}
+      {item("Duplicate", <Copy className="size-4 sm:size-3.5" />, () => st.duplicateSelection(), "Ctrl+D")}
+      {item("Copy", <Copy className="size-4 sm:size-3.5" />, () => st.copySelection(), "Ctrl+C")}
+      {item("Copy attributes", <ClipboardCopy className="size-4 sm:size-3.5" />, () => st.copyAttributes(c.id), "Ctrl+Alt+C")}
+      {item("Paste attributes", <ClipboardPaste className="size-4 sm:size-3.5" />, () => st.pasteAttributes(), "Ctrl+Alt+V", !hasAttr)}
+      {item("Paste effects & grade", <Sparkles className="size-4 sm:size-3.5" />, () => st.pasteAttributes({ effects: true, transform: false, audio: false }), undefined, !hasAttr)}
+      {(c.kind === "video" || c.kind === "image") && item("Sync grade to all clips", <Sparkles className="size-4 sm:size-3.5" />, () => st.applyGradeToAllClips(c.id))}
       <div className="my-1 border-t border-line-dark" />
-      {c.kind === "video" && item("Freeze frame (2 s)", <Snowflake className="size-3.5" />, () => void runJob("cliptool", "Capturing the frame", () => freezeFrame(c.id)), "Shift+F")}
+      {c.kind === "video" && item("Freeze frame (2 s)", <Snowflake className="size-4 sm:size-3.5" />, () => void runJob("cliptool", "Capturing the frame", () => freezeFrame(c.id)), "Shift+F")}
       {(c.kind === "video" || c.kind === "audio") &&
-        item("Reverse", <Rewind className="size-3.5" />, () =>
+        item("Reverse", <Rewind className="size-4 sm:size-3.5" />, () =>
           void runJob("cliptool", "Reversing", async (p) => {
             await reverseClip(c.id, (f, l) => p(l ?? "Reversing", f));
             getStudio().notify("Reversed. The new copy is in your media.", "success");
           }),
         )}
-      {visual && item(c.flipH ? "Unflip" : "Flip horizontally", <FlipHorizontal2 className="size-3.5" />, () => st.flip(st.selection.length ? st.selection : [c.id], "h"))}
-      {c.kind === "video" && item(c.linkId ? "Detach audio" : "Extract audio", <AudioLines className="size-3.5" />, () => st.detachAudio(c.id))}
-      {c.linkId && item("Unlink picture and sound", <Link2Off className="size-3.5" />, () => st.unlink(c.id))}
-      {item("Add a marker here", <Bookmark className="size-3.5" />, () => st.addMarker(), "M")}
+      {visual && item(c.flipH ? "Unflip" : "Flip horizontally", <FlipHorizontal2 className="size-4 sm:size-3.5" />, () => st.flip(st.selection.length ? st.selection : [c.id], "h"))}
+      {c.kind === "video" && item(c.linkId ? "Detach audio" : "Extract audio", <AudioLines className="size-4 sm:size-3.5" />, () => st.detachAudio(c.id))}
+      {c.linkId && item("Unlink picture and sound", <Link2Off className="size-4 sm:size-3.5" />, () => st.unlink(c.id))}
+      {item("Add a marker here", <Bookmark className="size-4 sm:size-3.5" />, () => st.addMarker(), "M")}
       <div className="my-1 border-t border-line-dark" />
-      {item("Delete", <Trash2 className="size-3.5" />, () => st.deleteSelection(false), "Del")}
-      {item("Ripple delete", <BetweenHorizontalStart className="size-3.5" />, () => st.deleteSelection(true), "Shift+Del")}
+      {item("Delete", <Trash2 className="size-4 sm:size-3.5" />, () => st.deleteSelection(false), "Del")}
+      {item("Ripple delete", <BetweenHorizontalStart className="size-4 sm:size-3.5" />, () => st.deleteSelection(true), "Shift+Del")}
+    </>
+  );
+  if (typeof window !== "undefined" && window.innerWidth < 640) {
+    return (
+      <div data-clip-menu className="fixed inset-0 z-[95] flex flex-col justify-end bg-ink/60 backdrop-blur-[1px]" onClick={onClose}>
+        <div
+          role="menu"
+          onClick={(e) => e.stopPropagation()}
+          className="max-h-[75dvh] overflow-y-auto overscroll-contain rounded-t-xl border-t border-line-dark bg-ink-raised pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-float"
+          data-lenis-prevent
+        >
+          <div className="sticky top-0 flex items-center justify-between border-b border-line-dark bg-ink-raised px-3 py-2.5">
+            <span className="min-w-0 truncate text-[13px] font-medium text-paper">{c.name}</span>
+            <button type="button" aria-label="Close menu" onClick={onClose} className="inline-flex size-8 items-center justify-center rounded-sm text-paper-dim hover:text-paper">
+              <X aria-hidden className="size-4" />
+            </button>
+          </div>
+          <div className="py-1 [&>button]:py-2.5 [&>button]:text-[13px]">{body}</div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div
+      data-clip-menu
+      role="menu"
+      className="fixed z-[90] max-h-[80vh] w-64 overflow-y-auto rounded-md border border-line-dark bg-ink-raised py-1 shadow-float"
+      style={{ left: Math.max(8, Math.min(menu.x, window.innerWidth - 264)), top: Math.max(8, Math.min(menu.y, window.innerHeight - 420)) }}
+    >
+      {body}
     </div>
   );
 }
 
 /* ---------- The timeline ---------- */
 
-export function Timeline() {
+export function Timeline({ compact = false, onEditSelected }: { compact?: boolean; onEditSelected?: () => void } = {}) {
   const headerW = useHeaderW();
+  const rulerH = compact ? 32 : RULER_H;
   const { project, zoom, selection, playhead, silence, playing, inPoint, outPoint } = useStudio(
     useShallow((s) => ({ project: s.project, zoom: s.zoom, selection: s.selection, playhead: s.playhead, silence: s.silence, playing: s.playing, inPoint: s.inPoint, outPoint: s.outPoint })),
   );
@@ -427,23 +457,25 @@ export function Timeline() {
   const [fxTarget, setFxTarget] = useState<string | null>(null);
   const [marquee, setMarquee] = useState<Marquee | null>(null);
   const [menu, setMenu] = useState<Menu | null>(null);
+  const [addTrackOpen, setAddTrackOpen] = useState(false);
   const drag = useRef<MoveDrag | TrimDrag | ToolDrag | null>(null);
   const touchPts = useRef(new Map<number, { x: number; y: number }>());
   const pinch = useRef<{ dist: number; zoom: number; tMid: number } | null>(null);
   const pendingScroll = useRef<number | null>(null);
   const fps = project.settings.fps;
   const duration = TL.projectDuration(project);
+  const hasClips = Object.keys(project.clips).length > 0;
   const lanesW = Math.max(view.width, (Math.max(duration, 10) + 30) * zoom);
   const labels = useMemo(() => trackLabels(project.tracks), [project.tracks]);
   const tracksY = useMemo(() => {
     const ys: Record<string, number> = {};
-    let y = RULER_H;
+    let y = rulerH;
     for (const t of project.tracks) {
       ys[t.id] = y;
       y += TRACK_H[t.kind];
     }
     return { ys, bottom: y };
-  }, [project.tracks]);
+  }, [project.tracks, rulerH]);
 
   // Visible window, for drawing only what's on screen.
   useLayoutEffect(() => {
@@ -758,12 +790,23 @@ export function Timeline() {
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-ink">
-      <TimelineToolbar headerW={headerW} />
+      <TimelineToolbar
+        headerW={headerW}
+        compact={compact}
+        onEditSelected={onEditSelected}
+        onOpenMore={(el) => {
+          const cid = selection[0];
+          if (!cid) return;
+          const r = el.getBoundingClientRect();
+          setMenu({ x: r.left, y: r.top, clipId: cid });
+        }}
+      />
       <div
         ref={scrollRef}
         data-lenis-prevent
         className="relative min-h-0 flex-1 overflow-auto overscroll-contain"
         onPointerDown={(e) => {
+          if (addTrackOpen && !(e.target as HTMLElement).closest("[data-add-track-menu]")) setAddTrackOpen(false);
           if (e.pointerType !== "touch") return;
           touchPts.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
           if (touchPts.current.size === 2 && scrollRef.current) {
@@ -795,12 +838,47 @@ export function Timeline() {
       >
         <div ref={contentRef} className="relative" style={{ width: headerW + lanesW, minHeight: "100%" }}>
           {/* Ruler */}
-          <div className="sticky top-0 z-30 flex" style={{ height: RULER_H }}>
-            <div className="sticky left-0 z-40 flex shrink-0 items-center truncate border-b border-r border-line-dark bg-ink-raised px-1.5 font-mono text-[11px] tabular-nums text-paper sm:px-2 sm:text-[12px]" style={{ width: headerW }}>
-              {timecode(playhead, fps)}
+          <div className="sticky top-0 z-30 flex" style={{ height: rulerH }}>
+            <div className="sticky left-0 z-40 flex shrink-0 items-center border-b border-r border-line-dark bg-ink-raised" style={{ width: headerW }}>
+              {headerW < 100 ? (
+                <div data-add-track-menu className="relative flex size-full items-center justify-center">
+                  <button
+                    type="button"
+                    aria-expanded={addTrackOpen}
+                    onClick={() => setAddTrackOpen((o) => !o)}
+                    className="inline-flex size-full items-center justify-center gap-0.5 text-[12px] font-medium text-paper hover:bg-paper/10"
+                  >
+                    <Plus aria-hidden className="size-3.5 text-accent" />
+                    Track
+                  </button>
+                  {addTrackOpen && (
+                    <div className="absolute left-1 top-[calc(100%+2px)] z-50 w-44 rounded-md border border-line-dark bg-ink-raised p-1 shadow-float">
+                      <button type="button" onClick={() => { st.addTrack("video"); setAddTrackOpen(false); }} className="flex h-9 w-full items-center gap-2 rounded-sm px-2 text-left text-[12px] text-paper hover:bg-paper/10">
+                        <Film aria-hidden className="size-3.5 text-paper-dim" /> Add video track
+                      </button>
+                      <button type="button" onClick={() => { st.addTrack("overlay"); setAddTrackOpen(false); }} className="flex h-9 w-full items-center gap-2 rounded-sm px-2 text-left text-[12px] text-paper hover:bg-paper/10">
+                        <Type aria-hidden className="size-3.5 text-warning" /> Add text / overlay
+                      </button>
+                      <button type="button" onClick={() => { st.addTrack("audio"); setAddTrackOpen(false); }} className="flex h-9 w-full items-center gap-2 rounded-sm px-2 text-left text-[12px] text-paper hover:bg-paper/10">
+                        <AudioLines aria-hidden className="size-3.5 text-success" /> Add audio track
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <span className="truncate px-2 font-mono text-[12px] tabular-nums text-paper">{timecode(playhead, fps)}</span>
+              )}
             </div>
             <Ruler zoom={zoom} fps={fps} width={lanesW} view={view} markers={project.markers} inPoint={inPoint} outPoint={outPoint} onScrub={onScrub} />
           </div>
+
+          {!hasClips && (
+            <div className="pointer-events-none sticky left-0 flex w-full items-center justify-center px-4 py-3 text-center" style={{ paddingLeft: headerW + 12 }}>
+              <span className="rounded-sm bg-ink-raised/90 px-2.5 py-1 text-[12px] text-paper-dim">
+                No clips on timeline yet — tap <span className="text-paper">Import media</span> above or <span className="text-paper">Text</span> / <span className="text-paper">Media</span> below
+              </span>
+            </div>
+          )}
 
           {/* Tracks */}
           {project.tracks.map((track, i) => (
@@ -846,26 +924,28 @@ export function Timeline() {
             </div>
           ))}
 
-          {/* Add-track row */}
-          <div className="flex h-12">
-            <div className="sticky left-0 z-20 flex shrink-0 items-center gap-0.5 border-r border-line-dark bg-ink-raised px-1.5 sm:gap-1 sm:px-2" style={{ width: headerW }}>
-              {headerW >= 110 && <span className="label-mono text-paper-dim">Add</span>}
-              <IconButton label="Add a video track" onClick={() => st.addTrack("video")} className="max-sm:size-7">
-                <Film aria-hidden className="size-3.5 sm:size-4" />
-              </IconButton>
-              <IconButton label="Add a text and overlay track" onClick={() => st.addTrack("overlay")} className="max-sm:size-7">
-                <Type aria-hidden className="size-3.5 sm:size-4" />
-              </IconButton>
-              <IconButton label="Add an audio track" onClick={() => st.addTrack("audio")} className="max-sm:size-7">
-                <AudioLines aria-hidden className="size-3.5 sm:size-4" />
-              </IconButton>
+          {/* Add-track row (desktop/tablet; phones use the +Track menu in header corner) */}
+          {headerW >= 100 && (
+            <div className="flex h-12">
+              <div className="sticky left-0 z-20 flex shrink-0 items-center gap-1 border-r border-line-dark bg-ink-raised px-2" style={{ width: headerW }}>
+                <span className="label-mono text-paper-dim">Add</span>
+                <IconButton label="Add a video track" onClick={() => st.addTrack("video")}>
+                  <Film aria-hidden className="size-4" />
+                </IconButton>
+                <IconButton label="Add a text and overlay track" onClick={() => st.addTrack("overlay")}>
+                  <Type aria-hidden className="size-4" />
+                </IconButton>
+                <IconButton label="Add an audio track" onClick={() => st.addTrack("audio")}>
+                  <AudioLines aria-hidden className="size-4" />
+                </IconButton>
+              </div>
+              <div className="flex-1" />
             </div>
-            <div className="flex-1" />
-          </div>
+          )}
 
           {/* Markers across the lanes */}
           {project.markers.map((m) => (
-            <div key={m.id} className="pointer-events-none absolute z-[1] w-px opacity-50" style={{ left: headerW + m.t * zoom, top: RULER_H, height: tracksY.bottom - RULER_H, background: m.color ?? "var(--color-warning)" }} />
+            <div key={m.id} className="pointer-events-none absolute z-[1] w-px opacity-50" style={{ left: headerW + m.t * zoom, top: rulerH, height: tracksY.bottom - rulerH, background: m.color ?? "var(--color-warning)" }} />
           ))}
 
           {/* Ghosts of clips being moved */}
@@ -913,41 +993,98 @@ export function Timeline() {
 }
 
 function TrackHeader({ headerW, track, label, canUp, canDown }: { headerW: number; track: Track; label: string; canUp: boolean; canDown: boolean }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const st = getStudio();
   const visual = track.kind !== "audio";
-  const compact = headerW < 110;
-  return (
-    <div className="group sticky left-0 z-20 flex shrink-0 items-center gap-0.5 border-b border-r border-line-dark bg-ink-raised pl-1.5 pr-1 sm:pl-2" style={{ width: headerW }}>
-      {/* Reorder and delete float over the name on hover, so they never take the name's room. */}
-      {!compact && (
-        <span className="absolute right-[60px] top-1/2 z-10 flex -translate-y-1/2 items-center gap-0.5 rounded-sm bg-ink-raised opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-          {canUp && (
-            <IconButton label="Move track up" onClick={() => st.moveTrack(track.id, -1)} className="size-6 sm:size-6">
-              <ChevronUp aria-hidden className="size-3.5" />
-            </IconButton>
+  const compact = headerW < 100;
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (!(e.target as HTMLElement).closest(`[data-track-menu="${track.id}"]`)) setMenuOpen(false);
+    };
+    window.addEventListener("pointerdown", onDown);
+    return () => window.removeEventListener("pointerdown", onDown);
+  }, [menuOpen, track.id]);
+
+  if (compact) {
+    return (
+      <div data-track-menu={track.id} className="relative sticky left-0 z-20 flex shrink-0 items-center justify-between gap-0.5 border-b border-r border-line-dark bg-ink-raised px-1" style={{ width: headerW }}>
+        <button
+          type="button"
+          aria-expanded={menuOpen}
+          aria-label={`Track ${label} options`}
+          onClick={() => setMenuOpen((o) => !o)}
+          className={cn(
+            "relative inline-flex h-8 min-w-[26px] items-center justify-center rounded-sm font-mono text-[12px] font-medium hover:bg-paper/10",
+            track.kind === "audio" ? "text-success" : track.kind === "overlay" ? "text-warning" : "text-paper",
           )}
-          {canDown && (
-            <IconButton label="Move track down" onClick={() => st.moveTrack(track.id, 1)} className="size-6 sm:size-6">
-              <ChevronDown aria-hidden className="size-3.5" />
-            </IconButton>
-          )}
-          <IconButton label="Delete track" onClick={() => st.removeTrack(track.id)} className="size-6 sm:size-6">
-            <Trash2 aria-hidden className="size-3.5" />
+        >
+          {label}
+          {track.locked && <Lock aria-hidden className="ml-0.5 size-2.5 text-accent" />}
+        </button>
+        {visual ? (
+          <IconButton label={track.hidden ? "Show track" : "Hide track"} active={track.hidden} onClick={() => st.toggleTrack(track.id, "hidden")} className="size-7">
+            {track.hidden ? <EyeOff aria-hidden className="size-3.5" /> : <Eye aria-hidden className="size-3.5" />}
           </IconButton>
-        </span>
-      )}
-      <span className={cn("label-mono shrink-0", compact ? "w-6 text-[11px]" : "w-7", track.kind === "audio" ? "text-success" : track.kind === "overlay" ? "text-warning" : "text-paper")}>{label}</span>
-      {!compact && (
-        <span className="min-w-0 flex-1 truncate text-[12px] text-paper-dim" title={track.name}>
-          {track.name}
-        </span>
-      )}
+        ) : (
+          <IconButton label={track.muted ? "Unmute track" : "Mute track"} active={track.muted} onClick={() => st.toggleTrack(track.id, "muted")} className="size-7">
+            {track.muted ? <VolumeX aria-hidden className="size-3.5" /> : <Volume2 aria-hidden className="size-3.5" />}
+          </IconButton>
+        )}
+        {menuOpen && (
+          <div className="fixed left-16 z-50 w-44 rounded-md border border-line-dark bg-ink-raised p-1 shadow-float">
+            <p className="truncate px-2 py-1 text-[12px] font-medium text-paper-dim">{label} · {track.name}</p>
+            <button type="button" onClick={() => { st.toggleTrack(track.id, "locked"); setMenuOpen(false); }} className="flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-[12px] text-paper hover:bg-paper/10">
+              {track.locked ? <LockOpen aria-hidden className="size-3.5" /> : <Lock aria-hidden className="size-3.5" />}
+              {track.locked ? "Unlock track" : "Lock track"}
+            </button>
+            {canUp && (
+              <button type="button" onClick={() => { st.moveTrack(track.id, -1); setMenuOpen(false); }} className="flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-[12px] text-paper hover:bg-paper/10">
+                <ChevronUp aria-hidden className="size-3.5" /> Move up
+              </button>
+            )}
+            {canDown && (
+              <button type="button" onClick={() => { st.moveTrack(track.id, 1); setMenuOpen(false); }} className="flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-[12px] text-paper hover:bg-paper/10">
+                <ChevronDown aria-hidden className="size-3.5" /> Move down
+              </button>
+            )}
+            <button type="button" onClick={() => { st.removeTrack(track.id); setMenuOpen(false); }} className="flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-[12px] text-danger hover:bg-danger/15">
+              <Trash2 aria-hidden className="size-3.5" /> Delete track
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="group sticky left-0 z-20 flex shrink-0 items-center gap-0.5 border-b border-r border-line-dark bg-ink-raised pl-2 pr-1" style={{ width: headerW }}>
+      {/* Reorder and delete float over the name on hover, so they never take the name's room. */}
+      <span className="absolute right-[60px] top-1/2 z-10 flex -translate-y-1/2 items-center gap-0.5 rounded-sm bg-ink-raised opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+        {canUp && (
+          <IconButton label="Move track up" onClick={() => st.moveTrack(track.id, -1)} className="size-6 sm:size-6">
+            <ChevronUp aria-hidden className="size-3.5" />
+          </IconButton>
+        )}
+        {canDown && (
+          <IconButton label="Move track down" onClick={() => st.moveTrack(track.id, 1)} className="size-6 sm:size-6">
+            <ChevronDown aria-hidden className="size-3.5" />
+          </IconButton>
+        )}
+        <IconButton label="Delete track" onClick={() => st.removeTrack(track.id)} className="size-6 sm:size-6">
+          <Trash2 aria-hidden className="size-3.5" />
+        </IconButton>
+      </span>
+      <span className={cn("label-mono w-7 shrink-0 text-[12px]", track.kind === "audio" ? "text-success" : track.kind === "overlay" ? "text-warning" : "text-paper")}>{label}</span>
+      <span className="min-w-0 flex-1 truncate text-[12px] text-paper-dim" title={track.name}>
+        {track.name}
+      </span>
       {visual ? (
-        <IconButton label={track.hidden ? "Show track" : "Hide track"} active={track.hidden} onClick={() => st.toggleTrack(track.id, "hidden")} className={cn("sm:size-7", compact ? "ml-auto size-7" : "size-7")}>
+        <IconButton label={track.hidden ? "Show track" : "Hide track"} active={track.hidden} onClick={() => st.toggleTrack(track.id, "hidden")} className="size-7 sm:size-7">
           {track.hidden ? <EyeOff aria-hidden className="size-3.5" /> : <Eye aria-hidden className="size-3.5" />}
         </IconButton>
       ) : (
-        <IconButton label={track.muted ? "Unmute track" : "Mute track"} active={track.muted} onClick={() => st.toggleTrack(track.id, "muted")} className={cn("sm:size-7", compact ? "ml-auto size-7" : "size-7")}>
+        <IconButton label={track.muted ? "Unmute track" : "Mute track"} active={track.muted} onClick={() => st.toggleTrack(track.id, "muted")} className="size-7 sm:size-7">
           {track.muted ? <VolumeX aria-hidden className="size-3.5" /> : <Volume2 aria-hidden className="size-3.5" />}
         </IconButton>
       )}
@@ -968,14 +1105,174 @@ const TOOLS: { id: Tool; label: string; key: string; hint: string }[] = [
   { id: "rate", label: "Rate stretch", key: "R", hint: "change speed by dragging an edge" },
 ];
 
-function TimelineToolbar({ headerW }: { headerW: number }) {
+function TimelineToolbar({
+  headerW,
+  compact,
+  onEditSelected,
+  onOpenMore,
+}: {
+  headerW: number;
+  compact: boolean;
+  onEditSelected?: () => void;
+  onOpenMore: (el: HTMLElement) => void;
+}) {
   const { tool, snapping, zoom, hasSel, inPoint, outPoint } = useStudio(useShallow((s) => ({ tool: s.tool, snapping: s.snapping, zoom: s.zoom, hasSel: s.selection.length > 0, inPoint: s.inPoint, outPoint: s.outPoint })));
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const toolsRef = useRef<HTMLDivElement>(null);
   const st = getStudio();
+
+  useEffect(() => {
+    if (!toolsOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (!toolsRef.current?.contains(e.target as Node)) setToolsOpen(false);
+    };
+    window.addEventListener("pointerdown", onDown);
+    return () => window.removeEventListener("pointerdown", onDown);
+  }, [toolsOpen]);
+
   const fit = () => {
     const el = document.querySelector<HTMLElement>("[data-studio-timeline-width]");
     const w = (el?.clientWidth ?? 900) - headerW - 40;
     st.setZoom(w / Math.max(5, TL.projectDuration(st.project)));
   };
+
+  if (compact) {
+    const activeTool = TOOLS.find((t) => t.id === tool) ?? TOOLS[0];
+    const ActiveIcon = TOOL_ICON[activeTool.id];
+    return (
+      <div ref={toolsRef} data-studio-timeline-width className="relative flex h-11 shrink-0 items-center gap-1 border-b border-line-dark bg-ink-raised px-1.5">
+        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto no-scrollbar" data-lenis-prevent>
+          {hasSel ? (
+            <>
+              {onEditSelected && (
+                <button
+                  type="button"
+                  onClick={onEditSelected}
+                  className="inline-flex h-8 shrink-0 items-center gap-1 rounded-sm bg-paper px-2 text-[12px] font-medium text-ink"
+                >
+                  <SlidersHorizontal aria-hidden className="size-3.5" />
+                  Edit
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => st.splitAtPlayhead()}
+                className="inline-flex h-8 shrink-0 items-center gap-1 rounded-sm border border-line-dark px-1.5 text-[12px] text-paper hover:bg-paper/10"
+              >
+                <Scissors aria-hidden className="size-3.5" />
+                Split
+              </button>
+              <IconButton label="Duplicate clip" onClick={() => st.duplicateSelection()} className="size-8">
+                <Copy aria-hidden className="size-3.5" />
+              </IconButton>
+              <IconButton label="Delete selected clip" onClick={() => st.deleteSelection(false)} className="size-8">
+                <Trash2 aria-hidden className="size-3.5" />
+              </IconButton>
+              <IconButton label="More clip actions" onClick={(e) => onOpenMore(e.currentTarget)} className="size-8">
+                <Ellipsis aria-hidden className="size-4" />
+              </IconButton>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => st.splitAtPlayhead()}
+                className="inline-flex h-8 shrink-0 items-center gap-1 rounded-sm border border-line-dark px-1.5 text-[12px] text-paper hover:bg-paper/10"
+              >
+                <Scissors aria-hidden className="size-3.5" />
+                Split
+              </button>
+              <button
+                type="button"
+                aria-pressed={snapping}
+                onClick={() => st.set({ snapping: !snapping })}
+                className={cn(
+                  "inline-flex h-8 shrink-0 items-center gap-1 rounded-sm border px-1.5 text-[12px]",
+                  snapping ? "border-paper bg-paper text-ink" : "border-line-dark text-paper-dim hover:text-paper",
+                )}
+              >
+                <Magnet aria-hidden className="size-3.5" />
+                Snap
+              </button>
+              <button
+                type="button"
+                onClick={() => st.addMarker()}
+                className="inline-flex h-8 shrink-0 items-center gap-1 rounded-sm border border-line-dark px-1.5 text-[12px] text-paper-dim hover:text-paper"
+              >
+                <Plus aria-hidden className="size-3.5" />
+                Mark
+              </button>
+              <button
+                type="button"
+                aria-expanded={toolsOpen}
+                onClick={() => setToolsOpen((o) => !o)}
+                className={cn(
+                  "inline-flex h-8 shrink-0 items-center gap-1 rounded-sm border px-1.5 text-[12px]",
+                  tool !== "select" ? "border-accent bg-accent text-paper" : "border-line-dark text-paper-dim hover:text-paper",
+                )}
+              >
+                {tool === "select" ? <Wrench aria-hidden className="size-3.5" /> : <ActiveIcon aria-hidden className="size-3.5" />}
+                <span>{tool === "select" ? "Tools" : activeTool.label.split(" ")[0]}</span>
+              </button>
+            </>
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-0.5 border-l border-line-dark pl-1">
+          <IconButton label="Zoom out" onClick={() => st.setZoom(zoom / 1.4)} className="h-8 w-7">
+            <ZoomOut aria-hidden className="size-3.5" />
+          </IconButton>
+          <IconButton label="Zoom in" onClick={() => st.setZoom(zoom * 1.4)} className="h-8 w-7">
+            <ZoomIn aria-hidden className="size-3.5" />
+          </IconButton>
+          <button type="button" onClick={fit} className="inline-flex h-8 items-center rounded-sm px-1 text-[12px] text-paper-dim hover:bg-paper/10 hover:text-paper">
+            Fit
+          </button>
+        </div>
+        {toolsOpen && (
+          <div
+            role="menu"
+            aria-label="Timeline tools"
+            className="absolute bottom-[calc(100%+4px)] left-2 z-50 w-[min(280px,calc(100vw-16px))] rounded-lg border border-line-dark bg-ink-raised p-1.5 shadow-float"
+          >
+            {TOOLS.map((t) => {
+              const Icon = TOOL_ICON[t.id];
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => {
+                    st.set({ tool: t.id });
+                    setToolsOpen(false);
+                  }}
+                  className={cn(
+                    "flex h-9 w-full items-center gap-2.5 rounded-sm px-2 text-left text-[12px]",
+                    tool === t.id ? "bg-paper text-ink" : "text-paper hover:bg-paper/10",
+                  )}
+                >
+                  <Icon aria-hidden className="size-4 shrink-0" />
+                  <span className="font-medium">{t.label}</span>
+                  <span className={cn("ml-auto truncate text-[12px]", tool === t.id ? "text-ink-2" : "text-paper-dim")}>{t.hint}</span>
+                </button>
+              );
+            })}
+            <div className="my-1 border-t border-line-dark" />
+            <button
+              type="button"
+              onClick={() => {
+                st.closeGaps();
+                setToolsOpen(false);
+              }}
+              className="flex h-9 w-full items-center gap-2.5 rounded-sm px-2 text-left text-[12px] text-paper hover:bg-paper/10"
+            >
+              <BetweenHorizontalStart aria-hidden className="size-4 shrink-0" />
+              <span>Close all gaps</span>
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div data-studio-timeline-width className="flex items-center gap-0.5 overflow-x-auto no-scrollbar border-b border-line-dark bg-ink-raised px-1.5 py-1" data-lenis-prevent>
       {TOOLS.map((t) => {

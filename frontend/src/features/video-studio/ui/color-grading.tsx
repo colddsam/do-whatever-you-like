@@ -113,7 +113,7 @@ function WheelPad({
             getStudio().end();
           }
         }}
-        className="relative size-[74px] cursor-crosshair touch-none rounded-full border border-line-dark"
+        className="relative size-[84px] cursor-crosshair touch-none rounded-full border border-line-dark sm:size-[74px]"
         style={{
           background:
             "radial-gradient(circle, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 68%), conic-gradient(from 90deg, #ff3b30, #ffd60a, #39ff88, #00e5ff, #3b82f6, #d946ef, #ff3b30)",
@@ -273,9 +273,10 @@ export function CurvesControl({ c, e }: { c: Clip; e: Effect }) {
             if (dragIdx.current !== null) return;
             const [x, y] = fromEvent(ev);
             // Click near existing point first
+            const tol = ev.pointerType === "touch" ? 0.11 : 0.06;
             let hit = -1;
             pts.forEach(([px, py], i) => {
-              if (Math.hypot(px - x, py - y) < 0.06) hit = i;
+              if (Math.hypot(px - x, py - y) < tol) hit = i;
             });
             if (hit >= 0) {
               dragIdx.current = hit;

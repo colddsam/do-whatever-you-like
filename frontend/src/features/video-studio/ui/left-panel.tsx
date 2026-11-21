@@ -59,7 +59,7 @@ function MenuItem({ children, onClick, disabled }: { children: React.ReactNode; 
   );
 }
 
-function MediaTile({ a }: { a: MediaAsset }) {
+function MediaTile({ a, index = 0 }: { a: MediaAsset; index?: number }) {
   useMediaVersion();
   const status = useStudio((s) => s.media[a.id]);
   const job = useStudio((s) => s.jobs[`proxy:${a.id}`]);
@@ -163,19 +163,19 @@ function MediaTile({ a }: { a: MediaAsset }) {
           </span>
         )}
       </div>
-      <div className="mt-1 flex items-center gap-1">
+      <div className="mt-1 flex items-center gap-0.5 sm:gap-1">
         <span className="min-w-0 flex-1 truncate text-[12px] text-paper-dim" title={a.name}>
           {a.name}
         </span>
-        <button type="button" aria-label={`Add ${a.name} to the end of the timeline`} title="Add to the timeline" disabled={offline} onClick={() => st.appendMedia(a.id)} className="inline-flex size-6 shrink-0 items-center justify-center rounded-sm text-paper-dim hover:bg-paper/10 hover:text-paper disabled:opacity-30">
+        <button type="button" aria-label={`Add ${a.name} to the end of the timeline`} title="Add to the timeline" disabled={offline} onClick={() => st.appendMedia(a.id)} className="inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-paper-dim hover:bg-paper/10 hover:text-paper disabled:opacity-30 sm:size-6">
           <Plus aria-hidden className="size-3.5" />
         </button>
-        <button type="button" aria-label={`More for ${a.name}`} aria-expanded={menu} onClick={() => setMenu((m) => !m)} className="inline-flex size-6 shrink-0 items-center justify-center rounded-sm text-paper-dim hover:bg-paper/10 hover:text-paper">
+        <button type="button" aria-label={`More for ${a.name}`} aria-expanded={menu} onClick={() => setMenu((m) => !m)} className="inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-paper-dim hover:bg-paper/10 hover:text-paper sm:size-6">
           <Ellipsis aria-hidden className="size-3.5" />
         </button>
       </div>
       {menu && (
-        <div className="absolute right-0 top-full z-20 mt-1 w-56 overflow-hidden rounded-md border border-line-dark bg-ink-raised py-1 shadow-float" onMouseLeave={() => setMenu(false)}>
+        <div className={cn("absolute top-full z-20 mt-1 w-56 max-w-[calc(100vw-24px)] overflow-hidden rounded-md border border-line-dark bg-ink-raised py-1 shadow-float", index % 2 === 0 ? "left-0" : "right-0")} onMouseLeave={() => setMenu(false)}>
           <MenuItem
             disabled={offline}
             onClick={() => {
@@ -270,22 +270,29 @@ function Recorder() {
       </div>
     );
   }
+  const screenOk = recordingSupported("screen");
+  const camOk = recordingSupported("camera");
+  if (!screenOk && !camOk) return null;
   return (
     <div className="mb-2 rounded-md border border-line-dark p-2">
       <p className="label-mono mb-1.5 text-paper-dim">Record</p>
-      <div className="grid grid-cols-2 gap-1.5">
-        <TextButton disabled={!recordingSupported("screen")} onClick={() => void start("screen")}>
-          <Monitor aria-hidden className="size-3.5" />
-          Screen
-        </TextButton>
-        <TextButton disabled={!recordingSupported("camera")} onClick={() => void start("camera")}>
-          <Camera aria-hidden className="size-3.5" />
-          Camera
-        </TextButton>
+      <div className={cn("grid gap-1.5", screenOk && camOk ? "grid-cols-2" : "grid-cols-1")}>
+        {screenOk && (
+          <TextButton onClick={() => void start("screen")}>
+            <Monitor aria-hidden className="size-3.5" />
+            {camOk ? "Screen" : "Record screen"}
+          </TextButton>
+        )}
+        {camOk && (
+          <TextButton onClick={() => void start("camera")}>
+            <Camera aria-hidden className="size-3.5" />
+            {screenOk ? "Camera" : "Record camera"}
+          </TextButton>
+        )}
       </div>
-      <label className="mt-1.5 flex items-center gap-2 text-[12px] text-paper-dim">
+      <label className="mt-2 flex items-center gap-2 text-[12px] text-paper-dim">
         <Toggle label="Put recordings on the timeline" checked={toTimeline} onChange={setToTimeline} />
-        Add to the timeline at the playhead
+        Add to timeline at playhead
       </label>
     </div>
   );
@@ -449,8 +456,8 @@ function MediaBin() {
           </button>
         ) : (
           <ul className="grid grid-cols-2 gap-x-2 gap-y-3">
-            {assets.map((a) => (
-              <MediaTile key={a.id} a={a} />
+            {assets.map((a, index) => (
+              <MediaTile key={a.id} a={a} index={index} />
             ))}
           </ul>
         )}
@@ -644,7 +651,7 @@ function TransitionTile({ type, onPick, active }: { type: TransitionType; onPick
   );
 }
 
-function TransitionsPanel() {
+export function TransitionsPanel() {
   const c = usePrimaryClip();
   const [last, setLast] = useState<TransitionType>("crossDissolve");
   const st = getStudio();

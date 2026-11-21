@@ -274,17 +274,21 @@
   }
 }
 
-/* Subtle panel scrollbars and cross-device viewport utilities */
-[data-lenis-prevent] {
-  scrollbar-width: thin;
-  scrollbar-color: rgb(132 126 112 / 0.35) transparent;
+/* Subtle panel scrollbars on desktop pointers, clean hidden horizontal bars */
+@media (pointer: fine) {
+  [data-lenis-prevent] {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(132 126 112 / 0.35) transparent;
+  }
 }
 
-.no-scrollbar {
+.no-scrollbar,
+[data-lenis-prevent].no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-.no-scrollbar::-webkit-scrollbar {
+.no-scrollbar::-webkit-scrollbar,
+[data-lenis-prevent].no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 

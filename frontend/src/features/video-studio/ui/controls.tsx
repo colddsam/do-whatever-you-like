@@ -34,7 +34,7 @@ export function TextButton({ className, children, tone = "plain", ...rest }: Com
     <button
       type="button"
       className={cn(
-        "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-md px-3 text-[13px] font-medium transition-colors disabled:pointer-events-none disabled:opacity-40",
+        "inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-md px-3 text-[13px] font-medium transition-colors disabled:pointer-events-none disabled:opacity-40 sm:h-8",
         tone === "primary" && "bg-paper text-ink hover:bg-paper/85",
         tone === "plain" && "border border-line-dark text-paper hover:bg-paper/10",
         tone === "danger" && "border border-danger/60 text-paper hover:bg-danger/20",
@@ -168,7 +168,7 @@ export function Scrub({
           if (Number.isFinite(v)) onChange(Math.min(max, Math.max(min, v)));
           setEditing(false);
         }}
-        className={cn("h-7 w-full min-w-0 rounded-sm border border-accent bg-ink px-1.5 font-mono text-[12px] text-paper outline-none", className)}
+        className={cn("h-9 w-full min-w-0 rounded-sm border border-accent bg-ink px-1.5 font-mono text-[12px] text-paper outline-none sm:h-7", className)}
       />
     );
   }
@@ -177,7 +177,7 @@ export function Scrub({
       type="button"
       aria-label={`${label}: ${shown}. Drag to change, click to type.`}
       title="Drag to change · click to type · Shift = faster · Alt = finer"
-      className={cn("h-7 min-w-0 cursor-ew-resize touch-none truncate rounded-sm px-1.5 text-left font-mono text-[12px] text-accent hover:bg-paper/10", className)}
+      className={cn("h-9 min-w-0 cursor-ew-resize touch-none truncate rounded-sm px-1.5 text-left font-mono text-[12px] text-accent hover:bg-paper/10 sm:h-7", className)}
       onPointerDown={(e) => {
         (e.target as HTMLElement).setPointerCapture(e.pointerId);
         drag.current = { x: e.clientX, v: value, moved: false };
@@ -222,7 +222,7 @@ export function KeyButton({ state, onClick, onPrev, onNext, label }: { state: "o
   return (
     <span className="flex shrink-0 items-center">
       {state !== "off" && onPrev && (
-        <button type="button" aria-label={`Previous ${label} keyframe`} title="Previous keyframe" onClick={onPrev} className="inline-flex size-6 items-center justify-center rounded-sm text-paper-dim hover:text-paper">
+        <button type="button" aria-label={`Previous ${label} keyframe`} title="Previous keyframe" onClick={onPrev} className="inline-flex size-8 items-center justify-center rounded-sm text-paper-dim hover:text-paper sm:size-6">
           <ChevronLeft aria-hidden className="size-3.5" />
         </button>
       )}
@@ -231,12 +231,12 @@ export function KeyButton({ state, onClick, onPrev, onNext, label }: { state: "o
         aria-label={state === "key" ? `Remove ${label} keyframe` : `Add ${label} keyframe`}
         title={state === "off" ? "Animate: add a keyframe here" : state === "key" ? "Remove this keyframe" : "Add a keyframe here"}
         onClick={onClick}
-        className="inline-flex size-6 items-center justify-center rounded-sm hover:bg-paper/10"
+        className="inline-flex size-8 items-center justify-center rounded-sm hover:bg-paper/10 sm:size-6"
       >
         <Diamond aria-hidden className={cn("size-3.5", state === "key" ? "fill-accent text-accent" : state === "animated" ? "fill-accent/30 text-accent" : "text-paper-dim")} />
       </button>
       {state !== "off" && onNext && (
-        <button type="button" aria-label={`Next ${label} keyframe`} title="Next keyframe" onClick={onNext} className="inline-flex size-6 items-center justify-center rounded-sm text-paper-dim hover:text-paper">
+        <button type="button" aria-label={`Next ${label} keyframe`} title="Next keyframe" onClick={onNext} className="inline-flex size-8 items-center justify-center rounded-sm text-paper-dim hover:text-paper sm:size-6">
           <ChevronRight aria-hidden className="size-3.5" />
         </button>
       )}
@@ -251,7 +251,7 @@ export function Select<T extends string>({ value, options, onChange, label, clas
       value={value}
       onChange={(e) => onChange(e.target.value as T)}
       onKeyDown={(e) => e.stopPropagation()}
-      className={cn("h-7 min-w-0 flex-1 rounded-sm border border-line-dark bg-ink px-1.5 text-[12px] text-paper outline-none focus-visible:border-accent", className)}
+      className={cn("h-9 min-w-0 flex-1 rounded-sm border border-line-dark bg-ink px-1.5 text-[12px] text-paper outline-none focus-visible:border-accent sm:h-7", className)}
     >
       {options.map((o) => (
         <option key={o.value} value={o.value}>
@@ -273,7 +273,7 @@ export function Segmented<T extends string>({ value, options, onChange, label, c
           aria-checked={value === o.value}
           title={o.title}
           onClick={() => onChange(o.value)}
-          className={cn("inline-flex h-6 min-w-0 flex-1 items-center justify-center rounded-[4px] px-1.5 text-[12px] transition-colors", value === o.value ? "bg-paper text-ink" : "text-paper-dim hover:text-paper")}
+          className={cn("inline-flex h-8 min-w-0 flex-1 items-center justify-center rounded-[4px] px-1.5 text-[12px] transition-colors sm:h-6", value === o.value ? "bg-paper text-ink" : "text-paper-dim hover:text-paper")}
         >
           {o.label}
         </button>
@@ -290,9 +290,9 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
       aria-checked={checked}
       aria-label={label}
       onClick={() => onChange(!checked)}
-      className={cn("relative inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors", checked ? "border-paper bg-paper" : "border-line-dark bg-ink")}
+      className={cn("relative inline-flex h-6 w-10 shrink-0 items-center rounded-full border transition-colors sm:h-5 sm:w-9", checked ? "border-paper bg-paper" : "border-line-dark bg-ink")}
     >
-      <span className={cn("absolute size-3.5 rounded-full transition-transform duration-150", checked ? "translate-x-[18px] bg-ink" : "translate-x-[2px] bg-paper-dim")} />
+      <span className={cn("absolute size-4 rounded-full transition-transform duration-150 sm:size-3.5", checked ? "translate-x-[19px] bg-ink sm:translate-x-[18px]" : "translate-x-[3px] bg-paper-dim sm:translate-x-[2px]")} />
     </button>
   );
 }

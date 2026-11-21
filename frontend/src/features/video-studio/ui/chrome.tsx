@@ -42,8 +42,9 @@ export function TopBar({
     })),
   );
   const st = getStudio();
+  const phone = tier === "phone";
   return (
-    <div className="flex h-11 shrink-0 items-center gap-0.5 border-b border-line-dark bg-ink-raised px-1.5 sm:gap-1 sm:px-2">
+    <div className="flex h-12 shrink-0 items-center gap-0.5 border-b border-line-dark bg-ink-raised px-2 sm:h-11 sm:gap-1">
       {tier === "desktop" && onToggleLeft && (
         <IconButton label={leftOpen ? "Hide library panel" : "Show library panel"} active={leftOpen} onClick={onToggleLeft}>
           <PanelLeft aria-hidden className="size-4" />
@@ -58,15 +59,15 @@ export function TopBar({
           e.stopPropagation();
           if (e.key === "Enter") (e.target as HTMLInputElement).blur();
         }}
-        className="h-8 w-full min-w-[72px] max-w-[140px] rounded-sm border border-transparent bg-transparent px-1.5 text-[14px] font-medium text-paper outline-none hover:border-line-dark focus-visible:border-accent sm:max-w-[220px]"
+        className="h-9 min-w-[78px] flex-1 max-w-[160px] rounded-sm border border-transparent bg-transparent px-1 text-[13px] font-medium text-paper outline-none hover:border-line-dark focus-visible:border-accent sm:h-8 sm:max-w-[220px] sm:px-1.5 sm:text-[14px]"
       />
       <span className={cn("label-mono hidden shrink-0 lg:inline", saveState === "error" ? "text-danger" : "text-paper-dim")} aria-live="polite">
         {saveState === "saving" ? "Saving…" : saveState === "error" ? "Not saved" : "Saved here"}
       </span>
-      <IconButton label="Undo (Ctrl+Z)" disabled={!canUndo || busy} onClick={() => st.undo()} className="sm:ml-1">
+      <IconButton label="Undo (Ctrl+Z)" disabled={!canUndo || busy} onClick={() => st.undo()} className="max-sm:size-8 sm:ml-1">
         <Undo2 aria-hidden className="size-4" />
       </IconButton>
-      <IconButton label="Redo (Ctrl+Shift+Z)" disabled={!canRedo || busy} onClick={() => st.redo()}>
+      <IconButton label="Redo (Ctrl+Shift+Z)" disabled={!canRedo || busy} onClick={() => st.redo()} className="max-sm:size-8">
         <Redo2 aria-hidden className="size-4" />
       </IconButton>
       <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1">
@@ -75,11 +76,13 @@ export function TopBar({
           value={aspect}
           onChange={(v) => st.setAspect(v)}
           options={(Object.keys(ASPECTS) as AspectId[]).map((a) => ({ value: a, label: a }))}
-          className="w-[62px] flex-none sm:w-[72px]"
+          className="h-8 w-[62px] flex-none sm:h-7 sm:w-[72px]"
         />
-        <IconButton label="Video scopes (Waveform, RGB Parade, Histogram, Vectorscope)" active={scopes} onClick={() => st.set({ scopes: !scopes })}>
-          <Activity aria-hidden className="size-4" />
-        </IconButton>
+        {!phone && (
+          <IconButton label="Video scopes (Waveform, RGB Parade, Histogram, Vectorscope)" active={scopes} onClick={() => st.set({ scopes: !scopes })}>
+            <Activity aria-hidden className="size-4" />
+          </IconButton>
+        )}
         <IconButton label="Keyboard shortcuts (?)" onClick={onHelp} className="max-sm:hidden">
           <Keyboard aria-hidden className="size-4" />
         </IconButton>
@@ -88,12 +91,12 @@ export function TopBar({
             <PanelRight aria-hidden className="size-4" />
           </IconButton>
         )}
-        <IconButton label={fullscreen ? "Exit full screen (F)" : "Full screen (F)"} onClick={onFullscreen}>
+        <IconButton label={fullscreen ? "Exit full screen (F)" : "Full screen (F)"} onClick={onFullscreen} className="max-sm:size-8">
           {fullscreen ? <Minimize2 aria-hidden className="size-4" /> : <Maximize2 aria-hidden className="size-4" />}
         </IconButton>
-        <button type="button" onClick={onExport} className="ml-0.5 inline-flex h-8 items-center gap-1.5 rounded-md bg-paper px-2.5 text-[13px] font-medium text-ink transition-colors hover:bg-paper/85 sm:ml-1 sm:px-3">
+        <button type="button" onClick={onExport} className="ml-0.5 inline-flex h-9 shrink-0 items-center gap-1 rounded-md bg-paper px-2 text-[13px] font-medium text-ink transition-colors hover:bg-paper/85 sm:ml-1 sm:h-8 sm:gap-1.5 sm:px-3">
           <Download aria-hidden className="size-4" />
-          <span className="max-[400px]:hidden">Export</span>
+          <span>Export</span>
         </button>
       </div>
     </div>

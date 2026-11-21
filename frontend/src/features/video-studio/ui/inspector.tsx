@@ -638,7 +638,7 @@ function TextSection({ c }: { c: Clip }) {
       />
       <Row label="Font">
         <Select label="Font" value={s.font} onChange={(v) => set({ font: v, weight: nearestWeight(v, s.weight), italic: s.italic && !!FONTS.find((f) => f.family === v)?.italic })} options={fontOptions} />
-        <IconButton label="Upload custom font (.ttf, .otf, .woff, .woff2)" onClick={() => fontFileRef.current?.click()} className="size-7 shrink-0">
+        <IconButton label="Upload custom font (.ttf, .otf, .woff, .woff2)" onClick={() => fontFileRef.current?.click()} className="size-9 shrink-0 sm:size-7">
           <Upload aria-hidden className="size-3.5" />
         </IconButton>
         <input
@@ -719,11 +719,11 @@ function TextSection({ c }: { c: Clip }) {
       <Row label="Weight">
         <Select label="Weight" value={String(s.weight)} onChange={(v) => set({ weight: Number(v) })} options={availableWeights.map((w) => ({ value: String(w), label: String(w) }))} />
         {canItalic && (
-          <button type="button" aria-pressed={s.italic} onClick={() => set({ italic: !s.italic })} className={cn("h-7 shrink-0 rounded-sm px-2 text-[13px] italic", s.italic ? "bg-paper text-ink" : "text-paper-dim hover:bg-paper/10")}>
+          <button type="button" aria-pressed={s.italic} onClick={() => set({ italic: !s.italic })} className={cn("h-9 shrink-0 rounded-sm px-2.5 text-[13px] italic sm:h-7 sm:px-2", s.italic ? "bg-paper text-ink" : "text-paper-dim hover:bg-paper/10")}>
             I
           </button>
         )}
-        <button type="button" aria-pressed={s.uppercase} title="Uppercase" onClick={() => set({ uppercase: !s.uppercase })} className={cn("h-7 shrink-0 rounded-sm px-2 text-[12px]", s.uppercase ? "bg-paper text-ink" : "text-paper-dim hover:bg-paper/10")}>
+        <button type="button" aria-pressed={s.uppercase} title="Uppercase" onClick={() => set({ uppercase: !s.uppercase })} className={cn("h-9 shrink-0 rounded-sm px-2.5 text-[12px] sm:h-7 sm:px-2", s.uppercase ? "bg-paper text-ink" : "text-paper-dim hover:bg-paper/10")}>
           AA
         </button>
       </Row>
@@ -1252,50 +1252,59 @@ function ClipTab() {
           className="h-8 min-w-0 flex-1 rounded-sm border border-transparent bg-transparent px-1.5 text-[14px] font-medium text-paper outline-none hover:border-line-dark focus-visible:border-accent"
         />
         {c.linkId && (
-          <IconButton label="Unlink picture and sound" onClick={() => st.unlink(c.id)} className="size-7">
+          <IconButton label="Unlink picture and sound" onClick={() => st.unlink(c.id)} className="size-9 sm:size-7">
             <Link2Off aria-hidden className="size-3.5" />
           </IconButton>
         )}
-        <IconButton label="Delete clip" onClick={() => st.deleteSelection(false)} className="size-7">
+        <IconButton label="Delete clip" onClick={() => st.deleteSelection(false)} className="size-9 sm:size-7">
           <Trash2 aria-hidden className="size-3.5" />
         </IconButton>
       </div>
-      <div className="flex flex-wrap items-center gap-1 border-b border-line-dark px-3 py-1.5">
-        <IconButton label="Split at the playhead (S)" onClick={() => st.splitAtPlayhead()} className="size-7">
-          <Scissors aria-hidden className="size-3.5" />
-        </IconButton>
-        <IconButton label="Duplicate (Ctrl+D)" onClick={() => st.duplicateSelection()} className="size-7">
-          <Copy aria-hidden className="size-3.5" />
-        </IconButton>
-        <IconButton label="Copy attributes & effects (Ctrl+Alt+C)" onClick={() => st.copyAttributes(c.id)} className="size-7">
-          <ClipboardCopy aria-hidden className="size-3.5" />
-        </IconButton>
-        <IconButton label="Paste attributes & effects (Ctrl+Alt+V)" disabled={!hasAttrClip} onClick={() => st.pasteAttributes()} className="size-7">
-          <ClipboardPaste aria-hidden className="size-3.5" />
-        </IconButton>
+      <div className="flex flex-wrap items-center gap-1.5 border-b border-line-dark px-3 py-2">
+        <button type="button" title="Split at the playhead (S)" onClick={() => st.splitAtPlayhead()} className="inline-flex h-8 items-center gap-1.5 rounded-sm border border-line-dark px-2 text-[12px] text-paper-dim hover:border-line-dark-2 hover:bg-paper/10 hover:text-paper sm:h-7">
+          <Scissors aria-hidden className="size-3.5 shrink-0" />
+          Split
+        </button>
+        <button type="button" title="Duplicate (Ctrl+D)" onClick={() => st.duplicateSelection()} className="inline-flex h-8 items-center gap-1.5 rounded-sm border border-line-dark px-2 text-[12px] text-paper-dim hover:border-line-dark-2 hover:bg-paper/10 hover:text-paper sm:h-7">
+          <Copy aria-hidden className="size-3.5 shrink-0" />
+          Duplicate
+        </button>
+        <button type="button" title="Copy attributes & effects (Ctrl+Alt+C)" onClick={() => st.copyAttributes(c.id)} className="inline-flex h-8 items-center gap-1.5 rounded-sm border border-line-dark px-2 text-[12px] text-paper-dim hover:border-line-dark-2 hover:bg-paper/10 hover:text-paper sm:h-7">
+          <ClipboardCopy aria-hidden className="size-3.5 shrink-0" />
+          Copy FX
+        </button>
+        <button type="button" title="Paste attributes & effects (Ctrl+Alt+V)" disabled={!hasAttrClip} onClick={() => st.pasteAttributes()} className="inline-flex h-8 items-center gap-1.5 rounded-sm border border-line-dark px-2 text-[12px] text-paper-dim hover:border-line-dark-2 hover:bg-paper/10 hover:text-paper disabled:pointer-events-none disabled:opacity-30 sm:h-7">
+          <ClipboardPaste aria-hidden className="size-3.5 shrink-0" />
+          Paste FX
+        </button>
         {(c.kind === "video" || c.kind === "image") && (
-          <IconButton label="Sync colour grade to all clips on timeline" onClick={() => st.applyGradeToAllClips(c.id)} className="size-7">
-            <Sparkles aria-hidden className="size-3.5" />
-          </IconButton>
+          <button type="button" title="Sync colour grade to all clips on timeline" onClick={() => st.applyGradeToAllClips(c.id)} className="inline-flex h-8 items-center gap-1.5 rounded-sm border border-line-dark px-2 text-[12px] text-paper-dim hover:border-line-dark-2 hover:bg-paper/10 hover:text-paper sm:h-7">
+            <Sparkles aria-hidden className="size-3.5 shrink-0" />
+            Sync grade
+          </button>
         )}
-        {(c.kind === "video" && (linkedAudio || hasAudioStream)) && (
-          <IconButton label="Detach / extract audio track" onClick={() => st.detachAudio(c.id)} className="size-7">
-            <AudioLines aria-hidden className="size-3.5" />
-          </IconButton>
+        {c.kind === "video" && (linkedAudio || hasAudioStream) && (
+          <button type="button" title="Detach / extract audio track" onClick={() => st.detachAudio(c.id)} className="inline-flex h-8 items-center gap-1.5 rounded-sm border border-line-dark px-2 text-[12px] text-paper-dim hover:border-line-dark-2 hover:bg-paper/10 hover:text-paper sm:h-7">
+            <AudioLines aria-hidden className="size-3.5 shrink-0" />
+            Detach audio
+          </button>
         )}
         {c.kind === "video" && (
-          <IconButton
-            label="Freeze frame: hold this frame for 2 s (Shift+F)"
+          <button
+            type="button"
+            title="Freeze frame: hold this frame for 2 s (Shift+F)"
             disabled={busy}
             onClick={() => void runJob("cliptool", "Capturing the frame", () => freezeFrame(c.id))}
-            className="size-7"
+            className="inline-flex h-8 items-center gap-1.5 rounded-sm border border-line-dark px-2 text-[12px] text-paper-dim hover:border-line-dark-2 hover:bg-paper/10 hover:text-paper disabled:pointer-events-none disabled:opacity-30 sm:h-7"
           >
-            <Snowflake aria-hidden className="size-3.5" />
-          </IconButton>
+            <Snowflake aria-hidden className="size-3.5 shrink-0" />
+            Freeze 2s
+          </button>
         )}
         {(c.kind === "video" || c.kind === "audio") && (
-          <IconButton
-            label="Reverse: play backwards"
+          <button
+            type="button"
+            title="Reverse: play backwards"
             disabled={busy}
             onClick={() =>
               void runJob("cliptool", "Reversing", async (p) => {
@@ -1303,35 +1312,63 @@ function ClipTab() {
                 getStudio().notify("Reversed. The new copy is in your media.", "success");
               })
             }
-            className="size-7"
+            className="inline-flex h-8 items-center gap-1.5 rounded-sm border border-line-dark px-2 text-[12px] text-paper-dim hover:border-line-dark-2 hover:bg-paper/10 hover:text-paper disabled:pointer-events-none disabled:opacity-30 sm:h-7"
           >
-            <Rewind aria-hidden className="size-3.5" />
-          </IconButton>
+            <Rewind aria-hidden className="size-3.5 shrink-0" />
+            Reverse
+          </button>
         )}
         {visual && (
           <>
-            <IconButton label="Flip horizontally" active={!!c.flipH} onClick={() => st.flip([c.id], "h")} className="size-7">
-              <FlipHorizontal2 aria-hidden className="size-3.5" />
-            </IconButton>
-            <IconButton label="Flip vertically" active={!!c.flipV} onClick={() => st.flip([c.id], "v")} className="size-7">
-              <FlipVertical2 aria-hidden className="size-3.5" />
-            </IconButton>
+            <button
+              type="button"
+              aria-pressed={!!c.flipH}
+              title="Flip horizontally"
+              onClick={() => st.flip([c.id], "h")}
+              className={cn(
+                "inline-flex h-8 items-center gap-1.5 rounded-sm border px-2 text-[12px] transition-colors sm:h-7",
+                c.flipH ? "border-paper bg-paper text-ink" : "border-line-dark text-paper-dim hover:border-line-dark-2 hover:bg-paper/10 hover:text-paper",
+              )}
+            >
+              <FlipHorizontal2 aria-hidden className="size-3.5 shrink-0" />
+              Flip H
+            </button>
+            <button
+              type="button"
+              aria-pressed={!!c.flipV}
+              title="Flip vertically"
+              onClick={() => st.flip([c.id], "v")}
+              className={cn(
+                "inline-flex h-8 items-center gap-1.5 rounded-sm border px-2 text-[12px] transition-colors sm:h-7",
+                c.flipV ? "border-paper bg-paper text-ink" : "border-line-dark text-paper-dim hover:border-line-dark-2 hover:bg-paper/10 hover:text-paper",
+              )}
+            >
+              <FlipVertical2 aria-hidden className="size-3.5 shrink-0" />
+              Flip V
+            </button>
           </>
         )}
-        <span className="ml-auto flex items-center gap-0.5" role="radiogroup" aria-label="Colour label">
-          {LABELS.map((l) => (
-            <button
-              key={l || "none"}
-              type="button"
-              role="radio"
-              aria-checked={(c.label ?? "") === l}
-              aria-label={l ? `Label ${l}` : "No label"}
-              onClick={() => st.updateClip(c.id, { label: l || undefined })}
-              className={cn("size-4 rounded-full border", (c.label ?? "") === l ? "border-paper" : "border-line-dark", !l && "bg-transparent")}
-              style={l ? { background: l } : undefined}
-            />
-          ))}
-        </span>
+        <div className="flex w-full items-center justify-between pt-0.5 sm:ml-auto sm:w-auto sm:justify-start sm:pt-0">
+          <span className="text-[12px] text-paper-dim sm:hidden">Label</span>
+          <span className="flex items-center gap-0.5" role="radiogroup" aria-label="Colour label">
+            {LABELS.map((l) => (
+              <button
+                key={l || "none"}
+                type="button"
+                role="radio"
+                aria-checked={(c.label ?? "") === l}
+                aria-label={l ? `Label ${l}` : "No label"}
+                onClick={() => st.updateClip(c.id, { label: l || undefined })}
+                className="inline-flex size-7 items-center justify-center rounded-full sm:size-6"
+              >
+                <span
+                  className={cn("size-4 rounded-full border transition-transform", (c.label ?? "") === l ? "scale-110 border-paper ring-1 ring-paper/40" : "border-line-dark", !l && "bg-transparent")}
+                  style={l ? { background: l } : undefined}
+                />
+              </button>
+            ))}
+          </span>
+        </div>
       </div>
       <div className="px-3">
         <JobLine id="cliptool" />

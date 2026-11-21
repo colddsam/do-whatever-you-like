@@ -33,6 +33,7 @@ export type ToolHopperSearchProps = {
   currentToolId?: string;
   contextClusterId?: ClusterId;
   matchCount?: number;
+  hideFloatingPill?: boolean;
 };
 
 /**
@@ -47,6 +48,7 @@ export function ToolHopperSearch({
   currentToolId,
   contextClusterId,
   matchCount,
+  hideFloatingPill = false,
 }: ToolHopperSearchProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -551,7 +553,7 @@ export function ToolHopperSearch({
               />
             </motion.div>
           </motion.div>
-        ) : scrolledPast ? (
+        ) : scrolledPast && !hideFloatingPill ? (
           <motion.div
             key="hopper-floating-pill"
             layoutId={reduceMotion ? undefined : "tool-hopper-floating"}

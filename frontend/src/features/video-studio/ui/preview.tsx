@@ -2,11 +2,11 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { Camera, ChevronFirst, ChevronLast, Pause, Play, Repeat, SquareSplitHorizontal, StepBack, StepForward, Upload } from "lucide-react";
+import { Camera, ChevronFirst, ChevronLast, Pause, Play, Repeat, SlidersHorizontal, SquareSplitHorizontal, StepBack, StepForward, Type, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { IMPORT_ACCEPT } from "../constants";
+import { IMPORT_ACCEPT, TEXT_PRESETS } from "../constants";
 import { evalAnim } from "../lib/keyframes";
-import { clamp, frameRound, timecode } from "../lib/time";
+import { clamp, frameRound, shortTime, timecode } from "../lib/time";
 import { projectDuration } from "../lib/timeline";
 import { getStudio, usePrimaryClip, useStudio } from "../store/studio-store";
 import type { Clip, GuideMode, Project } from "../types";
@@ -311,15 +311,15 @@ function TransformOverlay({ w, h }: { w: number; h: number }) {
           style={{ left: `${compareX * 100}%` }}
         >
           <span className="pointer-events-none absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 bg-paper shadow-[0_0_6px_rgba(0,0,0,0.75)]" />
-          <span className="pointer-events-none absolute left-1/2 top-1/2 flex h-7 -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-full border border-paper/80 bg-ink/90 px-2 font-mono text-[10px] font-medium uppercase tracking-wider text-paper shadow-float">
+          <span className="pointer-events-none absolute left-1/2 top-1/2 flex h-7 -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-full border border-paper/80 bg-ink/90 px-2 font-mono text-[12px] font-medium uppercase tracking-wider text-paper shadow-float">
             ↔
           </span>
         </div>
       )}
       {compare && (
         <>
-          <span className="pointer-events-none absolute left-2 top-2 z-20 rounded-sm bg-ink/80 px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-wider text-paper">Before</span>
-          <span className="pointer-events-none absolute right-2 top-2 z-20 rounded-sm bg-ink/80 px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-wider text-accent">After</span>
+          <span className="pointer-events-none absolute left-2 top-2 z-20 rounded-sm bg-ink/80 px-1.5 py-0.5 font-mono text-[12px] uppercase tracking-wider text-paper">Before</span>
+          <span className="pointer-events-none absolute right-2 top-2 z-20 rounded-sm bg-ink/80 px-1.5 py-0.5 font-mono text-[12px] uppercase tracking-wider text-accent">After</span>
         </>
       )}
     </div>
@@ -358,12 +358,49 @@ function Meter() {
   );
 }
 
-function Transport() {
-  const { playing, playhead, fps, loop, quality, guides, compare } = useStudio(
-    useShallow((s) => ({ playing: s.playing, playhead: s.playhead, fps: s.project.settings.fps, loop: s.loop, quality: s.quality, guides: s.guides, compare: s.compare })),
+const GUIDE_OPTIONS: { value: GuideMode; label: string }[] = [
+  { value: "off", label: "Off" },
+  { value: "broadcast", label: "Safe / 3rds" },
+  { value: "golden", label: "Golden Phi" },
+  { value: "reels", label: "IG Reels" },
+  { value: "tiktok", label: "TikTok UI" },
+  { value: "shorts", label: "YT Shorts" },
+];
+
+function Transport({ compact = false }: { compact?: boolean }) {
+  const { playing, playhead, fps, loop, quality, guides, compare, scopes } = useStudio(
+    useShallow((s) => ({
+      playing: s.playing,
+      playhead: s.playhead,
+      fps: s.project.settings.fps,
+      loop: s.loop,
+      quality: s.quality,
+      guides: s.guides,
+      compare: s.compare,
+      scopes: s.scopes,
+    })),
   );
   const duration = useStudio((s) => projectDuration(s.project));
+  const [viewOpen, setViewOpen] = useState(false);
+  const viewRef = useRef<HTMLDivElement>(null);
   const st = getStudio();
+
+  useEffect(() => {
+    if (!viewOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (!viewRef.current?.contains(e.target as Node)) setViewOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setViewOpen(false);
+    };
+    window.addEventListener("pointerdown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [viewOpen]);
+
   const snapshot = async () => {
     const e = getEngine();
     if (!e) return;
@@ -379,14 +416,169 @@ function Transport() {
       st.notify(err instanceof Error ? err.message : "Couldn't save the frame.", "danger");
     }
   };
+
+  if (compact) {
+    const activeView = guides !== "off" || scopes || loop || quality !== "full";
+    return (
+      <div ref={viewRef} className="relative flex h-12 shrink-0 items-center justify-between gap-1 border-t border-line-dark bg-ink-raised px-2">
+        <p className="min-w-0 shrink-0 whitespace-nowrap font-mono text-[12px] tabular-nums tracking-tight text-paper">
+          {shortTime(playhead)}
+          <span className="text-paper-dim"> / {shortTime(duration)}</span>
+        </p>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <IconButton label="Previous frame" onClick={() => st.stepFrames(-1)} className="max-sm:size-8">
+            <StepBack aria-hidden className="size-4" />
+          </IconButton>
+          <button
+            type="button"
+            aria-label={playing ? "Pause" : "Play"}
+            onClick={() => st.togglePlay()}
+            className="mx-0.5 inline-flex size-10 items-center justify-center rounded-full bg-paper text-ink transition-transform active:scale-95"
+          >
+            {playing ? <Pause aria-hidden className="size-4 fill-current" /> : <Play aria-hidden className="ml-0.5 size-4 fill-current" />}
+          </button>
+          <IconButton label="Next frame" onClick={() => st.stepFrames(1)} className="max-sm:size-8">
+            <StepForward aria-hidden className="size-4" />
+          </IconButton>
+        </div>
+        <div className="flex shrink-0 items-center justify-end gap-1">
+          <IconButton label="Before / After split grade wipe" active={compare} onClick={() => st.set({ compare: !compare })} className="max-sm:size-8">
+            <SquareSplitHorizontal aria-hidden className="size-4" />
+          </IconButton>
+          <button
+            type="button"
+            aria-expanded={viewOpen}
+            aria-label="Monitor display and playback options"
+            onClick={() => setViewOpen((v) => !v)}
+            className={cn(
+              "relative inline-flex h-9 items-center gap-1 rounded-sm border px-2 text-[12px] font-medium transition-colors",
+              viewOpen ? "border-paper bg-paper text-ink" : "border-line-dark text-paper hover:bg-paper/10",
+            )}
+          >
+            <SlidersHorizontal aria-hidden className="size-3.5" />
+            <span>View</span>
+            {activeView && !viewOpen && <span aria-hidden className="size-1.5 rounded-full bg-accent" />}
+          </button>
+        </div>
+        {viewOpen && (
+          <div
+            role="dialog"
+            aria-label="Monitor options"
+            className="absolute bottom-[calc(100%+6px)] left-1/2 z-50 w-[min(344px,calc(100vw-16px))] -translate-x-1/2 rounded-lg border border-line-dark bg-ink-raised p-3 shadow-float"
+          >
+            <div className="grid grid-cols-3 gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  st.set({ playhead: 0, playing: false });
+                  setViewOpen(false);
+                }}
+                className="inline-flex h-9 items-center justify-center gap-1 rounded-sm border border-line-dark text-[12px] text-paper hover:bg-paper/10"
+              >
+                <ChevronFirst aria-hidden className="size-3.5" />
+                Start
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  st.set({ playhead: frameRound(duration, fps), playing: false });
+                  setViewOpen(false);
+                }}
+                className="inline-flex h-9 items-center justify-center gap-1 rounded-sm border border-line-dark text-[12px] text-paper hover:bg-paper/10"
+              >
+                End
+                <ChevronLast aria-hidden className="size-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  void snapshot();
+                  setViewOpen(false);
+                }}
+                className="inline-flex h-9 items-center justify-center gap-1 rounded-sm border border-line-dark text-[12px] text-paper hover:bg-paper/10"
+              >
+                <Camera aria-hidden className="size-3.5" />
+                Still
+              </button>
+            </div>
+            <p className="label-mono mb-1.5 mt-3 text-paper-dim">Safe-zone guides</p>
+            <div className="grid grid-cols-3 gap-1">
+              {GUIDE_OPTIONS.map((g) => (
+                <button
+                  key={g.value}
+                  type="button"
+                  aria-pressed={guides === g.value}
+                  onClick={() => st.set({ guides: g.value })}
+                  className={cn(
+                    "h-8 rounded-sm border px-1 text-[12px] transition-colors",
+                    guides === g.value ? "border-paper bg-paper text-ink" : "border-line-dark text-paper-dim hover:text-paper",
+                  )}
+                >
+                  {g.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                aria-pressed={scopes}
+                onClick={() => st.set({ scopes: !scopes })}
+                className={cn(
+                  "h-9 rounded-sm border text-[12px] transition-colors",
+                  scopes ? "border-paper bg-paper text-ink" : "border-line-dark text-paper-dim hover:text-paper",
+                )}
+              >
+                Scopes: {scopes ? "On" : "Off"}
+              </button>
+              <button
+                type="button"
+                aria-pressed={loop}
+                onClick={() => st.set({ loop: !loop })}
+                className={cn(
+                  "h-9 rounded-sm border text-[12px] transition-colors",
+                  loop ? "border-paper bg-paper text-ink" : "border-line-dark text-paper-dim hover:text-paper",
+                )}
+              >
+                Loop: {loop ? "On" : "Off"}
+              </button>
+            </div>
+            <p className="label-mono mb-1.5 mt-3 text-paper-dim">Playback quality</p>
+            <div className="grid grid-cols-3 gap-1">
+              {(
+                [
+                  { value: "full", label: "Full" },
+                  { value: "half", label: "1/2 Res" },
+                  { value: "quarter", label: "1/4 Res" },
+                ] as const
+              ).map((q) => (
+                <button
+                  key={q.value}
+                  type="button"
+                  aria-pressed={quality === q.value}
+                  onClick={() => st.set({ quality: q.value })}
+                  className={cn(
+                    "h-8 rounded-sm border text-[12px] transition-colors",
+                    quality === q.value ? "border-paper bg-paper text-ink" : "border-line-dark text-paper-dim hover:text-paper",
+                  )}
+                >
+                  {q.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
-    // A size container with horizontal scroll on very narrow viewports so nothing disappears.
-    <div className="@container flex items-center gap-1 overflow-x-auto no-scrollbar border-t border-line-dark bg-ink-raised px-2 py-1" data-lenis-prevent>
+    // A size container with horizontal scroll on desktop/tablet viewports so nothing clips.
+    <div className="@container flex items-center gap-0.5 overflow-x-auto no-scrollbar border-t border-line-dark bg-ink-raised px-1.5 py-1 @min-[36rem]:gap-1 @min-[36rem]:px-2" data-lenis-prevent>
       <div className="flex shrink-0 items-center">
-        <IconButton label="Go to start (Home)" onClick={() => st.set({ playhead: 0, playing: false })}>
+        <IconButton label="Go to start (Home)" onClick={() => st.set({ playhead: 0, playing: false })} className="@max-[38rem]:hidden">
           <ChevronFirst aria-hidden className="size-4" />
         </IconButton>
-        <IconButton label="Previous frame (←)" onClick={() => st.stepFrames(-1)}>
+        <IconButton label="Previous frame (←)" onClick={() => st.stepFrames(-1)} className="@max-[34rem]:size-7">
           <StepBack aria-hidden className="size-4" />
         </IconButton>
         <button
@@ -398,47 +590,42 @@ function Transport() {
         >
           {playing ? <Pause aria-hidden className="size-4 fill-current" /> : <Play aria-hidden className="ml-0.5 size-4 fill-current" />}
         </button>
-        <IconButton label="Next frame (→)" onClick={() => st.stepFrames(1)}>
+        <IconButton label="Next frame (→)" onClick={() => st.stepFrames(1)} className="@max-[34rem]:size-7">
           <StepForward aria-hidden className="size-4" />
         </IconButton>
-        <IconButton label="Go to end (End)" onClick={() => st.set({ playhead: frameRound(duration, fps), playing: false })}>
+        <IconButton label="Go to end (End)" onClick={() => st.set({ playhead: frameRound(duration, fps), playing: false })} className="@max-[38rem]:hidden">
           <ChevronLast aria-hidden className="size-4" />
         </IconButton>
       </div>
-      <p className="ml-1 shrink-0 font-mono text-[12px] tabular-nums text-paper">
+      <p className="ml-0.5 shrink-0 font-mono text-[12px] tabular-nums text-paper @min-[36rem]:ml-1">
         {timecode(playhead, fps)}
-        <span className="text-paper-dim @max-[34rem]:hidden"> / {timecode(duration, fps)}</span>
+        <span className="text-paper-dim @max-[36rem]:hidden"> / {timecode(duration, fps)}</span>
       </p>
-      <div className="ml-auto flex shrink-0 items-center gap-1">
-        <Meter />
-        <IconButton label="Loop playback" active={loop} onClick={() => st.set({ loop: !loop })}>
+      <div className="ml-auto flex shrink-0 items-center gap-0.5 @min-[36rem]:gap-1">
+        <div className="@max-[38rem]:hidden">
+          <Meter />
+        </div>
+        <IconButton label="Loop playback" active={loop} onClick={() => st.set({ loop: !loop })} className="@max-[34rem]:size-7">
           <Repeat aria-hidden className="size-4" />
         </IconButton>
-        <IconButton label="Before / After split grade wipe (Shift+C)" active={compare} onClick={() => st.set({ compare: !compare })}>
+        <IconButton label="Before / After split grade wipe (Shift+C)" active={compare} onClick={() => st.set({ compare: !compare })} className="@max-[34rem]:size-7">
           <SquareSplitHorizontal aria-hidden className="size-4" />
         </IconButton>
         <Select<GuideMode>
           label="Safe zones and guides"
           value={guides}
           onChange={(v) => st.set({ guides: v })}
-          className="w-[86px] flex-none"
-          options={[
-            { value: "off", label: "Guides: Off" },
-            { value: "broadcast", label: "Safe / 3rds" },
-            { value: "golden", label: "Golden Phi" },
-            { value: "reels", label: "IG Reels" },
-            { value: "tiktok", label: "TikTok UI" },
-            { value: "shorts", label: "YT Shorts" },
-          ]}
+          className="w-[100px] flex-none @min-[36rem]:w-[106px]"
+          options={GUIDE_OPTIONS.map((o) => ({ value: o.value, label: o.value === "off" ? "Guides: Off" : o.label }))}
         />
-        <IconButton label="Save this frame as PNG" onClick={() => void snapshot()}>
+        <IconButton label="Save this frame as PNG" onClick={() => void snapshot()} className="@max-[34rem]:size-7">
           <Camera aria-hidden className="size-4" />
         </IconButton>
         <Select
           label="Preview quality"
           value={quality}
           onChange={(v) => st.set({ quality: v })}
-          className="w-[70px] flex-none"
+          className="w-[58px] flex-none @min-[36rem]:w-[66px]"
           options={[
             { value: "full", label: "Full" },
             { value: "half", label: "1/2" },
@@ -452,7 +639,7 @@ function Transport() {
 
 /* ---------- The monitor ---------- */
 
-export function Preview() {
+export function Preview({ compact = false }: { compact?: boolean }) {
   const areaRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -538,41 +725,51 @@ export function Preview() {
         <div className="relative shrink-0 bg-black shadow-[0_0_0_1px_var(--color-line-dark)]" style={{ width: box.w, height: box.h }}>
           <div ref={hostRef} className="absolute inset-0" />
           {box.w > 0 && <TransformOverlay w={box.w} h={box.h} />}
-          {empty && !error && (
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 p-4 text-center">
-              <p className="text-[15px] font-medium text-paper">Drop videos, music or pictures here</p>
-              <p className="max-w-xs text-[12px] leading-relaxed text-paper-dim">Everything stays on this device. Or start with a title from the Text tab.</p>
+        </div>
+        {empty && !error && (
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2.5 p-4 text-center">
+            <p className="text-[14px] font-medium text-paper sm:text-[15px]">Start your video</p>
+            <p className="max-w-xs text-[12px] leading-relaxed text-paper-dim">Private &amp; on-device. Drop footage or add a title to begin.</p>
+            <div className="pointer-events-auto flex flex-wrap items-center justify-center gap-2 pt-0.5">
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="pointer-events-auto inline-flex h-9 items-center gap-2 rounded-md bg-paper px-4 text-[13px] font-medium text-ink hover:bg-paper/85"
+                className="inline-flex h-9 items-center gap-1.5 rounded-md bg-paper px-3.5 text-[13px] font-medium text-ink transition-colors hover:bg-paper/85"
               >
                 <Upload aria-hidden className="size-4" />
                 Import media
               </button>
-              <input
-                ref={fileRef}
-                type="file"
-                multiple
-                accept={IMPORT_ACCEPT}
-                className="hidden"
-                onChange={(e) => {
-                  const files = [...(e.target.files ?? [])];
-                  e.target.value = "";
-                  if (files.length) void importFiles(files, { toTimeline: true, at: 0 });
-                }}
-              />
+              <button
+                type="button"
+                onClick={() => getStudio().addText(TEXT_PRESETS[0].id)}
+                className="inline-flex h-9 items-center gap-1.5 rounded-md border border-line-dark bg-ink-raised/90 px-3 text-[13px] font-medium text-paper transition-colors hover:border-paper/40 hover:bg-ink-raised"
+              >
+                <Type aria-hidden className="size-4" />
+                Add title
+              </button>
             </div>
-          )}
-          {error && (
-            <div role="alert" className="absolute inset-0 flex items-center justify-center p-6 text-center text-[13px] leading-relaxed text-paper">
-              {error}
-            </div>
-          )}
-        </div>
+            <input
+              ref={fileRef}
+              type="file"
+              multiple
+              accept={IMPORT_ACCEPT}
+              className="hidden"
+              onChange={(e) => {
+                const files = [...(e.target.files ?? [])];
+                e.target.value = "";
+                if (files.length) void importFiles(files, { toTimeline: true, at: 0 });
+              }}
+            />
+          </div>
+        )}
+        {error && (
+          <div role="alert" className="absolute inset-0 flex items-center justify-center p-6 text-center text-[13px] leading-relaxed text-paper">
+            {error}
+          </div>
+        )}
         {scopes && <VideoScopes />}
       </div>
-      <Transport />
+      <Transport compact={compact} />
     </div>
   );
 }

@@ -2,19 +2,19 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { Film, Music4, SlidersHorizontal, Sparkles, Type, Wand2, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Workbench } from "@/components/tools/workbench";
 import { clamp } from "../lib/time";
 import * as TL from "../lib/timeline";
-import { getStudio, useStudio, type LeftTab } from "../store/studio-store";
+import { getStudio, usePrimaryClip, useStudio } from "../store/studio-store";
 import { freezeFrame } from "../engine/clip-tools";
 import { openProject, startAutosave } from "../engine/persistence";
 import { runJob } from "./ai-panel";
 import { TopBar, Shortcuts, Toasts } from "./chrome";
 import { ExportDialog } from "./export-dialog";
 import { Inspector } from "./inspector";
-import { LEFT_TABS, LeftPanel, LeftPanelBody } from "./left-panel";
+import { LeftPanel, LeftPanelBody, TransitionsPanel } from "./left-panel";
 import { Preview } from "./preview";
 import { Timeline } from "./timeline";
 
@@ -45,24 +45,35 @@ function readNumber(key: string, fallback: number) {
   }
 }
 
-type MobileTab = LeftTab | "inspector";
+type MobileDockId = "media" | "inspector" | "text" | "effects" | "audio" | "ai";
+
+const MOBILE_DOCK: { id: MobileDockId; label: string; title: string; icon: LucideIcon }[] = [
+  { id: "media", label: "Media", title: "Media & Stock", icon: Film },
+  { id: "inspector", label: "Edit", title: "Edit Clip & Canvas", icon: SlidersHorizontal },
+  { id: "text", label: "Text", title: "Text & Shapes", icon: Type },
+  { id: "effects", label: "Effects", title: "Effects & Transitions", icon: Wand2 },
+  { id: "audio", label: "Audio", title: "Audio & Voices", icon: Music4 },
+  { id: "ai", label: "AI", title: "AI Tools", icon: Sparkles },
+];
 
 function Editor({ fullscreen, setFullscreen }: { fullscreen: boolean; setFullscreen: (f: boolean | ((x: boolean) => boolean)) => void }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const tier = useDeviceTier();
   const ready = useStudio((s) => s.ready);
   const hasClips = useStudio((s) => Object.keys(s.project.clips).length > 0);
+  const primaryClip = usePrimaryClip();
+  const hasSel = useStudio((s) => s.selection.length > 0);
   const [exportOpen, setExportOpen] = useState(false);
   const [help, setHelp] = useState(false);
   const [exported, setExported] = useState(false);
   const [timelineH, setTimelineH] = useState(() => readNumber("studio:timeline-h", 260));
-  const [timelineCollapsed, setTimelineCollapsed] = useState(false);
   const [leftW, setLeftW] = useState(() => readNumber("studio:left-w", 288));
   const [rightW, setRightW] = useState(() => readNumber("studio:right-w", 320));
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
   const [tabletTab, setTabletTab] = useState<"library" | "inspector" | null>("library");
-  const [mobileTab, setMobileTab] = useState<MobileTab | null>(null);
+  const [mobileTab, setMobileTab] = useState<MobileDockId | null>(null);
+  const [mobileFxSub, setMobileFxSub] = useState<"effects" | "transitions">("effects");
   const resize = useRef<{ kind: "tl" | "left" | "right"; start: number; val: number } | null>(null);
 
   // Going in or out of full screen moves the editor in the DOM, which drops keyboard focus to the
@@ -270,7 +281,7 @@ function Editor({ fullscreen, setFullscreen }: { fullscreen: boolean; setFullscr
           "relative flex flex-col bg-ink text-paper outline-none",
           fullscreen
             ? "min-h-0 flex-1 safe-bottom"
-            : "h-[calc(100dvh-68px)] min-h-[520px] md:h-[min(86dvh,1040px)] lg:h-[min(88dvh,1180px)] 2xl:h-[min(90dvh,1340px)]",
+            : "h-[calc(100dvh-116px)] min-h-[480px] sm:h-[calc(100dvh-96px)] md:h-[min(86dvh,1040px)] lg:h-[min(88dvh,1180px)] 2xl:h-[min(90dvh,1340px)]",
         )}
       >
         <TopBar
@@ -369,41 +380,101 @@ function Editor({ fullscreen, setFullscreen }: { fullscreen: boolean; setFullscr
 
         {tier === "phone" && (
           <div className="flex min-h-0 flex-1 flex-col">
-            <div className="flex min-h-[168px] flex-1 flex-col">
-              <Preview />
+            <div className={cn("flex min-h-0 flex-col", mobileTab ? "h-[38%] min-h-[176px] max-h-[260px] shrink-0" : "min-h-[180px] flex-1")}>
+              <Preview compact />
             </div>
-            <div role="tablist" aria-label="Panels" className="flex shrink-0 items-center overflow-x-auto no-scrollbar border-y border-line-dark bg-ink-raised" data-lenis-prevent>
-              {[...LEFT_TABS, { id: "inspector" as const, label: "Edit" }].map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={mobileTab === t.id}
-                  onClick={() => {
-                    setMobileTab((cur) => (cur === t.id ? null : t.id));
-                    if (t.id !== "inspector") getStudio().set({ leftTab: t.id });
-                  }}
-                  className={cn("relative h-10 flex-auto shrink-0 whitespace-nowrap px-3 text-[13px]", mobileTab === t.id ? "text-paper" : "text-paper-dim")}
-                >
-                  {t.label}
-                  {mobileTab === t.id && <span className="absolute inset-x-3 bottom-0 h-0.5 bg-accent" />}
-                </button>
-              ))}
-              <button
-                type="button"
-                aria-label={timelineCollapsed ? "Expand timeline" : "Collapse timeline"}
-                onClick={() => setTimelineCollapsed((c) => !c)}
-                className="inline-flex h-10 shrink-0 items-center gap-1 border-l border-line-dark px-2.5 text-[12px] text-paper-dim hover:text-paper"
-              >
-                {timelineCollapsed ? <ChevronUp aria-hidden className="size-3.5" /> : <ChevronDown aria-hidden className="size-3.5" />}
-                TL
-              </button>
-            </div>
-            {mobileTab && <div className="h-[min(42dvh,300px)] min-h-[170px] shrink-0 bg-ink-raised">{mobileTab === "inspector" ? <Inspector /> : <LeftPanelBody tab={mobileTab} />}</div>}
+            {mobileTab ? (
+              <div className="flex min-h-0 flex-1 flex-col border-t border-line-dark bg-ink-raised">
+                <div className="flex h-11 shrink-0 items-center gap-2 border-b border-line-dark px-3">
+                  {(() => {
+                    const activeDock = MOBILE_DOCK.find((d) => d.id === mobileTab)!;
+                    const ActiveDockIcon = activeDock.icon;
+                    return (
+                      <>
+                        <ActiveDockIcon aria-hidden className="size-4 shrink-0 text-accent" />
+                        <span className="truncate text-[13px] font-medium text-paper">{activeDock.title}</span>
+                      </>
+                    );
+                  })()}
+                  {hasSel && mobileTab !== "inspector" && (
+                    <button
+                      type="button"
+                      onClick={() => setMobileTab("inspector")}
+                      className="ml-auto inline-flex h-8 max-w-[140px] items-center gap-1 rounded-sm border border-line-dark px-2 text-[12px] text-paper-dim hover:bg-paper/10 hover:text-paper"
+                    >
+                      <SlidersHorizontal aria-hidden className="size-3 shrink-0 text-accent" />
+                      <span className="truncate">{primaryClip ? `Edit ${primaryClip.name}` : "Edit clip"}</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setMobileTab(null)}
+                    className={cn(
+                      "inline-flex h-8 shrink-0 items-center rounded-sm px-2.5 text-[12px] font-medium text-accent hover:bg-paper/10",
+                      !(hasSel && mobileTab !== "inspector") && "ml-auto",
+                    )}
+                  >
+                    Done
+                  </button>
+                </div>
+                {mobileTab === "effects" && (
+                  <div className="grid shrink-0 grid-cols-2 gap-1 border-b border-line-dark bg-ink px-3 py-1.5">
+                    <button
+                      type="button"
+                      aria-pressed={mobileFxSub === "effects"}
+                      onClick={() => setMobileFxSub("effects")}
+                      className={cn("h-8 rounded-sm text-[12px] transition-colors", mobileFxSub === "effects" ? "bg-paper font-medium text-ink" : "text-paper-dim hover:bg-paper/10 hover:text-paper")}
+                    >
+                      Effects & LUTs
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={mobileFxSub === "transitions"}
+                      onClick={() => setMobileFxSub("transitions")}
+                      className={cn("h-8 rounded-sm text-[12px] transition-colors", mobileFxSub === "transitions" ? "bg-paper font-medium text-ink" : "text-paper-dim hover:bg-paper/10 hover:text-paper")}
+                    >
+                      Transitions
+                    </button>
+                  </div>
+                )}
+                <div className="min-h-0 flex-1">
+                  {mobileTab === "inspector" ? <Inspector /> : mobileTab === "effects" && mobileFxSub === "transitions" ? <TransitionsPanel /> : <LeftPanelBody tab={mobileTab} />}
+                </div>
+              </div>
+            ) : (
+              <div className="h-[clamp(192px,34dvh,268px)] shrink-0 border-t border-line-dark">
+                <Timeline compact onEditSelected={() => setMobileTab("inspector")} />
+              </div>
+            )}
+            <nav aria-label="Editor tools" className="grid shrink-0 grid-cols-6 border-t border-line-dark bg-ink-raised safe-bottom">
+              {MOBILE_DOCK.map((t) => {
+                const active = mobileTab === t.id;
+                const Icon = t.icon;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => {
+                      setMobileTab((cur) => (cur === t.id ? null : t.id));
+                      if (t.id !== "inspector") getStudio().set({ leftTab: t.id });
+                    }}
+                    className={cn("relative flex h-14 flex-col items-center justify-center gap-0.5 text-[12px] transition-colors", active ? "text-paper" : "text-paper-dim hover:text-paper")}
+                  >
+                    {active && <span className="absolute inset-x-3 top-0 h-0.5 bg-accent" />}
+                    <span className="relative">
+                      <Icon aria-hidden className="size-4" />
+                      {t.id === "inspector" && hasSel && <span aria-hidden className="absolute -right-1.5 -top-1 size-2 rounded-full bg-accent" />}
+                    </span>
+                    <span className="leading-none">{t.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
           </div>
         )}
 
-        {!(tier === "phone" && timelineCollapsed) && (
+        {tier !== "phone" && (
           <>
             <div
               role="separator"
@@ -430,7 +501,7 @@ function Editor({ fullscreen, setFullscreen }: { fullscreen: boolean; setFullscr
                 }
               }}
             />
-            <div className="shrink-0" style={{ height: tier === "phone" ? Math.min(timelineH, mobileTab ? 160 : 220) : timelineH }}>
+            <div className="shrink-0" style={{ height: timelineH }}>
               <Timeline />
             </div>
           </>
