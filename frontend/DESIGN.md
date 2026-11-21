@@ -370,6 +370,44 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
       collage. Menus, submenus and flyouts float in a portal on `<body>` (`Floating`, z-130) so no scrolling bar clips
       them, and fade in over 140 ms. While a job runs, history and edit shortcuts hold still. Image tools hand a result to
       the editor through IndexedDB (`lib/handoff.ts`, `?open=handoff`), shown as "Edit in Pro editor" on single-image results.
+    - **Video editor** (`src/features/video-studio/`, `wide`, the Audio & video hub): Premiere's multi-track timeline,
+      After Effects' keyframes and shaders, CapCut's one-click AI, all in the browser. It is the **dark band** (the
+      palette inverted, as DESIGN B says): `ink` canvas, `ink-raised` panels, `line-dark` hairlines, `paper` text with
+      `paper-dim` for secondary, a `paper` fill for the selected chip or tool, and the accent only for the playhead,
+      selection outlines, keyframe diamonds, snapping and drop markers. Clips are token tints: video and pictures
+      `paper`/8, sound `success`/25 with its waveform, text `warning`/25, shapes `accent`/20; colours inside clips are
+      the user's content (clip colour labels and marker colours are user choices too).
+      Layout: top bar (project name, "Saved here", undo/redo, frame, shortcuts, full screen, a `paper` Export button),
+      then a 3×2 grid of library tabs on the left (Media · Text · Effects · Transitions · Audio · AI, icon + label,
+      the active one a `paper` fill), the monitor in the middle (transform handles in accent, centre
+      snapping guides, safe areas, a transport bar with a `paper` play button, timecode and a stereo meter), the
+      inspector on the right (Clip · Animate · Project), and the timeline at the bottom behind a drag handle. Below
+      `lg` the panels become one tab strip under the monitor. Track headers and the ruler stay sticky in one scroll
+      container; V1 is the lowest picture track and A1 the first sound track, as in Premiere.
+      **Icons explain every choice.** Effects, transitions, looks, text animations, voice changers, sound effects,
+      shapes, layouts, speed curves and timeline tools each have a lucide glyph (`ui/catalog.ts`, kept out of
+      `constants.ts` so the render engine never imports React). Libraries are single-column rows: a 32 px round badge
+      (`paper`/10, inverting to `paper` on hover, `accent` when the effect is on the selected clip), the name in medium
+      weight and a one-line description that truncates (never `line-clamp` together with `block`: the later utility
+      wins). Inline pickers in the inspector are 3- or 4-column icon grids (`IconGrid`): glyph over a short label, the
+      chosen one a `paper` fill. Looks and LUT film looks are gradient swatches. Every tile keeps its full description
+      in `title` for hover. New overlays (titles, shapes, stickers) and generated sounds go on a free track or a new one,
+      never over existing clips.
+      Engine: `lib/timeline.ts` (TimelineEngine, pure `Project → Project` edits: overwrite placement, linked trims,
+      splits that keep keyframes, ripple and range-ripple), a zustand store whose gestures commit as one undo step,
+      `engine/render` (WebGLCompositor: one uber-shader per layer runs all 29 effects in a single pass, with separate
+      passes only for blur, glow and the canvas-blur backdrop; 3D LUT textures; 11 W3C blend modes; 18 transitions;
+      text and shapes drawn by Canvas 2D), `lib/speed.ts` (speed curves: exact integrals and inverses, so preview,
+      export, splits and trims agree), `engine/playback.ts` (an AudioContext clock kept alive by a −100 dBFS
+      oscillator, pooled `<video>`/`<audio>` elements, each sound clip through `engine/audio-fx.ts`'s Web Audio graph,
+      the same graph the export renders offline with a lead-in so reverb and echo tails join across windows),
+      `engine/exporter.ts` (WebCodecsExporter: Mediabunny-decoded frames through the same compositor into
+      VideoEncoder/AudioEncoder for MP4/WebM, gifenc for GIF, WAV/M4A for sound only), `engine/ai` (Whisper and RMBG
+      in `public/studio/ai-worker.js`, MediaPipe on the page, local silence, scene, beat, loudness, shake and speech
+      analysis, the AI Director), `engine/convert.ts` (ffmpeg.wasm from `/studio/ffmpeg`, only when a file needs it). Media lives in
+      OPFS, projects in IndexedDB. Its page alone is cross-origin isolated (next.config.ts); the entry component
+      reloads once when arrived at by a client-side link, and reloads the next page when leaving, so no other page
+      runs under COEP. Full screen moves the editor's host element to `<body>` (z-100) without remounting it.
     - Grids that hold a canvas use `grid-cols-[minmax(0,1fr)]` on phones: an `auto` track grows to the canvas's
       natural width and pushes the page sideways.
   - `convert-anything` (by id) → `UniversalConverter` (`components/tools/universal/`): any file to any format it

@@ -4,7 +4,7 @@ import { LegalPage } from "@/components/layout/legal-page";
 
 export const metadata: Metadata = pageMeta({
   title: "Fair use — Do-Whatever-You-Like",
-  description: "How to use Do-Whatever-You-Like's downloaders responsibly.",
+  description: "How to use Do-Whatever-You-Like's YouTube, Instagram and Facebook downloaders responsibly: public content, rights and personal use.",
   path: "/fair-use",
 });
 

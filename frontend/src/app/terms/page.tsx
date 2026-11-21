@@ -4,7 +4,7 @@ import { LegalPage } from "@/components/layout/legal-page";
 
 export const metadata: Metadata = pageMeta({
   title: "Terms — Do-Whatever-You-Like",
-  description: "The terms for using Do-Whatever-You-Like's tools.",
+  description: "The terms for using Do-Whatever-You-Like's free tools: what you may do with them, what we promise, and the limits of the free service.",
   path: "/terms",
 });
 

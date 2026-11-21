@@ -38,6 +38,7 @@ export default function ToolsPage() {
         <SectionHeader
           index="00"
           label="Toolbox"
+          as="h1"
           title={
             <>
               Every tool, <span className="serif-em">one place.</span>

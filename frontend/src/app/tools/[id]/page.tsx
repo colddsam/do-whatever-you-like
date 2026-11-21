@@ -29,18 +29,33 @@ export async function generateMetadata({ params }: PageProps<"/tools/[id]">): Pr
   };
 }
 
-/** "Merge PDF — Free Online, No Sign-up | Do-Whatever-You-Like": the name people search, then the promise. */
+const BRAND = " | Do-Whatever-You-Like";
+/** Search results show about 60–70 characters; past that the end is cut off. */
+const TITLE_MAX = 70;
+const DESCRIPTION_MAX = 160;
+
+/**
+ * "Merge PDF — Free Online, No Sign-up | Do-Whatever-You-Like": the name people search, then the
+ * promise. Longer names keep what fits: the promise shortens first, then the brand goes (search
+ * engines show the site name beside the result anyway).
+ */
 function toolTitle(tool: Tool) {
-  if (tool.seoTitle) return `${tool.seoTitle} | Do-Whatever-You-Like`;
-  return `${tool.name} — Free Online, No Sign-up | Do-Whatever-You-Like`;
+  const options = tool.seoTitle
+    ? [`${tool.seoTitle}${BRAND}`, tool.seoTitle]
+    : [`${tool.name} — Free Online, No Sign-up${BRAND}`, `${tool.name} — Free Online${BRAND}`, `${tool.name} — Free Online, No Sign-up`, `${tool.name} — Free Online`];
+  return options.find((t) => t.length <= TITLE_MAX) ?? options[options.length - 1];
 }
 
 /** The tool's one line, then what every result snippet should answer: cost, limits, privacy. */
 function toolDescription(tool: Tool) {
   // Skip a limit the description already says ("…, in your browser." + "Runs in your browser").
   const limit = tool.limit && !(/browser/i.test(tool.limit) && /browser/i.test(tool.description)) ? tool.limit : undefined;
-  const facts = ["Free, no sign-up", limit, wherePrivacy(tool)].filter(Boolean).join(". ");
-  return `${tool.description.replace(/\.?$/, ".")} ${facts}.`;
+  // Add the facts while the snippet still fits; cost always leads.
+  let out = tool.description.replace(/\.?$/, ".");
+  for (const fact of ["Free, no sign-up", limit, wherePrivacy(tool)]) {
+    if (fact && out.length + fact.length + 2 <= DESCRIPTION_MAX) out += ` ${fact}.`;
+  }
+  return out;
 }
 
 /** "YouTube downloader" → "YouTube" + italic "downloader". */

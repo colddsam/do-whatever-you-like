@@ -85,6 +85,18 @@ services:
         sync: false
       - key: TOOL_REQUEST_APPS_SCRIPT_URL
         sync: false
+      # Video editor (/tools/video-editor). The editor runs entirely in the browser (WebGL, WebCodecs,
+      # on-device AI); this service only proxies Google Fonts and free stock media from allowlisted
+      # hosts, and plans AI Director edits. It loads no models and writes no files, so it adds almost
+      # nothing to the 512 MB budget. Without either key the editor's built-in commands are used; an
+      # existing TRANSLATE_/TRANSCRIBE_GROQ_API_KEY is reused automatically.
+      # Free Gemini key: https://aistudio.google.com/apikey
+      - key: STUDIO_GEMINI_API_KEY
+        sync: false
+      - key: STUDIO_GROQ_API_KEY
+        sync: false
+      - key: STUDIO_PROXY_MAX_MB
+        value: "200"
       # Optional: if YouTube starts answering "Sign in to confirm you're not a bot" (it does that to
       # some cloud IP ranges), add a cookies.txt from a signed-in browser as cookies_youtube.txt.
       - key: YOUTUBE_COOKIE_FILE_PATH

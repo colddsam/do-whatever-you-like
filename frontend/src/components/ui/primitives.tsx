@@ -151,11 +151,14 @@ export function SectionHeader({
   title,
   description,
   dark = false,
+  as: Heading = "h2",
   className,
 }: {
   index: string;
   label: string;
   title: React.ReactNode;
+  /** The page's own heading (h1) on pages that open with this header; h2 for sections. */
+  as?: "h1" | "h2";
   description?: React.ReactNode;
   dark?: boolean;
   className?: string;
@@ -166,7 +169,7 @@ export function SectionHeader({
         {index} — {label}
       </p>
       <div className="md:col-span-9">
-        <h2 className="text-h2 text-balance">{title}</h2>
+        <Heading className="text-h2 text-balance">{title}</Heading>
         {description && (
           <p
             className={cn(

@@ -6,13 +6,13 @@
 
 <br>
 
-<a href="https://do-whatever-you-like.colddsam.com"><img src="https://readme-typing-svg.demolab.com?font=Inter&weight=500&size=20&duration=2600&pause=900&color=EB4A10&center=true&vCenter=true&width=640&lines=Merge+and+compress+PDFs;Translate+text%2C+audio+and+video;Convert+almost+any+file;Analyze+WhatsApp+chats+in+any+language;Remove+background+noise+from+videos;Make+animated+charts+and+flowcharts;Track+your+period+privately;Download+Reels%2C+Shorts+and+videos;Free.+No+sign-up.+Nothing+to+install." alt="What you can do: merge PDFs, translate text audio and video, convert files, analyze WhatsApp chats, remove noise, make charts, track periods, download videos"></a>
+<a href="https://do-whatever-you-like.colddsam.com"><img src="https://readme-typing-svg.demolab.com?font=Inter&weight=500&size=20&duration=2600&pause=900&color=EB4A10&center=true&vCenter=true&width=640&lines=Edit+videos+on+a+timeline;Merge+and+compress+PDFs;Translate+text%2C+audio+and+video;Convert+almost+any+file;Analyze+WhatsApp+chats+in+any+language;Remove+background+noise+from+videos;Make+animated+charts+and+flowcharts;Track+your+period+privately;Download+Reels%2C+Shorts+and+videos;Free.+No+sign-up.+Nothing+to+install." alt="What you can do: merge PDFs, translate text audio and video, convert files, analyze WhatsApp chats, remove noise, make charts, track periods, download videos"></a>
 
 <br><br>
 
 <a href="https://do-whatever-you-like.colddsam.com"><img src="https://img.shields.io/badge/Open%20the%20site-do--whatever--you--like.colddsam.com-eb4a10?style=for-the-badge&labelColor=15140f" alt="Open the live site"></a>
 
-<img src="https://img.shields.io/badge/tools-161%20live-15140f?style=flat-square" alt="161 live tools">
+<img src="https://img.shields.io/badge/tools-162%20live-15140f?style=flat-square" alt="162 live tools">
 <img src="https://img.shields.io/badge/price-free-2f7d4f?style=flat-square" alt="Free">
 <img src="https://img.shields.io/badge/sign--up-not%20needed-57544a?style=flat-square" alt="No sign-up">
 <img src="https://img.shields.io/badge/watermarks-none-57544a?style=flat-square" alt="No watermarks">
@@ -41,9 +41,9 @@
 
 ## 👋 What is Do-Whatever-You-Like?
 
-**Do-Whatever-You-Like is a free website with 161 tools for everyday digital chores.**
+**Do-Whatever-You-Like is a free website with 162 tools for everyday digital chores.**
 
-Need to paste a block of text and check what's hiding in it, turn a PDF into Word, translate text, audio recordings or videos into another language, analyze an exported WhatsApp chat, shrink a photo, vectorise a logo to SVG, cut a song, clean up a noisy recording, format JSON, query a local SQLite or Parquet file, make a chart, split a trip bill, track your period privately, or download a Reel? Open the site, pick the tool, done.
+Need to edit a video with captions and transitions, paste a block of text and check what's hiding in it, turn a PDF into Word, translate text, audio recordings or videos into another language, analyze an exported WhatsApp chat, shrink a photo, vectorise a logo to SVG, cut a song, clean up a noisy recording, format JSON, query a local SQLite or Parquet file, make a chart, split a trip bill, track your period privately, or download a Reel? Open the site, pick the tool, done.
 
 - **Free, for everyone.** No account, no sign-up, no watermark, no "pro" plan.
 - **Private by default.** Most tools run inside your browser, so your file never leaves your device. When a tool does need our server, your file is deleted as soon as you have the result.
@@ -70,18 +70,18 @@ Need to paste a block of text and check what's hiding in it, turn a PDF into Wor
 
 ## 🗂️ What's inside
 
-161 live tools in 9 collections, one place per job: each tool covers every variant of its task (one hash generator for MD5, SHA and CRC; one document viewer for Word, Excel, PowerPoint, CSV and PDF). Click a name to open that collection on the site.
+162 live tools in 9 collections, one place per job: each tool covers every variant of its task (one hash generator for MD5, SHA and CRC; one document viewer for Word, Excel, PowerPoint, CSV and PDF). Click a name to open that collection on the site.
 
 | | Collection | What you can do | Tools |
 | :---: | :--- | :--- | :---: |
 | 🔁 | [**Any file**](https://do-whatever-you-like.colddsam.com/tools/category/files) | View Word, Excel, PowerPoint, CSV, PDF & 3D models in-browser, convert almost any file, compress, merge, split and inspect or build archives | **14** |
 | 📄 | [**PDF tools**](https://do-whatever-you-like.colddsam.com/tools/category/pdf) | Merge, split, compress, edit, sign, protect, OCR and compare PDFs | **20** |
-| 🖼️ | [**Image tools**](https://do-whatever-you-like.colddsam.com/tools/category/images) | Compress, resize, crop, remove backgrounds, upscale, vectorise to SVG, frame mockups, blur faces, make memes and icons | **19** |
+| 🖼️ | [**Image tools**](https://do-whatever-you-like.colddsam.com/tools/category/images) | Compress, resize, crop, remove backgrounds, upscale, vectorise to SVG, frame mockups, blur faces, make memes and icons, a Photoshop-style pro editor | **20** |
 | 💻 | [**Developer tools**](https://do-whatever-you-like.colddsam.com/tools/category/developer) | Format, minify and validate code, convert JSON/CSV/YAML/XML/SQL/types, query SQLite & Parquet, hashes, JWT, UUID/ULID, regex, DNS and HTTP checks, cron | **44** |
 | ✍️ | [**Text tools**](https://do-whatever-you-like.colddsam.com/tools/category/text) | Smart notepad (paste, inspect & clean text), writing helper, username & handle generator, translator (text, audio & video), WhatsApp chat analyzer, word counter, case & list tools, binary and hex, Morse code, summaries | **18** |
 | 🎨 | [**Charts, fonts and colour**](https://do-whatever-you-like.colddsam.com/tools/category/design) | Animated charts, flowcharts, font checker and maker, colour picker & 50–950 scales, SVG optimizer, CSS Grid/Flexbox & UI generators | **10** |
 | ⬇️ | [**Media downloads**](https://do-whatever-you-like.colddsam.com/tools/category/downloads) | Save public YouTube, Instagram and Facebook videos, or just their sound | **3** |
-| 🎬 | [**Audio and video**](https://do-whatever-you-like.colddsam.com/tools/category/media) | Trim & multi-cut on a waveform, remove noise, change volume, waveforms & spectrograms, record your screen, subtitles & caption translation, speech to text, GIFs | **10** |
+| 🎬 | [**Audio and video**](https://do-whatever-you-like.colddsam.com/tools/category/media) | A multi-track **video editor** (keyframes, effects, auto-captions, 4K export), trim & multi-cut on a waveform, remove noise, change volume, waveforms & spectrograms, record your screen, subtitles & caption translation, speech to text, GIFs | **11** |
 | 🧰 | [**Everyday utilities**](https://do-whatever-you-like.colddsam.com/tools/category/utilities) | Private period tracker, EMI/SIP/GST calculators, bill splitter, invoice & signature maker, QR codes, converters, clocks, passwords, device tests | **22** |
 
 <details>
@@ -224,9 +224,10 @@ Need to paste a block of text and check what's hiding in it, turn a PDF into Wor
 </details>
 
 <details>
-<summary><b>🎬 Audio and video</b> — 10 tools</summary>
+<summary><b>🎬 Audio and video</b> — 11 tools</summary>
 <br>
 
+- [**Video editor**](https://do-whatever-you-like.colddsam.com/tools/video-editor) — Edit on a multi-track timeline with Premiere's trim tools, keyframes, 29 effects, 18 transitions, speed curves, voice effects, text to speech, auto-captions in 99 languages and AI clean-up, then export MP4, WebM, GIF or audio up to 4K. Runs in your browser.
 - [**Video to frames**](https://do-whatever-you-like.colddsam.com/tools/video-to-frames) — Split a video into still frames: pick how many, which part and the format.
 - [**Video to GIF**](https://do-whatever-you-like.colddsam.com/tools/video-to-gif) — Turn a clip into a GIF: trim it, set the size, smoothness, speed and loop.
 - [**Trim & cut video or audio**](https://do-whatever-you-like.colddsam.com/tools/trim-media) — Cut a video or audio file cleanly or split it into multiple parts on a waveform timeline, in your chosen format.
@@ -375,14 +376,14 @@ Need to paste a block of text and check what's hiding in it, turn a PDF into Wor
 | 🔒 **Private by default** | If a tool can run in your browser, it does. If it needs the server, the file lives in a private folder for that one request and is deleted right after. |
 | 🧑‍🤝‍🧑 **Plain words** | Buttons say what they do ("Remove the noise", "Download 3 clean photos"). Errors say what went wrong and what to try. |
 | 🛡️ **Safe by default** | Every uploaded file is checked by its real contents before anything opens it. A program renamed to `.pdf` is turned away. |
-| 🎨 **One design** | Every page follows one design system (`frontend/DESIGN.md`), so all 160 tools feel like one product. |
+| 🎨 **One design** | Every page follows one design system (`frontend/DESIGN.md`), so all 162 tools feel like one product. |
 | 🧩 **Built to grow** | One registry lists every tool; most new tools are one line plus one engine. That's how the site grew so fast. |
 
 ---
 
 ## 🚀 Our pace
 
-Do-Whatever-You-Like went from an empty repository to **261 tool pages in 10 days**, then folded its near-duplicates into **160 tools** so each job has one place to go.
+Do-Whatever-You-Like went from an empty repository to **261 tool pages in 10 days**, then folded its near-duplicates into **160 tools** so each job has one place to go, and has grown to **162** since (the Pro photo editor and the Video editor).
 
 ```mermaid
 timeline
@@ -423,17 +424,22 @@ timeline
     18 Nov : Toolbox consolidated: 261 pages → 160 tools
            : One hash, random, formatter, viewer, converter… per job
            : Every old link redirects to the same mode
+    19 Nov : Pro photo editor (layers, masks, retouching, PSD)
+    20 Nov : Video editor (multi-track timeline, keyframes, WebGL effects, WebCodecs 4K export)
+    21 Nov : Video editor 2 (pro trims, 29 effects, 18 transitions, speed curves, audio effects, TTS, beat sync, GIF/WebM/audio export)
+           : On-device AI captions, silence cutter and background removal
+           : AI Director (Gemini / Groq) and a font & stock-media proxy
 ```
 
 | 📅 Days | 🧰 Live tools | 🗂️ Collections | 📡 API endpoints | 🧪 Check scripts |
 | :---: | :---: | :---: | :---: | :---: |
-| 11 | 160 | 9 | 78 | 10 backend suites, registry check + browser tests |
+| 13 | 162 | 9 | 83 | 10 backend suites, registry check + browser tests |
 
 ---
 
 ## 🗺️ What's next
 
-- ✅ **Every listed tool is live.** All 160 tools in the directory — including the new Smart notepad, the Writing helper & summarizer, Office & document viewers, 3D model inspector, and waveform multi-cutter — are now live and ready to use.
+- ✅ **Every listed tool is live.** All 162 tools in the directory — including the new **Video editor** and **Pro photo editor**, the Smart notepad, the Writing helper & summarizer, Office & document viewers, 3D model inspector, and waveform multi-cutter — are now live and ready to use.
 - 🧹 **One tool per job.** Pages that only differed by a setting (20 hash pages, 20 random generators, 12 formatters, 6 document viewers, 8 data converters…) are now single tools with the choice inside; 108 old addresses redirect permanently to the same mode, so bookmarks and search results still work.
 - 🙋 **Your requests.** The site has a *Request a tool* button. New tools are picked from what people ask for.
 - 🔧 **Making the existing tools better**: faster on free hosting, clearer wording, and better phone layouts.
@@ -486,7 +492,7 @@ sequenceDiagram
 
 | Runs in your browser (file never leaves your device) | Runs on our server (deleted after use) |
 | :--- | :--- |
-| **Pro photo editor** (layers, retouching, looks, effects, PSD), developer and text converters & analyzers, **smart notepad**, **SQLite/CSV/Parquet viewer**, **writing helper**, **WhatsApp chat analyzer**, **ZIP/TAR/GZ archive tool**, **image to SVG vectoriser**, **mockup & safe-zone frame**, **audio waveform & spectrogram**, chart maker, flowchart maker, SVG optimizer & CSS playgrounds, **period tracker**, EMI/SIP/GST calculators, bill splitter & invoice generator, QR scanner, photo metadata remover, password generator, encrypted notes, Markdown editor, video to GIF/frames, screen recorder, subtitle editor (with instant inline translation via API), Morse decoder, device tests and timers | PDF tools, universal converter, compress/merge/split, image AI (background removal, upscaling, face blur, and the Pro editor's Select subject / background / upscale), audio to text, **translator (text, audio & video dubbing)**, media downloads, trim/volume/noise removal, font and colour inspection, DNS and HTTP checks |
+| **Video editor** (timeline, keyframes, effects, export, and its AI: captions, silence cut, background removal), **Pro photo editor** (layers, retouching, looks, effects, PSD), developer and text converters & analyzers, **smart notepad**, **SQLite/CSV/Parquet viewer**, **writing helper**, **WhatsApp chat analyzer**, **ZIP/TAR/GZ archive tool**, **image to SVG vectoriser**, **mockup & safe-zone frame**, **audio waveform & spectrogram**, chart maker, flowchart maker, SVG optimizer & CSS playgrounds, **period tracker**, EMI/SIP/GST calculators, bill splitter & invoice generator, QR scanner, photo metadata remover, password generator, encrypted notes, Markdown editor, video to GIF/frames, screen recorder, subtitle editor (with instant inline translation via API), Morse decoder, device tests and timers | PDF tools, universal converter, compress/merge/split, image AI (background removal, upscaling, face blur, and the Pro editor's Select subject / background / upscale), audio to text, **translator (text, audio & video dubbing)**, media downloads, trim/volume/noise removal, font and colour inspection, DNS and HTTP checks, the video editor's AI Director and font/stock proxy |
 
 
 ### 🎨 Pro photo editor
@@ -514,6 +520,32 @@ A layer-based, Photoshop- and Lightroom-style editor at [`/tools/pro-photo-edito
 
 Code lives in `frontend/src/components/tools/image/pro/` (engine: `render.ts`, `paint.ts`, `selection.ts`, `adjustments.ts`, `filters.ts`, `looks.ts`, `create.ts`, `io.ts`, `inpaint.ts`; UI: `editor.tsx`, `panels.tsx`, `tools.tsx`, `dialogs.tsx`, `ui.tsx`) and `frontend/public/photo/inpaint-worker.js`. Design notes are in `frontend/DESIGN.md`.
 
+### 🎬 Video editor
+
+A Premiere Pro + After Effects + CapCut-style editor at [`/tools/video-editor`](https://do-whatever-you-like.colddsam.com/tools/video-editor) (short link: `/studio`). Decoding, preview, AI and export all run **in the browser**; media is kept in the browser's private storage (OPFS) and never uploaded.
+
+| Area | What's there |
+| :--- | :--- |
+| **Timeline** (Premiere) | Unlimited video, text and audio tracks (reorder them, lock, hide, mute) · linked picture and sound · magnetic snapping to cuts, the playhead and markers · Premiere's tools: selection (`V`), razor (`C`), **ripple edit** (`B`), **roll edit** (`N`), **slip** (`Y`), **slide** (`U`) and **rate stretch** (`R`) · insert (ripple) or overwrite edits · ripple delete and **close gaps** · rubber-band selection, right-click clip menu, colour labels · In/Out work area (`I`/`O`) that loops and exports on its own · J/K/L shuttle · markers you can name, colour and jump between · zoomable ruler, frame-accurate scrubbing · filmstrips and real waveforms · copy/paste/duplicate · 200-step undo where each drag is one step |
+| **Clip tools** (CapCut) | **Speed curves** (Montage, Hero, Bullet, Jump cut, Flash in/out, ramps) with a drag-the-points curve editor, plus constant 0.1×–16× · **reverse** (a backwards copy, picture and sound) · **freeze frame** (`Shift+F`) · flip horizontal/vertical · **canvas blur** behind clips that don't fill the frame · picture-in-picture corners, side-by-side, stacked and 2×2 split-screen layouts · crop |
+| **Effects** (After Effects) | **29 GPU effects, each with an icon and a one-line description**, in a searchable library you can click or drag onto clips: colour grade (exposure, contrast, highlights, shadows, saturation, vibrance, temperature, tint, hue, vignette), **LUTs** (12 built-in film looks or your own `.cube`), duotone, posterize, invert · Gaussian, directional and zoom blur, glow, sharpen · pixelate, mirror, kaleidoscope, bulge/pinch, wave, camera shake · glitch, RGB split, VHS, film grain, halftone, light leak · chroma key, luma key, AI background removal, **shape masks** (ellipse, rectangle, band, split, feathered, invertible) · crop, rounded corners with border and drop shadow, cinematic bars · 7 one-tap looks · every setting keyframable |
+| **Motion** | Keyframes for position, scale, rotation, opacity, volume and every effect setting · linear, ease-in/out, hold and custom cubic-Bézier easing · graph editor · transform handles on the preview · 11 blend modes (normal, multiply, screen, overlay, soft light, add, darken, lighten, difference, colour burn, colour dodge) |
+| **Transitions** | **18**, each with an icon: cross dissolve, dip to black, flash, whip pan, zoom blur, wipe, slide, push, iris, clock wipe, zoom in, spin, blur dissolve, glitch, pixelate, film burn, barn doors, luma dissolve · directions for the moving ones · one click puts one on every cut |
+| **Text & graphics** | 14 title presets and 5 caption styles on 20 Google Fonts (incl. Hindi and Bangla) · outline, shadow, box · 18 text animations (fade, pop, slide ×4, zoom in/out, drop, blur in, spin, bounce, flicker, pulse, typewriter, karaoke, word pop) · **shapes** (rectangle, rounded, circle, triangle, star, polygon, heart, arrow, line, frame, highlight) · an animated **progress bar** · 30 emoji **stickers** · colour and **gradient** clips |
+| **Sound** | Per-clip **EQ** (bass, mids, treble), low/high cut, compressor, reverb, echo, pan and a speech clean-up filter · **voice changer** (chipmunk, deep, robot, telephone, radio, megaphone, echo, big hall, underwater, alien) · keyframed volume up to +12 dB and fades · **record a voice-over** from the microphone while the video plays · **text to speech** in 30 natural voices and 16 languages, with exact captions from the word timings · **18 sound effects** made on the device (whoosh, riser, impact, pop, ding, shutter, typing, censor bleep…) · **beat sync** (beat markers, optional cut on the beat) · **auto-ducking** of music under speech · **loudness normalisation** to −14/−16/−23 LUFS (ITU-R BS.1770) · stereo meters. Playback and export use the same Web Audio graph, so what you hear is what you get |
+| **AI** (CapCut) | Auto-captions with word timing (Whisper via Transformers.js in a worker, WebGPU or WASM): English, **99 other languages**, or translated into English · **translate captions** into another language · **edit by transcript** (delete words to cut the video, remove fillers and repeated words, search what was said) · silence cutter · **scene detection** (splits a clip at its cuts) · **auto reframe** (follows the person when changing shape) · **stabilise** (camera shake measured and smoothed, strength adjustable) · background removal (MediaPipe for people in video, live; RMBG-1.4 for stills) · **AI Director**: type what you want, review the planned edits, apply them as one undo step (it knows every tool above) |
+| **Import & record** | Video, audio and pictures by drag and drop, file picker or free stock link · **screen and camera recording** straight into the project · formats browsers can't open (AVI, WMV, FLV, MPEG-1/2, VOB, MXF, ProRes, WMA, AMR…) are **converted on the device** with ffmpeg.wasm (a lossless re-wrap when possible) · `.srt`/`.vtt` subtitles · `.cube` LUTs |
+| **Export** | **MP4** (H.264 + AAC), **WebM** (VP9 + Opus), animated **GIF**, sound-only **M4A** or **WAV** · 480p, 720p, 1080p, 1440p or 4K at 24–60 fps, Good/High/Max quality · the whole video or just In–Out · captions as **SRT/VTT**, the current frame as PNG · frames decoded exactly with Mediabunny, drawn by the same WebGL compositor as the preview, encoded with WebCodecs · long exports stream to disk · preview before download, exact size on the button |
+| **Workflow** | Autosave to IndexedDB, recent projects · **project files** (`.dwylvideo`, with or without media) to move between computers or back up · proxies for smooth 4K playback · 16:9, 9:16, 1:1, 4:5, 21:9 · full screen · Premiere-style shortcuts (`?` lists them) · phone layout |
+
+**What uses the server:** only the **AI Director** (your request plus clip names and times go to Gemini, or Groq as a fallback; without a key a built-in command parser handles common requests), **text to speech** (the text you type goes to Microsoft Edge's free online voices through our server; the MP3 and its word timings come straight back) and the **font/stock proxy** (Google Fonts and free stock libraries, allowlisted hosts only). All are tiny endpoints under `/api/v1/studio`; they load no models, keep nothing and never see your media. Caption translation uses the site's existing translator.
+
+**Cross-origin isolation:** only the editor page (and its AI worker and converter scripts under `/studio`) is sent `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: credentialless` (`frontend/next.config.ts`), which unlocks multi-threaded WASM for the AI. The rest of the site stays unisolated so iframes elsewhere keep working.
+
+**Not included:** nested sequences, multicam, 3D layers, motion tracking and plug-ins. RMBG-1.4 is licensed for non-commercial use. The converter handles files up to 1 GB (it runs in the browser's memory); stabilisation corrects movement, not rotation.
+
+Code lives in `frontend/src/features/video-studio/` (`lib/` timeline and keyframe engines, `store/` zustand store with undo, `engine/` compositor, playback, exporter, storage and AI, `ui/` the workspace) and `frontend/public/studio/ai-worker.js`. Design notes are in `frontend/DESIGN.md`.
+
 ---
 
 ## 🔒 Privacy and safety
@@ -523,7 +555,7 @@ Code lives in `frontend/src/components/tools/image/pro/` (engine: `render.ts`, `
 | 🗑️ **Files are temporary** | Each server job gets its own folder, deleted right after the result is sent (multi-step PDF tools keep an upload for up to 30 minutes so you can try several options). |
 | 🛡️ **Upload guard** | Every upload is checked by its real contents (magic numbers, Office file layout, text checks) **before** any program opens it. Programs are never accepted, whatever their name. |
 | 🔑 **Secret token stays secret** | The browser never sees the server's token; the website adds it on its own server. Large uploads use short-lived signed tickets instead. |
-| 🌐 **No snooping on your network** | Link tools only accept known hosts (YouTube, Instagram, Facebook), and network tools only reach public addresses, checked on every redirect. |
+| 🌐 **No snooping on your network** | Link tools only accept known hosts (YouTube, Instagram, Facebook), the video editor's proxy only Google Fonts and free stock libraries, and network tools only reach public addresses, checked on every redirect. |
 | 🧯 **One job can't break another** | Heavy jobs run in their own child process with a time limit, so a crash or a huge file can't take the server down. |
 | 📏 **Size limits up front** | Oversized requests are refused before they're read (150 MB for files by default). |
 | 🙈 **No accounts, no private content tracking** | Nothing you upload or parse is stored or sold. Aggregate traffic analytics use Vercel Web Analytics and Google Analytics 4 (`G-GVKMN99S3N`) when configured. |
@@ -545,6 +577,7 @@ See [SECURITY.md](SECURITY.md) for responsible disclosure, scope, and self-hosti
 - **fflate** (in-browser ZIP handling), `Intl.Segmenter` (multilingual tokenization)
 - **CodeMirror**, **Prettier**, **Terser**, **marked**, **KaTeX**, **Mermaid**
 - **opentype.js**, **OpenCV.js** (document scanner, healing / content-aware fill), **ag-psd** (PSD read/write), **jsQR**, **exifr**, **mathjs**, **gifenc**
+- Video editor: **WebGL2** (GLSL compositor, 3D LUT textures), **WebCodecs**, **Mediabunny** (demux/decode/mux), **Web Audio** (effects, mixing), **Transformers.js** (Whisper, RMBG), **MediaPipe** (segmentation), **ffmpeg.wasm** (format converter), **gifenc**, **fflate**, **zustand**, **idb-keyval**, OPFS
 - Hosted on **Vercel** (free)
 
 </td>
@@ -556,6 +589,7 @@ See [SECURITY.md](SECURITY.md) for responsible disclosure, scope, and self-hosti
 - **Pillow**, **OpenCV**, **ONNX Runtime** (background removal, upscaling)
 - **faster-whisper** or **Groq Whisper** (speech to text), **edge-tts** + **espeak-ng** & multi-engine free translation (dubbing & subtitles)
 - **yt-dlp**, **instaloader**
+- **Gemini** / **Groq** (free tiers) for the video editor's AI Director
 - Shipped as a **Docker** image on **Render** (free plan)
 
 </td>
@@ -620,6 +654,9 @@ Then open **http://localhost:3000**.
 | `MEDIA_EXACT_TRIM_MAX_SECONDS` / `MEDIA_VIDEO_REENCODE_MAX_SECONDS` | Caps for slow re-encoding jobs on a small server. | `180` / `1800` |
 | `PDF_CACHE_TTL_SECONDS` | How long a PDF upload is kept for multi-step PDF tools. | `1800` |
 | `IMAGE_UPSCALE_MAX_INPUT_PIXELS` | Upscaling time follows the pixels the AI sees (~36 s per megapixel on one CPU core, for 2× and 4× alike). Bigger pictures are reduced to this before the AI pass, then the result is resized to the size asked for. | `4000000` (Render: `500000`) |
+| `STUDIO_GEMINI_API_KEY` | Optional free [Gemini key](https://aistudio.google.com/apikey) for the video editor's AI Director. | (empty) |
+| `STUDIO_GROQ_API_KEY` | Optional Groq key for the AI Director (fallback). An existing `TRANSLATE_`/`TRANSCRIBE_GROQ_API_KEY` is reused automatically. Without any key, the editor's built-in commands are used. | (empty) |
+| `STUDIO_GEMINI_MODEL` / `STUDIO_PROXY_MAX_MB` | Gemini model for the Director; largest file the font/stock proxy passes on. | `gemini-flash-lite-latest` / `200` |
 | `IMAGE_UPSCALE_MAX_OUTPUT_PIXELS` | Largest upscaled result; above it the result is made as large as fits. | `16000000` (Render: `12000000`) |
 
 Every tool has its own settings with a prefix (`PDF_`, `IMAGE_`, `UNIVERSAL_`, `COMPRESS_`, `MEDIA_`, `TRANSCRIBE_`…) in `backend/app/config/`. `render.yaml` shows the values tuned for the free plan.
@@ -643,7 +680,7 @@ Every tool has its own settings with a prefix (`PDF_`, `IMAGE_`, `UNIVERSAL_`, `
 | Part | Where | How |
 | :--- | :--- | :--- |
 | 🖥️ **Website** | **Vercel** (Hobby, free) | Import the repo, set **Root directory** to `frontend`, add `BACKEND_URL`, `BACKEND_TOKEN` and `BACKEND_PUBLIC_URL`. |
-| ⚙️ **Server** | **Render** (free web service) | *New → Blueprint* and pick this repo. `render.yaml` builds `backend/Dockerfile` with every engine included. Copy the generated `HEADER_TOKEN` to Vercel's `BACKEND_TOKEN`, and set `ALLOWED_ORIGINS` to your Vercel address. |
+| ⚙️ **Server** | **Render** (free web service) | *New → Blueprint* and pick this repo. `render.yaml` builds `backend/Dockerfile` with every engine included. Copy the generated `HEADER_TOKEN` to Vercel's `BACKEND_TOKEN`, and set `ALLOWED_ORIGINS` to your Vercel address. Optionally add `STUDIO_GEMINI_API_KEY` for the video editor's AI Director. |
 
 > **Good to know about free plans.** Render's free server has 512 MB of memory and a small slice of CPU, and it goes to sleep when nobody uses it, so the first request after a quiet spell can take a minute. That's why slow or memory-heavy jobs (video re-encoding, Whisper, OCR, headless Chromium, LibreOffice) carry a **Beta** badge, run behind a shared heavy-job concurrency lane (`backend/app/core/lanes.py`) so concurrent requests queue safely without crashing, and why everything that can run in the browser does.
 
@@ -678,6 +715,8 @@ Everything new is checked end to end with real files before it ships.
 | Request a tool email pipeline | `python scripts/check_tool_request.py` | Validation, header/HTML escaping, honeypot, rate limit, HTTP & SMTP delivery to `colddsam@gmail.com` |
 | Developer network tools | `python scripts/check_devtools.py` | DNS, HTTP, ports, XSD and XSLT, public addresses only |
 | Design tools | `python scripts/check_design_tools.py` | Font and colour inspection |
+| Video editor server helpers | in-process ASGI tests | Font/stock proxy allowlist (lookalike domains, loopback, credentials in URLs and HTML pages refused), streaming, AI Director with and without a key, LLM-output sanitising and the new operations, text to speech (validation and a real voice with word timings) |
+| Video editor (browser) | Playwright in headless Chrome | COOP/COEP isolation on the editor only, import into linked clips, waveforms and filmstrips, play/split/undo, WebGL grade, silence cut, MediaPipe, Whisper in the worker, proxies, H.264 + AAC export checked with ffprobe, no overflow from phone to desktop · all 29 effects and 18 transitions render (and undo), scene detection, speed curves, freeze frame, reverse, flip, stabilise, auto reframe, shapes and stickers, sound effects, 120 BPM beat detection, loudness, ducking, voice changer, microphone voice-over, text to speech, SRT import/export, transcript cutting, rubber-band selection, ripple trim, tool shortcuts, In/Out, GIF/WAV/WebM/In–Out exports, project files round trip, AVI conversion with ffmpeg.wasm |
 | Server-heavy tools (live) | `python scripts/check_heavy_tools.py` | Against a running server: upscaler 2×/4× within Render's caps, background removal, faces, Chromium, OCR, PDF/A, LibreOffice, FFmpeg, Whisper, icons, translation |
 
 Run the backend scripts from `backend/` with the virtual environment's Python. Browser tests (Playwright) drive tool pages with real inputs, check outputs, and audit layouts at phone and desktop widths.
@@ -686,7 +725,7 @@ Run the backend scripts from `backend/` with the virtual environment's Python. B
 
 ## 📡 API reference
 
-78 endpoints, all under `/api/v1`, all needing `Authorization: Bearer <HEADER_TOKEN>`. With `DEBUG=true`, try them at `http://127.0.0.1:8000/docs`, or import `backend/postman_collection.json` into Postman (rebuild it with `python generate_postman.py`).
+83 endpoints, all under `/api/v1`, all needing `Authorization: Bearer <HEADER_TOKEN>`. With `DEBUG=true`, try them at `http://127.0.0.1:8000/docs`, or import `backend/postman_collection.json` into Postman (rebuild it with `python generate_postman.py`).
 
 <details>
 <summary><b>Health</b> — 1 endpoint</summary>
@@ -946,6 +985,19 @@ Run the backend scripts from `backend/` with the virtual environment's Python. B
 
 </details>
 
+<details>
+<summary><b>Video studio</b> — 4 endpoints</summary>
+<br>
+
+| Method | Endpoint | What it does |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/studio/proxy?url=` | Stream an allowlisted public file (Google Fonts, free stock media) |
+| `GET` | `/api/v1/studio/capabilities` | Which AI engine the Director has (`gemini`, `groq` or none) and the proxy's hosts |
+| `POST` | `/api/v1/studio/director` | Turn a request plus a timeline summary into timeline operations |
+| `POST` | `/api/v1/studio/tts` | Text to speech (free Edge voices): MP3 as base64 plus word timings for captions |
+
+</details>
+
 ---
 
 ## ➕ Adding a new tool
@@ -986,12 +1038,15 @@ do-whatever-you-like/
 │       ├── exceptions/          # Clean, user-safe errors per tool
 │       ├── schemas/             # Request and response models
 │       ├── services/            # The work: pdf, universal, compress, merge_split, image, media,
-│       │                        #   transcribe, translate, tool_request, fonts, palette, icon, devtools, downloaders…
+│       │                        #   transcribe, translate, tool_request, fonts, palette, icon, devtools, studio, downloaders…
 │       └── api/v1/              # Routes, one file per tool
 └── frontend/                    # Next.js website
     ├── DESIGN.md                # The design system
+    ├── public/studio/           # The video editor's AI worker (Transformers.js)
     └── src/
         ├── app/                 # Pages, /tools/[id], collections, /api/tools/* proxies, SEO files
+        ├── features/video-studio/   # Video editor: timeline & keyframe engines, store, WebGL compositor,
+        │                            #   playback, WebCodecs exporter, OPFS storage, AI, workspace UI
         ├── components/
         │   ├── layout/ sections/        # Header, footer, command palette, home page sections, directory
         │   └── tools/                   # Every tool's workspace
@@ -1002,7 +1057,7 @@ do-whatever-you-like/
         │       └── playground.tsx       # Which workspace each tool uses
         └── lib/
             ├── tools.ts                 # The registry of every tool (and SERVER_HEAVY_TOOL_IDS Beta markers)
-            ├── tool-search.ts           # Natural-language task & intent search engine across all 160 tools
+            ├── tool-search.ts           # Natural-language task & intent search engine across all 162 tools
             ├── utilities/catalog.ts     # Developer, Text, Everyday and Design pages as data
             ├── charts.ts flowchart.ts period.ts whatsapp.ts three-loader.ts # Client tool engines & 3D loader
             ├── translate.ts             # Translator API client, direct-ticket streaming & speech helpers

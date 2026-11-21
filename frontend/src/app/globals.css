@@ -195,6 +195,59 @@
   box-shadow: 0 0 0 4px rgb(235 74 16 / 0.25);
 }
 
+/*
+ * The video editor's sliders: .pro-range inverted for the dark band (paper fill on a line-dark
+ * track, an ink thumb ringed in paper). --a/--b/--h are set per slider, as above.
+ */
+.studio-range {
+  appearance: none;
+  background: transparent;
+  outline: none;
+}
+.studio-range::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 999px;
+  background:
+    linear-gradient(var(--color-paper-dim), var(--color-paper-dim)) var(--h) 50% / 1px 9px no-repeat,
+    linear-gradient(90deg, transparent var(--a), var(--color-paper) var(--a), var(--color-paper) var(--b), transparent var(--b)),
+    var(--color-line-dark);
+}
+.studio-range::-moz-range-track {
+  height: 3px;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, transparent var(--a), var(--color-paper) var(--a), var(--color-paper) var(--b), transparent var(--b)),
+    var(--color-line-dark);
+}
+.studio-range::-webkit-slider-thumb {
+  appearance: none;
+  margin-top: -5.5px;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--color-ink);
+  border: 2px solid var(--color-paper);
+  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.studio-range::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--color-ink);
+  border: 2px solid var(--color-paper);
+}
+.studio-range:hover::-webkit-slider-thumb,
+.studio-range:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+.studio-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgb(235 74 16 / 0.35);
+}
+@keyframes studio-indeterminate {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

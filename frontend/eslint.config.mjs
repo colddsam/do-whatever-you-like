@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Third-party builds copied in by scripts/copy-vendor.mjs (gitignored): not our code.
+    "public/vendor/**",
+    "public/studio/ffmpeg/**",
   ]),
 ]);
 

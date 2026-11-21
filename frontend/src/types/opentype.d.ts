@@ -55,6 +55,7 @@ declare module "opentype.js" {
     descender: number;
     glyphs: { length: number; get(index: number): Glyph };
     tables: Record<string, unknown>;
+    names?: Record<string, Record<string, string>>;
     charToGlyph(char: string): Glyph;
     toArrayBuffer(): ArrayBuffer;
   }

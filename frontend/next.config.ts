@@ -21,14 +21,36 @@ const securityHeaders = [
   },
 ];
 
+/**
+ * Cross-origin isolation for the video editor only. It unlocks SharedArrayBuffer, so the editor's
+ * AI models (ONNX Runtime WASM) run multi-threaded when there's no WebGPU. "credentialless" (not
+ * "require-corp") still lets the page load CORS-enabled files from other sites (Google Fonts, the
+ * model CDNs) without them sending Cross-Origin-Resource-Policy. Scoped to the editor because COEP
+ * blocks cross-origin iframes, and the editor's AI worker script needs it too: a dedicated worker
+ * started by an isolated page is refused without a matching policy.
+ */
+const isolationHeaders = [
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+  { key: "Cross-Origin-Embedder-Policy", value: "credentialless" },
+];
+
 const nextConfig: NextConfig = {
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      { source: "/tools/video-editor", headers: isolationHeaders },
+      { source: "/studio/:path*", headers: isolationHeaders },
+    ];
   },
   // Pages folded into broader tools (src/lib/merged-tools.ts) move permanently, opening the new
   // tool on the same mode, so old links and search results keep working.
   async redirects() {
-    return Object.keys(MERGED_TOOLS).map((id) => ({ source: `/tools/${id}`, destination: mergedHref(id)!, permanent: true }));
+    return [
+      ...Object.keys(MERGED_TOOLS).map((id) => ({ source: `/tools/${id}`, destination: mergedHref(id)!, permanent: true })),
+      // A short address for the video editor.
+      { source: "/studio", destination: "/tools/video-editor", permanent: false },
+      { source: "/video-editor", destination: "/tools/video-editor", permanent: false },
+    ];
   },
   cacheComponents: true,
   partialPrefetching: true,

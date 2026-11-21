@@ -79,6 +79,8 @@ const AudioWaveformTool = dynamic(() => import("./media/waveform-tool").then((m)
 const ArchiveTool = dynamic(() => import("./files/archive-tool").then((m) => m.ArchiveTool), { loading });
 const DocumentViewerTool = dynamic(() => import("./files/document-viewer").then((m) => m.DocumentViewerTool), { loading });
 const ThreeViewerTool = dynamic(() => import("./design/three-viewer").then((m) => m.ThreeViewerTool), { loading });
+// The video editor (src/features/video-studio): client-only, its WebGL/WebCodecs/AI code in its own chunks.
+const VideoEditor = dynamic(() => import("@/features/video-studio").then((m) => m.VideoEditorEntry), { loading, ssr: false });
 
 type Workspace = ComponentType<{ toolId: string }>;
 
@@ -105,6 +107,8 @@ type Workspace = ComponentType<{ toolId: string }>;
  *   one action, a result to compare); crop and blur draw on the image; meme and photo editor run
  *   in the browser; image (the home-page hub) → ImageStudio, four of them behind a mode switch
  *
+ * - video-editor (by id) → src/features/video-studio: the multi-track editor (WebGL compositor,
+ *   WebCodecs export, on-device AI); its page alone is cross-origin isolated (next.config.ts)
  * - the Developer, Text and Everyday utilities (lib/utilities/catalog.ts) → UtilityTool: one engine
  *   per job (format, hash, random, network…) with the page's preset as its starting state
  *
@@ -174,6 +178,7 @@ const byId: Record<string, Workspace> = {
   "gif-speed": GifSpeedTool,
   "emoji-to-image": EmojiTool,
   // Audio & video, made in the browser
+  "video-editor": VideoEditor,
   "video-to-frames": VideoFramesTool,
   "video-to-gif": VideoGifTool,
   // Audio & video, edited on our server (trim, volume) or in the browser (recorder, subtitles)
