@@ -1,4 +1,5 @@
 import { CLUSTERS, clusterHref, liveCount, toolHref, toolsIn } from "@/lib/tools";
+import { BLOG_POSTS, blogHref } from "@/lib/blog";
 import { HUBS } from "@/lib/hubs";
 import { CONTACT_EMAIL, SITE_NAME, absUrl } from "@/lib/site";
 
@@ -24,11 +25,16 @@ export function GET() {
     "",
     `- [Home](${absUrl("/")}): overview, search, and FAQ`,
     `- [All tools](${absUrl("/tools")}): full searchable directory of all ${liveCount} live tools`,
+    `- [Blog](${absUrl("/blog")}): product launches, architecture notes and deep dives`,
     `- [Full tool specs (llms-full.txt)](${absUrl("/llms-full.txt")}): detailed inputs, outputs, limits, and features for every tool`,
     `- [About](${absUrl("/about")}): who runs the site and how to get in touch (${CONTACT_EMAIL})`,
     `- [Privacy](${absUrl("/privacy")}): where files go and how long they're kept`,
     `- [Terms](${absUrl("/terms")}): ground rules for using the tools`,
     `- [Fair use](${absUrl("/fair-use")}): guidelines for responsible media downloads`,
+    "",
+    "## Blog",
+    "",
+    ...BLOG_POSTS.map((p) => `- [${p.title}](${absUrl(blogHref(p.slug))}): ${p.subtitle}`),
     "",
     ...CLUSTERS.flatMap((c) => {
       const live = toolsIn(c.id).filter((t) => t.status === "live");

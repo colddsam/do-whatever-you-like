@@ -1,4 +1,5 @@
 import { CLUSTERS, clusterHref, liveCount, toolHref, toolsIn, wherePrivacy } from "@/lib/tools";
+import { BLOG_POSTS, blogHref } from "@/lib/blog";
 import { HUBS } from "@/lib/hubs";
 import { CONTACT_EMAIL, SITE_NAME, absUrl } from "@/lib/site";
 
@@ -13,7 +14,12 @@ export function GET() {
     `> ${liveCount} free online tools across ${CLUSTERS.length} collections. No sign-up, no watermarks, nothing to install.`,
     "",
     `Contact: ${CONTACT_EMAIL}`,
+    `Blog: ${absUrl("/blog")}`,
     `Compact index: ${absUrl("/llms.txt")}`,
+    "",
+    "## Blog",
+    "",
+    ...BLOG_POSTS.map((p) => `- [${p.title}](${absUrl(blogHref(p.slug))}) (${p.publishedAt}, ${p.category}): ${p.subtitle}`),
     "",
     ...CLUSTERS.flatMap((c) => {
       const live = toolsIn(c.id).filter((t) => t.status === "live");

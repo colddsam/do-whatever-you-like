@@ -85,9 +85,10 @@ maker's "IMG" swatch), which nobody needs to read.
   After 24px of scroll it tucks into a **floating pill** (`max-w 920px`, `surface`/90 + blur,
   `line` border, `shadow-card`, fully rounded) over 500ms with the standard easing.
   - Links share one sliding **bubble** (`layoutId` spring, bounce 0.22): `paper-2` on hover,
-    `ink` with paper text on the section you're reading (scroll-spy on the home page).
+    `ink` with paper text on the section you're reading (scroll-spy on the home page) or on the `Blog`
+    route (`/blog` and `/blog/*`).
   - Nav buttons use the `pill` shape. A 1px `ink` reading-progress rule runs along the pill's
-    straight bottom edge.
+    straight bottom edge. Primary links also surface `Blog` (`/blog`) in the desktop bar and mobile sheet.
   - **Tools menu** (`components/layout/tools-menu.tsx`): "Tools" is a button (chevron turns) that opens a
     `surface` panel under the pill (`shadow-float`, 940px). Collections run down a `paper` column on the left,
     numbered `01–05` with counts, an `ink` thumb sliding to the one under the pointer or focus
@@ -132,7 +133,7 @@ from it, so a new tool appears everywhere once it's in the registry:
 - **Search palette**: results come under collection headings (mono name and count); browsing lists the
   collections in order, searching orders the collections by their best match. Ranking weighs a word in the
   name over keywords over description.
-- **Footer**: one link per collection, then "All N tools". The marquee, announcement chip, FAQ answer and
+- **Footer**: one link per collection, then "All N tools"; the Product column links to `Blog` (`/blog`), `About`, and `Request a tool`. The marquee, announcement chip, FAQ answer and
   hero "Try" chips only name tools that work today (the FAQ counts come from the registry).
 - **Announcement chip** (hero) — fully rounded `surface` bubble with an inner `ink` tag bubble
   (pulsing signal dot + mono tag: New / Live / Next). Messages roll upward every 4.2s and the
@@ -514,6 +515,40 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
   "Not built yet / Request it" strip. Never grey placeholder bars.
 - Empty states teach rather than apologise. For example, link tools list "Links that work"
   instead of "Nothing here yet".
+
+## E3. Blog (`/blog` and `/blog/[slug]`)
+
+Product launches, engineering architecture notes, and guides live under `/blog` using the same `<Page>`
+frame, paper tokens, hairline rules, `serif-em` headline emphasis, and 12px mono floor.
+
+- **Index (`/blog`, `components/blog/blog-index.tsx`)**: opens with `<SectionHeader index="00" label="Journal" as="h1" />`
+  painted directly in server HTML (never wrapped in `<Reveal>`). Below sits a hairline-framed filter bar with
+  a `/` search field, category chips (`All` + categories with mono counts; active chip `bg-ink text-paper`),
+  clickable topic tags (synced with `?category=` / `?tag=` query params inside `<Suspense>`), and an
+  RSS link (`/blog/rss.xml`). The latest article renders as an asymmetric 12-column `surface` spread
+  (`lg:grid-cols-12`, 16:10 WebP cover on the left, issue/category/date/title/tags on the right); additional
+  posts list below as hairline-divided numbered archive rows.
+- **Article (`/blog/[slug]`, `app/blog/[slug]/page.tsx`)**: opens with a breadcrumb (`← All posts | Category`)
+  and `BlogShare` bar (`Copy link`, `Share on X`, `RSS`), followed by an LCP-safe header (mono issue/category/date/read-time,
+  `h1` with `serif-em`, `.blog-standfirst`, author GitHub link, and topic tags). Body uses a 12-column layout:
+  - **Left rail (`lg:col-span-3`, `lg:sticky lg:top-24`)**: `BlogToc` (`components/blog/blog-toc.tsx`) with
+    scroll-tracked section indices (`SignalDot` on the active heading; compact `<details>` accordion on `< lg`),
+    followed by an `At a glance` hairline `<dl>` and an `Open toolbox` button.
+  - **Editorial column (`lg:col-span-9`, `components/blog/article-body.tsx`)**: prose stays constrained to
+    `max-w-[68ch]` at `16–17px` / `1.72` leading, while media blocks break out to the full 9-column width:
+    - **`BlogVideo` (`blog-video.tsx`)**: dark-band (`ink` / `ink-raised` / `line-dark`) YouTube theatre using
+      a click-to-load `youtube-nocookie.com` iframe facade with a WebP poster, zero third-party cookies before
+      play, clickable timestamped chapter buttons (`min-h-11`), and a `—— Fig. XX —` caption.
+    - **`BlogFigure` & `BlogFigurePair` (`blog-figure.tsx`)**: `surface`-framed `next/image` WebP screenshots
+      sourced from `public/blog/` with `—— Fig. XX —` captions, optional tool links, and an accessible
+      click-to-inspect lightbox portal (`z-[110]`, pauses Lenis, Esc/backdrop dismiss).
+    - **`CollectionMatrix`, `ToolSpotlight`, `SpecTable` & `Callout`**: live 9-collection hairline matrix and
+      spotlight cards pulling live counts and metadata from `lib/tools.ts`, hairline spec tables, and
+      `border-l-2 border-l-accent` transparency notes.
+- **Data, feeds & SEO**: posts live as typed blocks in `src/lib/blog.ts`; `src/app/blog/rss.xml/route.ts`
+  publishes an RSS 2.0 feed (linked in `layout.tsx` and `/blog` metadata); `opengraph-image.tsx` routes
+  render 1200×630 cards via `ogCard`; `src/lib/schema.ts` emits `Blog`, `BlogPosting`, `VideoObject`, and
+  `BreadcrumbList` JSON-LD; `sitemap.ts`, `llms.txt`, and `llms-full.txt` index every post automatically.
 
 ## F. Motion
 

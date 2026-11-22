@@ -33,7 +33,7 @@
 
 <br>
 
-**[Use it now](https://do-whatever-you-like.colddsam.com)** · **[See every tool](https://do-whatever-you-like.colddsam.com/tools)** · **[Run it yourself](#-run-it-on-your-computer)** · **[Report a problem](https://github.com/colddsam/do-whatever-you-like/issues)**
+**[Use it now](https://do-whatever-you-like.colddsam.com)** · **[See every tool](https://do-whatever-you-like.colddsam.com/tools)** · **[Blog](https://do-whatever-you-like.colddsam.com/blog)** · **[Run it yourself](#-run-it-on-your-computer)** · **[Report a problem](https://github.com/colddsam/do-whatever-you-like/issues)**
 
 </div>
 
@@ -276,6 +276,8 @@ Need to edit a video with captions and transitions, paste a block of text and ch
 
 ## 🎬 See it in action
 
+> Watch the **[76-second YouTube walkthrough](https://youtu.be/Ff1S_6-91dk)** or read the full launch story with screenshots and architecture notes on the **[Do-Whatever-You-Like Blog](https://do-whatever-you-like.colddsam.com/blog)**.
+
 <table>
 <tr>
 <td width="50%" valign="top">
@@ -429,6 +431,7 @@ timeline
     21 Nov : Video editor 2 (pro trims, 29 effects, 18 transitions, speed curves, audio effects, TTS, beat sync, GIF/WebM/audio export)
            : On-device AI captions, silence cutter and background removal
            : AI Director (Gemini / Groq) and a font & stock-media proxy
+    22 Nov : Blog & journal (/blog, /blog/[slug], RSS feed, launch post with screenshots & YouTube walkthrough)
 ```
 
 | 📅 Days | 🧰 Live tools | 🗂️ Collections | 📡 API endpoints | 🧪 Check scripts |
@@ -1042,12 +1045,15 @@ do-whatever-you-like/
 │       └── api/v1/              # Routes, one file per tool
 └── frontend/                    # Next.js website
     ├── DESIGN.md                # The design system
-    ├── public/studio/           # The video editor's AI worker (Transformers.js)
+    ├── public/
+    │   ├── blog/                # Optimized WebP screenshots for the blog
+    │   └── studio/              # The video editor's AI worker (Transformers.js)
     └── src/
-        ├── app/                 # Pages, /tools/[id], collections, /api/tools/* proxies, SEO files
+        ├── app/                 # Pages, /blog (+ [slug], rss.xml, OG cards), /tools/[id], collections, /api/tools/* proxies, SEO files
         ├── features/video-studio/   # Video editor: timeline & keyframe engines, store, WebGL compositor,
         │                            #   playback, WebCodecs exporter, OPFS storage, AI, workspace UI
         ├── components/
+        │   ├── blog/                    # Editorial blog index, article renderer, YouTube theatre, figure lightbox, TOC
         │   ├── layout/ sections/        # Header, footer, command palette, home page sections, directory
         │   └── tools/                   # Every tool's workspace
         │       ├── pdf/ image/ files/ universal/ media/ transcribe/ health/ text/ # Incl. Office & document viewer (files/) and waveform multi-cutter (media/)
@@ -1056,6 +1062,7 @@ do-whatever-you-like/
         │       ├── tool-hopper-search.tsx # Morphing, non-obstructive floating search bar for tool pages
         │       └── playground.tsx       # Which workspace each tool uses
         └── lib/
+            ├── blog.ts                  # Typed journal posts, TOC/reading-time helpers and media metadata
             ├── tools.ts                 # The registry of every tool (and SERVER_HEAVY_TOOL_IDS Beta markers)
             ├── tool-search.ts           # Natural-language task & intent search engine across all 162 tools
             ├── utilities/catalog.ts     # Developer, Text, Everyday and Design pages as data

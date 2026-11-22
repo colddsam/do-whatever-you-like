@@ -74,6 +74,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-dvh flex-col">
         <link rel="alternate" type="text/markdown" href="/llms.txt" title="LLM site map" />
         <link rel="alternate" type="text/markdown" href="/llms-full.txt" title="Full LLM tool specifications" />
+        <link rel="alternate" type="application/rss+xml" href="/blog/rss.xml" title="Do-Whatever-You-Like Blog" />
         <JsonLd data={siteGraph} />
         <Providers>
           <Navbar />

@@ -1,6 +1,7 @@
 import { CONTACT_EMAIL, OPERATOR, SITE_NAME, SITE_URL, absUrl } from "@/lib/site";
 import { CLUSTERS, clusterHref, clusterOf, getCluster, liveCount, toolHref, type Tool } from "@/lib/tools";
 import { guideFor, howTo, type Faq } from "@/lib/guides";
+import { blogHref, estimateWordCount, type BlogPost } from "@/lib/blog";
 
 const ORG_ID = `${SITE_URL}/#organization`;
 const SITE_ID = `${SITE_URL}/#website`;
@@ -215,6 +216,93 @@ export function directoryGraph(live: Tool[]) {
       crumbs([
         ["Home", "/"],
         ["All tools", "/tools"],
+      ]),
+    ],
+  };
+}
+
+/** /blog: Blog index + breadcrumbs. */
+export function blogIndexGraph(posts: BlogPost[]) {
+  const url = absUrl("/blog");
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Blog",
+        "@id": `${url}#blog`,
+        name: `Journal — ${SITE_NAME}`,
+        description: `Product releases, architecture notes, and deep dives into how ${liveCount} free browser-first tools are built.`,
+        url,
+        inLanguage: "en",
+        isPartOf: { "@id": SITE_ID },
+        publisher: { "@id": ORG_ID },
+        blogPost: posts.map((p) => ({
+          "@type": "BlogPosting",
+          headline: p.title,
+          url: absUrl(blogHref(p.slug)),
+          datePublished: p.publishedAt,
+        })),
+      },
+      crumbs([
+        ["Home", "/"],
+        ["Blog", "/blog"],
+      ]),
+    ],
+  };
+}
+
+/** /blog/[slug]: BlogPosting, optional VideoObject, and breadcrumbs. */
+export function blogPostGraph(post: BlogPost) {
+  const url = absUrl(blogHref(post.slug));
+  const modified = post.updatedAt ?? post.publishedAt;
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BlogPosting",
+        "@id": `${url}#post`,
+        headline: post.title,
+        description: post.description,
+        url,
+        mainEntityOfPage: url,
+        datePublished: post.publishedAt,
+        dateModified: modified,
+        inLanguage: "en",
+        articleSection: post.category,
+        keywords: post.tags.join(", "),
+        wordCount: estimateWordCount(post),
+        image: absUrl(post.cover.src),
+        author: { "@type": "Person", name: post.author.name, url: post.author.url },
+        publisher: { "@id": ORG_ID },
+        isPartOf: { "@id": `${absUrl("/blog")}#blog` },
+        speakable: {
+          "@type": "SpeakableSpecification",
+          cssSelector: ["h1", ".blog-standfirst"],
+        },
+      },
+      ...(post.video
+        ? [
+            {
+              "@type": "VideoObject",
+              "@id": `${url}#video`,
+              name: post.video.title,
+              description: post.video.caption,
+              thumbnailUrl: [
+                absUrl(post.video.poster),
+                `https://i.ytimg.com/vi/${post.video.youtubeId}/hqdefault.jpg`,
+              ],
+              uploadDate: post.video.uploadDate,
+              duration: post.video.isoDuration,
+              contentUrl: `https://youtu.be/${post.video.youtubeId}`,
+              embedUrl: `https://www.youtube-nocookie.com/embed/${post.video.youtubeId}`,
+              publisher: { "@id": ORG_ID },
+            },
+          ]
+        : []),
+      crumbs([
+        ["Home", "/"],
+        ["Blog", "/blog"],
+        [post.title, blogHref(post.slug)],
       ]),
     ],
   };

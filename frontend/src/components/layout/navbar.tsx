@@ -15,11 +15,12 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 const BUBBLE = { type: "spring", bounce: 0.22, duration: 0.5 } as const;
 
 const links = [
-  { id: "tools", label: "Tools" },
-  { id: "how", label: "How it works" },
-  { id: "why", label: "Why us" },
-  { id: "faq", label: "FAQ" },
-];
+  { id: "tools", label: "Tools", href: "/tools" },
+  { id: "how", label: "How it works", href: "/#how" },
+  { id: "why", label: "Why us", href: "/#why" },
+  { id: "faq", label: "FAQ", href: "/#faq" },
+  { id: "blog", label: "Blog", href: "/blog" },
+] as const;
 
 /** Which home-page section is under the middle of the viewport. */
 function useActiveSection(enabled: boolean) {
@@ -51,7 +52,8 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const [prevPathname, setPrevPathname] = useState(pathname);
   const [hovered, setHovered] = useState<string | null>(null);
-  const active = useActiveSection(pathname === "/");
+  const sectionActive = useActiveSection(pathname === "/");
+  const active = pathname === "/blog" || pathname.startsWith("/blog/") ? "blog" : sectionActive;
   const bubble = hovered ?? active;
   const pill = scrolled || open;
 
@@ -152,8 +154,8 @@ export function Navbar() {
               return (
                 <li key={l.id}>
                   <Link
-                    href={`/#${l.id}`}
-                    aria-current={isActive ? "location" : undefined}
+                    href={l.href}
+                    aria-current={isActive ? (l.id === "blog" ? "page" : "location") : undefined}
                     onMouseEnter={() => setHovered(l.id)}
                     onFocus={() => setHovered(l.id)}
                     onBlur={() => setHovered(null)}
@@ -251,7 +253,7 @@ export function Navbar() {
                   transition={{ duration: 0.4, ease: EASE, delay: 0.05 + i * 0.04 }}
                 >
                   <Link
-                    href={`/#${l.id}`}
+                    href={l.href}
                     onClick={() => setOpen(false)}
                     className={cn(
                       "flex items-center justify-between rounded-md px-4 py-3.5 text-xl font-semibold tracking-[-0.02em] transition-colors hover:bg-paper-2",

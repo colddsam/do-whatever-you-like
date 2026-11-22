@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { CLUSTERS, clusterHref, toolHref, tools } from "@/lib/tools";
+import { BLOG_POSTS, blogHref } from "@/lib/blog";
 import { SITE_URL } from "@/lib/site";
 
 const LEGAL_PAGES = ["/about", "/privacy", "/terms", "/fair-use"];
@@ -13,6 +14,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     { url: SITE_URL, lastModified, changeFrequency: "weekly", priority: 1.0 },
     { url: `${SITE_URL}/tools`, lastModified, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${SITE_URL}/blog`, lastModified, changeFrequency: "weekly", priority: 0.8 },
+    ...BLOG_POSTS.map((p) => ({
+      url: `${SITE_URL}${blogHref(p.slug)}`,
+      lastModified: new Date(p.updatedAt ?? p.publishedAt),
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
     ...hubs.map((path) => ({
       url: `${SITE_URL}${path}`,
       lastModified,
