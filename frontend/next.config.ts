@@ -22,7 +22,7 @@ const securityHeaders = [
 ];
 
 /**
- * Cross-origin isolation for the video editor only. It unlocks SharedArrayBuffer, so the editor's
+ * Cross-origin isolation for the video editor and music studio only. It unlocks SharedArrayBuffer, so the editor's
  * AI models (ONNX Runtime WASM) run multi-threaded when there's no WebGPU. "credentialless" (not
  * "require-corp") still lets the page load CORS-enabled files from other sites (Google Fonts, the
  * model CDNs) without them sending Cross-Origin-Resource-Policy. Scoped to the editor because COEP
@@ -40,6 +40,9 @@ const nextConfig: NextConfig = {
       { source: "/:path*", headers: securityHeaders },
       { source: "/tools/video-editor", headers: isolationHeaders },
       { source: "/studio/:path*", headers: isolationHeaders },
+      // The music studio and its MusicGen worker (public/music/ai-worker.js).
+      { source: "/tools/music-studio", headers: isolationHeaders },
+      { source: "/music/:path*", headers: isolationHeaders },
     ];
   },
   // Pages folded into broader tools (src/lib/merged-tools.ts) move permanently, opening the new
@@ -50,6 +53,9 @@ const nextConfig: NextConfig = {
       // A short address for the video editor.
       { source: "/studio", destination: "/tools/video-editor", permanent: false },
       { source: "/video-editor", destination: "/tools/video-editor", permanent: false },
+      // Short addresses for the music studio.
+      { source: "/music", destination: "/tools/music-studio", permanent: false },
+      { source: "/music-studio", destination: "/tools/music-studio", permanent: false },
     ];
   },
   cacheComponents: true,

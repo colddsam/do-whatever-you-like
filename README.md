@@ -227,6 +227,7 @@ Need to edit a video with captions and transitions, paste a block of text and ch
 <summary><b>🎬 Audio and video</b> — 11 tools</summary>
 <br>
 
+- [**Music studio**](https://do-whatever-you-like.colddsam.com/tools/music-studio) — Describe a song and get it produced, with lyrics and a sung vocal, then record, arrange, mix, master and export in a multi-track studio: piano roll, drum sequencer, 26 instruments, 14 effects, Audacity-style editing, stems and MusicGen on the device.
 - [**Video editor**](https://do-whatever-you-like.colddsam.com/tools/video-editor) — Edit on a multi-track timeline with Premiere's trim tools, keyframes, 29 effects, 18 transitions, speed curves, voice effects, text to speech, auto-captions in 99 languages and AI clean-up, then export MP4, WebM, GIF or audio up to 4K. Runs in your browser.
 - [**Video to frames**](https://do-whatever-you-like.colddsam.com/tools/video-to-frames) — Split a video into still frames: pick how many, which part and the format.
 - [**Video to GIF**](https://do-whatever-you-like.colddsam.com/tools/video-to-gif) — Turn a clip into a GIF: trim it, set the size, smoothness, speed and loop.
@@ -523,6 +524,31 @@ A layer-based, Photoshop- and Lightroom-style editor at [`/tools/pro-photo-edito
 
 Code lives in `frontend/src/components/tools/image/pro/` (engine: `render.ts`, `paint.ts`, `selection.ts`, `adjustments.ts`, `filters.ts`, `looks.ts`, `create.ts`, `io.ts`, `inpaint.ts`; UI: `editor.tsx`, `panels.tsx`, `tools.tsx`, `dialogs.tsx`, `ui.tsx`) and `frontend/public/photo/inpaint-worker.js`. Design notes are in `frontend/DESIGN.md`.
 
+### 🎹 Music studio
+
+A Suno/MusicGPT + BandLab/GarageBand + Audacity-style studio at [`/tools/music-studio`](https://do-whatever-you-like.colddsam.com/tools/music-studio) (short links: `/music`, `/music-studio`). Every sound is synthesised, mixed and exported **in the browser**; recordings and imports stay in the browser's IndexedDB and are never uploaded.
+
+| Area | What's there |
+| :--- | :--- |
+| **AI songs** (Suno, MusicGPT, MusicAI) | Describe a song (genre and mood optional, 15 s–5 min): a free LLM (Groq, falling back to Gemini) plans the title, tempo, key, sections, Roman-numeral chords and original lyrics in 15 languages; the browser writes every part (genre grooves with fills, bass, voice-led chords, pad, arpeggio, a melody with one note per syllable) and **sings the lyrics**: free neural voices (Edge, via our server) are time-stretched onto the melody and pitch-corrected note by note, with vibrato and a harmony on choruses, or rapped on the beat. Paste your own lyrics, or have the AI write them. Without an AI key (or when the free quota is used up) a built-in composer does it all offline |
+| **Backing music** (Canva/Soundraw, Mubert) | Royalty-free tracks in **18 genres** and 12 moods with an energy control, fitted to an exact length up to 10 minutes or to a video's duration, as a new project or under the current song · **image to music** (colour, brightness and contrast pick genre, mood, tempo and key) · **MusicGen** (Meta, via Transformers.js) text-to-audio running on the device (the ~450 MB model downloads once) |
+| **Instruments** (GarageBand, FL Studio Mobile) | 26 instruments (grand piano, e-piano, organ, guitar, harp, sitar, marimba, bells, kalimba, leads, supersaw, stabs, arp, pads, strings, choir, brass, flute, five basses incl. 808 and acid) and a sampler that plays your own recording · 7 drum kits (808, trap, house, electro/909, acoustic, rock, lo-fi) · all synthesised on the device (additive, FM, Karplus–Strong, subtractive), loudness-calibrated so presets sit together |
+| **Write & play** | Multi-track arrangement with sections, loop region, snapping and zoom · **piano roll** (draw, select, move, resize, velocity lane, quantise, transpose, humanise, legato, scale highlighting) · **step sequencer** (12 drums × 16 steps, accents, swing, grooves per genre) · on-screen keys, **chord pads** in the song's key, **musical typing** and **MIDI keyboards** (Web MIDI), sustain pedal · generated **loops** in the song's key |
+| **Record** (BandLab, n-Track) | Microphone recording through an AudioWorklet with latency compensation, count-in, metronome, input meter and monitoring · MIDI recording onto armed instrument tracks · tap tempo and a chromatic **tuner** |
+| **Mix & master** | Per-track volume, pan, mute/solo, **14 effects** (EQ, compressor, reverb, delay with ping-pong, chorus/doubler, phaser, distortion, filter with LFO, tremolo, auto-pan, bitcrusher, stereo width, robot ring-mod, limiter) and 12 one-tap chains (Clean vocal, Pop star, Podcast, Radio, Telephone, Robot, Big hall, Echo, Lo-fi, Underwater, Guitar amp, Wide synth) · volume automation · **ducking** under any track · 5 **mastering** chains (Universal, Fire, Clarity, Tape, Podcast) and export loudness to −9/−14/−16/−23 LUFS (ITU-R BS.1770) · live meters |
+| **Audio editor** (Audacity) | Waveform and spectrogram · cut, copy, paste, delete, silence, trim · fades, normalise, amplify, reverse, invert · speed, tempo (pitch kept) and pitch (length kept) · **noise reduction** with a noise profile, rumble filter, leveller, **truncate silence** · **auto-tune** (hard or natural) to the song's key · echo, bass boost · **vocal remover** · mono and channel swap · every edit is undoable |
+| **AI tools** | **Stem splitter** (vocals, drums, bass, other: harmonic/percussive separation with centre and band splits, not a neural network) · **hum/sing to MIDI** · tempo and key detection · bounce a track to audio |
+| **Podcasts & stories** (Mubert Cast, Audacity) | Podcast and audio-story templates · clean every voice recording in one tap · shorten long pauses · a music bed composed for the whole show that dips under the voice · podcast mastering at −16 LUFS · **text to speech** in 25 voices and 15 languages · 18 synthesised sound effects with text search |
+| **Export & projects** | **MP3** (LAME in WebAssembly), **WAV** 16/24/32-bit, **AAC**, **Opus**, the whole song or the loop, optional loudness normalisation, **stems** (zip), **MIDI** · autosave and a project list in the browser · `.dwylsong` packages to move a project between devices or share it · import audio, video, MIDI and packages · templates (demo, beat maker, songwriter, podcast, audio story) · phone, tablet and desktop layouts, full screen, shortcuts (`?`) |
+
+**What uses the server:** only the **song planner and lyricist** (your description goes to Groq or Gemini; small JSON comes back) and the singing voice / **text to speech** (the lyric text goes to Microsoft Edge's free voices through `/api/v1/studio/tts`). Both are tiny endpoints that load no models and keep nothing, so the Render free instance's 512 MB is untouched; audio never reaches the server.
+
+**Free-tier limits worth knowing:** Groq's free tier allows on the order of 1,000 song plans a day per model (the planner falls through three free Groq models, then Gemini, then the built-in composer, so it never stops working). The sung vocal is a pitch-corrected speech voice, so it sounds stylised (auto-tune), not like a human singer; for a natural vocal, record one and use the studio's tuning and effects. Stems are signal-processing estimates. MusicGen runs on the CPU and is slow (minutes per clip).
+
+Code lives in `frontend/src/features/music-studio/` (`engine/` audio graph, transport, instruments, drums, effects, DSP, composer, vocals, render, encoders, MIDI, storage; `lib/` theory, project model, templates; `ui/` the workspace), `frontend/public/music/ai-worker.js` (MusicGen) and `backend/app/*/music.py`.
+
+---
+
 ### 🎬 Video editor
 
 A Premiere Pro + After Effects + CapCut-style editor at [`/tools/video-editor`](https://do-whatever-you-like.colddsam.com/tools/video-editor) (short link: `/studio`). Decoding, preview, AI and export all run **in the browser**; media is kept in the browser's private storage (OPFS) and never uploaded.
@@ -720,6 +746,10 @@ Everything new is checked end to end with real files before it ships.
 | Design tools | `python scripts/check_design_tools.py` | Font and colour inspection |
 | Video editor server helpers | in-process ASGI tests | Font/stock proxy allowlist (lookalike domains, loopback, credentials in URLs and HTML pages refused), streaming, AI Director with and without a key, LLM-output sanitising and the new operations, text to speech (validation and a real voice with word timings) |
 | Video editor (browser) | Playwright in headless Chrome | COOP/COEP isolation on the editor only, import into linked clips, waveforms and filmstrips, play/split/undo, WebGL grade, silence cut, MediaPipe, Whisper in the worker, proxies, H.264 + AAC export checked with ffprobe, no overflow from phone to desktop · all 29 effects and 18 transitions render (and undo), scene detection, speed curves, freeze frame, reverse, flip, stabilise, auto reframe, shapes and stickers, sound effects, 120 BPM beat detection, loudness, ducking, voice changer, microphone voice-over, text to speech, SRT import/export, transcript cutting, rubber-band selection, ripple trim, tool shortcuts, In/Out, GIF/WAV/WebM/In–Out exports, project files round trip, AVI conversion with ffmpeg.wasm |
+| Music studio server helpers | in-process ASGI tests | Auth required, input validation, song plans from Groq and Gemini (sanitised genres, instruments, chords, bars fitted to the length), Hindi lyrics, lyric writer, fall-through when a model is retired or over quota |
+| Music studio DSP | Node (TypeScript) | FFT round trip, YIN pitch, WSOLA stretch, pitch shift, auto-tune to the chromatic and major scales, BS.1770 loudness against reference values (±0.01 LU), tempo (95/120 BPM), key, noise reduction, harmonic/percussive split, melody transcription |
+| Music studio (browser) | Playwright in headless Chrome | 54 checks: isolation, playback reaching the meters, WAV/MP3 export, piano roll, step sequencer, undo, loops, sound effects, microphone recording, every audio edit, stems, tempo/key, bounce, backing tracks, AI song with sung vocal (92% of notes within 0.6 semitone of the melody), image to music, AI lyrics, text to speech, auto-duck, loudness export within 0.05 LU of target, MIDI and `.dwylsong` round trips, templates, musical typing and MIDI recording, hum to MIDI, tuner, MusicGen on the device, phone and tablet layouts · every instrument and kit calibrated to −20/−18 LUFS |
+| Music studio instruments | Playwright in headless Chrome | All 25 instruments in tune within 7 cents across four octaves, release to silence, loudness calibrated within 0.3 dB; 7 kits × 12 drums; live play by mouse, touch and three-finger chords on phone, tablet and desktop, quick taps sound and never stick, chord and drum pads, instrument switching, octave tweak, sampler pitch |
 | Server-heavy tools (live) | `python scripts/check_heavy_tools.py` | Against a running server: upscaler 2×/4× within Render's caps, background removal, faces, Chromium, OCR, PDF/A, LibreOffice, FFmpeg, Whisper, icons, translation |
 
 Run the backend scripts from `backend/` with the virtual environment's Python. Browser tests (Playwright) drive tool pages with real inputs, check outputs, and audit layouts at phone and desktop widths.
@@ -998,6 +1028,9 @@ Run the backend scripts from `backend/` with the virtual environment's Python. B
 | `GET` | `/api/v1/studio/capabilities` | Which AI engine the Director has (`gemini`, `groq` or none) and the proxy's hosts |
 | `POST` | `/api/v1/studio/director` | Turn a request plus a timeline summary into timeline operations |
 | `POST` | `/api/v1/studio/tts` | Text to speech (free Edge voices): MP3 as base64 plus word timings for captions |
+| `GET` | `/api/v1/music/capabilities` | Which AI the music studio's composer has (`groq`, `gemini` or none) and the genre ids |
+| `POST` | `/api/v1/music/compose` | A song description (genre, mood, language, length, vocals, optional lyrics) → a checked song plan: title, BPM, key, mode, instruments, sections with chords, energy and lyrics |
+| `POST` | `/api/v1/music/lyrics` | A topic, language and structure → original lyrics by section |
 
 </details>
 
@@ -1047,11 +1080,14 @@ do-whatever-you-like/
     ├── DESIGN.md                # The design system
     ├── public/
     │   ├── blog/                # Optimized WebP screenshots for the blog
+    │   ├── music/               # The music studio's MusicGen worker (Transformers.js)
     │   └── studio/              # The video editor's AI worker (Transformers.js)
     └── src/
         ├── app/                 # Pages, /blog (+ [slug], rss.xml, OG cards), /tools/[id], collections, /api/tools/* proxies, SEO files
         ├── features/video-studio/   # Video editor: timeline & keyframe engines, store, WebGL compositor,
         │                            #   playback, WebCodecs exporter, OPFS storage, AI, workspace UI
+        ├── features/music-studio/   # Music studio: Web Audio graph & transport, synths, drums, effects, DSP,
+        │                            #   composer, singer, offline render, encoders, MIDI, AI client, DAW UI
         ├── components/
         │   ├── blog/                    # Editorial blog index, article renderer, YouTube theatre, figure lightbox, TOC
         │   ├── layout/ sections/        # Header, footer, command palette, home page sections, directory

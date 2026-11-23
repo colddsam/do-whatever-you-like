@@ -81,6 +81,8 @@ const DocumentViewerTool = dynamic(() => import("./files/document-viewer").then(
 const ThreeViewerTool = dynamic(() => import("./design/three-viewer").then((m) => m.ThreeViewerTool), { loading });
 // The video editor (src/features/video-studio): client-only, its WebGL/WebCodecs/AI code in its own chunks.
 const VideoEditor = dynamic(() => import("@/features/video-studio").then((m) => m.VideoEditorEntry), { loading, ssr: false });
+// The music studio (src/features/music-studio): client-only DAW, audio engine and on-device AI in their own chunks.
+const MusicStudio = dynamic(() => import("@/features/music-studio").then((m) => m.MusicStudioEntry), { loading, ssr: false });
 
 type Workspace = ComponentType<{ toolId: string }>;
 
@@ -109,6 +111,8 @@ type Workspace = ComponentType<{ toolId: string }>;
  *
  * - video-editor (by id) → src/features/video-studio: the multi-track editor (WebGL compositor,
  *   WebCodecs export, on-device AI); its page alone is cross-origin isolated (next.config.ts)
+ * - music-studio (by id) → src/features/music-studio: the DAW (Web Audio engine, synths, DSP,
+ *   AI songs via /api/tools/music, MusicGen on the device); also cross-origin isolated
  * - the Developer, Text and Everyday utilities (lib/utilities/catalog.ts) → UtilityTool: one engine
  *   per job (format, hash, random, network…) with the page's preset as its starting state
  *
@@ -179,6 +183,7 @@ const byId: Record<string, Workspace> = {
   "emoji-to-image": EmojiTool,
   // Audio & video, made in the browser
   "video-editor": VideoEditor,
+  "music-studio": MusicStudio,
   "video-to-frames": VideoFramesTool,
   "video-to-gif": VideoGifTool,
   // Audio & video, edited on our server (trim, volume) or in the browser (recorder, subtitles)

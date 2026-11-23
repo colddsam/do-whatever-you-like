@@ -97,6 +97,12 @@ services:
         sync: false
       - key: STUDIO_PROXY_MAX_MB
         value: "200"
+      # Music studio (/tools/music-studio). Everything audible is made in the browser; this service
+      # only asks a free LLM for song plans and lyrics (tiny JSON, no models, no files). It reuses any
+      # Groq key set above (STUDIO_/TRANSLATE_/TRANSCRIBE_GROQ_API_KEY) and Gemini as a fallback;
+      # without a key the studio's built-in composer is used. Vocals use the studio's free Edge voices.
+      - key: MUSIC_GROQ_API_KEY
+        sync: false
       # Optional: if YouTube starts answering "Sign in to confirm you're not a bot" (it does that to
       # some cloud IP ranges), add a cookies.txt from a signed-in browser as cookies_youtube.txt.
       - key: YOUTUBE_COOKIE_FILE_PATH
