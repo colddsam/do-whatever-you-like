@@ -3,7 +3,8 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { Check, ChevronLeft, ChevronRight, Menu as MenuGlyph, RotateCcw, X, type LucideIcon } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Menu as MenuGlyph, Pipette, RotateCcw, X, type LucideIcon } from "lucide-react";
+import { RichColorPicker } from "@/components/tools/design/rich-color-picker";
 import { cn } from "@/lib/utils";
 
 /*
@@ -483,15 +484,100 @@ export function NumField({
   );
 }
 
-/** A colour square that opens the native picker, with the hex beside it when `hex`. */
-export function ColorWell({ value, onChange, label, hex, size = "size-7" }: { value: string; onChange: (v: string) => void; label: string; hex?: boolean; size?: string }) {
+/** A colour square that opens a rich HSV/HEX/RGB/HSL/Swatches popover, with optional inline hex. */
+export function ColorWell({
+  value,
+  onChange,
+  label,
+  hex,
+  size = "size-7",
+  onEyedropper,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  label: string;
+  hex?: boolean;
+  size?: string;
+  onEyedropper?: () => void;
+}) {
   const id = useId();
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const [prevColor, setPrevColor] = useState(value);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!anchor) return;
+    const close = (e: PointerEvent) => {
+      if (!wrapRef.current?.contains(e.target as Node) && !insideFloat(e.target)) setAnchor(null);
+    };
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setAnchor(null);
+    window.addEventListener("pointerdown", close);
+    window.addEventListener("keydown", esc);
+    return () => {
+      window.removeEventListener("pointerdown", close);
+      window.removeEventListener("keydown", esc);
+    };
+  }, [anchor]);
+
   return (
-    <label htmlFor={id} title={label} className="relative inline-flex cursor-pointer items-center gap-1.5">
-      <span className={cn("rounded-sm border border-line shadow-[inset_0_0_0_1px_rgb(255_255_255/0.6)]", size)} style={{ background: value }} />
-      {hex && <span className="font-mono text-[12px] uppercase text-ink-2">{value}</span>}
-      <input id={id} type="color" aria-label={label} value={value} onChange={(e) => onChange(e.target.value)} className="absolute inset-0 size-full cursor-pointer opacity-0" />
-    </label>
+    <div ref={wrapRef} className="inline-flex items-center">
+      <button
+        id={id}
+        type="button"
+        title={label}
+        aria-label={label}
+        aria-expanded={!!anchor}
+        onClick={(e) => {
+          if (anchor) setAnchor(null);
+          else {
+            setPrevColor(value);
+            setAnchor(e.currentTarget);
+          }
+        }}
+        className="inline-flex cursor-pointer items-center gap-1.5 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      >
+        <span className={cn("rounded-sm border border-line shadow-[inset_0_0_0_1px_rgb(255_255_255/0.6)]", size)} style={{ background: value }} />
+        {hex && <span className="font-mono text-[12px] uppercase text-ink-2">{value}</span>}
+      </button>
+      {anchor && (
+        <Floating anchor={anchor} side="below" role="dialog" className="w-64 rounded-md border border-line bg-surface p-2.5 shadow-float">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="label-mono truncate text-ink-3">{label}</span>
+            <button type="button" onClick={() => setAnchor(null)} aria-label="Close colour picker" className="inline-flex size-6 items-center justify-center rounded-sm text-ink-3 hover:bg-paper-2 hover:text-ink">
+              <X aria-hidden className="size-3.5" />
+            </button>
+          </div>
+          <RichColorPicker
+            compact
+            value={value}
+            previous={prevColor}
+            onChange={onChange}
+            onEyedropper={
+              onEyedropper
+                ? () => {
+                    setAnchor(null);
+                    onEyedropper();
+                  }
+                : undefined
+            }
+            actions={
+              onEyedropper ? undefined : (
+                <div className="flex items-center justify-between gap-2">
+                  <label className="inline-flex cursor-pointer items-center gap-1.5 text-[11px] text-ink-3 hover:text-ink">
+                    <Pipette aria-hidden className="size-3" />
+                    <span>Native OS picker</span>
+                    <input type="color" value={/^#[0-9a-f]{6}$/i.test(value) ? value : "#000000"} onChange={(e) => onChange(e.target.value)} className="sr-only" />
+                  </label>
+                  <button type="button" onClick={() => setAnchor(null)} className="h-6 rounded-sm bg-ink px-2.5 text-[11px] font-medium text-paper">
+                    Done
+                  </button>
+                </div>
+              )
+            }
+          />
+        </Floating>
+      )}
+    </div>
   );
 }
 

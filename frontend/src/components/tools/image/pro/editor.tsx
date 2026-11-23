@@ -4,9 +4,11 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import {
+  Box,
   Check,
   ChevronDown,
   Download,
+  FileOutput,
   FilePlus2,
   FileImage,
   FolderOpen,
@@ -23,9 +25,12 @@ import {
   Palette,
   PanelRight,
   PenTool,
+  Pipette,
   Plus,
+  RefreshCw,
   Spline,
   SquareSplitHorizontal,
+  Stamp,
   Sticker,
   ImageUpscale,
   Minimize2,
@@ -40,6 +45,7 @@ import {
   X,
 } from "lucide-react";
 import { getLenis } from "@/lib/smooth-scroll";
+import { sampleRgbaPatch } from "@/lib/color-sample";
 import { saveBlob, uploadForm } from "@/lib/files";
 import { IMAGE_API } from "@/lib/image";
 import { getTool, stepsFor } from "@/lib/tools";
@@ -58,6 +64,8 @@ import {
   applyOp,
   applyOpToImage,
   defaultTarget,
+  deleteLayers,
+  mergeSelected,
   previewOpImage,
   type OpTarget,
   clearSelection,
@@ -70,18 +78,39 @@ import {
   layerVia,
   mergeDown,
   mergeVisible,
-  placeImage,
   previewOp,
   rasterize,
+  rasterizeAll,
+  rasterizeLayerStyle,
   resizeCanvas,
   resizeImage,
   selectLayerPixels,
+  stampVisible,
   strokeSelection,
   transformCanvas,
   transformMatrix,
   trimDoc,
   type TransformState,
 } from "./actions";
+import {
+  clearSmartFilters,
+  cloneDocDeep,
+  convertToSmartObject,
+  duplicateSmartIndependent,
+  moveSmartLayer,
+  placeAsSmartObject,
+  previewSmartLayer,
+  removeSmartFilter,
+  reorderSmartFilter,
+  renderSmartSource,
+  replaceSmartContents,
+  resetSmartTransform,
+  resolveSmartOp,
+  smartMetrics,
+  toggleAllSmartFilters,
+  updateLinkedSmartObjects,
+  updateSmartFilter,
+} from "./smart";
 import { ADJUSTMENTS, adjustmentById } from "./adjustments";
 import {
   activeLayer,
@@ -110,7 +139,7 @@ import { blurImage, defaults, histogram, type Op } from "./ops";
 import { beginStroke, BUFFER_TOOLS, bucketFill, endStroke, gradientFill, liveFor, PIXEL_TOOLS, redEye, strokeTo, type StrokeState } from "./paint";
 import { groupIcon, groupLabel, opBlurb, opIcon } from "./catalog";
 import { EffectsBrowser, rememberEffect, useEffectPreviews } from "./effects";
-import { EffectsEditor, HistogramChart, HistoryPanel, LayersPanel, ParamsEditor, VectorPanel, type LayerApi } from "./panels";
+import { ColorPanel, EffectsEditor, HistogramChart, HistoryPanel, LayersPanel, ParamsEditor, VectorPanel, type LayerApi } from "./panels";
 import { compose, flatten, renderShape, renderText, shapePad, type Live } from "./render";
 import { colorMask, combine, drawAnts, edgeCanvas, ellipsePath, featherSelection, fromMask, growMask, polyPath, rectPath, selectAll, shapeMask, wandMask } from "./selection";
 import { DEFAULT_BRUSH, DEFAULT_OPTS, FONTS, OptionsBar, TOOLS, Toolbar, type GradPreset, type ToolOpts } from "./tools";
@@ -122,27 +151,34 @@ import { deleteNode, docToSvg, hitPath, importSvg, layerPaths, nearestOnPath, ne
 
 type Entry = { doc: Doc; label: string; at: number; key?: string };
 type History = { entries: Entry[]; index: number };
+type SmartFrame = { parentHist: History; layerId: string; sourceId: string; parentName: string; layerName: string; view: { z: number; x: number; y: number } };
 const MAX_STEPS = 60;
 const MAX_BYTES = 900e6; // Undo keeps pixels; past this the oldest steps go.
+
+function docBytes(d: Doc, seen: Set<HTMLCanvasElement>): number {
+  let b = 0;
+  for (const l of d.layers) {
+    for (const c of [l.canvas, l.mask]) {
+      if (!c || seen.has(c)) continue;
+      seen.add(c);
+      b += canvasBytes(c);
+    }
+    if (l.smart?.sourceDoc) b += docBytes(l.smart.sourceDoc, seen);
+  }
+  const s = d.selection?.mask;
+  if (s && !seen.has(s)) {
+    seen.add(s);
+    b += canvasBytes(s);
+  }
+  return b;
+}
 
 function trimHistory(entries: Entry[]) {
   while (entries.length > MAX_STEPS) entries.shift();
   const size = () => {
     const seen = new Set<HTMLCanvasElement>();
     let b = 0;
-    for (const e of entries) {
-      for (const l of e.doc.layers)
-        for (const c of [l.canvas, l.mask]) {
-          if (!c || seen.has(c)) continue;
-          seen.add(c);
-          b += canvasBytes(c);
-        }
-      const s = e.doc.selection?.mask;
-      if (s && !seen.has(s)) {
-        seen.add(s);
-        b += canvasBytes(s);
-      }
-    }
+    for (const e of entries) b += docBytes(e.doc, seen);
     return b;
   };
   while (entries.length > 4 && size() > MAX_BYTES) entries.shift();
@@ -196,10 +232,10 @@ type Drag =
   | { type: "vnode"; layerId: string; path: number; sub: number; node: number; part: "node" | "i" | "o"; start: Pt; base: VPath[]; alt: boolean; next: VPath[] | null }
   | { type: "vpath"; layerId: string; path: number; start: Pt; base: VPath[]; next: VPath[] | null };
 
-type OpEdit = { op: Op; params: Record<string, unknown>; asLayer: boolean; target: OpTarget; from?: Panel };
+type OpEdit = { op: Op; params: Record<string, unknown>; asLayer: boolean; target: OpTarget; from?: Panel; filterId?: string; layerId?: string };
 /** The path being edited with the Direct selection tool, and (optionally) one of its points. */
 type NodeSel = { layerId: string; path: number; sub: number | null; node: number | null };
-type Panel = "properties" | "looks" | "adjust" | "create" | "history" | "info" | "layers";
+type Panel = "properties" | "color" | "looks" | "adjust" | "create" | "history" | "info" | "layers";
 type DialogName = null | "new" | "image-size" | "canvas-size" | "rotate" | "fill" | "stroke" | "feather" | "expand" | "contract" | "color-range" | "export" | "shortcuts";
 
 const HANDLES = ["nw", "n", "ne", "e", "se", "s", "sw", "w"] as const;
@@ -323,6 +359,21 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
   // Vector editing: the pen's path in progress, and the path (and point) picked for direct selection.
   const [pen, setPen] = useState<VNode[] | null>(null);
   const [nodeSel, setNodeSel] = useState<NodeSel | null>(null);
+  const [smartStack, setSmartStack] = useState<SmartFrame[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [smartPrompt, setSmartPrompt] = useState<string | null>(null);
+  const [hasScreenEyeDropper, setHasScreenEyeDropper] = useState(false);
+  useEffect(() => {
+    setHasScreenEyeDropper(typeof window !== "undefined" && "EyeDropper" in window); // eslint-disable-line react-hooks/set-state-in-effect
+  }, []);
+  const effectiveSelectedIds = useMemo(() => {
+    if (!doc) return [];
+    const ids = new Set(doc.layers.map((l) => l.id));
+    const filtered = selectedIds.filter((id) => ids.has(id));
+    return filtered.length ? filtered : [doc.active];
+  }, [doc, selectedIds]);
+  const replaceSmartRef = useRef<HTMLInputElement>(null);
+  const replaceTargetRef = useRef<string | null>(null);
   // Phones: the panel sheet under the canvas can fold away to give the picture the room.
   const [sheetOpen, setSheetOpen] = useState(true);
   // Desktop: the Layers dock folds down while browsing effects and looks, so their grids get the room.
@@ -529,21 +580,22 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     }
   };
 
-  const placeFile = async (f: File, at?: Pt) => {
+  const placeFile = async (f: File, at?: Pt, embedProject = false) => {
     const d = docRef.current;
     if (!d) return openAny(f);
-    if (isPsd(f) || isProject(f)) return openAny(f);
+    if (!embedProject && (isPsd(f) || isProject(f))) return openAny(f);
     if (isSvg(f)) {
       try {
         return await openSvg(f, true);
       } catch {
-        // Falls through to placing it as a picture.
+        // Falls through to placing it as a Smart Object.
       }
     }
     try {
-      const c = await decodeImage(f);
-      commit(placeImage(d, c, f.name.replace(/\.[^.]+$/, "") || "Placed", at), "Place");
-      say("Placed as a new layer. Use Move or Free transform (Shift+T) to fit it.");
+      const name = f.name.replace(/\.[^.]+$/, "") || "Placed";
+      const srcDoc = isPsd(f) || isProject(f) ? await openFile(f) : docFromCanvas(await decodeImage(f), name);
+      commit(placeAsSmartObject(d, srcDoc, name, at, { fg, bg }), "Place Smart Object");
+      say("Placed as a Smart Object. Scale or rotate cleanly anytime, or double-click its thumbnail to edit contents.");
     } catch {
       say("That file isn't a picture this browser can open.");
     }
@@ -609,13 +661,30 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     return toScreen(p);
   }
 
-  /** The colour on screen at a document point (what you see, all layers). */
+  /** The colour on screen at a document point (respects Eyedropper sample size & All vs Current Layer). */
   const sampleAt = (p: Pt): string | null => {
     const d = docRef.current;
     if (!d || p.x < 0 || p.y < 0 || p.x >= d.w || p.y >= d.h) return null;
-    const c = compose(d, { rect: { x: Math.floor(p.x), y: Math.floor(p.y), w: 1, h: 1 }, scale: 1 });
-    const px = ctx2d(c, true).getImageData(0, 0, 1, 1).data;
-    return px[3] < 8 ? null : rgbToHex(px[0], px[1], px[2]);
+    const size = opts.eyedropperSize;
+    const rad = Math.floor(size / 2);
+    const ix = Math.min(d.w - 1, Math.max(0, Math.floor(p.x)));
+    const iy = Math.min(d.h - 1, Math.max(0, Math.floor(p.y)));
+    const x0 = Math.max(0, ix - rad);
+    const y0 = Math.max(0, iy - rad);
+    const x1 = Math.min(d.w, ix + rad + 1);
+    const y1 = Math.min(d.h, iy + rad + 1);
+    const rect = { x: x0, y: y0, w: Math.max(1, x1 - x0), h: Math.max(1, y1 - y0) };
+    let c: HTMLCanvasElement;
+    if (opts.eyedropperAll) {
+      c = compose(d, { rect, scale: 1 });
+    } else {
+      c = makeCanvas(rect.w, rect.h);
+      const l = activeLayer(d);
+      if (l.kind !== "adjustment") ctx2d(c).drawImage(l.canvas, l.x - rect.x, l.y - rect.y);
+    }
+    const img = ctx2d(c, true).getImageData(0, 0, c.width, c.height);
+    const px = sampleRgbaPatch(img.data, img.width, img.height, ix - rect.x, iy - rect.y, size);
+    return px.a < 8 ? null : rgbToHex(px.r, px.g, px.b);
   };
   /** Faster: reads the colour from what's already drawn on screen (for the Info readout). */
   const peekAt = (p: Pt): string | null => {
@@ -629,9 +698,9 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
   };
 
   // Things drawn over the picture: selection, crop, transform box, brush outline…
-  const overlayState = useRef({ crop, transform, poly, cloneSrc, showGrid, tool, brush, pen, nodeSel, cropGuide: opts.cropGuide, cropAngle });
+  const overlayState = useRef({ crop, transform, poly, cloneSrc, showGrid, tool, brush, pen, nodeSel, cropGuide: opts.cropGuide, cropAngle, fg, bg, eyedropperSize: opts.eyedropperSize });
   useLayoutEffect(() => {
-    overlayState.current = { crop, transform, poly, cloneSrc, showGrid, tool, brush, pen, nodeSel, cropGuide: opts.cropGuide, cropAngle };
+    overlayState.current = { crop, transform, poly, cloneSrc, showGrid, tool, brush, pen, nodeSel, cropGuide: opts.cropGuide, cropAngle, fg, bg, eyedropperSize: opts.eyedropperSize };
   });
 
   /** The paths shown for direct selection: the live (dragged) version if there is one. */
@@ -1023,6 +1092,114 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
       g.stroke();
       g.restore();
     }
+    if (st.tool === "eyedropper" && hover.current && !space.current && hover.current.x >= 0 && hover.current.y >= 0 && hover.current.x < d.w && hover.current.y < d.h) {
+      const hx = hover.current.x;
+      const hy = hover.current.y;
+      const px = sx(hx);
+      const py = sy(hy);
+      const rad = 46;
+      const cy = py > rad * 2.2 ? py - rad - 22 : py + rad + 22;
+      const lc = lastComp.current;
+      let liveHex = st.fg;
+      const cells = 11;
+      const half = Math.floor(cells / 2);
+      const cellPx = (rad * 2) / cells;
+      const lcx = lc ? Math.floor((hx - lc.rx) * lc.s) : -1;
+      const lcy = lc ? Math.floor((hy - lc.ry) * lc.s) : -1;
+      if (lc && lcx >= 0 && lcy >= 0 && lcx < lc.canvas.width && lcy < lc.canvas.height) {
+        const pdata = ctx2d(lc.canvas, true).getImageData(lcx, lcy, 1, 1).data;
+        if (pdata[3] >= 8) liveHex = rgbToHex(pdata[0], pdata[1], pdata[2]);
+      }
+
+      g.save();
+      // Magnified pixel grid inside circular loupe
+      g.beginPath();
+      g.arc(px, cy, rad - 5, 0, Math.PI * 2);
+      g.save();
+      g.clip();
+      g.fillStyle = "#181713";
+      g.fillRect(px - rad, cy - rad, rad * 2, rad * 2);
+      if (lc && lcx >= 0 && lcy >= 0 && lcx < lc.canvas.width && lcy < lc.canvas.height) {
+        g.imageSmoothingEnabled = false;
+        const sx0 = lcx - half;
+        const sy0 = lcy - half;
+        const cl = Math.max(0, sx0);
+        const ct = Math.max(0, sy0);
+        const cr = Math.min(lc.canvas.width, sx0 + cells);
+        const cb = Math.min(lc.canvas.height, sy0 + cells);
+        if (cr > cl && cb > ct) {
+          g.drawImage(
+            lc.canvas,
+            cl,
+            ct,
+            cr - cl,
+            cb - ct,
+            px - rad + (cl - sx0) * cellPx,
+            cy - rad + (ct - sy0) * cellPx,
+            (cr - cl) * cellPx,
+            (cb - ct) * cellPx,
+          );
+        }
+      }
+      // Subtle pixel grid + center sample reticle
+      g.strokeStyle = "rgba(255,255,255,0.16)";
+      g.lineWidth = 0.75;
+      g.beginPath();
+      for (let i = 1; i < cells; i++) {
+        const off = -rad + i * cellPx;
+        g.moveTo(px + off, cy - rad);
+        g.lineTo(px + off, cy + rad);
+        g.moveTo(px - rad, cy + off);
+        g.lineTo(px + rad, cy + off);
+      }
+      g.stroke();
+      const sRad = Math.floor(st.eyedropperSize / 2);
+      const bx = px - (sRad + 0.5) * cellPx;
+      const by = cy - (sRad + 0.5) * cellPx;
+      const bw = st.eyedropperSize * cellPx;
+      g.strokeStyle = "#000000";
+      g.lineWidth = 2;
+      g.strokeRect(bx, by, bw, bw);
+      g.strokeStyle = "#ffffff";
+      g.lineWidth = 1;
+      g.strokeRect(bx + 1, by + 1, Math.max(1, bw - 2), Math.max(1, bw - 2));
+      g.restore();
+
+      // Dual-tone Photoshop comparison ring: top = sampled live colour, bottom = current FG
+      g.lineWidth = 6;
+      g.beginPath();
+      g.arc(px, cy, rad - 2, Math.PI, 0);
+      g.strokeStyle = liveHex;
+      g.stroke();
+      g.beginPath();
+      g.arc(px, cy, rad - 2, 0, Math.PI);
+      g.strokeStyle = st.fg;
+      g.stroke();
+      g.lineWidth = 1;
+      g.beginPath();
+      g.arc(px, cy, rad + 1, 0, Math.PI * 2);
+      g.strokeStyle = "rgba(0,0,0,0.45)";
+      g.stroke();
+      g.beginPath();
+      g.arc(px, cy, rad - 5, 0, Math.PI * 2);
+      g.strokeStyle = "rgba(255,255,255,0.75)";
+      g.stroke();
+
+      // Hex badge under the loupe
+      const label = liveHex.toUpperCase();
+      g.font = "600 11px ui-monospace, SFMono-Regular, Menlo, monospace";
+      const tw = g.measureText(label).width;
+      const pillY = cy + rad + 6;
+      g.fillStyle = "rgba(21,20,15,0.9)";
+      g.beginPath();
+      g.roundRect(px - tw / 2 - 6, pillY, tw + 12, 18, 4);
+      g.fill();
+      g.fillStyle = "#faf9f5";
+      g.textAlign = "center";
+      g.textBaseline = "middle";
+      g.fillText(label, px, pillY + 9);
+      g.restore();
+    }
     if (splitHandleRef.current && splitCompareRef.current && histRef.current && histRef.current.index > 0) {
       splitHandleRef.current.style.left = `${v.x + d.w * splitXRef.current * v.z}px`;
     }
@@ -1252,7 +1429,10 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
           live.current = { insert: { layer: stamp, above: top.id }, replace: { layerId: stamp.id, canvas: p.canvas, scale: p.scale } };
         }
       } else if (opEdit.asLayer) live.current = adjustmentPreview(l.id);
-      else if (l.kind !== "adjustment") {
+      else if (l.kind === "smart" && l.smart && !doc.selection) {
+        const p = previewSmartLayer(l, { op: opEdit.op, params: opEdit.params, filterId: opEdit.filterId, ctx: { fg, bg } });
+        live.current = { replace: { layerId: l.id, canvas: p.canvas, scale: p.scale } };
+      } else if (l.kind !== "adjustment") {
         const p = previewOp(doc, opEdit.op, opEdit.params, { fg, bg });
         live.current = { replace: { layerId: l.id, canvas: p.canvas, scale: p.scale } };
       } else live.current = undefined;
@@ -1280,14 +1460,25 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
   const applyOpEdit = async () => {
     const d = docRef.current;
     if (!d || !opEdit) return;
-    const { op, params, asLayer, target } = opEdit;
+    const { op, params, asLayer, target, filterId, layerId } = opEdit;
     setOpEdit(null);
     if (target === "layer" && asLayer) return commit(addAdjustmentLayer(d, op, params), `${op.label} layer`);
     setBusy(`Applying ${op.label}…`);
     await nextFrame();
     try {
-      if (target === "image") commit(applyOpToImage(d, op, params, { fg, bg }), op.label);
-      else commit(applyOp(d, op, params, { fg, bg }), op.label);
+      if (filterId && layerId) {
+        commit(updateSmartFilter(d, layerId, filterId, { params }, { fg, bg }), `Edit Smart Filter: ${op.label}`);
+      } else if (target === "image") {
+        commit(applyOpToImage(d, op, params, { fg, bg }), op.label);
+      } else {
+        const activeL = activeLayer(d);
+        if (activeL.kind === "smart" && !d.selection) {
+          commit(applyOp(d, op, params, { fg, bg }), `Smart Filter: ${op.label}`);
+          say("Added as a non-destructive Smart Filter. Toggle or edit it anytime in Layers or Properties.");
+        } else {
+          commit(applyOp(d, op, params, { fg, bg }), op.label);
+        }
+      }
     } catch (e) {
       say(`${op.label} couldn't be applied: ${(e as Error).message}`);
     } finally {
@@ -1414,6 +1605,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     const d = docRef.current;
     if (!d?.selection) return say("Select the area to fill first.");
     const l = activeLayer(d);
+    if (l.kind === "smart") return setSmartPrompt(l.id);
     if (l.kind === "adjustment") return say("Pick a pixel layer.");
     setBusy("Filling from the surroundings…");
     try {
@@ -1432,6 +1624,8 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     const d = docRef.current;
     if (!d) return;
     if (what === "content") return void contentAwareFill();
+    const l = activeLayer(d);
+    if (l.kind === "smart" && !d.editMask) return setSmartPrompt(l.id);
     const c = what === "fg" ? fg : what === "bg" ? bg : what === "black" ? "#000000" : what === "white" ? "#ffffff" : what === "gray" ? "#808080" : color;
     commit(fillSelection(d, c, opacity), "Fill");
   };
@@ -1470,6 +1664,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     if (l.locked) return (say("That layer is locked. Unlock it in the Layers panel."), false);
     if (l.kind === "adjustment" && !(d.editMask && l.mask)) return (say("Adjustment layers have no pixels. Paint on its mask, or pick a pixel layer."), false);
     if (d.editMask && l.mask && (PIXEL_TOOLS.includes(t) || t === "spot-heal" || t === "red-eye")) return (say("That tool works on pixels: click the layer's picture thumbnail to leave the mask."), false);
+    if (l.kind === "smart" && !(d.editMask && l.mask)) return (setSmartPrompt(l.id), false);
     if (!l.visible) say("That layer is hidden: you're painting on it anyway.");
     if (l.kind === "text" || l.kind === "shape" || l.kind === "vector") say(`“${l.name}” became pixels so it can be painted.`);
     return true;
@@ -1921,7 +2116,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
         live.current = undefined;
         if (dr.dx || dr.dy) {
           const l = d.layers.find((x) => x.id === dr.layerId)!;
-          commit(replaceLayer(d, l.id, { x: l.x + dr.dx, y: l.y + dr.dy }), "Move");
+          commit(replaceLayer(d, l.id, moveSmartLayer(l, dr.dx, dr.dy)), "Move");
         } else bump();
         return;
       case "selmove": {
@@ -2321,11 +2516,128 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
 
   /* ----- Layer actions (shared by the panel and the menus) ----- */
 
+  const enterSmartEdit = (layerId?: string) => {
+    const d = docRef.current;
+    const h = histRef.current;
+    if (!d || !h) return;
+    const l = d.layers.find((x) => x.id === (layerId ?? d.active));
+    if (!l || l.kind !== "smart" || !l.smart) return say("Pick a Smart Object layer first.");
+    finishModes("move");
+    setOpEdit(null);
+    setStyleEdit(false);
+    setSmartPrompt(null);
+    const frame: SmartFrame = {
+      parentHist: h,
+      layerId: l.id,
+      sourceId: l.smart.sourceId,
+      parentName: d.name,
+      layerName: l.name,
+      view: { ...view.current },
+    };
+    const cloned = cloneDocDeep(l.smart.sourceDoc);
+    setSmartStack((prev) => [...prev, frame]);
+    setHist({ entries: [{ doc: cloned, label: `Open ${l.name}`, at: Date.now() }], index: 0 });
+    setSelectedIds([cloned.active]);
+    requestAnimationFrame(() => fit(cloned, true));
+    say(`Editing “${l.name}” contents. Press Ctrl+S or click Save & Return to update.`);
+  };
+
+  const exitSmartEdit = (save: boolean) => {
+    const stack = smartStack;
+    if (!stack.length) return;
+    const frame = stack[stack.length - 1];
+    const editedDoc = docRef.current;
+    finishModes("move");
+    setOpEdit(null);
+    setStyleEdit(false);
+    setSmartPrompt(null);
+    setSmartStack((prev) => prev.slice(0, -1));
+    setHist(frame.parentHist);
+    view.current = frame.view;
+    setZoom(frame.view.z);
+    setSelectedIds([frame.layerId]);
+    if (save && editedDoc) {
+      const parentDoc = frame.parentHist.entries[frame.parentHist.index].doc;
+      const updated = updateLinkedSmartObjects(parentDoc, frame.sourceId, cloneDocDeep(editedDoc), { fg, bg });
+      commit(updated, `Update Smart Object (${frame.layerName})`);
+      say(`Updated “${frame.layerName}”${updated.layers.filter((x) => x.smart?.sourceId === frame.sourceId).length > 1 ? " and linked copies" : ""}.`);
+    } else {
+      dirty.current = true;
+      say("Cancelled Smart Object edits.");
+    }
+  };
+
+  const replaceSmartFromFile = async (f: File) => {
+    const d = docRef.current;
+    if (!d) return;
+    const targetId = replaceTargetRef.current ?? d.active;
+    replaceTargetRef.current = null;
+    try {
+      const name = f.name.replace(/\.[^.]+$/, "") || "Smart Object";
+      const srcDoc = isPsd(f) || isProject(f) ? await openFile(f) : docFromCanvas(await decodeImage(f), name);
+      commit(replaceSmartContents(d, targetId, srcDoc, name, { fg, bg }), "Replace Contents");
+      say("Smart Object contents replaced while keeping transforms and Smart Filters.");
+    } catch {
+      say("Couldn't read that file to replace Smart Object contents.");
+    }
+  };
+
+  const exportSmartContents = async (layerId?: string) => {
+    const d = docRef.current;
+    if (!d) return;
+    const l = d.layers.find((x) => x.id === (layerId ?? d.active));
+    if (!l || l.kind !== "smart" || !l.smart) return;
+    const baseName = l.name || "smart-object";
+    if (l.smart.sourceDoc.layers.length === 1 && l.smart.sourceDoc.layers[0].kind === "pixel" && !l.smart.filters.length) {
+      const flat = renderSmartSource(l.smart, { fg, bg });
+      const blob = await new Promise<Blob | null>((res) => flat.toBlob(res, "image/png"));
+      if (blob) saveBlob(blob, `${baseName}.png`);
+      say(`Exported embedded contents as ${baseName}.png.`);
+      return;
+    }
+    const blob = await writeProject(l.smart.sourceDoc);
+    saveBlob(blob, `${baseName}${PROJECT_EXT}`);
+    say(`Exported embedded contents as ${baseName}${PROJECT_EXT}.`);
+  };
+
+  const pickScreenColor = async () => {
+    try {
+      const ED = (window as unknown as { EyeDropper?: new () => { open(): Promise<{ sRGBHex: string }> } }).EyeDropper;
+      if (!ED) return;
+      const res = await new ED().open();
+      if (res.sRGBHex) {
+        setFg(res.sRGBHex.toLowerCase());
+        say(`Foreground set to ${res.sRGBHex.toUpperCase()}.`);
+      }
+    } catch {
+      /* user cancelled */
+    }
+  };
+
   const layerApi: LayerApi = {
-    select: (id, mask) => {
+    selectedIds: effectiveSelectedIds,
+    select: (id, mask, mod) => {
       const d = docRef.current!;
       const l = d.layers.find((x) => x.id === id)!;
       if (transform) applyTransform();
+      if (mod?.shift) {
+        const order = d.layers.map((x) => x.id);
+        const a = order.indexOf(d.active);
+        const b = order.indexOf(id);
+        if (a >= 0 && b >= 0) {
+          const [lo, hi] = a <= b ? [a, b] : [b, a];
+          setSelectedIds(order.slice(lo, hi + 1));
+          return;
+        }
+      }
+      if (mod?.ctrl) {
+        const cur = new Set(effectiveSelectedIds);
+        if (cur.has(id) && cur.size > 1) cur.delete(id);
+        else cur.add(id);
+        setSelectedIds([...cur]);
+        return;
+      }
+      setSelectedIds([id]);
       commit({ ...d, active: id, editMask: mask ?? (id === d.active ? d.editMask && !!l.mask : false) }, "Select Layer", "select");
       setStyleEdit(false);
     },
@@ -2382,6 +2694,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
       const i = d.layers.findIndex((l) => l.id === d.active);
       const layers = d.layers.filter((l) => l.id !== d.active);
       commit({ ...d, layers, active: layers[Math.max(0, i - 1)].id, editMask: false }, "Delete Layer");
+      setSelectedIds([]);
     },
     mergeDown: () => {
       const n = mergeDown(docRef.current!);
@@ -2403,6 +2716,64 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
       setPanel("properties");
     },
     selectPixels: (id) => commit(selectLayerPixels(docRef.current!, id), "Load Selection"),
+    convertToSmart: (ids) => {
+      const d = docRef.current!;
+      const list = ids?.length ? ids : effectiveSelectedIds;
+      const single = list.length === 1 ? d.layers.find((x) => x.id === list[0]) : null;
+      if (single?.kind === "adjustment") return say("Adjustment layers alone can't be a Smart Object—select them with other layers.");
+      commit(convertToSmartObject(d, list, { fg, bg }), "Convert to Smart Object");
+      setSelectedIds([]);
+      say("Converted to Smart Object. Double-click its thumbnail to edit inside, or apply non-destructive filters.");
+    },
+    editSmart: (id) => enterSmartEdit(id),
+    replaceSmart: (id) => {
+      replaceTargetRef.current = id ?? docRef.current?.active ?? null;
+      replaceSmartRef.current?.click();
+    },
+    duplicateSmartCopy: (id) => commit(duplicateSmartIndependent(docRef.current!, id, { fg, bg }), "New Smart Object via Copy"),
+    exportSmart: (id) => void exportSmartContents(id),
+    resetSmartTransform: (id) => commit(resetSmartTransform(docRef.current!, id, { fg, bg }), "Reset Smart Transform"),
+    rasterize: (id) => {
+      const d = docRef.current!;
+      commit(rasterize(d, id), "Rasterize Layer");
+      setSmartPrompt(null);
+    },
+    rasterizeStyle: (id) => commit(rasterizeLayerStyle(docRef.current!, id), "Rasterize Layer Style"),
+    rasterizeAll: () => commit(rasterizeAll(docRef.current!), "Rasterize All Layers"),
+    applyMask: (id) => commit(applyMask(docRef.current!, id), "Apply Layer Mask"),
+    stampVisible: () => commit(stampVisible(docRef.current!), "Stamp Visible"),
+    mergeSelected: () => {
+      commit(mergeSelected(docRef.current!, effectiveSelectedIds), "Merge Selected");
+      setSelectedIds([]);
+    },
+    deleteSelected: () => {
+      const d = docRef.current!;
+      if (d.layers.length < 2) return;
+      commit(deleteLayers(d, effectiveSelectedIds), "Delete Layers");
+      setSelectedIds([]);
+    },
+    toggleSmartFilters: (layerId) => commit(toggleAllSmartFilters(docRef.current!, layerId, { fg, bg }), "Toggle Smart Filters"),
+    toggleSmartFilter: (layerId, filterId) => {
+      const d = docRef.current!;
+      const l = d.layers.find((x) => x.id === layerId);
+      const f = l?.smart?.filters.find((x) => x.id === filterId);
+      if (f) commit(updateSmartFilter(d, layerId, filterId, { enabled: !f.enabled }, { fg, bg }), f.enabled ? "Hide Smart Filter" : "Show Smart Filter");
+    },
+    editSmartFilter: (layerId, filterId) => {
+      const d = docRef.current!;
+      const l = d.layers.find((x) => x.id === layerId);
+      const f = l?.smart?.filters.find((x) => x.id === filterId);
+      const op = f ? resolveSmartOp(f.opId) : undefined;
+      if (!l || !f || !op) return;
+      if (d.active !== layerId) commit({ ...d, active: layerId, editMask: false }, "Select Layer", "select");
+      setStyleEdit(false);
+      setOpEdit({ op, params: structuredClone(f.params), asLayer: false, target: "layer", filterId: f.id, layerId: l.id, from: "properties" });
+      setPanel("properties");
+      setSheetOpen(true);
+    },
+    removeSmartFilter: (layerId, filterId) => commit(removeSmartFilter(docRef.current!, layerId, filterId, { fg, bg }), "Remove Smart Filter"),
+    reorderSmartFilter: (layerId, filterId, dir) => commit(reorderSmartFilter(docRef.current!, layerId, filterId, dir, { fg, bg }), "Reorder Smart Filter"),
+    clearSmartFilters: (layerId) => commit(clearSmartFilters(docRef.current!, layerId, { fg, bg }), "Clear Smart Filters"),
   };
 
   const arrange = (dir: "front" | "forward" | "backward" | "back") => {
@@ -2635,6 +3006,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
       if (k === "i" && shift) return go(() => commit(inverseSelection(d), "Inverse"));
       if (k === "i") return go(() => openOp(adjustmentById("invert")!));
       if (k === "j") return go(() => commit(layerVia(d, shift), shift ? "Layer via Cut" : "Layer via Copy"));
+      if (k === "e" && shift && alt) return go(() => commit(stampVisible(d), "Stamp Visible"));
       if (k === "e" && shift) return go(() => commit(mergeVisible(d), "Merge Visible"));
       if (k === "e") return go(layerApi.mergeDown);
       if (k === "g" && alt) return go(layerApi.toggleClip);
@@ -2642,7 +3014,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
       if (k === "c") return go(() => void copy(shift));
       if (k === "x" && shift) return go(() => setTool("liquify"));
       if (k === "x") return go(() => void copy(false, true));
-      if (k === "s") return go(() => void (shift ? savePsd() : saveProject()));
+      if (k === "s") return go(() => (shift ? void savePsd() : smartStack.length ? exitSmartEdit(true) : void saveProject()));
       if (k === "w" && alt && shift) return go(() => setDialog("export"));
       if (k === "o") return go(() => fileRef.current?.click());
       if (k === "0") return go(() => fit());
@@ -2684,7 +3056,10 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
       if (pen) return go(() => setPen(pen.length > 1 ? pen.slice(0, -1) : null));
       if (tool === "node" && nodeSel) return go(() => void deleteVector());
       if (poly && e.key === "Backspace") return go(() => setPoly({ ...poly, pts: poly.pts.slice(0, -1) }));
-      if (d.selection) return go(() => commit(clearSelection(d), "Clear"));
+      if (d.selection) {
+        if (activeLayer(d).kind === "smart" && !d.editMask) return go(() => setSmartPrompt(activeLayer(d).id));
+        return go(() => commit(clearSelection(d), "Clear"));
+      }
       return;
     }
     if (e.key.startsWith("Arrow") && tool === "node" && nodeSel) {
@@ -2708,7 +3083,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
       const dy = e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
       const l = activeLayer(d);
       if (transform) return go(() => setTransform({ ...transform, tx: transform.tx + dx, ty: transform.ty + dy }));
-      if (!l.locked) return go(() => commit(replaceLayer(d, l.id, { x: l.x + dx, y: l.y + dy }), "Nudge", `nudge:${l.id}`));
+      if (!l.locked) return go(() => commit(replaceLayer(d, l.id, moveSmartLayer(l, dx, dy)), "Nudge", `nudge:${l.id}`));
       return;
     }
     if (e.altKey) return;
@@ -2884,7 +3259,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
           items: [
             { label: "New…", onSelect: () => setDialog("new") },
             { label: "Open… (replaces this)", shortcut: "Ctrl+O", onSelect: () => fileRef.current?.click() },
-            { label: "Place image or SVG as layer…", onSelect: () => placeRef.current?.click() },
+            { label: "Place embedded (Smart Object)…", onSelect: () => placeRef.current?.click() },
             { label: "New collage from photos…", onSelect: () => collageRef.current?.click() },
             { type: "sep" },
             { label: "Save project (.dwlp)", shortcut: "Ctrl+S", onSelect: () => void saveProject() },
@@ -2894,7 +3269,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
             { label: "Quick export as PNG", onSelect: () => void quickPng() },
             { label: "Copy image to clipboard", onSelect: () => copyToClipboard(doc).then(() => say("Copied to the clipboard."), () => say("This browser won't let us use the clipboard.")) },
             { type: "sep" },
-            { label: "Close", onSelect: () => (setHist(null), setFullscreen(false)) },
+            { label: "Close", onSelect: () => (setHist(null), setFullscreen(false), setSmartStack([]), setSelectedIds([]), setSmartPrompt(null)) },
           ],
         },
         {
@@ -2907,7 +3282,15 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
             { label: "Copy", shortcut: "Ctrl+C", onSelect: () => void copy(false) },
             { label: "Copy merged", shortcut: "Shift+Ctrl+C", onSelect: () => void copy(true) },
             { label: "Paste", shortcut: "Ctrl+V", disabled: !hasClip, onSelect: pasteInternal },
-            { label: "Clear", shortcut: "Delete", disabled: !sel, onSelect: () => commit(clearSelection(doc), "Clear") },
+            {
+              label: "Clear",
+              shortcut: "Delete",
+              disabled: !sel,
+              onSelect: () => {
+                if (active?.kind === "smart" && !doc.editMask) return setSmartPrompt(active.id);
+                commit(clearSelection(doc), "Clear");
+              },
+            },
             { type: "sep" },
             { label: "Fill…", shortcut: "Shift+F5", onSelect: () => setDialog("fill") },
             { label: "Stroke…", disabled: !sel, onSelect: () => setDialog("stroke") },
@@ -3006,7 +3389,34 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
             { label: active?.clip ? "Release clipping mask" : "Create clipping mask", shortcut: "Alt+Ctrl+G", onSelect: layerApi.toggleClip },
             { label: "Layer style…", disabled: active?.kind === "adjustment", onSelect: layerApi.openStyle },
             { label: "Clear layer style", disabled: !active?.effects, onSelect: () => commit(replaceLayer(doc, doc.active, { effects: null }), "Clear Layer Style") },
-            { label: "Rasterize", disabled: active?.kind === "pixel" || active?.kind === "adjustment", onSelect: () => commit(rasterize(doc), "Rasterize") },
+            {
+              type: "sub",
+              label: "Smart Objects",
+              icon: Box,
+              items: [
+                {
+                  label: effectiveSelectedIds.length > 1 ? `Convert ${effectiveSelectedIds.length} Layers to Smart Object` : "Convert to Smart Object",
+                  disabled: active?.kind === "adjustment" && effectiveSelectedIds.length === 1,
+                  onSelect: () => layerApi.convertToSmart(),
+                },
+                { label: "Edit Contents", disabled: active?.kind !== "smart", onSelect: () => layerApi.editSmart() },
+                { label: "Replace Contents…", disabled: active?.kind !== "smart", onSelect: () => layerApi.replaceSmart() },
+                { label: "New Smart Object via Copy", disabled: active?.kind !== "smart", onSelect: () => layerApi.duplicateSmartCopy() },
+                { label: "Export Contents…", disabled: active?.kind !== "smart", onSelect: () => layerApi.exportSmart() },
+                { label: "Reset Transform", disabled: active?.kind !== "smart", onSelect: () => layerApi.resetSmartTransform() },
+                { type: "sep" },
+                { label: "Rasterize Smart Object", disabled: active?.kind !== "smart", onSelect: () => layerApi.rasterize() },
+              ],
+            },
+            {
+              type: "sub",
+              label: "Rasterize",
+              items: [
+                { label: "Rasterize Layer", disabled: active?.kind === "pixel" || active?.kind === "adjustment", onSelect: () => layerApi.rasterize() },
+                { label: "Rasterize Layer Style", disabled: !active?.effects, onSelect: () => layerApi.rasterizeStyle() },
+                { label: "Rasterize All Layers", onSelect: layerApi.rasterizeAll },
+              ],
+            },
             { type: "sep" },
             {
               type: "sub",
@@ -3020,6 +3430,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
             },
             { label: "Merge down", shortcut: "Ctrl+E", onSelect: layerApi.mergeDown },
             { label: "Merge visible", shortcut: "Shift+Ctrl+E", onSelect: () => commit(mergeVisible(doc), "Merge Visible") },
+            { label: "Stamp visible (merge copy on top)", shortcut: "Alt+Shift+Ctrl+E", icon: Stamp, onSelect: layerApi.stampVisible },
             { label: "Flatten image", onSelect: () => commit(flattenDoc(doc), "Flatten Image") },
           ],
         },
@@ -3188,6 +3599,9 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
               <Check2 checked={opEdit.asLayer} onChange={(asLayer) => setOpEdit({ ...opEdit, asLayer })} label="As an adjustment layer (editable later)" />
             </div>
           )}
+          {pixelsOnly && active.kind === "smart" && !doc.selection && (
+            <p className="text-[12px] text-accent">Applied non-destructively as a Smart Filter (toggle or re-edit anytime).</p>
+          )}
           {pixelsOnly && (active.kind === "text" || active.kind === "shape" || active.kind === "vector") && <p className="text-[12px] text-warning">Applying turns “{active.name}” into pixels.</p>}
           {doc.selection && <p className="text-[12px] text-ink-3">Only the selected area changes.</p>}
           {/* Stays in reach at the bottom of the panel, however long the settings are. */}
@@ -3196,7 +3610,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
               Cancel
             </Btn>
             <Btn primary onClick={() => void applyOpEdit()} className="flex-1" disabled={target === "layer" && !opEdit.asLayer && !layerOk}>
-              <Check aria-hidden className="size-4" /> Apply
+              <Check aria-hidden className="size-4" /> {opEdit.filterId ? "Update filter" : "Apply"}
             </Btn>
           </div>
         </motion.div>
@@ -3366,6 +3780,114 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
           <RangeRow label="Stroke width" value={s.strokeWidth} min={1} max={200} unit=" px" onChange={(strokeWidth) => setShape({ strokeWidth })} />
           {s.kind === "rect" && <RangeRow label="Corner radius" value={s.radius} min={0} max={Math.round(Math.min(Math.abs(s.w), Math.abs(s.h)) / 2)} unit=" px" onChange={(radius) => setShape({ radius })} />}
           {(s.kind === "polygon" || s.kind === "star") && <RangeRow label={s.kind === "star" ? "Points" : "Sides"} value={s.sides} min={3} max={40} onChange={(sides) => setShape({ sides })} />}
+        </div>
+      );
+    }
+    if (active.kind === "smart" && active.smart) {
+      const sm = active.smart;
+      const metrics = smartMetrics(sm.matrix);
+      const linkedCount = doc.layers.filter((x) => x.kind === "smart" && x.smart?.sourceId === sm.sourceId).length;
+      return (
+        <div className="space-y-3 p-3">
+          <div className="flex items-start gap-2.5">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-ink text-paper shadow-card">
+              <Box aria-hidden className="size-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[14px] font-medium text-ink">{active.name}</p>
+              <p className="font-mono text-[11px] text-ink-3">
+                Smart Object · {sm.sourceDoc.w} × {sm.sourceDoc.h} px ({sm.sourceDoc.layers.length} {sm.sourceDoc.layers.length === 1 ? "layer" : "layers"})
+              </p>
+              <p className="font-mono text-[11px] text-ink-2">
+                Scale {Math.round(metrics.scaleX * 100)}% × {Math.round(metrics.scaleY * 100)}% · {metrics.rotationDeg}°
+                {linkedCount > 1 && ` · Linked ×${linkedCount}`}
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-1.5">
+            <Btn primary onClick={() => enterSmartEdit(active.id)}>
+              <Box aria-hidden className="size-3.5" /> Edit Contents
+            </Btn>
+            <Btn onClick={() => layerApi.replaceSmart(active.id)}>
+              <RefreshCw aria-hidden className="size-3.5" /> Replace…
+            </Btn>
+            <Btn onClick={beginTransform}>Free transform</Btn>
+            <Btn onClick={() => layerApi.resetSmartTransform(active.id)}>
+              <RotateCcw aria-hidden className="size-3.5" /> Reset transform
+            </Btn>
+            <Btn onClick={() => layerApi.duplicateSmartCopy(active.id)}>New via Copy</Btn>
+            <Btn onClick={() => layerApi.exportSmart(active.id)}>
+              <FileOutput aria-hidden className="size-3.5" /> Export…
+            </Btn>
+            <Btn onClick={layerApi.openStyle}>Layer style</Btn>
+            <Btn onClick={() => layerApi.rasterize(active.id)}>
+              <LayersIcon aria-hidden className="size-3.5" /> Rasterize
+            </Btn>
+          </div>
+          <div className="space-y-2 rounded-sm border border-line bg-paper/40 p-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <button type="button" onClick={() => layerApi.toggleSmartFilters(active.id)} className="label-mono flex items-center gap-1.5 text-ink-2 hover:text-ink">
+                <Eye aria-hidden className={cn("size-3.5", !sm.filtersOn && "opacity-35")} />
+                Smart Filters ({sm.filters.length})
+              </button>
+              <button type="button" onClick={() => setPanel("adjust")} className="text-[12px] text-accent hover:underline">
+                + Add filter
+              </button>
+            </div>
+            {sm.filters.length === 0 ? (
+              <p className="text-[12px] text-ink-3">Apply any adjustment or filter from Adjust/Filter to attach it non-destructively.</p>
+            ) : (
+              <ul className="space-y-2">
+                {sm.filters.map((f) => (
+                  <li key={f.id} className="rounded-sm border border-line bg-surface p-2">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        aria-label={f.enabled ? `Hide ${f.label}` : `Show ${f.label}`}
+                        onClick={() => layerApi.toggleSmartFilter(active.id, f.id)}
+                        className={cn("text-ink-2 hover:text-ink", (!sm.filtersOn || !f.enabled) && "opacity-35")}
+                      >
+                        <Eye aria-hidden className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => layerApi.editSmartFilter(active.id, f.id)}
+                        className={cn("min-w-0 flex-1 truncate text-left text-[12px] font-medium text-ink hover:underline", !f.enabled && "line-through opacity-50")}
+                      >
+                        {f.label}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => layerApi.removeSmartFilter(active.id, f.id)}
+                        aria-label={`Delete ${f.label}`}
+                        className="text-ink-3 hover:text-danger"
+                      >
+                        <Trash2 aria-hidden className="size-3.5" />
+                      </button>
+                    </div>
+                    <RangeRow
+                      label="Filter opacity"
+                      value={Math.round(f.opacity * 100)}
+                      min={0}
+                      max={100}
+                      unit="%"
+                      onChange={(v) => commit(updateSmartFilter(doc, active.id, f.id, { opacity: v / 100 }, { fg, bg }), "Smart Filter Opacity", `sf-op:${f.id}`)}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          {doc.editMask && active.mask && (
+            <div className="space-y-1.5 rounded-sm border border-line bg-paper p-2.5 text-[12px] text-ink-2">
+              <p>Painting on the <strong className="font-medium text-ink">mask</strong>: black hides, white shows.</p>
+              <div className="flex flex-wrap gap-1.5">
+                <Btn onClick={() => commit(applyMask(doc), "Apply Mask")}>Apply</Btn>
+                <Btn onClick={() => commit(replaceLayer(doc, active.id, { maskOn: !active.maskOn }), "Toggle Mask")}>{active.maskOn ? "Disable" : "Enable"}</Btn>
+                <Btn onClick={() => commit({ ...replaceLayer(doc, active.id, { mask: null }), editMask: false }, "Delete Mask")}>Delete</Btn>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
@@ -3659,6 +4181,7 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
 
   const tabs: { id: Panel; label: string; icon: typeof Info }[] = [
     { id: "properties", label: "Properties", icon: SlidersHorizontal },
+    { id: "color", label: "Color", icon: Pipette },
     { id: "looks", label: "Looks", icon: Palette },
     { id: "adjust", label: "Adjust", icon: Sparkles },
     { id: "create", label: "Create", icon: Sticker },
@@ -3670,7 +4193,8 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
     <>
       <input ref={fileRef} type="file" accept="image/*,.psd,.psb,.dwlp,.svg,.avif,.heic" className="sr-only" tabIndex={-1} onChange={(e) => (e.target.files?.[0] && void openAny(e.target.files[0]), (e.target.value = ""))} />
       <input ref={collageRef} type="file" accept="image/*" multiple className="sr-only" tabIndex={-1} onChange={(e) => (void collageFrom(Array.from(e.target.files ?? [])), (e.target.value = ""))} />
-      <input ref={placeRef} type="file" accept="image/*" multiple className="sr-only" tabIndex={-1} onChange={(e) => (Array.from(e.target.files ?? []).forEach((f) => void placeFile(f)), (e.target.value = ""))} />
+      <input ref={placeRef} type="file" accept="image/*,.psd,.psb,.dwlp,.svg" multiple className="sr-only" tabIndex={-1} onChange={(e) => (Array.from(e.target.files ?? []).forEach((f) => void placeFile(f, undefined, true)), (e.target.value = ""))} />
+      <input ref={replaceSmartRef} type="file" accept="image/*,.psd,.psb,.dwlp" className="sr-only" tabIndex={-1} onChange={(e) => (e.target.files?.[0] && void replaceSmartFromFile(e.target.files[0]), (e.target.value = ""))} />
     </>
   );
 
@@ -3722,7 +4246,17 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
         }}
       />
       <FillDialog open={dialog === "fill"} onClose={() => setDialog(null)} onApply={doFill} hasSelection={sel} />
-      <StrokeDialog open={dialog === "stroke"} fg={fg} onClose={() => setDialog(null)} onApply={(c, w, where) => (setDialog(null), commit(strokeSelection(docRef.current!, c, w, where), "Stroke"))} />
+      <StrokeDialog
+        open={dialog === "stroke"}
+        fg={fg}
+        onClose={() => setDialog(null)}
+        onApply={(c, w, where) => {
+          setDialog(null);
+          const d = docRef.current!;
+          if (activeLayer(d).kind === "smart" && !d.editMask) return setSmartPrompt(activeLayer(d).id);
+          commit(strokeSelection(d, c, w, where), "Stroke");
+        }}
+      />
       <ExportDialog
         open={dialog === "export"}
         doc={doc}
@@ -3929,6 +4463,33 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
             </button>
           </div>
 
+          {smartStack.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 border-b border-accent/30 bg-accent/10 px-3 py-1.5 text-[12px]">
+              <Box aria-hidden className="size-3.5 shrink-0 text-accent" />
+              <span className="font-medium text-ink">
+                {smartStack.map((f) => f.parentName).join(" → ")} →{" "}
+                <strong className="font-semibold">{smartStack[smartStack.length - 1].layerName}</strong>
+              </span>
+              <span className="text-ink-3">(Editing Smart Object contents)</span>
+              <div className="ml-auto flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => exitSmartEdit(false)}
+                  className="inline-flex h-6 items-center rounded-sm border border-line bg-surface px-2 text-ink-2 hover:text-ink"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => exitSmartEdit(true)}
+                  className="inline-flex h-6 items-center gap-1 rounded-sm bg-ink px-2.5 font-medium text-paper hover:bg-ink/85"
+                >
+                  <Check aria-hidden className="size-3" /> Save &amp; Return (Ctrl+S)
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Tool options */}
           <div className="border-b border-line">
             <OptionsBar
@@ -3965,6 +4526,12 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
                     <Trash2 aria-hidden className="size-3.5" /> {nodeSel.node !== null ? "Delete point" : "Delete path"}
                   </button>
                 ) : null,
+                openColorPicker: () => {
+                  setPanel("color");
+                  setSheetOpen(true);
+                },
+                pickScreenColor: () => void pickScreenColor(),
+                hasScreenEyeDropper,
               }}
             />
           </div>
@@ -4043,6 +4610,34 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
                   <span className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 whitespace-nowrap rounded-full border border-line bg-ink px-2 py-0.5 font-mono text-[12px] text-paper shadow-card">
                     Before · After
                   </span>
+                </div>
+              )}
+              {smartPrompt && (
+                <div className="absolute inset-0 z-20 flex items-center justify-center bg-ink/25 p-4 backdrop-blur-[1px]">
+                  <div className="w-full max-w-sm space-y-3 rounded-lg border border-line bg-surface p-4 shadow-float">
+                    <div className="flex items-start gap-2.5">
+                      <Box aria-hidden className="mt-0.5 size-5 shrink-0 text-accent" />
+                      <div>
+                        <p className="text-[14px] font-medium text-ink">Smart Object cannot be painted directly</p>
+                        <p className="mt-1 text-[12px] leading-relaxed text-ink-3">
+                          Rasterize it to paint directly as pixels, or double-click / Edit Contents to paint inside the original Smart Object non-destructively.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap justify-end gap-1.5">
+                      <Btn onClick={() => setSmartPrompt(null)}>Cancel</Btn>
+                      <Btn onClick={() => enterSmartEdit(smartPrompt)}>Edit Contents</Btn>
+                      <Btn
+                        primary
+                        onClick={() => {
+                          layerApi.rasterize(smartPrompt);
+                          setSmartPrompt(null);
+                        }}
+                      >
+                        Rasterize Layer
+                      </Btn>
+                    </div>
+                  </div>
                 </div>
               )}
               {transform && (
@@ -4197,6 +4792,18 @@ export function ProPhotoEditor({ toolId }: { toolId: string }) {
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div key={panel} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}>
                     {panel === "properties" && <Slot>{propertiesPanel}</Slot>}
+                    {panel === "color" && (
+                      <ColorPanel
+                        fg={fg}
+                        bg={bg}
+                        onFg={setFg}
+                        onBg={setBg}
+                        onSwap={() => (setFg(bg), setBg(fg))}
+                        onReset={() => (setFg("#000000"), setBg("#ffffff"))}
+                        onEyedropper={() => setTool("eyedropper")}
+                        eyedropperActive={tool === "eyedropper"}
+                      />
+                    )}
                     {panel === "adjust" && <Slot>{adjustPanel}</Slot>}
                     {panel === "looks" && <Slot>{looksPanel}</Slot>}
                     {panel === "create" && <Slot>{createPanel}</Slot>}

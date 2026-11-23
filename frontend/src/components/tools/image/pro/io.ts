@@ -199,7 +199,9 @@ export async function writePsdFile(doc: Doc): Promise<{ blob: Blob; notes: strin
 
 /* ---------- Project files and the saved session ---------- */
 
-type LayerJson = Omit<Layer, "canvas" | "mask"> & { canvas: string; mask: string | null; w: number; h: number };
+type SmartFilterJson = { id: string; opId: string; label: string; params: Record<string, unknown>; enabled: boolean; opacity: number };
+type SmartMetaJson = { sourceId: string; sourceDoc: DocJson; matrix: [number, number, number, number, number, number]; filters: SmartFilterJson[]; filtersOn: boolean };
+type LayerJson = Omit<Layer, "canvas" | "mask" | "smart"> & { canvas: string; mask: string | null; w: number; h: number; smart?: SmartMetaJson };
 type DocJson = { version: 1; w: number; h: number; name: string; active: string; layers: LayerJson[] };
 
 const blobCache = new WeakMap<HTMLCanvasElement, Promise<Blob>>();
@@ -213,18 +215,33 @@ const pngOf = (c: HTMLCanvasElement) => {
 };
 
 /** The document as JSON plus one PNG per layer and mask (unchanged canvases reuse their PNG). */
-export async function serialize(doc: Doc) {
+export async function serialize(doc: Doc, prefix = "") {
   const files: Record<string, Blob> = {};
   const layers: LayerJson[] = [];
   for (const l of doc.layers) {
-    const cpath = `layers/${l.id}.png`;
+    const cpath = `${prefix}layers/${l.id}.png`;
     files[cpath] = await pngOf(l.canvas);
     let mpath: string | null = null;
     if (l.mask) {
-      mpath = `masks/${l.id}.png`;
+      mpath = `${prefix}masks/${l.id}.png`;
       files[mpath] = await pngOf(l.mask);
     }
-    layers.push({ ...l, canvas: cpath, mask: mpath, w: l.canvas.width, h: l.canvas.height });
+    const { smart, canvas: _c, mask: _m, ...rest } = l;
+    void _c;
+    void _m;
+    let smartJson: SmartMetaJson | undefined;
+    if (smart) {
+      const sub = await serialize(smart.sourceDoc, `${prefix}smart/${l.id}/`);
+      Object.assign(files, sub.files);
+      smartJson = {
+        sourceId: smart.sourceId,
+        matrix: smart.matrix,
+        filters: smart.filters,
+        filtersOn: smart.filtersOn,
+        sourceDoc: sub.json,
+      };
+    }
+    layers.push({ ...rest, canvas: cpath, mask: mpath, w: l.canvas.width, h: l.canvas.height, ...(smartJson ? { smart: smartJson } : {}) });
   }
   const json: DocJson = { version: 1, w: doc.w, h: doc.h, name: doc.name, active: doc.active, layers };
   return { json, files };
@@ -243,10 +260,19 @@ export async function deserialize(json: DocJson, files: Record<string, Blob>): P
     };
     const canvas = (await load(l.canvas, l.w, l.h)) ?? makeCanvas(l.w, l.h);
     const mask = await load(l.mask, l.w, l.h);
-    const { w: _w, h: _h, ...rest } = l;
+    const { w: _w, h: _h, smart, ...rest } = l;
     void _w;
     void _h;
-    layers.push({ ...rest, id: l.id || newId(), canvas, mask });
+    const restoredSmart = smart
+      ? {
+          sourceId: smart.sourceId,
+          matrix: smart.matrix,
+          filters: smart.filters ?? [],
+          filtersOn: smart.filtersOn !== false,
+          sourceDoc: await deserialize(smart.sourceDoc, files),
+        }
+      : undefined;
+    layers.push({ ...rest, id: l.id || newId(), canvas, mask, ...(restoredSmart ? { smart: restoredSmart } : {}) });
   }
   return { w: json.w, h: json.h, name: json.name, layers, active: json.active, selection: null, editMask: false };
 }

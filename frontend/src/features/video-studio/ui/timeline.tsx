@@ -17,6 +17,7 @@ import {
   Film,
   FlipHorizontal2,
   Gauge,
+  Grid2x2,
   Image as ImageIcon,
   Layers,
   Link2,
@@ -50,7 +51,7 @@ import { frameRound, timecode } from "../lib/time";
 import * as TL from "../lib/timeline";
 import { getStudio, useStudio, type Tool } from "../store/studio-store";
 import type { Clip, EffectType, Project, Track, TrackKind } from "../types";
-import { freezeFrame, reverseClip } from "../engine/clip-tools";
+import { freezeFrame, rasterizeClip, reverseClip } from "../engine/clip-tools";
 import { importFiles } from "../engine/importer";
 import { mediaRuntime } from "../engine/media";
 import { runJob } from "./ai-panel";
@@ -400,6 +401,8 @@ function ClipMenu({ menu, onClose }: { menu: Menu; onClose: () => void }) {
           }),
         )}
       {visual && item(c.flipH ? "Unflip" : "Flip horizontally", <FlipHorizontal2 className="size-4 sm:size-3.5" />, () => st.flip(st.selection.length ? st.selection : [c.id], "h"))}
+      {(c.kind === "video" || c.kind === "image") && !c.effects.some((x) => x.type === "chromaKey") && item("Chroma Key Pro", <Grid2x2 className="size-4 sm:size-3.5" />, () => st.addEffect(c.id, "chromaKey"))}
+      {visual && c.kind !== "adjustment" && item("Rasterize to image", <ImageIcon className="size-4 sm:size-3.5" />, () => void runJob("cliptool", "Rasterizing clip", () => rasterizeClip(c.id)))}
       {c.kind === "video" && item(c.linkId ? "Detach audio" : "Extract audio", <AudioLines className="size-4 sm:size-3.5" />, () => st.detachAudio(c.id))}
       {c.linkId && item("Unlink picture and sound", <Link2Off className="size-4 sm:size-3.5" />, () => st.unlink(c.id))}
       {item("Add a marker here", <Bookmark className="size-4 sm:size-3.5" />, () => st.addMarker(), "M")}

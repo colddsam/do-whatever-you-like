@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Check, Copy, Download, Pipette, X } from "lucide-react";
 import { contrast, exportAse, exportText, formats, fromHex, hex, inkOn, nearestName, palette, swatchPng, type ExportKind, type RGB } from "@/lib/color";
+import { clientToImagePixel, computeContentRect, sampleRgbaPatch } from "@/lib/color-sample";
 import { postFormJson, saveBlob } from "@/lib/files";
 import { getTool, stepsFor } from "@/lib/tools";
 import { cn } from "@/lib/utils";
@@ -236,13 +237,97 @@ export function ColorPicker({ toolId }: { toolId: string }) {
 
 /* ---------------------------------------------------------------------------------------------- */
 
+type HoverState = { wx: number; wy: number; wrW: number; wrH: number; px: number; py: number; rgb: RGB };
+
 function Viewer({ src, sample, onImage, onPick }: { src: string; sample: 1 | 3 | 5; onImage: (d: ImageData) => void; onPick: (c: RGB) => void }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
+  const loupeWrapRef = useRef<HTMLDivElement>(null);
   const loupe = useRef<HTMLCanvasElement>(null);
+  const loupeHexRef = useRef<HTMLSpanElement>(null);
+  const loupeCoordRef = useRef<HTMLSpanElement>(null);
   const data = useRef<ImageData | null>(null);
-  const [hover, setHover] = useState<{ x: number; y: number; w: number; px: number; py: number; rgb: RGB } | null>(null);
-  const [flash, setFlash] = useState(0);
+  const hoverRef = useRef<HoverState | null>(null);
+  const [flash, setFlash] = useState<{ id: number; x: number; y: number } | null>(null);
   const [failed, setFailed] = useState(false);
+
+  const drawLoupeSync = (h: HoverState | null, sampleSize: 1 | 3 | 5) => {
+    const box = loupeWrapRef.current;
+    const lc = loupe.current;
+    const sc = canvas.current;
+    if (!box) return;
+    if (!h || !lc || !sc) {
+      box.style.display = "none";
+      return;
+    }
+    const lx = Math.min(Math.max(h.wx - 58, 4), Math.max(4, h.wrW - 120));
+    const ly = h.wy > 164 ? h.wy - 160 : Math.min(h.wy + 24, Math.max(4, h.wrH - 160));
+    box.style.display = "flex";
+    box.style.transform = `translate3d(${Math.round(lx)}px, ${Math.round(ly)}px, 0)`;
+
+    const g = lc.getContext("2d");
+    if (g) {
+      const size = lc.width;
+      const cell = size / LOUPE;
+      const half = Math.floor(LOUPE / 2);
+      g.fillStyle = "#0d0c09";
+      g.fillRect(0, 0, size, size);
+      // Fast synchronous blit of the 11x11 pixel neighbourhood directly from the source canvas.
+      g.imageSmoothingEnabled = false;
+      const sx0 = h.px - half;
+      const sy0 = h.py - half;
+      const clipL = Math.max(0, sx0);
+      const clipT = Math.max(0, sy0);
+      const clipR = Math.min(sc.width, sx0 + LOUPE);
+      const clipB = Math.min(sc.height, sy0 + LOUPE);
+      if (clipR > clipL && clipB > clipT) {
+        g.drawImage(
+          sc,
+          clipL,
+          clipT,
+          clipR - clipL,
+          clipB - clipT,
+          (clipL - sx0) * cell,
+          (clipT - sy0) * cell,
+          (clipR - clipL) * cell,
+          (clipB - clipT) * cell,
+        );
+      }
+      // Subtle pixel grid
+      g.strokeStyle = "rgba(255,255,255,0.16)";
+      g.lineWidth = 1;
+      g.beginPath();
+      for (let i = 1; i < LOUPE; i++) {
+        const p = Math.round(i * cell) + 0.5;
+        g.moveTo(p, 0);
+        g.lineTo(p, size);
+        g.moveTo(0, p);
+        g.lineTo(size, p);
+      }
+      g.stroke();
+      // Sampled center region outline in high contrast double-stroke
+      const rad = Math.floor(sampleSize / 2);
+      const bx = (half - rad) * cell;
+      const by = (half - rad) * cell;
+      const bw = sampleSize * cell;
+      g.strokeStyle = "#000000";
+      g.lineWidth = 2;
+      g.strokeRect(bx, by, bw, bw);
+      g.strokeStyle = "#ffffff";
+      g.lineWidth = 1;
+      g.strokeRect(bx + 1, by + 1, Math.max(1, bw - 2), Math.max(1, bw - 2));
+    }
+
+    const code = hex(h.rgb).toUpperCase();
+    if (loupeHexRef.current) {
+      loupeHexRef.current.textContent = code;
+      loupeHexRef.current.style.background = code;
+      loupeHexRef.current.style.color = inkOn(h.rgb);
+    }
+    if (loupeCoordRef.current) {
+      loupeCoordRef.current.textContent = `${h.px}, ${h.py}`;
+    }
+  };
 
   useEffect(() => {
     let live = true;
@@ -256,6 +341,8 @@ function Viewer({ src, sample, onImage, onPick }: { src: string; sample: 1 | 3 |
       const g = c.getContext("2d", { willReadFrequently: true })!;
       g.drawImage(im, 0, 0, c.width, c.height);
       data.current = g.getImageData(0, 0, c.width, c.height);
+      hoverRef.current = null;
+      drawLoupeSync(null, sample);
       onImage(data.current);
     };
     im.onerror = () => live && setFailed(true);
@@ -263,84 +350,146 @@ function Viewer({ src, sample, onImage, onPick }: { src: string; sample: 1 | 3 |
     return () => {
       live = false;
     };
-  }, [src, onImage]);
+  }, [src, onImage]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const colourAt = (px: number, py: number): RGB => {
+  const colourAt = (px: number, py: number, sampleSize = sample): RGB => {
     const d = data.current!;
-    const r = Math.floor(sample / 2);
-    let R = 0, G = 0, B = 0, n = 0;
-    for (let y = py - r; y <= py + r; y++)
-      for (let x = px - r; x <= px + r; x++) {
-        if (x < 0 || y < 0 || x >= d.width || y >= d.height) continue;
-        const o = (y * d.width + x) * 4;
-        R += d.data[o]; G += d.data[o + 1]; B += d.data[o + 2]; n++;
-      }
-    return [Math.round(R / n), Math.round(G / n), Math.round(B / n)];
+    const p = sampleRgbaPatch(d.data, d.width, d.height, px, py, sampleSize);
+    return [p.r, p.g, p.b];
   };
 
-  const locate = (e: React.PointerEvent) => {
-    const c = canvas.current!;
-    const r = c.getBoundingClientRect();
-    const px = Math.min(c.width - 1, Math.max(0, Math.floor(((e.clientX - r.left) / r.width) * c.width)));
-    const py = Math.min(c.height - 1, Math.max(0, Math.floor(((e.clientY - r.top) / r.height) * c.height)));
-    return { x: e.clientX - r.left, y: e.clientY - r.top, w: r.width, px, py, rgb: colourAt(px, py) };
-  };
-
-  // The loupe: the pixels around the pointer, 11× magnified, the picked one outlined.
   useEffect(() => {
-    if (!hover || !loupe.current || !data.current) return;
-    const g = loupe.current.getContext("2d")!;
-    const d = data.current;
-    const cell = loupe.current.width / LOUPE;
-    const h = Math.floor(LOUPE / 2);
-    for (let j = 0; j < LOUPE; j++)
-      for (let i = 0; i < LOUPE; i++) {
-        const x = hover.px + i - h, y = hover.py + j - h;
-        if (x < 0 || y < 0 || x >= d.width || y >= d.height) g.fillStyle = "#0d0c09";
-        else {
-          const o = (y * d.width + x) * 4;
-          g.fillStyle = `rgb(${d.data[o]},${d.data[o + 1]},${d.data[o + 2]})`;
-        }
-        g.fillRect(i * cell, j * cell, cell, cell);
-      }
-    g.strokeStyle = inkOn(hover.rgb);
-    g.lineWidth = 2;
-    const r = Math.floor(sample / 2);
-    g.strokeRect((h - r) * cell + 1, (h - r) * cell + 1, sample * cell - 2, sample * cell - 2);
-  }, [hover, sample]);
+    if (hoverRef.current && data.current) {
+      const h = { ...hoverRef.current, rgb: colourAt(hoverRef.current.px, hoverRef.current.py, sample) };
+      hoverRef.current = h;
+      drawLoupeSync(h, sample);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sample]);
+
+  const locate = (e: React.PointerEvent): HoverState | null => {
+    const c = canvas.current;
+    const wEl = wrapRef.current;
+    if (!c || !wEl || !data.current) return null;
+    const cr = c.getBoundingClientRect();
+    const hit = clientToImagePixel(e.clientX, e.clientY, cr, c.width, c.height);
+    if (!hit) return null;
+    const wr = wEl.getBoundingClientRect();
+    return {
+      wx: e.clientX - wr.left,
+      wy: e.clientY - wr.top,
+      wrW: wr.width,
+      wrH: wr.height,
+      px: hit.x,
+      py: hit.y,
+      rgb: colourAt(hit.x, hit.y),
+    };
+  };
 
   if (failed) return <Notice tone="warning">This picture couldn&apos;t be shown in your browser.</Notice>;
   return (
-    <div className="relative overflow-hidden rounded-md border border-line bg-[repeating-conic-gradient(var(--color-paper-2)_0_25%,var(--color-surface)_0_50%)] bg-[length:16px_16px]">
+    <div
+      ref={wrapRef}
+      tabIndex={0}
+      className="relative flex justify-center overflow-hidden rounded-md border border-line bg-[repeating-conic-gradient(var(--color-paper-2)_0_25%,var(--color-surface)_0_50%)] bg-[length:16px_16px] outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      onKeyDown={(e) => {
+        const d = data.current;
+        const wEl = wrapRef.current;
+        const c = canvas.current;
+        if (!d || !wEl || !c) return;
+        const step = e.shiftKey ? 10 : 1;
+        const delta =
+          e.key === "ArrowLeft"
+            ? [-step, 0]
+            : e.key === "ArrowRight"
+              ? [step, 0]
+              : e.key === "ArrowUp"
+                ? [0, -step]
+                : e.key === "ArrowDown"
+                  ? [0, step]
+                  : null;
+        if (delta) {
+          e.preventDefault();
+          const cur = hoverRef.current ?? { wx: wEl.clientWidth / 2, wy: wEl.clientHeight / 2, wrW: wEl.clientWidth, wrH: wEl.clientHeight, px: Math.floor(d.width / 2), py: Math.floor(d.height / 2), rgb: [0, 0, 0] as RGB };
+          const px = Math.min(d.width - 1, Math.max(0, cur.px + delta[0]));
+          const py = Math.min(d.height - 1, Math.max(0, cur.py + delta[1]));
+          const cr = c.getBoundingClientRect();
+          const wr = wEl.getBoundingClientRect();
+          const content = computeContentRect(cr.width, cr.height, d.width, d.height);
+          const next: HoverState = {
+            wx: cr.left - wr.left + content.x + ((px + 0.5) / d.width) * content.w,
+            wy: cr.top - wr.top + content.y + ((py + 0.5) / d.height) * content.h,
+            wrW: wr.width,
+            wrH: wr.height,
+            px,
+            py,
+            rgb: colourAt(px, py),
+          };
+          hoverRef.current = next;
+          drawLoupeSync(next, sample);
+        } else if ((e.key === "Enter" || e.key === " ") && hoverRef.current) {
+          e.preventDefault();
+          onPick(hoverRef.current.rgb);
+          setFlash({ id: Date.now(), x: hoverRef.current.wx, y: hoverRef.current.wy });
+        }
+      }}
+    >
       <canvas
         ref={canvas}
-        aria-label="The picture. Click to pick a colour."
-        className="block h-auto max-h-[70vh] w-full cursor-crosshair touch-none object-contain"
-        onPointerMove={(e) => data.current && setHover(locate(e))}
-        onPointerDown={(e) => data.current && setHover(locate(e))}
-        onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)}
-        onPointerUp={(e) => {
-          if (!data.current) return;
+        aria-label="The picture. Click to pick a colour. Use arrow keys to nudge 1 pixel."
+        className="block h-auto max-h-[70vh] w-auto max-w-full cursor-crosshair touch-none"
+        onPointerMove={(e) => {
           const h = locate(e);
+          hoverRef.current = h;
+          drawLoupeSync(h, sample);
+        }}
+        onPointerDown={(e) => {
+          const h = locate(e);
+          hoverRef.current = h;
+          drawLoupeSync(h, sample);
+        }}
+        onPointerLeave={(e) => {
+          if (e.pointerType === "mouse") {
+            hoverRef.current = null;
+            drawLoupeSync(null, sample);
+          }
+        }}
+        onPointerUp={(e) => {
+          const h = locate(e);
+          if (!h) return;
+          hoverRef.current = h;
+          drawLoupeSync(h, sample);
           onPick(h.rgb);
-          setFlash((n) => n + 1);
-          if (e.pointerType !== "mouse") setHover(null);
+          setFlash({ id: Date.now(), x: h.wx, y: h.wy });
+          if (e.pointerType !== "mouse") {
+            hoverRef.current = null;
+            drawLoupeSync(null, sample);
+          }
         }}
       />
-      {hover && (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute z-10 flex flex-col items-center"
-          style={{ left: Math.min(Math.max(hover.x - 56, 4), hover.w - 116), top: hover.y > 150 ? hover.y - 150 : hover.y + 24 }}
-        >
-          <canvas ref={loupe} width={110} height={110} className="size-[110px] rounded-full border-2 border-paper shadow-float" style={{ imageRendering: "pixelated" }} />
-          <span className="mt-1 rounded-sm px-1.5 py-0.5 font-mono text-[12px] shadow-card" style={{ background: hex(hover.rgb), color: inkOn(hover.rgb) }}>
-            {hex(hover.rgb).toUpperCase()}
-          </span>
-        </div>
-      )}
+      <div
+        ref={loupeWrapRef}
+        aria-hidden
+        className="pointer-events-none absolute left-0 top-0 z-10 flex flex-col items-center"
+        style={{ display: "none", willChange: "transform" }}
+      >
+        <canvas ref={loupe} width={110} height={110} className="size-[110px] rounded-full border-2 border-paper shadow-float" style={{ imageRendering: "pixelated" }} />
+        <span ref={loupeHexRef} className="mt-1 rounded-sm px-1.5 py-0.5 font-mono text-[12px] shadow-card" />
+        <span ref={loupeCoordRef} className="mt-0.5 rounded-sm bg-ink/85 px-1.5 py-0.5 font-mono text-[11px] text-paper shadow-card" />
+      </div>
       <AnimatePresence>
-        {flash > 0 && hover && <motion.span key={flash} aria-hidden initial={{ opacity: 0.8, scale: 0.3 }} animate={{ opacity: 0, scale: 1.6 }} transition={{ duration: 0.45 }} className="pointer-events-none absolute size-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-accent" style={{ left: hover.x, top: hover.y }} />}
+        {flash && (
+          <motion.span
+            key={flash.id}
+            aria-hidden
+            initial={{ opacity: 0.85, scale: 0.3 }}
+            animate={{ opacity: 0, scale: 1.6 }}
+            transition={{ duration: 0.45 }}
+            onAnimationComplete={() => setFlash(null)}
+            className="pointer-events-none absolute size-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-accent"
+            style={{ left: flash.x, top: flash.y }}
+          />
+        )}
       </AnimatePresence>
     </div>
   );

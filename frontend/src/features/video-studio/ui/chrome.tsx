@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { Activity, Download, Keyboard, Maximize2, Minimize2, PanelLeft, PanelRight, Redo2, Undo2, X } from "lucide-react";
+import { Activity, Download, Keyboard, Maximize2, Minimize2, PanelLeft, PanelRight, Pipette, Redo2, Undo2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ASPECTS } from "../constants";
 import { getStudio, useStudio } from "../store/studio-store";
@@ -30,7 +30,7 @@ export function TopBar({
   onToggleLeft?: () => void;
   onToggleRight?: () => void;
 }) {
-  const { name, canUndo, canRedo, saveState, aspect, busy, scopes } = useStudio(
+  const { name, canUndo, canRedo, saveState, aspect, busy, scopes, colorPickerOpen } = useStudio(
     useShallow((s) => ({
       name: s.project.name,
       canUndo: s.past.length > 0,
@@ -39,6 +39,7 @@ export function TopBar({
       aspect: s.project.settings.aspect,
       busy: Object.keys(s.jobs).length > 0,
       scopes: s.scopes,
+      colorPickerOpen: s.colorPickerOpen,
     })),
   );
   const st = getStudio();
@@ -79,9 +80,14 @@ export function TopBar({
           className="h-8 w-[62px] flex-none sm:h-7 sm:w-[72px]"
         />
         {!phone && (
-          <IconButton label="Video scopes (Waveform, RGB Parade, Histogram, Vectorscope)" active={scopes} onClick={() => st.set({ scopes: !scopes })}>
-            <Activity aria-hidden className="size-4" />
-          </IconButton>
+          <>
+            <IconButton label="Color picker & eyedropper (Shift+I)" active={colorPickerOpen} onClick={() => st.set({ colorPickerOpen: !colorPickerOpen })}>
+              <Pipette aria-hidden className="size-4" />
+            </IconButton>
+            <IconButton label="Video scopes (Waveform, RGB Parade, Histogram, Vectorscope)" active={scopes} onClick={() => st.set({ scopes: !scopes })}>
+              <Activity aria-hidden className="size-4" />
+            </IconButton>
+          </>
         )}
         <IconButton label="Keyboard shortcuts (?)" onClick={onHelp} className="max-sm:hidden">
           <Keyboard aria-hidden className="size-4" />
@@ -130,6 +136,7 @@ const SHORTCUTS: [string, [string, string][]][] = [
       ["Y", "Slip"],
       ["U", "Slide"],
       ["R", "Rate stretch"],
+      ["Shift I", "Color picker / Eyedropper"],
       ["Shift S", "Snapping on/off"],
     ],
   ],

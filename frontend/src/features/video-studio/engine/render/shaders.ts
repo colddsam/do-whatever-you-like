@@ -280,6 +280,25 @@ vec2 cbcr(vec3 c) {
   return vec2(dot(c, vec3(-0.1146, -0.3854, 0.5)), dot(c, vec3(0.5, -0.4542, -0.0458)));
 }
 
+vec3 ycbcr709(vec3 c) {
+  return vec3(dot(c, LUMA), cbcr(c));
+}
+
+vec3 rgbFromYcbcr709(float y, vec2 c) {
+  return clamp(vec3(y + 1.5748 * c.y, y - 0.187324 * c.x - 0.468124 * c.y, y + 1.8556 * c.x), 0.0, 1.0);
+}
+
+float chromaMatte(vec3 c, vec3 keyC, float simN, float smoothN) {
+  vec3 ycc = ycbcr709(c);
+  vec3 kycc = ycbcr709(keyC);
+  float dChroma = length(ycc.yz - kycc.yz);
+  float dLuma = abs(ycc.x - kycc.x) * 0.12;
+  float dist = sqrt(dChroma * dChroma + dLuma * dLuma);
+  float sim = simN * 0.42;
+  float sm = max(smoothN * 0.35, 0.002);
+  return smoothstep(0.0, 1.0, (dist - sim) / sm);
+}
+
 void main() {
   vec2 px = max(uLayerPx, vec2(1.0));
   vec2 uv = vUv;
@@ -443,36 +462,57 @@ void main() {
 
   if (uKeyOn) {
     vec2 kc = cbcr(uKeyColor);
-    float rawM = clamp((distance(cbcr(col), kc) - uKeySim) / max(uKeySmooth, 0.0005), 0.0, 1.0);
-    // 8-tap choke & edge feather in CbCr space for crisp matte edges without extra FBOs.
-    if (abs(uKeyRefine.z) > 0.05 || uKeyRefine.w > 0.5) {
-      float radPx = abs(uKeyRefine.z) + max(uKeyRefine.w, 1.0);
-      vec2 stepUv = vec2(radPx) / px;
+    float rawM = chromaMatte(col, uKeyColor, uKeySim, uKeySmooth);
+    // 2-ring 16-tap choke & edge feather in calibrated BT.709 CbCr space.
+    if (abs(uKeyRefine.z) > 0.01 || uKeyRefine.w > 0.01) {
+      float choke = clamp(abs(uKeyRefine.z), 0.0, 8.0);
+      float feather = clamp(uKeyRefine.w, 0.0, 10.0);
+      float rad1 = max(0.75, (choke + feather) * 0.5);
+      float rad2 = max(1.5, choke + feather);
       float mMin = rawM;
       float mMax = rawM;
       float mAvg = rawM;
+      float wSum = 1.0;
       for (int ki = 0; ki < 8; ki++) {
-        float ang = float(ki) * 0.785398;
-        vec4 ns = src(uv + vec2(cos(ang), sin(ang)) * stepUv);
-        vec3 nc = ns.a > 0.0001 ? ns.rgb / ns.a : vec3(0.0);
-        float nm = clamp((distance(cbcr(nc), kc) - uKeySim) / max(uKeySmooth, 0.0005), 0.0, 1.0);
-        mMin = min(mMin, nm);
-        mMax = max(mMax, nm);
-        mAvg += nm;
+        float ang = float(ki) * 0.78539816;
+        vec2 dir = vec2(cos(ang), sin(ang));
+        vec4 n1 = src(uv + dir * (rad1 / px));
+        vec3 c1 = n1.a > 0.0001 ? clamp(n1.rgb / n1.a, 0.0, 1.0) : vec3(0.0);
+        float m1 = chromaMatte(c1, uKeyColor, uKeySim, uKeySmooth);
+        vec4 n2 = src(uv + dir * (rad2 / px));
+        vec3 c2 = n2.a > 0.0001 ? clamp(n2.rgb / n2.a, 0.0, 1.0) : vec3(0.0);
+        float m2 = chromaMatte(c2, uKeyColor, uKeySim, uKeySmooth);
+        mMin = min(mMin, min(m1, m2));
+        mMax = max(mMax, max(m1, m2));
+        mAvg += m1 * 0.7 + m2 * 0.45;
+        wSum += 1.15;
       }
-      mAvg /= 9.0;
+      mAvg /= wSum;
       float choked = uKeyRefine.z >= 0.0 ? mix(rawM, mMin, clamp(uKeyRefine.z / 8.0, 0.0, 1.0)) : mix(rawM, mMax, clamp(-uKeyRefine.z / 8.0, 0.0, 1.0));
-      rawM = mix(choked, mAvg, clamp(uKeyRefine.w / 10.0, 0.0, 0.75));
+      rawM = mix(choked, mAvg, clamp(feather / 10.0, 0.0, 0.78));
     }
-    float kMatte = smoothstep(uKeyRefine.x, max(uKeyRefine.x + 0.01, uKeyRefine.y), rawM);
-    // Hue-preserving spill suppression toward neutral luminance.
-    float spillFactor = smoothstep(0.0, max(uKeySpill, 0.0001), max(0.0, distance(cbcr(col), kc) - uKeySim * 0.7));
-    float lumaK = dot(col, LUMA);
-    col = mix(vec3(lumaK), col, mix(1.0, spillFactor, clamp(uKeySpill * 1.4, 0.0, 1.0)));
-    // Subtle translucent edge light wrap.
+    float clipLo = uKeyRefine.x;
+    float clipHi = max(clipLo + 0.001, uKeyRefine.y);
+    float kMatte = clamp((rawM - clipLo) / (clipHi - clipLo), 0.0, 1.0);
+    // Hue-preserving CbCr projection despill along key vector so skin tones stay warm.
+    float kLen = length(kc);
+    if (uKeySpill > 0.001 && kLen > 0.0001) {
+      vec3 pxYcc = ycbcr709(col);
+      vec2 kDir = kc / kLen;
+      float proj = dot(pxYcc.yz, kDir);
+      if (proj > 0.0) {
+        float simScaled = uKeySim * 0.42;
+        float smScaled = max(uKeySmooth * 0.35, 0.002);
+        float dChroma = length(pxYcc.yz - kc);
+        float prox = 1.0 - smoothstep(simScaled * 0.5, simScaled + smScaled * 2.2 + 0.12, dChroma);
+        float strength = clamp(uKeySpill, 0.0, 1.0) * (0.35 + 0.65 * prox);
+        float reduce = proj * clamp(strength, 0.0, 1.0);
+        col = rgbFromYcbcr709(pxYcc.x, pxYcc.yz - kDir * reduce);
+      }
+    }
     if (uKeyExtra.x > 0.0) {
       float edgeBand = (1.0 - kMatte) * kMatte * 4.0;
-      col += edgeBand * uKeyExtra.x * 0.16;
+      col = clamp(col + edgeBand * uKeyExtra.x * 0.16, 0.0, 1.0);
     }
     int vm = int(uKeyExtra.y + 0.5);
     if (vm == 1) {
@@ -788,8 +828,19 @@ export const COPY_FS = `${HEADER}
 uniform sampler2D uTex;
 uniform vec2 uRes;
 uniform float uAlpha;
+uniform float uChecker;
 out vec4 outColor;
-void main() { outColor = texture(uTex, gl_FragCoord.xy / uRes) * uAlpha; }
+void main() {
+  vec4 s = texture(uTex, gl_FragCoord.xy / uRes) * uAlpha;
+  if (uChecker > 0.5) {
+    vec2 cell = floor(gl_FragCoord.xy / 12.0);
+    float dark = mod(cell.x + cell.y, 2.0);
+    vec3 bg = mix(vec3(0.18, 0.18, 0.20), vec3(0.28, 0.28, 0.31), dark);
+    outColor = vec4(s.rgb + bg * (1.0 - s.a), 1.0);
+    return;
+  }
+  outColor = s;
+}
 `;
 
 /** Extracts bright highlights into a premultiplied red-warm emulsion pass for 35mm Film Halation. */

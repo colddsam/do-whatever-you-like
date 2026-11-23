@@ -96,10 +96,28 @@ export type VPath = {
  */
 export type VectorMeta = { paths: VPath[]; ox: number; oy: number };
 
+export type SmartFilter = {
+  id: string;
+  opId: string;
+  label: string;
+  params: Record<string, unknown>;
+  enabled: boolean;
+  opacity: number; // 0..1
+};
+
+export type SmartMeta = {
+  sourceId: string;
+  sourceDoc: Doc;
+  /** Column-major affine 2D transform [a, b, c, d, e, f] mapping sourceDoc (0..w, 0..h) to parent document coords. */
+  matrix: [number, number, number, number, number, number];
+  filters: SmartFilter[];
+  filtersOn: boolean;
+};
+
 export type Layer = {
   id: string;
   name: string;
-  kind: "pixel" | "text" | "shape" | "adjustment" | "vector";
+  kind: "pixel" | "text" | "shape" | "adjustment" | "vector" | "smart";
   /** Pixels (not used by adjustment layers). Position in the document is x, y. */
   canvas: HTMLCanvasElement;
   x: number;
@@ -119,6 +137,7 @@ export type Layer = {
   shape?: ShapeMeta;
   adjust?: AdjustMeta;
   vector?: VectorMeta;
+  smart?: SmartMeta;
 };
 
 /** A selection is a document-sized alpha mask, plus its bounds for quick tests. */

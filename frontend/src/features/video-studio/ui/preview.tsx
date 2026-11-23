@@ -2,7 +2,8 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { Camera, ChevronFirst, ChevronLast, Pause, Play, Repeat, SlidersHorizontal, SquareSplitHorizontal, StepBack, StepForward, Type, Upload } from "lucide-react";
+import { Camera, ChevronFirst, ChevronLast, Grid2x2, Pause, Pipette, Play, Repeat, SlidersHorizontal, SquareSplitHorizontal, StepBack, StepForward, Type, Upload } from "lucide-react";
+import { hex as hexOf, inkOn } from "@/lib/color";
 import { cn } from "@/lib/utils";
 import { IMPORT_ACCEPT, TEXT_PRESETS } from "../constants";
 import { evalAnim } from "../lib/keyframes";
@@ -13,6 +14,7 @@ import type { Clip, GuideMode, Project } from "../types";
 import { importFiles } from "../engine/importer";
 import { trackPoint } from "../engine/ai/tracker";
 import { getEngine, PlaybackEngine } from "../engine/playback";
+import { clipUvFromProject } from "../engine/render/chroma-math";
 import { baseSize, buildScene, layerDraws } from "../engine/render/scene";
 import { runJob } from "./ai-panel";
 import { IconButton, Select } from "./controls";
@@ -60,6 +62,9 @@ const HANDLES: [string, number, number][] = [
 function TransformOverlay({ w, h }: { w: number; h: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
+  const loupeWrapRef = useRef<HTMLDivElement>(null);
+  const loupeCanvasRef = useRef<HTMLCanvasElement>(null);
+  const loupeHexRef = useRef<HTMLSpanElement>(null);
   const [guides, setGuides] = useState<{ x: boolean; y: boolean }>({ x: false, y: false });
   const project = useStudio((s) => s.project);
   const playhead = useStudio((s) => s.playhead);
@@ -67,15 +72,111 @@ function TransformOverlay({ w, h }: { w: number; h: number }) {
   const guideMode = useStudio((s) => s.guides);
   const compare = useStudio((s) => s.compare);
   const compareX = useStudio((s) => s.compareX);
+  const pickingState = useStudio((s) => s.picking);
   const picking = useStudio((s) => !!s.picking || !!s.trackingPick);
   const clip = usePrimaryClip();
   const k = w / project.settings.width;
   const W = project.settings.width;
   const H = project.settings.height;
 
+  useEffect(() => {
+    if (!pickingState && loupeWrapRef.current) {
+      loupeWrapRef.current.style.display = "none";
+    }
+  }, [pickingState]);
+
   const toProject = (e: { clientX: number; clientY: number }) => {
     const r = ref.current!.getBoundingClientRect();
     return [(e.clientX - r.left) / k, (e.clientY - r.top) / k] as const;
+  };
+
+  const updatePickingLoupe = (e: React.PointerEvent) => {
+    const wrap = loupeWrapRef.current;
+    const lc = loupeCanvasRef.current;
+    const host = ref.current;
+    const st = getStudio();
+    if (!wrap || !lc || !host || !st.picking) {
+      if (wrap) wrap.style.display = "none";
+      return;
+    }
+    const rect = host.getBoundingClientRect();
+    const wx = e.clientX - rect.left;
+    const wy = e.clientY - rect.top;
+    if (wx < 0 || wy < 0 || wx > rect.width || wy > rect.height) {
+      wrap.style.display = "none";
+      return;
+    }
+    const [px, py] = toProject(e);
+    const engine = getEngine();
+    let patch: { data: Uint8ClampedArray | Uint8Array; size: number } | null = null;
+    if (st.picking.kind === "effect") {
+      const c = st.project.clips[st.picking.clipId];
+      if (c) {
+        const g1 = geometry(st.project, c, st.playhead);
+        const uv = clipUvFromProject(px, py, g1, c.flipH, c.flipV);
+        if (uv) patch = engine?.sampleClipPatch(c.id, uv.u, uv.v, 5) ?? engine?.sampleFramePatch(px / W, py / H, 5) ?? null;
+      }
+    } else {
+      patch = engine?.sampleFramePatch(px / W, py / H, 5) ?? null;
+    }
+    if (!patch) {
+      wrap.style.display = "none";
+      return;
+    }
+
+    const lx = Math.min(Math.max(wx - 52, 4), Math.max(4, rect.width - 108));
+    const ly = wy > 144 ? wy - 138 : Math.min(wy + 18, Math.max(4, rect.height - 138));
+    wrap.style.display = "flex";
+    wrap.style.transform = `translate3d(${Math.round(lx)}px, ${Math.round(ly)}px, 0)`;
+
+    const lg = lc.getContext("2d");
+    const cells = patch.size;
+    if (lg) {
+      const dim = lc.width;
+      const cellPx = dim / cells;
+      const tmp = document.createElement("canvas");
+      tmp.width = cells;
+      tmp.height = cells;
+      const tg = tmp.getContext("2d")!;
+      const imgData = tg.createImageData(cells, cells);
+      imgData.data.set(patch.data);
+      tg.putImageData(imgData, 0, 0);
+      lg.fillStyle = "#12110d";
+      lg.fillRect(0, 0, dim, dim);
+      lg.imageSmoothingEnabled = false;
+      lg.drawImage(tmp, 0, 0, dim, dim);
+      lg.strokeStyle = "rgba(255,255,255,0.16)";
+      lg.lineWidth = 1;
+      lg.beginPath();
+      for (let i = 1; i < cells; i++) {
+        const p = Math.round(i * cellPx) + 0.5;
+        lg.moveTo(p, 0);
+        lg.lineTo(p, dim);
+        lg.moveTo(0, p);
+        lg.lineTo(dim, p);
+      }
+      lg.stroke();
+      const half = Math.floor(cells / 2);
+      const rad = Math.floor(st.sampleSize / 2);
+      const bx = (half - rad) * cellPx;
+      const bw = st.sampleSize * cellPx;
+      lg.strokeStyle = "#000000";
+      lg.lineWidth = 2;
+      lg.strokeRect(bx, bx, bw, bw);
+      lg.strokeStyle = "#ffffff";
+      lg.lineWidth = 1;
+      lg.strokeRect(bx + 1, bx + 1, Math.max(1, bw - 2), Math.max(1, bw - 2));
+    }
+
+    const mid = Math.floor(cells / 2);
+    const mo = (mid * cells + mid) * 4;
+    const rgb: [number, number, number] = [patch.data[mo], patch.data[mo + 1], patch.data[mo + 2]];
+    const code = hexOf(rgb);
+    if (loupeHexRef.current) {
+      loupeHexRef.current.textContent = code.toUpperCase();
+      loupeHexRef.current.style.background = code;
+      loupeHexRef.current.style.color = inkOn(rgb);
+    }
   };
 
   const active = !!clip && clip.kind !== "audio" && playhead >= clip.start && playhead < clip.start + clip.duration;
@@ -92,26 +193,53 @@ function TransformOverlay({ w, h }: { w: number; h: number }) {
       drag.current = { mode: "compare", id: "", px0: 0, py0: 0, g0: { x: 0, y: 0, sx: 1, sy: 1, bw: 1, bh: 1, rotDeg: 0 } };
       return;
     }
-    if (playing) return;
     const [px, py] = toProject(e);
-    const handle = (e.target as Element).closest("[data-handle]")?.getAttribute("data-handle");
     const st = getStudio();
     if (st.picking) {
-      // Eyedropper: map the click into the clip's own picture and sample the source there.
-      const { clipId, effectId } = st.picking;
-      const c = st.project.clips[clipId];
+      e.stopPropagation();
+      if (st.playing) st.set({ playing: false });
+      const activePick = st.picking;
       st.set({ picking: null });
-      if (!c) return;
-      const g1 = geometry(st.project, c, st.playhead);
-      const r = (-g1.rotDeg * Math.PI) / 180;
-      const lx = (px - g1.x) * Math.cos(r) - (py - g1.y) * Math.sin(r);
-      const ly = (px - g1.x) * Math.sin(r) + (py - g1.y) * Math.cos(r);
-      const color = getEngine()?.sampleColor(clipId, lx / (g1.bw * g1.sx) + 0.5, ly / (g1.bh * g1.sy) + 0.5);
-      const fx = c.effects.find((x) => x.id === effectId);
-      if (color && fx) st.updateEffect(clipId, effectId, { options: { ...fx.options, color } });
-      else st.notify("Click inside the clip's picture to pick its key colour.", "warning");
+      if (loupeWrapRef.current) loupeWrapRef.current.style.display = "none";
+
+      let sampled: string | null = null;
+      if (activePick.kind === "effect") {
+        const c = st.project.clips[activePick.clipId];
+        if (!c) return;
+        const g1 = geometry(st.project, c, st.playhead);
+        const uv = clipUvFromProject(px, py, g1, c.flipH, c.flipV);
+        if (!uv) {
+          st.notify("Click inside the clip's picture to pick a colour.", "warning");
+          return;
+        }
+        sampled = getEngine()?.sampleColor(activePick.clipId, uv.u, uv.v, st.sampleSize) ?? null;
+        if (!sampled) {
+          const patch = getEngine()?.sampleFramePatch(px / W, py / H, 0);
+          if (patch) sampled = hexOf([patch.data[0], patch.data[1], patch.data[2]]);
+        }
+        const fx = c.effects.find((x) => x.id === activePick.effectId);
+        if (sampled && fx) {
+          const key = activePick.optionKey ?? "color";
+          st.updateEffect(activePick.clipId, activePick.effectId, { options: { ...fx.options, [key]: sampled } });
+          st.addRecentColor(sampled);
+        } else {
+          st.notify("Couldn't sample that frame pixel yet.", "warning");
+        }
+        return;
+      }
+
+      const patch = getEngine()?.sampleFramePatch(px / W, py / H, 0);
+      if (patch) {
+        sampled = hexOf([patch.data[0], patch.data[1], patch.data[2]]);
+        st.addRecentColor(sampled);
+        activePick.onPick?.(sampled);
+      } else {
+        st.notify("Seek preview to a frame to sample a colour.", "info");
+      }
       return;
     }
+    if (playing) return;
+    const handle = (e.target as Element).closest("[data-handle]")?.getAttribute("data-handle");
     if (st.trackingPick) {
       const clipId = st.trackingPick;
       const c = st.project.clips[clipId];
@@ -151,7 +279,10 @@ function TransformOverlay({ w, h }: { w: number; h: number }) {
 
   const onPointerMove = (e: React.PointerEvent) => {
     const d = drag.current;
-    if (!d) return;
+    if (!d) {
+      if (getStudio().picking) updatePickingLoupe(e);
+      return;
+    }
     if (d.mode === "compare") {
       const r = ref.current!.getBoundingClientRect();
       const nx = clamp((e.clientX - r.left) / Math.max(1, r.width), 0.04, 0.96);
@@ -250,7 +381,19 @@ function TransformOverlay({ w, h }: { w: number; h: number }) {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
+      onPointerLeave={() => {
+        if (loupeWrapRef.current) loupeWrapRef.current.style.display = "none";
+      }}
     >
+      <div
+        ref={loupeWrapRef}
+        aria-hidden
+        className="pointer-events-none absolute left-0 top-0 z-40 flex flex-col items-center"
+        style={{ display: "none", willChange: "transform" }}
+      >
+        <canvas ref={loupeCanvasRef} width={110} height={110} className="size-[110px] rounded-full border-2 border-paper shadow-float" style={{ imageRendering: "pixelated" }} />
+        <span ref={loupeHexRef} className="mt-1 rounded-sm px-1.5 py-0.5 font-mono text-[11px] shadow-card" />
+      </div>
       {guideMode === "broadcast" && (
         <svg className="pointer-events-none absolute inset-0 size-full" aria-hidden>
           <rect x={w * 0.05} y={h * 0.05} width={w * 0.9} height={h * 0.9} className="fill-none stroke-paper/35" strokeDasharray="4 4" />
@@ -368,7 +511,7 @@ const GUIDE_OPTIONS: { value: GuideMode; label: string }[] = [
 ];
 
 function Transport({ compact = false }: { compact?: boolean }) {
-  const { playing, playhead, fps, loop, quality, guides, compare, scopes } = useStudio(
+  const { playing, playhead, fps, loop, quality, guides, compare, scopes, checkerboard, colorPickerOpen } = useStudio(
     useShallow((s) => ({
       playing: s.playing,
       playhead: s.playhead,
@@ -378,6 +521,8 @@ function Transport({ compact = false }: { compact?: boolean }) {
       guides: s.guides,
       compare: s.compare,
       scopes: s.scopes,
+      checkerboard: s.checkerboard,
+      colorPickerOpen: s.colorPickerOpen,
     })),
   );
   const duration = useStudio((s) => projectDuration(s.project));
@@ -541,6 +686,17 @@ function Transport({ compact = false }: { compact?: boolean }) {
               >
                 Loop: {loop ? "On" : "Off"}
               </button>
+              <button
+                type="button"
+                aria-pressed={checkerboard}
+                onClick={() => st.set({ checkerboard: !checkerboard })}
+                className={cn(
+                  "col-span-2 h-8 rounded-sm border text-[12px] transition-colors",
+                  checkerboard ? "border-paper bg-paper text-ink" : "border-line-dark text-paper-dim hover:text-paper",
+                )}
+              >
+                Transparency Grid: {checkerboard ? "On" : "Off"}
+              </button>
             </div>
             <p className="label-mono mb-1.5 mt-3 text-paper-dim">Playback quality</p>
             <div className="grid grid-cols-3 gap-1">
@@ -607,6 +763,12 @@ function Transport({ compact = false }: { compact?: boolean }) {
         </div>
         <IconButton label="Loop playback" active={loop} onClick={() => st.set({ loop: !loop })} className="@max-[34rem]:size-7">
           <Repeat aria-hidden className="size-4" />
+        </IconButton>
+        <IconButton label="Transparency checkerboard" active={checkerboard} onClick={() => st.set({ checkerboard: !checkerboard })} className="@max-[34rem]:size-7">
+          <Grid2x2 aria-hidden className="size-4" />
+        </IconButton>
+        <IconButton label="Color picker & eyedropper (Shift+I)" active={colorPickerOpen} onClick={() => st.set({ colorPickerOpen: !colorPickerOpen })} className="@max-[34rem]:size-7">
+          <Pipette aria-hidden className="size-4" />
         </IconButton>
         <IconButton label="Before / After split grade wipe (Shift+C)" active={compare} onClick={() => st.set({ compare: !compare })} className="@max-[34rem]:size-7">
           <SquareSplitHorizontal aria-hidden className="size-4" />

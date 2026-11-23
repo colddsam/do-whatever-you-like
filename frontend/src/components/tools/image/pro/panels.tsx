@@ -4,21 +4,27 @@ import { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore } from
 import {
   ArrowDown,
   ArrowUp,
+  Box,
   Copy,
   CornerLeftDown,
   Eye,
   EyeOff,
+  FileOutput,
   FolderDown,
   Layers as LayersIcon,
   Lock,
   PenTool,
   Plus,
+  RefreshCw,
+  RotateCcw,
   SlidersHorizontal,
   Sparkles,
   SquareDashed,
+  Stamp,
   Trash2,
   Unlock,
 } from "lucide-react";
+import { RichColorPicker } from "@/components/tools/design/rich-color-picker";
 import { cn } from "@/lib/utils";
 import { CHECKER } from "../task";
 import { ADJUSTMENTS } from "./adjustments";
@@ -26,7 +32,7 @@ import { ctx2d } from "./doc";
 import { getPhotoLuts, importPhotoCubeFile, subscribePhotoLuts } from "./luts";
 import { curveLut, type Op, type Param } from "./ops";
 import type { BlendMode, Doc, Effects, VPath } from "./types";
-import { Btn, Check2, ColorWell, IconBtn, MenuButton, NumField, RangeRow, Select, type MenuItem } from "./ui";
+import { Btn, Check2, ColorWell, Floating, IconBtn, insideFloat, MenuButton, NumField, RangeRow, Select, type MenuItem } from "./ui";
 
 export const BLEND_MODES: { value: BlendMode; label: string }[] = [
   { value: "normal", label: "Normal" },
@@ -50,7 +56,25 @@ export const BLEND_MODES: { value: BlendMode; label: string }[] = [
 
 /* ---------- Thumbnails ---------- */
 
-export const Thumb = memo(function Thumb({ canvas, size = 36, mask, active, onClick, label }: { canvas: HTMLCanvasElement | null; size?: number; mask?: boolean; active?: boolean; onClick?: (e: React.MouseEvent) => void; label: string }) {
+export const Thumb = memo(function Thumb({
+  canvas,
+  size = 36,
+  mask,
+  smart,
+  active,
+  onClick,
+  onDoubleClick,
+  label,
+}: {
+  canvas: HTMLCanvasElement | null;
+  size?: number;
+  mask?: boolean;
+  smart?: boolean;
+  active?: boolean;
+  onClick?: (e: React.MouseEvent) => void;
+  onDoubleClick?: (e: React.MouseEvent) => void;
+  label: string;
+}) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const c = ref.current;
@@ -73,10 +97,20 @@ export const Thumb = memo(function Thumb({ canvas, size = 36, mask, active, onCl
       aria-label={label}
       title={label}
       onClick={onClick}
-      className={cn("flex shrink-0 items-center justify-center overflow-hidden rounded-[3px] border", CHECKER, active ? "border-ink ring-1 ring-ink" : "border-line")}
+      onDoubleClick={onDoubleClick}
+      className={cn("relative flex shrink-0 items-center justify-center overflow-hidden rounded-[3px] border", CHECKER, active ? "border-ink ring-1 ring-ink" : "border-line")}
       style={{ width: size, height: size }}
     >
       <canvas ref={ref} className="max-h-full max-w-full" />
+      {smart && (
+        <span
+          aria-hidden
+          title="Smart Object — double-click to edit contents"
+          className="absolute bottom-0 right-0 flex size-3.5 items-center justify-center rounded-tl-[2px] border-l border-t border-line bg-surface/95 text-ink"
+        >
+          <Box className="size-2.5" strokeWidth={2.2} />
+        </span>
+      )}
     </button>
   );
 });
@@ -84,7 +118,8 @@ export const Thumb = memo(function Thumb({ canvas, size = 36, mask, active, onCl
 /* ---------- Layers panel ---------- */
 
 export type LayerApi = {
-  select: (id: string, mask?: boolean) => void;
+  select: (id: string, mask?: boolean, mod?: { ctrl?: boolean; shift?: boolean }) => void;
+  selectedIds: string[];
   toggleVisible: (id: string) => void;
   rename: (id: string, name: string) => void;
   move: (id: string, toIndex: number) => void;
@@ -101,6 +136,25 @@ export type LayerApi = {
   toggleClip: () => void;
   openStyle: () => void;
   selectPixels: (id: string) => void;
+  convertToSmart: (ids?: string[]) => void;
+  editSmart: (id?: string) => void;
+  replaceSmart: (id?: string) => void;
+  duplicateSmartCopy: (id?: string) => void;
+  exportSmart: (id?: string) => void;
+  resetSmartTransform: (id?: string) => void;
+  rasterize: (id?: string) => void;
+  rasterizeStyle: (id?: string) => void;
+  rasterizeAll: () => void;
+  applyMask: (id?: string) => void;
+  stampVisible: () => void;
+  mergeSelected: () => void;
+  deleteSelected: () => void;
+  toggleSmartFilters: (layerId: string) => void;
+  toggleSmartFilter: (layerId: string, filterId: string) => void;
+  editSmartFilter: (layerId: string, filterId: string) => void;
+  removeSmartFilter: (layerId: string, filterId: string) => void;
+  reorderSmartFilter: (layerId: string, filterId: string, dir: -1 | 1) => void;
+  clearSmartFilters: (layerId: string) => void;
 };
 
 export function LayersPanel({ doc, api }: { doc: Doc; api: LayerApi }) {
@@ -108,10 +162,28 @@ export function LayersPanel({ doc, api }: { doc: Doc; api: LayerApi }) {
   const [renaming, setRenaming] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [over, setOver] = useState<number | null>(null);
+  const [ctxMenu, setCtxMenu] = useState<{ layerId: string; el: HTMLElement } | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const shown = [...doc.layers].reverse();
   const adjItems: MenuItem[] = ADJUSTMENTS.filter((a) => a.layerable).map((a) => ({ label: a.label, onSelect: () => api.addAdjustment(a.id) }));
+  const selSet = useMemo(() => new Set(api.selectedIds.length ? api.selectedIds : [doc.active]), [api.selectedIds, doc.active]);
+
+  useEffect(() => {
+    if (!ctxMenu) return;
+    const close = (e: PointerEvent) => !insideFloat(e.target) && setCtxMenu(null);
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setCtxMenu(null);
+    window.addEventListener("pointerdown", close);
+    window.addEventListener("keydown", esc);
+    return () => {
+      window.removeEventListener("pointerdown", close);
+      window.removeEventListener("keydown", esc);
+    };
+  }, [ctxMenu]);
+
+  const ctxLayer = ctxMenu ? doc.layers.find((x) => x.id === ctxMenu.layerId) : null;
+
   return (
-    <div className="flex min-h-0 flex-col">
+    <div ref={panelRef} className="flex min-h-0 flex-col">
       {/* One row, so short screens still show plenty of layers: blend, opacity (drag the label to scrub), locks. */}
       {active && (
         <div className="border-b border-line px-2 py-1.5">
@@ -134,123 +206,313 @@ export function LayersPanel({ doc, api }: { doc: Doc; api: LayerApi }) {
         {shown.map((l, vi) => {
           const index = doc.layers.length - 1 - vi;
           const isActive = l.id === doc.active;
+          const isSelected = selSet.has(l.id);
           return (
-            <li
-              key={l.id}
-              role="option"
-              aria-selected={isActive}
-              draggable={renaming !== l.id}
-              onDragStart={(e) => {
-                setDragId(l.id);
-                e.dataTransfer.effectAllowed = "move";
-              }}
-              onDragOver={(e) => {
-                if (!dragId) return;
-                e.preventDefault();
-                setOver(index);
-              }}
-              onDragEnd={() => {
-                setDragId(null);
-                setOver(null);
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                if (dragId) api.move(dragId, index);
-                setDragId(null);
-                setOver(null);
-              }}
-              onClick={() => api.select(l.id)}
-              className={cn(
-                "group relative flex cursor-pointer items-center gap-2 border-l-2 py-1.5 pl-1.5 pr-2",
-                isActive ? "border-accent bg-paper-2" : "border-transparent hover:bg-paper",
-                over === index && dragId !== l.id && "shadow-[inset_0_2px_0_var(--color-ink)]",
-                dragId === l.id && "opacity-50",
-              )}
-            >
-              <button
-                type="button"
-                aria-label={l.visible ? `Hide ${l.name}` : `Show ${l.name}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  api.toggleVisible(l.id);
+            <li key={l.id}>
+              <div
+                role="option"
+                aria-selected={isSelected}
+                draggable={renaming !== l.id}
+                onDragStart={(e) => {
+                  setDragId(l.id);
+                  e.dataTransfer.effectAllowed = "move";
                 }}
-                className="inline-flex size-6 shrink-0 items-center justify-center rounded-sm text-ink-2 hover:bg-surface hover:text-ink"
-              >
-                {l.visible ? <Eye aria-hidden className="size-3.5" /> : <EyeOff aria-hidden className="size-3.5 text-ink-3" />}
-              </button>
-              {l.clip && <CornerLeftDown aria-label="Clipped to the layer below" className="size-3.5 shrink-0 text-ink-3" />}
-              {l.kind === "adjustment" ? (
-                <span title="Adjustment layer" className="flex size-9 shrink-0 items-center justify-center rounded-[3px] border border-line bg-surface">
-                  <SlidersHorizontal aria-hidden className="size-4 text-ink-2" />
-                </span>
-              ) : (
-                <Thumb
-                  canvas={l.canvas}
-                  label={`${l.name} pixels${isActive && !doc.editMask ? " (editing)" : ""}`}
-                  active={isActive && !doc.editMask && !!l.mask}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (e.ctrlKey || e.metaKey) api.selectPixels(l.id);
-                    else api.select(l.id, false);
-                  }}
-                />
-              )}
-              {l.mask && (
-                <Thumb
-                  canvas={l.mask}
-                  mask
-                  label={`${l.name} mask${isActive && doc.editMask ? " (editing)" : ""}`}
-                  active={isActive && doc.editMask}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    api.select(l.id, true);
-                  }}
-                />
-              )}
-              <div className="min-w-0 flex-1">
-                {renaming === l.id ? (
-                  <input
-                    autoFocus
-                    defaultValue={l.name}
-                    aria-label="Layer name"
-                    onClick={(e) => e.stopPropagation()}
-                    onBlur={(e) => {
-                      api.rename(l.id, e.target.value.trim() || l.name);
-                      setRenaming(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                      if (e.key === "Escape") setRenaming(null);
-                      e.stopPropagation();
-                    }}
-                    className="h-6 w-full rounded-sm border border-ink bg-surface px-1 text-[13px] text-ink outline-none"
-                  />
-                ) : (
-                  <p onDoubleClick={() => setRenaming(l.id)} title="Double-click to rename" className={cn("truncate text-[13px]", l.visible ? "text-ink" : "text-ink-3", isActive && "font-medium")}>
-                    {l.name}
-                  </p>
+                onDragOver={(e) => {
+                  if (!dragId) return;
+                  e.preventDefault();
+                  setOver(index);
+                }}
+                onDragEnd={() => {
+                  setDragId(null);
+                  setOver(null);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (dragId) api.move(dragId, index);
+                  setDragId(null);
+                  setOver(null);
+                }}
+                onClick={(e) => api.select(l.id, false, { ctrl: e.ctrlKey || e.metaKey, shift: e.shiftKey })}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  if (!selSet.has(l.id)) api.select(l.id, false);
+                  setCtxMenu({ layerId: l.id, el: e.currentTarget });
+                }}
+                className={cn(
+                  "group relative flex cursor-pointer items-center gap-2 border-l-2 py-1.5 pl-1.5 pr-2",
+                  isActive ? "border-accent bg-paper-2" : isSelected ? "border-ink bg-paper-2/60" : "border-transparent hover:bg-paper",
+                  over === index && dragId !== l.id && "shadow-[inset_0_2px_0_var(--color-ink)]",
+                  dragId === l.id && "opacity-50",
                 )}
-                <p className="flex items-center gap-1.5 font-mono text-[12px] uppercase text-ink-3">
-                  {l.kind !== "pixel" && <span>{l.kind === "adjustment" ? "adj" : l.kind === "vector" ? "vec" : l.kind}</span>}
-                  {l.blend !== "normal" && <span>{BLEND_MODES.find((b) => b.value === l.blend)?.label}</span>}
-                  {l.opacity < 1 && <span>{Math.round(l.opacity * 100)}%</span>}
-                  {l.effects && <span className="text-accent">fx</span>}
-                </p>
+              >
+                <button
+                  type="button"
+                  aria-label={l.visible ? `Hide ${l.name}` : `Show ${l.name}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    api.toggleVisible(l.id);
+                  }}
+                  className="inline-flex size-6 shrink-0 items-center justify-center rounded-sm text-ink-2 hover:bg-surface hover:text-ink"
+                >
+                  {l.visible ? <Eye aria-hidden className="size-3.5" /> : <EyeOff aria-hidden className="size-3.5 text-ink-3" />}
+                </button>
+                {l.clip && <CornerLeftDown aria-label="Clipped to the layer below" className="size-3.5 shrink-0 text-ink-3" />}
+                {l.kind === "adjustment" ? (
+                  <span title="Adjustment layer" className="flex size-9 shrink-0 items-center justify-center rounded-[3px] border border-line bg-surface">
+                    <SlidersHorizontal aria-hidden className="size-4 text-ink-2" />
+                  </span>
+                ) : (
+                  <Thumb
+                    canvas={l.canvas}
+                    smart={l.kind === "smart"}
+                    label={
+                      l.kind === "smart"
+                        ? `${l.name} Smart Object (double-click thumbnail to edit contents)`
+                        : `${l.name} pixels${isActive && !doc.editMask ? " (editing)" : ""}`
+                    }
+                    active={isActive && !doc.editMask && !!l.mask}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (e.ctrlKey || e.metaKey) api.selectPixels(l.id);
+                      else api.select(l.id, false);
+                    }}
+                    onDoubleClick={(e) => {
+                      if (l.kind === "smart") {
+                        e.stopPropagation();
+                        api.editSmart(l.id);
+                      }
+                    }}
+                  />
+                )}
+                {l.mask && (
+                  <Thumb
+                    canvas={l.mask}
+                    mask
+                    label={`${l.name} mask${isActive && doc.editMask ? " (editing)" : ""}`}
+                    active={isActive && doc.editMask}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      api.select(l.id, true);
+                    }}
+                  />
+                )}
+                <div className="min-w-0 flex-1">
+                  {renaming === l.id ? (
+                    <input
+                      autoFocus
+                      defaultValue={l.name}
+                      aria-label="Layer name"
+                      onClick={(e) => e.stopPropagation()}
+                      onBlur={(e) => {
+                        api.rename(l.id, e.target.value.trim() || l.name);
+                        setRenaming(null);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                        if (e.key === "Escape") setRenaming(null);
+                        e.stopPropagation();
+                      }}
+                      className="h-6 w-full rounded-sm border border-ink bg-surface px-1 text-[13px] text-ink outline-none"
+                    />
+                  ) : (
+                    <p onDoubleClick={() => setRenaming(l.id)} title="Double-click to rename (right-click for options)" className={cn("truncate text-[13px]", l.visible ? "text-ink" : "text-ink-3", isActive && "font-medium")}>
+                      {l.name}
+                    </p>
+                  )}
+                  <p className="flex flex-wrap items-center gap-1.5 font-mono text-[11px] uppercase text-ink-3">
+                    {l.kind !== "pixel" && (
+                      <span className={cn(l.kind === "smart" && "text-ink-2 font-semibold")}>
+                        {l.kind === "adjustment" ? "adj" : l.kind === "vector" ? "vec" : l.kind}
+                      </span>
+                    )}
+                    {l.smart && l.smart.filters.length > 0 && <span>· {l.smart.filters.length}fx</span>}
+                    {l.blend !== "normal" && <span>{BLEND_MODES.find((b) => b.value === l.blend)?.label}</span>}
+                    {l.opacity < 1 && <span>{Math.round(l.opacity * 100)}%</span>}
+                    {l.effects && <span className="text-accent">fx</span>}
+                  </p>
+                </div>
+                {l.locked && <Lock aria-label="Locked" className="size-3.5 shrink-0 text-ink-3" />}
+                <span className="hidden shrink-0 flex-col group-hover:flex group-focus-within:flex max-lg:flex">
+                  <button type="button" aria-label={`Move ${l.name} up`} disabled={index === doc.layers.length - 1} onClick={(e) => (e.stopPropagation(), api.move(l.id, index + 1))} className="text-ink-3 hover:text-ink disabled:opacity-30">
+                    <ArrowUp aria-hidden className="size-3" />
+                  </button>
+                  <button type="button" aria-label={`Move ${l.name} down`} disabled={index === 0} onClick={(e) => (e.stopPropagation(), api.move(l.id, index - 1))} className="text-ink-3 hover:text-ink disabled:opacity-30">
+                    <ArrowDown aria-hidden className="size-3" />
+                  </button>
+                </span>
               </div>
-              {l.locked && <Lock aria-label="Locked" className="size-3.5 shrink-0 text-ink-3" />}
-              <span className="hidden shrink-0 flex-col group-hover:flex group-focus-within:flex max-lg:flex">
-                <button type="button" aria-label={`Move ${l.name} up`} disabled={index === doc.layers.length - 1} onClick={(e) => (e.stopPropagation(), api.move(l.id, index + 1))} className="text-ink-3 hover:text-ink disabled:opacity-30">
-                  <ArrowUp aria-hidden className="size-3" />
-                </button>
-                <button type="button" aria-label={`Move ${l.name} down`} disabled={index === 0} onClick={(e) => (e.stopPropagation(), api.move(l.id, index - 1))} className="text-ink-3 hover:text-ink disabled:opacity-30">
-                  <ArrowDown aria-hidden className="size-3" />
-                </button>
-              </span>
+              {l.kind === "smart" && l.smart && l.smart.filters.length > 0 && (
+                <div className="ml-8 border-l border-line bg-paper/35 py-1 pl-2 pr-2">
+                  <div className="flex items-center gap-1.5 py-0.5 text-[11px] text-ink-3">
+                    <button
+                      type="button"
+                      aria-label={l.smart.filtersOn ? "Disable all Smart Filters" : "Enable all Smart Filters"}
+                      onClick={() => api.toggleSmartFilters(l.id)}
+                      className="inline-flex size-5 items-center justify-center rounded-sm hover:bg-surface hover:text-ink"
+                    >
+                      {l.smart.filtersOn ? <Eye aria-hidden className="size-3" /> : <EyeOff aria-hidden className="size-3" />}
+                    </button>
+                    <span className="font-mono uppercase tracking-wider">Smart Filters</span>
+                    <button type="button" onClick={() => api.clearSmartFilters(l.id)} className="ml-auto text-[11px] hover:text-ink">
+                      Clear
+                    </button>
+                  </div>
+                  {l.smart.filters.map((f, fi) => (
+                    <div key={f.id} className="flex items-center gap-1 py-0.5 text-[12px]">
+                      <button
+                        type="button"
+                        aria-label={f.enabled ? `Hide ${f.label}` : `Show ${f.label}`}
+                        onClick={() => api.toggleSmartFilter(l.id, f.id)}
+                        className="inline-flex size-5 shrink-0 items-center justify-center rounded-sm text-ink-3 hover:bg-surface hover:text-ink"
+                      >
+                        {f.enabled ? <Eye aria-hidden className="size-3" /> : <EyeOff aria-hidden className="size-3 opacity-50" />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => api.editSmartFilter(l.id, f.id)}
+                        title="Click to edit Smart Filter settings"
+                        className={cn("min-w-0 flex-1 truncate text-left hover:text-ink hover:underline", f.enabled && l.smart!.filtersOn ? "text-ink-2" : "text-ink-3 line-through")}
+                      >
+                        {f.label}
+                      </button>
+                      {l.smart!.filters.length > 1 && (
+                        <>
+                          <button type="button" aria-label="Move filter up" disabled={fi === 0} onClick={() => api.reorderSmartFilter(l.id, f.id, -1)} className="text-ink-3 hover:text-ink disabled:opacity-25">
+                            <ArrowUp aria-hidden className="size-3" />
+                          </button>
+                          <button type="button" aria-label="Move filter down" disabled={fi === l.smart!.filters.length - 1} onClick={() => api.reorderSmartFilter(l.id, f.id, 1)} className="text-ink-3 hover:text-ink disabled:opacity-25">
+                            <ArrowDown aria-hidden className="size-3" />
+                          </button>
+                        </>
+                      )}
+                      <button type="button" aria-label={`Remove ${f.label}`} onClick={() => api.removeSmartFilter(l.id, f.id)} className="text-ink-3 hover:text-danger">
+                        <Trash2 aria-hidden className="size-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </li>
           );
         })}
       </ul>
+      {ctxMenu && ctxLayer && (
+        <Floating anchor={ctxMenu.el} side="right" role="menu" className="w-56 rounded-md border border-line bg-surface p-1 shadow-float">
+          {selSet.size > 1 ? (
+            <>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setCtxMenu(null);
+                  api.convertToSmart([...selSet]);
+                }}
+                className="flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-[12px] text-ink-2 hover:bg-paper-2 hover:text-ink"
+              >
+                <Box aria-hidden className="size-3.5" /> Convert {selSet.size} Layers to Smart Object
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setCtxMenu(null);
+                  api.mergeSelected();
+                }}
+                className="flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-[12px] text-ink-2 hover:bg-paper-2 hover:text-ink"
+              >
+                <FolderDown aria-hidden className="size-3.5" /> Merge {selSet.size} Selected Layers
+              </button>
+            </>
+          ) : ctxLayer.kind === "smart" ? (
+            <>
+              <button type="button" role="menuitem" onClick={() => { setCtxMenu(null); api.editSmart(ctxLayer.id); }} className="flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-[12px] font-medium text-ink hover:bg-paper-2">
+                <Box aria-hidden className="size-3.5" /> Edit Contents
+              </button>
+              <button type="button" role="menuitem" onClick={() => { setCtxMenu(null); api.replaceSmart(ctxLayer.id); }} className="flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-[12px] text-ink-2 hover:bg-paper-2 hover:text-ink">
+                <RefreshCw aria-hidden className="size-3.5" /> Replace Contents…
+              </button>
+              <button type="button" role="menuitem" onClick={() => { setCtxMenu(null); api.duplicateSmartCopy(ctxLayer.id); }} className="flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-[12px] text-ink-2 hover:bg-paper-2 hover:text-ink">
+                <Copy aria-hidden className="size-3.5" /> New Smart Object via Copy
+              </button>
+              <button type="button" role="menuitem" onClick={() => { setCtxMenu(null); api.exportSmart(ctxLayer.id); }} className="flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-[12px] text-ink-2 hover:bg-paper-2 hover:text-ink">
+                <FileOutput aria-hidden className="size-3.5" /> Export Contents…
+              </button>
+              <button type="button" role="menuitem" onClick={() => { setCtxMenu(null); api.resetSmartTransform(ctxLayer.id); }} className="flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-[12px] text-ink-2 hover:bg-paper-2 hover:text-ink">
+                <RotateCcw aria-hidden className="size-3.5" /> Reset Transform
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              role="menuitem"
+              disabled={ctxLayer.kind === "adjustment"}
+              onClick={() => {
+                setCtxMenu(null);
+                api.convertToSmart([ctxLayer.id]);
+              }}
+              className="flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-[12px] text-ink-2 hover:bg-paper-2 hover:text-ink disabled:opacity-40"
+            >
+              <Box aria-hidden className="size-3.5" /> Convert to Smart Object
+            </button>
+          )}
+          <div role="separator" className="my-1 h-px bg-line" />
+          <button
+            type="button"
+            role="menuitem"
+            disabled={ctxLayer.kind === "pixel" || ctxLayer.kind === "adjustment"}
+            onClick={() => {
+              setCtxMenu(null);
+              api.rasterize(ctxLayer.id);
+            }}
+            className="flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-[12px] text-ink-2 hover:bg-paper-2 hover:text-ink disabled:opacity-40"
+          >
+            <LayersIcon aria-hidden className="size-3.5" /> Rasterize Layer
+          </button>
+          {ctxLayer.effects && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setCtxMenu(null);
+                api.rasterizeStyle(ctxLayer.id);
+              }}
+              className="flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-[12px] text-ink-2 hover:bg-paper-2 hover:text-ink"
+            >
+              <Sparkles aria-hidden className="size-3.5" /> Rasterize Layer Style
+            </button>
+          )}
+          {ctxLayer.mask && ctxLayer.kind !== "adjustment" && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setCtxMenu(null);
+                api.applyMask(ctxLayer.id);
+              }}
+              className="flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-[12px] text-ink-2 hover:bg-paper-2 hover:text-ink"
+            >
+              <SquareDashed aria-hidden className="size-3.5" /> Apply Layer Mask
+            </button>
+          )}
+          <div role="separator" className="my-1 h-px bg-line" />
+          <button type="button" role="menuitem" disabled={ctxLayer.kind === "adjustment"} onClick={() => { setCtxMenu(null); api.openStyle(); }} className="flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-[12px] text-ink-2 hover:bg-paper-2 hover:text-ink disabled:opacity-40">
+            <Sparkles aria-hidden className="size-3.5" /> Layer Style (fx)…
+          </button>
+          <button type="button" role="menuitem" onClick={() => { setCtxMenu(null); api.duplicate(); }} className="flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-[12px] text-ink-2 hover:bg-paper-2 hover:text-ink">
+            <Copy aria-hidden className="size-3.5" /> Duplicate Layer
+          </button>
+          <button type="button" role="menuitem" onClick={() => { setCtxMenu(null); api.stampVisible(); }} className="flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-[12px] text-ink-2 hover:bg-paper-2 hover:text-ink">
+            <Stamp aria-hidden className="size-3.5" /> Stamp Visible (New Layer)
+          </button>
+          <button type="button" role="menuitem" disabled={doc.layers.length < 2} onClick={() => { setCtxMenu(null); api.deleteSelected(); }} className="flex h-8 w-full items-center gap-2 rounded-sm px-2 text-left text-[12px] text-danger hover:bg-danger/10 disabled:opacity-40">
+            <Trash2 aria-hidden className="size-3.5" /> Delete
+          </button>
+        </Floating>
+      )}
       <div className="flex items-center justify-between gap-0.5 border-t border-line px-1.5 py-1">
+        <IconBtn label={selSet.size > 1 ? "Convert selected to Smart Object" : active?.kind === "smart" ? "Edit Smart Object contents" : "Convert to Smart Object"} onClick={() => (active?.kind === "smart" && selSet.size === 1 ? api.editSmart(active.id) : api.convertToSmart([...selSet]))} disabled={!active || (active.kind === "adjustment" && selSet.size === 1)}>
+          <Box aria-hidden className="size-4" />
+        </IconBtn>
         <IconBtn label="Layer style (fx)" onClick={api.openStyle} disabled={!active || active.kind === "adjustment"}>
           <Sparkles aria-hidden className="size-4" />
         </IconBtn>
@@ -262,7 +524,7 @@ export function LayersPanel({ doc, api }: { doc: Doc; api: LayerApi }) {
         <MenuButton label="New adjustment layer" items={adjItems} className="inline-flex size-8 items-center justify-center rounded-sm text-ink-2 hover:bg-paper-2 hover:text-ink">
           <SlidersHorizontal aria-hidden className="size-4" />
         </MenuButton>
-        <IconBtn label="Merge down" onClick={api.mergeDown} disabled={!active || doc.layers.indexOf(active) === 0} shortcut="Ctrl+E">
+        <IconBtn label={selSet.size > 1 ? "Merge selected layers" : "Merge down"} onClick={() => (selSet.size > 1 ? api.mergeSelected() : api.mergeDown())} disabled={!active || (selSet.size < 2 && doc.layers.indexOf(active) === 0)} shortcut="Ctrl+E">
           <FolderDown aria-hidden className="size-4" />
         </IconBtn>
         <IconBtn label="Duplicate layer" onClick={api.duplicate} shortcut="Ctrl+J">
@@ -271,10 +533,79 @@ export function LayersPanel({ doc, api }: { doc: Doc; api: LayerApi }) {
         <IconBtn label="New layer" onClick={api.add} shortcut="Shift+Ctrl+N">
           <Plus aria-hidden className="size-4" />
         </IconBtn>
-        <IconBtn label="Delete layer" onClick={api.remove} disabled={doc.layers.length < 2}>
+        <IconBtn label="Delete layer" onClick={() => (selSet.size > 1 ? api.deleteSelected() : api.remove())} disabled={doc.layers.length < 2}>
           <Trash2 aria-hidden className="size-4" />
         </IconBtn>
       </div>
+    </div>
+  );
+}
+
+/* ---------- Dedicated Color Panel ---------- */
+
+export function ColorPanel({
+  fg,
+  bg,
+  onFg,
+  onBg,
+  onSwap,
+  onReset,
+  onEyedropper,
+  eyedropperActive,
+}: {
+  fg: string;
+  bg: string;
+  onFg: (c: string) => void;
+  onBg: (c: string) => void;
+  onSwap: () => void;
+  onReset: () => void;
+  onEyedropper: () => void;
+  eyedropperActive: boolean;
+}) {
+  const [slot, setSlot] = useState<"fg" | "bg">("fg");
+  const cur = slot === "fg" ? fg : bg;
+  const setCur = slot === "fg" ? onFg : onBg;
+  return (
+    <div className="space-y-3 p-3">
+      <div className="flex items-center gap-1.5">
+        <div role="tablist" aria-label="Active colour swatch" className="grid flex-1 grid-cols-2 gap-1 rounded-sm border border-line bg-paper p-0.5">
+          {(
+            [
+              ["fg", "Foreground", fg],
+              ["bg", "Background", bg],
+            ] as const
+          ).map(([id, label, color]) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={slot === id}
+              onClick={() => setSlot(id)}
+              className={cn(
+                "flex h-7 items-center justify-center gap-1.5 rounded-[3px] text-[12px] transition-colors",
+                slot === id ? "bg-surface font-medium text-ink shadow-xs" : "text-ink-3 hover:text-ink",
+              )}
+            >
+              <span aria-hidden className="size-3 rounded-[2px] border border-line" style={{ background: color }} />
+              {label}
+            </button>
+          ))}
+        </div>
+        <button type="button" onClick={onSwap} title="Swap FG / BG (X)" className="inline-flex h-8 items-center rounded-sm border border-line px-2 font-mono text-[11px] text-ink-2 hover:border-ink-3 hover:text-ink">
+          X
+        </button>
+        <button type="button" onClick={onReset} title="Default B/W (D)" className="inline-flex h-8 items-center rounded-sm border border-line px-2 font-mono text-[11px] text-ink-2 hover:border-ink-3 hover:text-ink">
+          D
+        </button>
+      </div>
+      <RichColorPicker
+        value={cur}
+        onChange={setCur}
+        onEyedropper={onEyedropper}
+        eyedropperActive={eyedropperActive}
+        eyedropperLabel="Eyedropper tool on canvas (I)"
+      />
+      <p className="text-[11px] leading-relaxed text-ink-3">Tip: With Eyedropper (I), click for Foreground or Alt-click for Background. Alt-click while painting samples a colour instantly.</p>
     </div>
   );
 }

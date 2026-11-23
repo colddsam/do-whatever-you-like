@@ -15,6 +15,8 @@ import {
   FlipVertical2,
   FolderOpen,
   Gauge,
+  Grid2x2,
+  Image as ImageIcon,
   Link2,
   Link2Off,
   LoaderCircle,
@@ -59,7 +61,8 @@ import { getStudio, usePrimaryClip, useStudio } from "../store/studio-store";
 import type { AspectId, AudioFx, CaptionStyleId, Clip, ClipMotionPresetId, Effect, EffectType, ShapeType, TextAnimation, TrackMatteMode, TransitionType, VoiceEffect } from "../types";
 import { applyTrackToClip } from "../engine/ai/tracker";
 import { audioFxOf } from "../engine/audio-fx";
-import { freezeFrame, reverseClip } from "../engine/clip-tools";
+import { freezeFrame, rasterizeClip, reverseClip } from "../engine/clip-tools";
+import { getEngine } from "../engine/playback";
 import { exportGradeAsCube } from "../engine/color";
 import { addGoogleFont, getCustomFonts, importCustomFont, removeCustomFont, subscribeFonts, weightsForFont, type CustomFontInfo } from "../engine/fonts";
 import { openExternalProjectFile } from "../engine/interop";
@@ -418,7 +421,7 @@ function TransformSection({ c }: { c: Clip }) {
       actions={
         <IconButton
           label="Reset transform"
-          onClick={() => st.updateClip(c.id, (x) => ({ ...x, flipH: undefined, flipV: undefined, transform: TL.baseTransform(getStudio().project, x.text ? evalAnim(x.transform.y, 0) / getStudio().project.settings.height : 0.5) }))}
+          onClick={() => st.resetTransform(c.id)}
           className="size-7"
         >
           <RotateCcw aria-hidden className="size-3.5" />
@@ -955,7 +958,8 @@ function LutPicker({ c, e }: { c: Clip; e: Effect }) {
 function EffectCard({ c, e }: { c: Clip; e: Effect }) {
   const st = getStudio();
   const spec = EFFECTS[e.type];
-  const picking = useStudio((s) => s.picking?.effectId === e.id);
+  const pickingOpt = useStudio((s) => (s.picking?.kind === "effect" && s.picking.effectId === e.id ? (s.picking.optionKey ?? "color") : null));
+  const checkerboard = useStudio((s) => s.checkerboard);
   const choice = EFFECT_CHOICES[e.type];
   const opt = (key: string, value: string) => st.updateEffect(c.id, e.id, { options: { ...e.options, [key]: value } });
   return (
@@ -990,10 +994,17 @@ function EffectCard({ c, e }: { c: Clip; e: Effect }) {
         {e.type === "chromaKey" && (
           <>
             <Row label="Key colour">
-              <ColorField label="Key colour" value={e.options?.color ?? "#00ff00"} onChange={(v) => opt("color", v)} />
-              <IconButton label="Pick the key colour from the preview" active={picking} onClick={() => st.set({ picking: picking ? null : { clipId: c.id, effectId: e.id } })} className="size-7">
-                <Pipette aria-hidden className="size-3.5" />
-              </IconButton>
+              <ColorField
+                label="Key colour"
+                value={e.options?.color ?? "#00ff00"}
+                onChange={(v) => opt("color", v)}
+                onEyedropper={() =>
+                  st.set({
+                    picking: pickingOpt === "color" ? null : { kind: "effect", clipId: c.id, effectId: e.id, optionKey: "color" },
+                  })
+                }
+                eyedropperActive={pickingOpt === "color"}
+              />
             </Row>
             <div className="mb-1.5 flex flex-wrap items-center gap-1">
               {CHROMA_PRESETS.map((pr) => (
@@ -1008,6 +1019,42 @@ function EffectCard({ c, e }: { c: Clip; e: Effect }) {
                 </button>
               ))}
             </div>
+            <div className="mb-1.5 grid grid-cols-2 gap-1">
+              <TextButton
+                className="h-7 px-2 text-[12px]"
+                onClick={() => {
+                  const det = getEngine()?.autoDetectChromaKey(c.id);
+                  if (det) {
+                    opt("color", det);
+                    st.addRecentColor(det);
+                    st.notify(`Auto-sampled screen colour ${det.toUpperCase()}.`, "success");
+                  } else {
+                    st.notify("Seek preview to a frame of this clip first.", "info");
+                  }
+                }}
+              >
+                <Pipette aria-hidden className="size-3.5" /> Auto-sample
+              </TextButton>
+              <TextButton
+                tone={checkerboard ? "primary" : "plain"}
+                className="h-7 px-2 text-[12px]"
+                onClick={() => st.set({ checkerboard: !checkerboard })}
+              >
+                <Grid2x2 aria-hidden className="size-3.5" /> {checkerboard ? "Grid: On" : "Alpha grid"}
+              </TextButton>
+            </div>
+            <Row label="View matte">
+              <Segmented
+                label="Chroma key view mode"
+                value={e.options?.viewMode ?? "composite"}
+                onChange={(v) => opt("viewMode", v)}
+                options={[
+                  { value: "composite", label: "Composite" },
+                  { value: "alpha", label: "Alpha Matte" },
+                  { value: "status", label: "Status" },
+                ]}
+              />
+            </Row>
             <TextButton className="mb-1.5 w-full" onClick={() => st.addVirtualBackdrop(c.id, "#15140f", { color: "#1d3557", angle: 160 })}>
               Add virtual studio backdrop beneath clip
             </TextButton>
@@ -1019,11 +1066,31 @@ function EffectCard({ c, e }: { c: Clip; e: Effect }) {
         {e.type === "colorKey" && (
           <>
             <Row label="Key colour">
-              <ColorField label="Target hue colour" value={e.options?.color ?? "#eb4a10"} onChange={(v) => opt("color", v)} />
+              <ColorField
+                label="Target hue colour"
+                value={e.options?.color ?? "#eb4a10"}
+                onChange={(v) => opt("color", v)}
+                onEyedropper={() =>
+                  st.set({
+                    picking: pickingOpt === "color" ? null : { kind: "effect", clipId: c.id, effectId: e.id, optionKey: "color" },
+                  })
+                }
+                eyedropperActive={pickingOpt === "color"}
+              />
             </Row>
             {e.options?.mode === "replace" && (
               <Row label="Swap to">
-                <ColorField label="Replacement hue" value={e.options?.targetColor ?? "#39ff88"} onChange={(v) => opt("targetColor", v)} />
+                <ColorField
+                  label="Replacement hue"
+                  value={e.options?.targetColor ?? "#39ff88"}
+                  onChange={(v) => opt("targetColor", v)}
+                  onEyedropper={() =>
+                    st.set({
+                      picking: pickingOpt === "targetColor" ? null : { kind: "effect", clipId: c.id, effectId: e.id, optionKey: "targetColor" },
+                    })
+                  }
+                  eyedropperActive={pickingOpt === "targetColor"}
+                />
               </Row>
             )}
           </>
@@ -1346,6 +1413,29 @@ function ClipTab() {
               <FlipVertical2 aria-hidden className="size-3.5 shrink-0" />
               Flip V
             </button>
+            {canTake(c, "chromaKey") && !c.effects.some((x) => x.type === "chromaKey") && (
+              <button
+                type="button"
+                title="Add green/blue screen chroma key"
+                onClick={() => st.addEffect(c.id, "chromaKey")}
+                className="inline-flex h-8 items-center gap-1.5 rounded-sm border border-line-dark px-2 text-[12px] text-paper-dim hover:border-line-dark-2 hover:bg-paper/10 hover:text-paper sm:h-7"
+              >
+                <Grid2x2 aria-hidden className="size-3.5 shrink-0" />
+                Chroma Key
+              </button>
+            )}
+            {c.kind !== "adjustment" && (
+              <button
+                type="button"
+                title="Bake clip & effects to a transparent PNG image"
+                disabled={busy}
+                onClick={() => void runJob("cliptool", "Rasterizing clip", () => rasterizeClip(c.id))}
+                className="inline-flex h-8 items-center gap-1.5 rounded-sm border border-line-dark px-2 text-[12px] text-paper-dim hover:border-line-dark-2 hover:bg-paper/10 hover:text-paper disabled:pointer-events-none disabled:opacity-30 sm:h-7"
+              >
+                <ImageIcon aria-hidden className="size-3.5 shrink-0" />
+                Rasterize
+              </button>
+            )}
           </>
         )}
         <div className="flex w-full items-center justify-between pt-0.5 sm:ml-auto sm:w-auto sm:justify-start sm:pt-0">

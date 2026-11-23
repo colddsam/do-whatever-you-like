@@ -18,6 +18,7 @@ import {
 import { defaults, scaled, type Op, type OpContext } from "./ops";
 import { compose, flatten, layerAsDoc, renderShape, renderText, shapePad } from "./render";
 import { fromMask, growMask, invert } from "./selection";
+import { addSmartFilter, moveSmartLayer, transformSmartLayer } from "./smart";
 import { layerPaths, transformPaths, withPaths } from "./vector";
 import type { Doc, Layer, Pt, Rect } from "./types";
 
@@ -59,13 +60,17 @@ export function transformMatrix(t: TransformState) {
   return new DOMMatrix().translate(cx + t.tx, cy + t.ty).rotate(t.rot).scale(t.sx, t.sy).translate(-cx, -cy);
 }
 
-/** Applies a free transform. Text and shapes stay editable when they were only moved or scaled evenly. */
+/** Applies a free transform. Text, vectors, shapes and smart objects stay editable when possible. */
 export function commitTransform(doc: Doc, t: TransformState): Doc {
   const l = doc.layers.find((x) => x.id === t.layerId);
   if (!l) return doc;
   const moveOnly = t.sx === 1 && t.sy === 1 && t.rot === 0;
-  if (moveOnly) return replaceLayer(doc, l.id, { x: Math.round(l.x + t.tx), y: Math.round(l.y + t.ty) });
+  if (moveOnly) {
+    if (l.kind === "smart" && l.smart) return replaceLayer(doc, l.id, moveSmartLayer(l, Math.round(t.tx), Math.round(t.ty)));
+    return replaceLayer(doc, l.id, { x: Math.round(l.x + t.tx), y: Math.round(l.y + t.ty) });
+  }
   const m = transformMatrix(t);
+  if (l.kind === "smart" && l.smart) return replaceLayer(doc, l.id, transformSmartLayer(l, m));
   // Vector paths go through the matrix themselves: they stay sharp and editable at any angle.
   if (l.vector) return replaceLayer(doc, l.id, withPaths(l, transformPaths(layerPaths(l), m)));
   if (l.text && t.rot === 0 && Math.abs(t.sx) === Math.abs(t.sy) && t.sx > 0) {
@@ -79,7 +84,7 @@ export function commitTransform(doc: Doc, t: TransformState): Doc {
     const p = new DOMPoint(l.x + pad, l.y + pad).matrixTransform(m);
     return replaceLayer(doc, l.id, { shape, canvas: renderShape(shape), x: Math.round(p.x - shapePad(shape)), y: Math.round(p.y - shapePad(shape)) });
   }
-  return replaceLayer(doc, l.id, { ...transformLayer(l, m), text: undefined, shape: undefined, vector: undefined, kind: l.kind === "adjustment" ? "adjustment" : "pixel" });
+  return replaceLayer(doc, l.id, { ...transformLayer(l, m), text: undefined, shape: undefined, vector: undefined, smart: undefined, kind: l.kind === "adjustment" ? "adjustment" : "pixel" });
 }
 
 /** Rotates or flips the whole canvas (every layer, and the document's size). */
@@ -113,8 +118,9 @@ export function transformCanvas(doc: Doc, kind: "cw" | "ccw" | "180" | "flipH" |
     selection: null,
     layers: doc.layers.map((l) => {
       if (l.kind === "adjustment" && !l.mask) return l;
+      if (l.kind === "smart" && l.smart) return transformSmartLayer(l, m);
       if (l.vector && !l.mask) return withPaths(l, transformPaths(layerPaths(l), m));
-      return { ...transformLayer(l, m, quality), text: undefined, shape: undefined, vector: undefined, kind: l.kind === "adjustment" ? "adjustment" : "pixel" };
+      return { ...transformLayer(l, m, quality), text: undefined, shape: undefined, vector: undefined, smart: undefined, kind: l.kind === "adjustment" ? "adjustment" : "pixel" };
     }),
   };
 }
@@ -130,13 +136,14 @@ export function resizeImage(doc: Doc, nw: number, nh: number): Doc {
     h: nh,
     selection: null,
     layers: doc.layers.map((l) => {
+      if (l.kind === "smart" && l.smart) return transformSmartLayer(l, m);
       if (l.text && Math.abs(kx - ky) < 1e-3) {
         const text = { ...l.text, size: l.text.size * kx, stroke: l.text.stroke ? { ...l.text.stroke, width: l.text.stroke.width * kx } : null };
         return { ...l, text, canvas: renderText(text), x: Math.round(l.x * kx), y: Math.round(l.y * ky), mask: null };
       }
       if (l.kind === "adjustment" && !l.mask) return l;
       if (l.vector && !l.mask) return withPaths(l, transformPaths(layerPaths(l), m));
-      return { ...transformLayer(l, m), text: undefined, shape: undefined, vector: undefined, kind: l.kind === "adjustment" ? "adjustment" : "pixel" };
+      return { ...transformLayer(l, m), text: undefined, shape: undefined, vector: undefined, smart: undefined, kind: l.kind === "adjustment" ? "adjustment" : "pixel" };
     }),
   };
 }
@@ -145,7 +152,7 @@ export function resizeImage(doc: Doc, nw: number, nh: number): Doc {
 export function resizeCanvas(doc: Doc, nw: number, nh: number, anchor: [number, number], fill: string | null): Doc {
   const dx = Math.round((nw - doc.w) * anchor[0]);
   const dy = Math.round((nh - doc.h) * anchor[1]);
-  let layers = doc.layers.map((l) => ({ ...l, x: l.x + dx, y: l.y + dy }));
+  let layers = doc.layers.map((l) => (l.kind === "smart" && l.smart ? moveSmartLayer(l, dx, dy) : { ...l, x: l.x + dx, y: l.y + dy }));
   if (fill) {
     // New area filled on a layer at the bottom, like Photoshop's canvas extension colour.
     const bg = newLayer({ name: "Canvas fill", canvas: solidCanvas(nw, nh, fill) });
@@ -159,9 +166,10 @@ export function cropDoc(doc: Doc, r: Rect): Doc {
   const y = Math.round(r.y);
   const w = Math.max(1, Math.round(r.w));
   const h = Math.max(1, Math.round(r.h));
-  // Pixels outside the crop are deleted, as Photoshop does by default.
+  // Pixels outside the crop are deleted, except vectors and Smart Objects which stay non-destructive.
   const layers = doc.layers.map((l) => {
     if (l.kind === "adjustment" && !l.mask) return l;
+    if (l.kind === "smart" && l.smart) return moveSmartLayer(l, -x, -y);
     // Vectors aren't cut: they just shift (paths beyond the edge are still there to move back in).
     if (l.vector && !l.mask) return { ...l, x: l.x - x, y: l.y - y };
     const lx = l.x - x;
@@ -184,7 +192,7 @@ export function cropDoc(doc: Doc, r: Rect): Doc {
       x: cp.ox,
       y: cp.oy,
       mask: l.mask ? cut(l.mask).c : null,
-      ...(keepMeta ? {} : { text: undefined, shape: undefined, vector: undefined, kind: l.kind === "adjustment" ? ("adjustment" as const) : ("pixel" as const) }),
+      ...(keepMeta ? {} : { text: undefined, shape: undefined, vector: undefined, smart: undefined, kind: l.kind === "adjustment" ? ("adjustment" as const) : ("pixel" as const) }),
     };
   });
   return { ...doc, w, h, layers, selection: null };
@@ -199,7 +207,15 @@ export function trimDoc(doc: Doc): Doc | null {
 
 export function duplicateLayer(doc: Doc): Doc {
   const l = activeLayer(doc);
-  const copy: Layer = { ...l, id: newId(), name: `${l.name} copy`, canvas: cloneCanvas(l.canvas), mask: l.mask ? cloneCanvas(l.mask) : null };
+  // Linked Smart Objects share the same `sourceId` & `sourceDoc` so editing one updates every instance.
+  const smart = l.smart
+    ? {
+        ...l.smart,
+        matrix: [...l.smart.matrix] as [number, number, number, number, number, number],
+        filters: l.smart.filters.map((f) => ({ ...f, id: newId(), params: structuredClone(f.params) })),
+      }
+    : undefined;
+  const copy: Layer = { ...l, id: newId(), name: `${l.name} copy`, canvas: cloneCanvas(l.canvas), mask: l.mask ? cloneCanvas(l.mask) : null, ...(smart ? { smart } : {}) };
   return insertAbove(doc, copy);
 }
 
@@ -219,7 +235,7 @@ export function layerVia(doc: Doc, cut: boolean): Doc {
     const rg = ctx2d(rest);
     rg.globalCompositeOperation = "destination-out";
     rg.drawImage(clip, 0, 0);
-    next = replaceLayer(doc, l.id, { canvas: rest, text: undefined, shape: undefined, vector: undefined, kind: "pixel" });
+    next = replaceLayer(doc, l.id, { canvas: rest, text: undefined, shape: undefined, vector: undefined, smart: undefined, kind: "pixel" });
   }
   return { ...insertAbove(next, nl), selection: null };
 }
@@ -231,7 +247,7 @@ export function mergeDown(doc: Doc): Doc | null {
   const below = doc.layers[i - 1];
   // Draw both as they look, then keep the lower layer's place, name and blend mode.
   const flat = flatten({ ...doc, layers: [{ ...below, blend: "normal", opacity: 1 }, top] });
-  const merged: Layer = { ...below, canvas: flat, x: 0, y: 0, mask: null, effects: null, text: undefined, shape: undefined, vector: undefined, kind: "pixel", clip: false };
+  const merged: Layer = { ...below, canvas: flat, x: 0, y: 0, mask: null, effects: null, text: undefined, shape: undefined, vector: undefined, smart: undefined, kind: "pixel", clip: false };
   const layers = [...doc.layers];
   layers.splice(i - 1, 2, merged);
   return { ...doc, layers, active: merged.id, editMask: false };
@@ -243,6 +259,41 @@ export function mergeVisible(doc: Doc): Doc {
   return { ...doc, layers: [...doc.layers.filter((l) => !l.visible), merged], active: merged.id, editMask: false };
 }
 
+/** Stamp Visible (Ctrl+Alt+Shift+E): puts a flattened copy of visible layers on top without touching originals. */
+export function stampVisible(doc: Doc): Doc {
+  const flat = flatten(doc);
+  const stamped = newLayer({ name: freshName(doc, "Stamped"), canvas: flat });
+  return { ...doc, layers: [...doc.layers, stamped], active: stamped.id, editMask: false };
+}
+
+/** Merges multiple selected layers (preserving relative z-order) into a single pixel layer at the topmost index. */
+export function mergeSelected(doc: Doc, ids: string[]): Doc {
+  const pick = new Set(ids);
+  const selected = doc.layers.filter((l) => pick.has(l.id));
+  if (selected.length < 2) return mergeDown(doc) ?? doc;
+  const flat = flatten({ ...doc, layers: selected.map((l) => ({ ...l, visible: true })) });
+  const topLayer = selected[selected.length - 1];
+  const topIdx = doc.layers.indexOf(topLayer);
+  const merged = newLayer({ name: topLayer.name || "Merged", canvas: flat });
+  const nextLayers: Layer[] = [];
+  for (let i = 0; i < doc.layers.length; i++) {
+    if (i === topIdx) nextLayers.push(merged);
+    if (!pick.has(doc.layers[i].id)) nextLayers.push(doc.layers[i]);
+  }
+  return { ...doc, layers: nextLayers, active: merged.id, editMask: false };
+}
+
+export function deleteLayers(doc: Doc, ids: string[]): Doc {
+  const pick = new Set(ids);
+  const remaining = doc.layers.filter((l) => !pick.has(l.id));
+  if (!remaining.length) {
+    const keep = activeLayer(doc);
+    return { ...doc, layers: [keep], active: keep.id, editMask: false };
+  }
+  const activeValid = remaining.some((l) => l.id === doc.active);
+  return { ...doc, layers: remaining, active: activeValid ? doc.active : remaining[remaining.length - 1].id, editMask: false };
+}
+
 export function flattenDoc(doc: Doc): Doc {
   const flat = flatten(doc);
   const c = solidCanvas(doc.w, doc.h, "#ffffff");
@@ -251,16 +302,53 @@ export function flattenDoc(doc: Doc): Doc {
   return { ...doc, layers: [bg], active: bg.id, editMask: false, selection: null };
 }
 
-export function rasterize(doc: Doc): Doc {
-  const l = activeLayer(doc);
-  if (l.kind === "adjustment") return doc;
-  if (!l.effects) return replaceLayer(doc, l.id, { text: undefined, shape: undefined, vector: undefined, kind: "pixel" });
-  return replaceLayer(doc, l.id, { canvas: layerAsDoc(doc, { ...l, opacity: 1, blend: "normal" }), x: 0, y: 0, mask: null, effects: null, text: undefined, shape: undefined, vector: undefined, kind: "pixel" });
+/** Rasterize Layer: converts smart/text/shape/vector into a pixel layer, preserving its mask & effects. */
+export function rasterize(doc: Doc, layerId = doc.active): Doc {
+  const l = doc.layers.find((x) => x.id === layerId);
+  if (!l || l.kind === "adjustment" || l.kind === "pixel") return doc;
+  return replaceLayer(doc, l.id, {
+    canvas: cloneCanvas(l.canvas),
+    mask: l.mask ? cloneCanvas(l.mask) : null,
+    text: undefined,
+    shape: undefined,
+    vector: undefined,
+    smart: undefined,
+    kind: "pixel",
+  });
+}
+
+/** Rasterize Layer Style: bakes effects (drop shadow, glow, stroke, overlay) permanently into pixels. */
+export function rasterizeLayerStyle(doc: Doc, layerId = doc.active): Doc {
+  const l = doc.layers.find((x) => x.id === layerId);
+  if (!l || l.kind === "adjustment" || !l.effects) return doc;
+  const rendered = layerAsDoc(doc, { ...l, opacity: 1, blend: "normal" });
+  return replaceLayer(doc, l.id, {
+    canvas: rendered,
+    x: 0,
+    y: 0,
+    mask: null,
+    effects: null,
+    text: undefined,
+    shape: undefined,
+    vector: undefined,
+    smart: undefined,
+    kind: "pixel",
+  });
+}
+
+/** Rasterize All Layers: converts every non-pixel, non-adjustment layer into pixels (keeps layer styles editable). */
+export function rasterizeAll(doc: Doc): Doc {
+  let next = doc;
+  for (const l of doc.layers) {
+    if (l.kind !== "pixel" && l.kind !== "adjustment") next = rasterize(next, l.id);
+  }
+  return next;
 }
 
 export function addMask(doc: Doc, mode: "reveal" | "hide" | "selection"): Doc {
   const l = activeLayer(doc);
-  const base = l.kind === "adjustment" ? { ...l, canvas: makeCanvas(doc.w, doc.h), x: 0, y: 0 } : coverDoc(l, doc);
+  // Smart Objects stay at their outer bounds so l.x/l.y stay synchronized with smart.matrix.
+  const base = l.kind === "adjustment" ? { ...l, canvas: makeCanvas(doc.w, doc.h), x: 0, y: 0 } : l.kind === "smart" ? l : coverDoc(l, doc);
   const mask = makeCanvas(base.canvas.width, base.canvas.height);
   const g = ctx2d(mask);
   if (mode === "reveal") {
@@ -270,14 +358,14 @@ export function addMask(doc: Doc, mode: "reveal" | "hide" | "selection"): Doc {
   return { ...replaceLayer(doc, l.id, { ...base, mask, maskOn: true }), editMask: true, selection: mode === "selection" ? null : doc.selection };
 }
 
-export function applyMask(doc: Doc): Doc {
-  const l = activeLayer(doc);
-  if (!l.mask) return doc;
+export function applyMask(doc: Doc, layerId = doc.active): Doc {
+  const l = doc.layers.find((x) => x.id === layerId);
+  if (!l || !l.mask) return doc;
   const c = cloneCanvas(l.canvas);
   const g = ctx2d(c);
   g.globalCompositeOperation = "destination-in";
   g.drawImage(l.mask, 0, 0);
-  return { ...replaceLayer(doc, l.id, { canvas: c, mask: null, text: undefined, shape: undefined, vector: undefined, kind: "pixel" }), editMask: false };
+  return { ...replaceLayer(doc, l.id, { canvas: c, mask: null, text: undefined, shape: undefined, vector: undefined, smart: undefined, kind: "pixel" }), editMask: false };
 }
 
 /** Moves the active layer's content to an edge or centre of the document (or the selection). */
@@ -293,6 +381,7 @@ export function alignLayer(doc: Doc, how: "left" | "hcenter" | "right" | "top" |
   if (how === "top") dy = area.y - b.y;
   if (how === "vcenter") dy = area.y + area.h / 2 - (b.y + b.h / 2);
   if (how === "bottom") dy = area.y + area.h - (b.y + b.h);
+  if (l.kind === "smart" && l.smart) return replaceLayer(doc, l.id, moveSmartLayer(l, Math.round(dx), Math.round(dy)));
   return replaceLayer(doc, l.id, { x: Math.round(l.x + dx), y: Math.round(l.y + dy) });
 }
 
@@ -302,20 +391,23 @@ export function alignLayer(doc: Doc, how: "left" | "hcenter" | "right" | "top" |
 export function clearSelection(doc: Doc): Doc {
   const l = activeLayer(doc);
   if (!doc.selection || l.kind === "adjustment") return doc;
-  const grown = coverDoc(l, doc);
-  const clip = selectionInLayer(doc.selection, grown);
-  if (doc.editMask && grown.mask) {
-    const m = cloneCanvas(grown.mask);
+  if (doc.editMask && l.mask) {
+    const base = l.kind === "smart" ? l : coverDoc(l, doc);
+    if (!base.mask) return doc;
+    const clip = selectionInLayer(doc.selection, base);
+    const m = cloneCanvas(base.mask);
     const g = ctx2d(m);
     g.globalCompositeOperation = "destination-out";
     g.drawImage(clip, 0, 0);
-    return replaceLayer(doc, l.id, { ...grown, mask: m });
+    return replaceLayer(doc, l.id, { ...base, mask: m });
   }
+  const grown = coverDoc(l, doc);
+  const clip = selectionInLayer(doc.selection, grown);
   const c = cloneCanvas(grown.canvas);
   const g = ctx2d(c);
   g.globalCompositeOperation = "destination-out";
   g.drawImage(clip, 0, 0);
-  return replaceLayer(doc, l.id, { ...grown, canvas: c, text: undefined, shape: undefined, vector: undefined, kind: "pixel" });
+  return replaceLayer(doc, l.id, { ...grown, canvas: c, text: undefined, shape: undefined, vector: undefined, smart: undefined, kind: "pixel" });
 }
 
 /** Edit > Fill: a colour in the selection (or the whole layer). */
@@ -334,7 +426,7 @@ export function fillSelection(doc: Doc, color: string, opacity: number, blend: G
   g.globalAlpha = opacity;
   g.globalCompositeOperation = l.lockAlpha ? "source-atop" : blend;
   g.drawImage(fill, 0, 0);
-  return replaceLayer(doc, l.id, { ...grown, canvas: c, text: undefined, shape: undefined, vector: undefined, kind: "pixel" });
+  return replaceLayer(doc, l.id, { ...grown, canvas: c, text: undefined, shape: undefined, vector: undefined, smart: undefined, kind: "pixel" });
 }
 
 /** Edit > Stroke: a band along the selection's edge. */
@@ -356,10 +448,13 @@ export function strokeSelection(doc: Doc, color: string, width: number, where: "
 
 /* ---------- Adjustments and filters on pixels ---------- */
 
-/** Runs an operation on the active layer at full size, limited to the selection. */
+/** Runs an operation on the active layer at full size, limited to the selection (non-destructive Smart Filter on Smart Objects). */
 export function applyOp(doc: Doc, op: Op, params: Record<string, unknown>, ctx: Omit<OpContext, "scale">): Doc {
   const l = activeLayer(doc);
   if (l.kind === "adjustment") return doc;
+  if (l.kind === "smart" && l.smart && !doc.selection) {
+    return addSmartFilter(doc, op, params, ctx);
+  }
   const src = l.canvas;
   const g = ctx2d(src, true);
   const img = g.getImageData(0, 0, src.width, src.height);
@@ -367,7 +462,7 @@ export function applyOp(doc: Doc, op: Op, params: Record<string, unknown>, ctx: 
   const out = makeCanvas(src.width, src.height);
   ctx2d(out).putImageData(res, 0, 0);
   const final = blendThroughSelection(src, out, doc.selection, l);
-  return replaceLayer(doc, l.id, { canvas: final, text: undefined, shape: undefined, vector: undefined, kind: "pixel" });
+  return replaceLayer(doc, l.id, { canvas: final, text: undefined, shape: undefined, vector: undefined, smart: undefined, kind: "pixel" });
 }
 
 /** The same, on a reduced copy, for live previews. Returns the preview canvas and its scale. */
@@ -414,7 +509,7 @@ export type OpTarget = "layer" | "image";
  * effect applied to it alone would barely show, so the whole picture is the better default.
  */
 export function isPhotoLayer(doc: Doc, l: Layer) {
-  if (l.kind !== "pixel" || !l.visible) return false;
+  if ((l.kind !== "pixel" && l.kind !== "smart") || !l.visible) return false;
   const k = Math.min(1, 64 / Math.max(l.canvas.width, l.canvas.height));
   const c = makeCanvas(l.canvas.width * k, l.canvas.height * k);
   const g = ctx2d(c, true);

@@ -238,10 +238,10 @@ export function Toolbar({
       {/* Foreground / background colours, as in Photoshop: X swaps, D resets. */}
       <div className={cn("relative shrink-0", horizontal ? "ml-1 h-9 w-12" : "mt-2 h-12 w-10")}>
         <span className="absolute bottom-0 right-0 z-0">
-          <ColorWell value={bg} onChange={onBg} label="Background colour" size="size-6" />
+          <ColorWell value={bg} onChange={onBg} label="Background colour" size="size-6" onEyedropper={() => onTool("eyedropper")} />
         </span>
         <span className="absolute left-0 top-0 z-10">
-          <ColorWell value={fg} onChange={onFg} label="Foreground colour" size="size-6" />
+          <ColorWell value={fg} onChange={onFg} label="Foreground colour" size="size-6" onEyedropper={() => onTool("eyedropper")} />
         </span>
         {!horizontal && (
           <>
@@ -286,6 +286,8 @@ export type ToolOpts = {
   vecStroke: string | null;
   vecWidth: number;
   text: Omit<TextMeta, "text">;
+  eyedropperSize: 1 | 3 | 5;
+  eyedropperAll: boolean;
 };
 
 export const FONTS: { label: string; family: string }[] = [
@@ -326,6 +328,8 @@ export const DEFAULT_OPTS: ToolOpts = {
   vecStroke: "#15140f",
   vecWidth: 4,
   text: { font: FONTS[0].family, size: 96, weight: 700, italic: false, color: "#15140f", align: "left", lineHeight: 1.2, letterSpacing: 0, stroke: null, background: null },
+  eyedropperSize: 1,
+  eyedropperAll: true,
 };
 
 export const DEFAULT_BRUSH: BrushSettings = { size: 40, hardness: 70, opacity: 100, flow: 100, spacing: 12, strength: 50, sampleAll: false, spongeMode: "desaturate", range: "midtones", symmetry: "off", mosaicSize: 16 };
@@ -384,6 +388,9 @@ export function OptionsBar({
     cancelPen: () => void;
     nodeHint: string;
     nodeActions: React.ReactNode;
+    openColorPicker: () => void;
+    pickScreenColor?: () => void;
+    hasScreenEyeDropper?: boolean;
   };
   textTarget: TextMeta | null;
   fonts?: { label: string; family: string }[];
@@ -556,6 +563,37 @@ export function OptionsBar({
                 <X aria-hidden className="size-3.5" /> Cancel
               </button>
             </>
+          )}
+        </>
+      )}
+      {tool === "eyedropper" && (
+        <>
+          <Select
+            label="Sample size"
+            value={String(opts.eyedropperSize)}
+            onChange={(v) => setOpts({ eyedropperSize: Number(v) as 1 | 3 | 5 })}
+            options={[
+              { value: "1", label: "Point sample (1×1)" },
+              { value: "3", label: "3×3 average" },
+              { value: "5", label: "5×5 average" },
+            ]}
+          />
+          <Select
+            label="Sample source"
+            value={opts.eyedropperAll ? "all" : "current"}
+            onChange={(v) => setOpts({ eyedropperAll: v === "all" })}
+            options={[
+              { value: "all", label: "All layers" },
+              { value: "current", label: "Current layer" },
+            ]}
+          />
+          <button type="button" onClick={actions.openColorPicker} className="inline-flex h-7 shrink-0 items-center gap-1 rounded-sm border border-line px-2.5 text-[12px] text-ink-2 hover:border-ink-3 hover:text-ink">
+            Color panel
+          </button>
+          {actions.hasScreenEyeDropper && actions.pickScreenColor && (
+            <button type="button" onClick={actions.pickScreenColor} className="inline-flex h-7 shrink-0 items-center gap-1 rounded-sm border border-line px-2.5 text-[12px] text-ink-2 hover:border-ink-3 hover:text-ink">
+              <Pipette aria-hidden className="size-3.5" /> Screen picker
+            </button>
           )}
         </>
       )}

@@ -278,13 +278,13 @@ export const EFFECTS: Record<EffectType, EffectSpec> = {
     hint: "Studio green/blue screen keyer with matte choke, feather, spill kill and light wrap",
     category: "key",
     params: [
-      { key: "similarity", label: "Similarity", min: 0, max: 1, step: 0.005, def: 0.4 },
-      { key: "smoothness", label: "Smoothness", min: 0, max: 0.5, step: 0.005, def: 0.08 },
-      { key: "spill", label: "Spill kill", min: 0, max: 1, step: 0.005, def: 0.25 },
-      { key: "clipBlack", label: "Clip black", min: 0, max: 0.9, step: 0.005, def: 0.04 },
-      { key: "clipWhite", label: "Clip white", min: 0.1, max: 1, step: 0.005, def: 0.96 },
+      { key: "similarity", label: "Similarity", min: 0, max: 1, step: 0.005, def: 0.32 },
+      { key: "smoothness", label: "Smoothness", min: 0, max: 0.5, step: 0.005, def: 0.14 },
+      { key: "spill", label: "Spill kill", min: 0, max: 1, step: 0.005, def: 0.45 },
+      { key: "clipBlack", label: "Clip black", min: 0, max: 0.9, step: 0.005, def: 0.05 },
+      { key: "clipWhite", label: "Clip white", min: 0.1, max: 1, step: 0.005, def: 0.92 },
       { key: "edgeShrink", label: "Matte choke", min: -8, max: 8, step: 0.25, def: 0, unit: "px" },
-      { key: "edgeFeather", label: "Edge feather", min: 0, max: 10, step: 0.25, def: 0.5, unit: "px" },
+      { key: "edgeFeather", label: "Edge feather", min: 0, max: 10, step: 0.25, def: 0.6, unit: "px" },
       pct("lightWrap", "Light wrap", 0),
     ],
     options: { color: "#00ff00", viewMode: "composite" },
@@ -602,6 +602,7 @@ export const EFFECT_CHOICES: Partial<Record<EffectType, { key: string; label: st
 export const CHROMA_PRESETS: { id: string; label: string; color: string }[] = [
   { id: "green", label: "Chroma Green", color: "#00ff00" },
   { id: "studioGreen", label: "Studio Green", color: "#00b140" },
+  { id: "naturalGreen", label: "Natural Green", color: "#3c8c4a" },
   { id: "blue", label: "Blue Screen", color: "#0047bb" },
   { id: "magenta", label: "Magenta", color: "#ff00ff" },
 ];

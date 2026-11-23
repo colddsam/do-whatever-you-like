@@ -64,10 +64,20 @@ type State = {
   clipboard: Clip[] | null;
   attrClipboard: AttrClipboard | null;
   saveState: "saved" | "saving" | "error";
-  /** The chroma-key eyedropper is armed: the next click on the preview samples a colour. */
-  picking: { clipId: string; effectId: string } | null;
+  /** Eyedropper is armed: next click samples a colour for an effect or the dedicated color picker. */
+  picking:
+    | { kind: "effect"; clipId: string; effectId: string; optionKey?: string }
+    | { kind: "picker"; onPick?: (hex: string) => void }
+    | null;
   /** Armed for 2D point-tracker anchor click on the preview canvas (stores target source clipId). */
   trackingPick: string | null;
+  /** Show transparency checkerboard instead of solid canvas background during preview. */
+  checkerboard: boolean;
+  /** Floating dedicated color picker drawer visibility. */
+  colorPickerOpen: boolean;
+  pickedColor: string;
+  recentColors: string[];
+  sampleSize: 1 | 3 | 5;
   /** Show live Waveform / RGB Parade / Histogram / Vectorscope video scopes overlay. */
   scopes: boolean;
   /** Work-area In and Out points (I / O): playback loops them and export can render just them. */
@@ -156,6 +166,8 @@ type Actions = {
   applyGradeToAllClips: (clipId: string) => number;
   applyMotionPreset: (clipId: string, presetId: ClipMotionPresetId) => void;
   detachAudio: (clipId: string) => void;
+  addRecentColor: (hex: string) => void;
+  resetTransform: (clipId: string) => void;
 };
 
 export type StudioStore = State & Actions;
@@ -196,6 +208,11 @@ function initial(): State {
     saveState: "saved",
     picking: null,
     trackingPick: null,
+    checkerboard: false,
+    colorPickerOpen: false,
+    pickedColor: "#00b140",
+    recentColors: [],
+    sampleSize: 3,
     scopes: false,
     inPoint: null,
     outPoint: null,
@@ -520,9 +537,16 @@ export const useStudio = create<StudioStore>()((set, get) => {
         params: Object.fromEntries(spec.params.map((p) => [p.key, anim(p.def)])),
         ...(spec.options ? { options: { ...spec.options } } : {}),
       };
-      const c = get().project.clips[id];
+      const st = get();
+      const c = st.project.clips[id];
       if (!c || c.kind === "audio") return null;
       commit((p) => TL.updateClip(p, id, (x) => ({ ...x, effects: [...x.effects.filter((e) => e.type !== type), effect] })));
+      if (type === "chromaKey" && !st.checkerboard) {
+        const myIdx = st.project.tracks.findIndex((tr) => tr.id === c.trackId);
+        const underIds = new Set(st.project.tracks.slice(myIdx + 1).filter((tr) => tr.kind !== "audio" && !tr.hidden).map((tr) => tr.id));
+        const hasUnder = Object.values(st.project.clips).some((x) => underIds.has(x.trackId) && x.start <= st.playhead && x.start + x.duration > st.playhead);
+        if (!hasUnder) set({ checkerboard: true });
+      }
       return effect.id;
     },
     addEffectToSelection: (type) => {
@@ -862,6 +886,24 @@ export const useStudio = create<StudioStore>()((set, get) => {
         s.notify("Extracted audio track independently.", "success");
       }
     },
+    addRecentColor: (hex) => {
+      const clean = hex.trim().toLowerCase();
+      if (!/^#[0-9a-f]{6}$/.test(clean)) return;
+      set((s) => ({
+        pickedColor: clean,
+        recentColors: [clean, ...s.recentColors.filter((x) => x !== clean)].slice(0, 14),
+      }));
+    },
+    resetTransform: (clipId) =>
+      commit((p) =>
+        TL.updateClip(p, clipId, (x) => ({
+          ...x,
+          flipH: undefined,
+          flipV: undefined,
+          backdrop: undefined,
+          transform: TL.baseTransform(p, x.text ? evalAnim(x.transform.y, 0) / p.settings.height : 0.5),
+        })),
+      ),
   };
 });
 

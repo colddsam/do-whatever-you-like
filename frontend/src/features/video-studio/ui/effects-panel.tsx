@@ -18,7 +18,14 @@ export const EFFECT_MIME = "application/x-studio-effect";
 function targets(): Clip[] {
   const s = getStudio();
   const sel = s.selection.map((id) => s.project.clips[id]).filter((c): c is Clip => !!c && c.kind !== "audio");
-  return sel;
+  if (sel.length) return sel;
+  const t = s.playhead;
+  for (const tr of s.project.tracks) {
+    if (tr.kind === "audio" || tr.hidden) continue;
+    const hit = Object.values(s.project.clips).find((c) => c.trackId === tr.id && c.kind !== "audio" && t >= c.start && t < c.start + c.duration);
+    if (hit) return [hit];
+  }
+  return [];
 }
 
 export function canTake(c: Clip, type: EffectType) {

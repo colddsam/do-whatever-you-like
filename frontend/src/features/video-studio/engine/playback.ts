@@ -1,3 +1,4 @@
+import { sampleRgbaPatch, type SampleSize } from "@/lib/color-sample";
 import { rateAt, srcOffset } from "../lib/speed";
 import { projectDuration } from "../lib/timeline";
 import { useStudio } from "../store/studio-store";
@@ -82,7 +83,7 @@ export class PlaybackEngine {
           this.applySize();
           this.invalidate();
         }
-        if (s.compare !== prev.compare || s.compareX !== prev.compareX) {
+        if (s.compare !== prev.compare || s.compareX !== prev.compareX || s.checkerboard !== prev.checkerboard) {
           this.invalidate();
         }
       }),
@@ -482,7 +483,7 @@ export class PlaybackEngine {
       const scene = buildScene(p, t);
       const s = useStudio.getState();
       const compare = s.compare ? { x: s.compareX, rawScene: stripVisualFx(scene) } : undefined;
-      this.compositor.render(p, t, scene, this.provider, compare);
+      this.compositor.render(p, t, scene, this.provider, compare, { checker: s.checkerboard });
     } catch (e) {
       console.error("[studio] render failed", e);
     }
@@ -493,32 +494,130 @@ export class PlaybackEngine {
     return this.compositor.readScopePixels();
   }
 
-  /** The source colour under a point of a clip (u, v in 0..1 across its picture), for the key eyedropper. */
-  sampleColor(clipId: string, u: number, v: number): string | null {
-    const c = useStudio.getState().project.clips[clipId];
+  private clipSourceCanvas(clipId: string): { src: CanvasImageSource; w: number; h: number } | null {
+    const st = useStudio.getState();
+    const c = st.project.clips[clipId];
     if (!c?.mediaId) return null;
-    let src: CanvasImageSource | null = null;
-    let w = 0;
-    let h = 0;
     if (c.kind === "video") {
-      const el = this.videos.get(clipId)?.el;
-      if (!el || el.readyState < 2) return null;
-      src = el;
-      w = el.videoWidth;
-      h = el.videoHeight;
-    } else if (c.kind === "image") {
+      const slot = this.videos.get(clipId);
+      if (!slot || slot.el.readyState < 2) return null;
+      const m = st.project.media[slot.mediaId];
+      if (m?.rotation) {
+        const w = m.width;
+        const h = m.height;
+        if (!slot.canvas || slot.canvas.width !== w || slot.canvas.height !== h) slot.canvas = new OffscreenCanvas(w, h);
+        slot.canvas.getContext("2d")!.drawImage(slot.el, 0, 0, w, h);
+        return { src: slot.canvas, w, h };
+      }
+      return { src: slot.el, w: slot.el.videoWidth, h: slot.el.videoHeight };
+    }
+    if (c.kind === "image") {
       const b = mediaRuntime.bitmap(c.mediaId);
       if (!b) return null;
-      src = b;
-      w = b.width;
-      h = b.height;
+      return { src: b, w: b.width, h: b.height };
     }
-    if (!src || !w || !h || u < 0 || v < 0 || u > 1 || v > 1) return null;
-    const cv = new OffscreenCanvas(1, 1);
+    return null;
+  }
+
+  /** The source colour under a point of a clip (u, v in 0..1 across its picture), for eyedropper sampling. */
+  sampleColor(clipId: string, u: number, v: number, sampleSize: SampleSize = 3): string | null {
+    const info = this.clipSourceCanvas(clipId);
+    if (!info || u < 0 || v < 0 || u > 1 || v > 1) return null;
+    const { src, w, h } = info;
+    const rad = Math.floor(sampleSize / 2);
+    const px = Math.min(w - 1, Math.max(0, Math.floor(u * w)));
+    const py = Math.min(h - 1, Math.max(0, Math.floor(v * h)));
+    const x0 = Math.max(0, px - rad);
+    const y0 = Math.max(0, py - rad);
+    const rw = Math.min(w, px + rad + 1) - x0;
+    const rh = Math.min(h, py + rad + 1) - y0;
+    const cv = new OffscreenCanvas(rw, rh);
     const ctx = cv.getContext("2d", { willReadFrequently: true })!;
-    ctx.drawImage(src, Math.min(w - 1, Math.floor(u * w)), Math.min(h - 1, Math.floor(v * h)), 1, 1, 0, 0, 1, 1);
-    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
-    return `#${[r, g, b].map((x) => x.toString(16).padStart(2, "0")).join("")}`;
+    ctx.drawImage(src, x0, y0, rw, rh, 0, 0, rw, rh);
+    const img = ctx.getImageData(0, 0, rw, rh);
+    const avg = sampleRgbaPatch(img.data, rw, rh, px - x0, py - y0, sampleSize);
+    return `#${[avg.r, avg.g, avg.b].map((x) => x.toString(16).padStart(2, "0")).join("")}`;
+  }
+
+  /** Reads a magnified `(2*radius+1) x (2*radius+1)` RGBA patch from a clip's unkeyed source frame. */
+  sampleClipPatch(clipId: string, u: number, v: number, radius = 5): { data: Uint8ClampedArray; size: number } | null {
+    const info = this.clipSourceCanvas(clipId);
+    if (!info || u < 0 || v < 0 || u > 1 || v > 1) return null;
+    const { src, w, h } = info;
+    const size = radius * 2 + 1;
+    const cx = Math.min(w - 1, Math.max(0, Math.floor(u * w)));
+    const cy = Math.min(h - 1, Math.max(0, Math.floor(v * h)));
+    const cv = new OffscreenCanvas(size, size);
+    const ctx = cv.getContext("2d", { willReadFrequently: true })!;
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, size, size);
+    const x0 = Math.max(0, cx - radius);
+    const y0 = Math.max(0, cy - radius);
+    const x1 = Math.min(w, cx + radius + 1);
+    const y1 = Math.min(h, cy + radius + 1);
+    if (x1 > x0 && y1 > y0) {
+      ctx.drawImage(src, x0, y0, x1 - x0, y1 - y0, x0 - (cx - radius), y0 - (cy - radius), x1 - x0, y1 - y0);
+    }
+    return { data: ctx.getImageData(0, 0, size, size).data, size };
+  }
+
+  /** Reads a magnified RGBA patch from the composited preview frame at normalized coords (0..1). */
+  sampleFramePatch(nx: number, ny: number, radius = 5): { data: Uint8Array; size: number } | null {
+    return this.compositor.readPatch(nx, ny, radius);
+  }
+
+  /** Samples the 4 corners of a clip's source frame and returns the consensus backdrop key colour. */
+  autoDetectChromaKey(clipId: string): string | null {
+    const pts: [number, number][] = [
+      [0.05, 0.05],
+      [0.95, 0.05],
+      [0.05, 0.95],
+      [0.95, 0.95],
+    ];
+    const samples: { hex: string; r: number; g: number; b: number }[] = [];
+    for (const [u, v] of pts) {
+      const h = this.sampleColor(clipId, u, v, 5);
+      if (h) {
+        const n = parseInt(h.slice(1), 16);
+        samples.push({ hex: h, r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 });
+      }
+    }
+    if (!samples.length) return null;
+    // Choose the corner sample with smallest total colour distance to all other corners.
+    let best = samples[0];
+    let bestCost = Infinity;
+    for (const a of samples) {
+      let cost = 0;
+      for (const b of samples) cost += Math.hypot(a.r - b.r, a.g - b.g, a.b - b.b);
+      if (cost < bestCost) {
+        bestCost = cost;
+        best = a;
+      }
+    }
+    return best.hex;
+  }
+
+  /** Renders a single clip cleanly at full project resolution onto a transparent canvas for Rasterize. */
+  async snapshotClip(clipId: string): Promise<Blob> {
+    const s = useStudio.getState();
+    const c = s.project.clips[clipId];
+    if (!c) throw new Error("Clip not found.");
+    const { width, height } = s.project.settings;
+    const singleProj: Project = {
+      ...s.project,
+      tracks: s.project.tracks.filter((tr) => tr.id === c.trackId).map((tr) => ({ ...tr, hidden: false, muted: false })),
+      clips: { [c.id]: c },
+    };
+    const t = Math.min(c.start + c.duration - 1e-3, Math.max(c.start, s.playhead));
+    const canvas = new OffscreenCanvas(width, height);
+    const comp = new WebGLCompositor(canvas, { preserve: true });
+    try {
+      comp.resize(width, height);
+      comp.render(singleProj, t, buildScene(singleProj, t), this.provider, undefined, { transparent: true });
+      return await canvas.convertToBlob({ type: "image/png" });
+    } finally {
+      comp.dispose();
+    }
   }
 
   /** A full-resolution still of the current frame (for "Export frame"). */

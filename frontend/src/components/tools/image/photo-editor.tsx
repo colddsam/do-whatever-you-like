@@ -4,12 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { handOffToProEditor, PRO_EDITOR_HREF } from "@/lib/handoff";
 import { AnimatePresence, motion } from "motion/react";
-import { Check, Download, Eye, FlipHorizontal2, FlipVertical2, Plus, RotateCcw, RotateCw, Trash2, Type } from "lucide-react";
+import { Check, Download, Eye, FlipHorizontal2, FlipVertical2, Pipette, Plus, RotateCcw, RotateCw, Trash2, Type } from "lucide-react";
+import { hex as hexOf, inkOn } from "@/lib/color";
+import { clientToImagePixel, sampleRgbaPatch } from "@/lib/color-sample";
 import { checkFile, saveBlob } from "@/lib/files";
 import { acceptFor, formatList, IMAGE_INPUTS } from "@/lib/image";
 import { formatBytes } from "@/lib/media";
 import { getTool, stepsFor } from "@/lib/tools";
 import { cn } from "@/lib/utils";
+import { RichColorPicker } from "../design/rich-color-picker";
 import { FileDrop } from "../file-drop";
 import { Workbench } from "../workbench";
 import { Chips, Panel, Row, Slider, Swatches, TextField } from "../pdf/kit";
@@ -268,6 +271,88 @@ export function PhotoEditorTool({ toolId }: { toolId: string }) {
     return () => ro.disconnect();
   }, [canvas]);
   const drag = useRef<{ id: string; rect: DOMRect } | null>(null);
+  const [pickerTarget, setPickerTarget] = useState<"text" | "frame" | null>(null);
+  const [eyedropperTarget, setEyedropperTarget] = useState<"text" | "frame" | null>(null);
+  const stageWrapRef = useRef<HTMLDivElement>(null);
+  const loupeBoxRef = useRef<HTMLDivElement>(null);
+  const loupeCanvasRef = useRef<HTMLCanvasElement>(null);
+  const loupeHexRef = useRef<HTMLSpanElement>(null);
+
+  const sampleStage = (e: React.PointerEvent): string | null => {
+    const box = loupeBoxRef.current;
+    const lc = loupeCanvasRef.current;
+    const wrap = stageWrapRef.current;
+    if (!canvas || !wrap) return null;
+    const hit = clientToImagePixel(e.clientX, e.clientY, canvas.getBoundingClientRect(), canvas.width, canvas.height);
+    if (!hit) {
+      if (box) box.style.display = "none";
+      return null;
+    }
+    const LOUPE = 11;
+    const half = 5;
+    const x0 = Math.max(0, hit.x - half);
+    const y0 = Math.max(0, hit.y - half);
+    const x1 = Math.min(canvas.width, hit.x + half + 1);
+    const y1 = Math.min(canvas.height, hit.y + half + 1);
+    const g2d = canvas.getContext("2d", { willReadFrequently: true });
+    if (!g2d) return null;
+    const patch = g2d.getImageData(x0, y0, Math.max(1, x1 - x0), Math.max(1, y1 - y0));
+    const px = sampleRgbaPatch(patch.data, patch.width, patch.height, hit.x - x0, hit.y - y0, 1);
+    const rgb: [number, number, number] = [px.r, px.g, px.b];
+    const code = hexOf(rgb);
+
+    if (box && lc) {
+      const wr = wrap.getBoundingClientRect();
+      const wx = e.clientX - wr.left;
+      const wy = e.clientY - wr.top;
+      const lx = Math.min(Math.max(wx - 50, 4), Math.max(4, wr.width - 104));
+      const ly = wy > 140 ? wy - 134 : Math.min(wy + 20, Math.max(4, wr.height - 134));
+      box.style.display = "flex";
+      box.style.transform = `translate3d(${Math.round(lx)}px, ${Math.round(ly)}px, 0)`;
+      const lg = lc.getContext("2d");
+      if (lg) {
+        const size = lc.width;
+        const cell = size / LOUPE;
+        lg.fillStyle = "#15140f";
+        lg.fillRect(0, 0, size, size);
+        lg.imageSmoothingEnabled = false;
+        lg.drawImage(
+          canvas,
+          x0,
+          y0,
+          x1 - x0,
+          y1 - y0,
+          (x0 - (hit.x - half)) * cell,
+          (y0 - (hit.y - half)) * cell,
+          (x1 - x0) * cell,
+          (y1 - y0) * cell,
+        );
+        lg.strokeStyle = "rgba(255,255,255,0.18)";
+        lg.lineWidth = 1;
+        lg.beginPath();
+        for (let i = 1; i < LOUPE; i++) {
+          const p = Math.round(i * cell) + 0.5;
+          lg.moveTo(p, 0);
+          lg.lineTo(p, size);
+          lg.moveTo(0, p);
+          lg.lineTo(size, p);
+        }
+        lg.stroke();
+        lg.strokeStyle = "#000000";
+        lg.lineWidth = 2;
+        lg.strokeRect(half * cell, half * cell, cell, cell);
+        lg.strokeStyle = "#ffffff";
+        lg.lineWidth = 1;
+        lg.strokeRect(half * cell + 1, half * cell + 1, Math.max(1, cell - 2), Math.max(1, cell - 2));
+      }
+      if (loupeHexRef.current) {
+        loupeHexRef.current.textContent = code.toUpperCase();
+        loupeHexRef.current.style.background = code;
+        loupeHexRef.current.style.color = inkOn(rgb);
+      }
+    }
+    return code;
+  };
 
   const pick = (f: File) => {
     const problem = checkFile(f, [...IMAGE_INPUTS.canvas], 50);
@@ -389,12 +474,59 @@ export function PhotoEditorTool({ toolId }: { toolId: string }) {
               <motion.div key="edit" {...swap} className="grid grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] lg:items-start">
                 {/* Stage */}
                 <div className="space-y-2 lg:sticky lg:top-24">
+                  {eyedropperTarget && (
+                    <div className="flex items-center justify-between gap-2 rounded-sm border border-accent/40 bg-accent/10 px-2.5 py-1.5 text-xs text-ink">
+                      <span className="flex items-center gap-1.5">
+                        <Pipette aria-hidden className="size-3.5 text-accent" />
+                        Click anywhere on the photo to sample {eyedropperTarget === "text" ? "text" : "frame"} colour
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEyedropperTarget(null);
+                          if (loupeBoxRef.current) loupeBoxRef.current.style.display = "none";
+                        }}
+                        className="rounded-sm border border-line bg-surface px-2 py-0.5 text-ink-2 hover:text-ink"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                   <div className={cn("flex justify-center overflow-hidden rounded-md border border-line p-2", CHECKER)}>
-                    <div className="relative w-fit max-w-full">
-                      <canvas ref={setCanvas} className="block h-auto max-h-[min(62vh,580px)] max-w-full" aria-label="Your edited photo" />
+                    <div ref={stageWrapRef} className="relative w-fit max-w-full">
+                      <canvas
+                        ref={setCanvas}
+                        className={cn("block h-auto max-h-[min(62vh,580px)] max-w-full", eyedropperTarget && "cursor-crosshair touch-none")}
+                        aria-label="Your edited photo"
+                        onPointerMove={(e) => {
+                          if (eyedropperTarget) sampleStage(e);
+                        }}
+                        onPointerLeave={() => {
+                          if (loupeBoxRef.current) loupeBoxRef.current.style.display = "none";
+                        }}
+                        onPointerUp={(e) => {
+                          if (!eyedropperTarget) return;
+                          const picked = sampleStage(e);
+                          if (loupeBoxRef.current) loupeBoxRef.current.style.display = "none";
+                          if (picked) {
+                            if (eyedropperTarget === "text" && current?.kind === "text") patch(current.id, { color: picked });
+                            else if (eyedropperTarget === "frame") setEdit((ed) => ({ ...ed, frame: { ...ed.frame, color: picked } }));
+                          }
+                          setEyedropperTarget(null);
+                        }}
+                      />
+                      <div
+                        ref={loupeBoxRef}
+                        aria-hidden
+                        className="pointer-events-none absolute left-0 top-0 z-20 flex flex-col items-center"
+                        style={{ display: "none", willChange: "transform" }}
+                      >
+                        <canvas ref={loupeCanvasRef} width={99} height={99} className="size-[99px] rounded-full border-2 border-paper shadow-float" style={{ imageRendering: "pixelated" }} />
+                        <span ref={loupeHexRef} className="mt-1 rounded-sm px-1.5 py-0.5 font-mono text-[11px] shadow-card" />
+                      </div>
                       {layout && shown > 0 && (
                         <div
-                          className="absolute"
+                          className={cn("absolute", eyedropperTarget && "pointer-events-none")}
                           style={{
                             left: `${(layout.pads.l / (1 + layout.pads.l + layout.pads.r)) * 100}%`,
                             top: `${((layout.pads.t * layout.w) / (layout.h + (layout.pads.t + layout.pads.b) * layout.w)) * 100}%`,
@@ -619,7 +751,43 @@ export function PhotoEditorTool({ toolId }: { toolId: string }) {
                               <Slider label="Text size" value={Math.round(current.size * 100)} min={2} max={30} onChange={(v) => patch(current.id, { size: v / 100 })} format={(v) => `${v}%`} />
                             </Row>
                             <Row label="Colour">
-                              <Swatches value={current.color} onChange={(v) => patch(current.id, { color: v })} colors={[{ value: "#ffffff", name: "White" }, { value: "#15140f", name: "Ink" }, { value: "#eb4a10", name: "Signal orange" }, { value: "#facc15", name: "Yellow" }]} />
+                              <div className="space-y-2">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <Swatches value={current.color} onChange={(v) => patch(current.id, { color: v })} colors={[{ value: "#ffffff", name: "White" }, { value: "#15140f", name: "Ink" }, { value: "#eb4a10", name: "Signal orange" }, { value: "#facc15", name: "Yellow" }]} />
+                                  <button
+                                    type="button"
+                                    aria-expanded={pickerTarget === "text"}
+                                    onClick={() => setPickerTarget((p) => (p === "text" ? null : "text"))}
+                                    className="inline-flex h-8 items-center gap-1.5 rounded-sm border border-line bg-surface px-2 text-xs text-ink-2 hover:border-ink-3 hover:text-ink"
+                                  >
+                                    <span aria-hidden className="size-3.5 rounded-[2px] border border-line" style={{ background: current.color }} />
+                                    <span className="font-mono uppercase">{current.color}</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    aria-pressed={eyedropperTarget === "text"}
+                                    onClick={() => setEyedropperTarget((t) => (t === "text" ? null : "text"))}
+                                    title="Pick colour from photo"
+                                    className={cn(
+                                      "inline-flex h-8 items-center gap-1 rounded-sm border px-2 text-xs transition-colors",
+                                      eyedropperTarget === "text" ? "border-accent bg-accent text-paper" : "border-line bg-surface text-ink-2 hover:border-ink-3 hover:text-ink",
+                                    )}
+                                  >
+                                    <Pipette aria-hidden className="size-3.5" /> Pick
+                                  </button>
+                                </div>
+                                {pickerTarget === "text" && (
+                                  <RichColorPicker
+                                    compact
+                                    value={current.color}
+                                    onChange={(v) => patch(current.id, { color: v })}
+                                    onEyedropper={() => setEyedropperTarget((t) => (t === "text" ? null : "text"))}
+                                    eyedropperActive={eyedropperTarget === "text"}
+                                    eyedropperLabel="Pick from photo"
+                                    className="rounded-md border border-line bg-paper/50 p-2.5"
+                                  />
+                                )}
+                              </div>
                               <button type="button" onClick={() => removeOverlay(current.id)} className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-sm px-2 text-sm text-ink-2 hover:bg-paper-2 hover:text-ink">
                                 <Trash2 aria-hidden className="size-3.5" /> Remove this text
                               </button>
@@ -669,7 +837,43 @@ export function PhotoEditorTool({ toolId }: { toolId: string }) {
                         </Row>
                         {edit.frame.style !== "none" && edit.frame.style !== "rounded" && (
                           <Row label="Frame colour">
-                            <Swatches value={edit.frame.color} onChange={(v) => setEdit((e) => ({ ...e, frame: { ...e.frame, color: v } }))} colors={[{ value: "#ffffff", name: "White" }, { value: "#15140f", name: "Ink" }, { value: "#f3f0e8", name: "Paper" }, { value: "#eb4a10", name: "Signal orange" }]} />
+                            <div className="space-y-2">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Swatches value={edit.frame.color} onChange={(v) => setEdit((e) => ({ ...e, frame: { ...e.frame, color: v } }))} colors={[{ value: "#ffffff", name: "White" }, { value: "#15140f", name: "Ink" }, { value: "#f3f0e8", name: "Paper" }, { value: "#eb4a10", name: "Signal orange" }]} />
+                                <button
+                                  type="button"
+                                  aria-expanded={pickerTarget === "frame"}
+                                  onClick={() => setPickerTarget((p) => (p === "frame" ? null : "frame"))}
+                                  className="inline-flex h-8 items-center gap-1.5 rounded-sm border border-line bg-surface px-2 text-xs text-ink-2 hover:border-ink-3 hover:text-ink"
+                                >
+                                  <span aria-hidden className="size-3.5 rounded-[2px] border border-line" style={{ background: edit.frame.color }} />
+                                  <span className="font-mono uppercase">{edit.frame.color}</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  aria-pressed={eyedropperTarget === "frame"}
+                                  onClick={() => setEyedropperTarget((t) => (t === "frame" ? null : "frame"))}
+                                  title="Pick colour from photo"
+                                  className={cn(
+                                    "inline-flex h-8 items-center gap-1 rounded-sm border px-2 text-xs transition-colors",
+                                    eyedropperTarget === "frame" ? "border-accent bg-accent text-paper" : "border-line bg-surface text-ink-2 hover:border-ink-3 hover:text-ink",
+                                  )}
+                                >
+                                  <Pipette aria-hidden className="size-3.5" /> Pick
+                                </button>
+                              </div>
+                              {pickerTarget === "frame" && (
+                                <RichColorPicker
+                                  compact
+                                  value={edit.frame.color}
+                                  onChange={(v) => setEdit((e) => ({ ...e, frame: { ...e.frame, color: v } }))}
+                                  onEyedropper={() => setEyedropperTarget((t) => (t === "frame" ? null : "frame"))}
+                                  eyedropperActive={eyedropperTarget === "frame"}
+                                  eyedropperLabel="Pick from photo"
+                                  className="rounded-md border border-line bg-paper/50 p-2.5"
+                                />
+                              )}
+                            </div>
                           </Row>
                         )}
                       </>

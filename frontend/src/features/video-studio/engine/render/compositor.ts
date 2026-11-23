@@ -220,14 +220,15 @@ export class WebGLCompositor {
     gl.clear(gl.COLOR_BUFFER_BIT);
   }
 
-  private renderSceneToAccum(p: Project, t: number, scene: SceneLayer[], src: SourceProvider) {
+  private renderSceneToAccum(p: Project, t: number, scene: SceneLayer[], src: SourceProvider, transparent = false) {
     const gl = this.gl;
     const scale = this.width / p.settings.width;
     const [r, g, b] = rgb(p.settings.background);
     this.cur = 0;
     this.bind(this.accum[this.cur]);
     gl.disable(gl.BLEND);
-    gl.clearColor(r, g, b, 1);
+    if (transparent) gl.clearColor(0, 0, 0, 0);
+    else gl.clearColor(r, g, b, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
     for (const layer of scene) {
       if (layer.kind === "clip") this.drawClip(p, layer.d, src, scale, t);
@@ -236,18 +237,27 @@ export class WebGLCompositor {
   }
 
   /** Draws the frame. `t` is timeline time (noise, glitches and leaks are keyed to it, so exports match previews). */
-  render(p: Project, t: number, scene: SceneLayer[], src: SourceProvider, compare?: { x: number; rawScene: SceneLayer[] }) {
+  render(
+    p: Project,
+    t: number,
+    scene: SceneLayer[],
+    src: SourceProvider,
+    compare?: { x: number; rawScene: SceneLayer[] },
+    opts?: { checker?: boolean; transparent?: boolean },
+  ) {
     const gl = this.gl;
     if (this.lost || gl.isContextLost() || !this.accum.length) return;
+    const clearTransparent = Boolean(opts?.checker || opts?.transparent);
+    const showChecker = Boolean(opts?.checker);
     this.frameNo++;
     gl.bindVertexArray(this.vao);
     if (compare) {
-      this.renderSceneToAccum(p, t, compare.rawScene, src);
+      this.renderSceneToAccum(p, t, compare.rawScene, src, clearTransparent);
       const cmp = this.scratch("compare");
       this.bind(cmp);
       gl.disable(gl.BLEND);
-      this.copy(this.accum[this.cur].tex, 1);
-      this.renderSceneToAccum(p, t, scene, src);
+      this.copy(this.accum[this.cur].tex, 1, false);
+      this.renderSceneToAccum(p, t, scene, src, clearTransparent);
       this.bind(null);
       gl.disable(gl.BLEND);
       const splitPx = Math.max(0, Math.min(this.width, Math.round(compare.x * this.width)));
@@ -255,20 +265,20 @@ export class WebGLCompositor {
       try {
         if (splitPx > 0) {
           gl.scissor(0, 0, splitPx, this.height);
-          this.copy(cmp.tex, 1);
+          this.copy(cmp.tex, 1, showChecker);
         }
         if (splitPx < this.width) {
           gl.scissor(splitPx, 0, this.width - splitPx, this.height);
-          this.copy(this.accum[this.cur].tex, 1);
+          this.copy(this.accum[this.cur].tex, 1, showChecker);
         }
       } finally {
         gl.disable(gl.SCISSOR_TEST);
       }
     } else {
-      this.renderSceneToAccum(p, t, scene, src);
+      this.renderSceneToAccum(p, t, scene, src, clearTransparent);
       this.bind(null);
       gl.disable(gl.BLEND);
-      this.copy(this.accum[this.cur].tex, 1);
+      this.copy(this.accum[this.cur].tex, 1, showChecker);
     }
     gl.bindVertexArray(null);
     this.gc();
@@ -801,7 +811,7 @@ export class WebGLCompositor {
     this.cur = 1 - this.cur;
   }
 
-  private copy(tex: WebGLTexture, alpha: number) {
+  private copy(tex: WebGLTexture, alpha: number, checker = false) {
     const gl = this.gl;
     const pr = this.progs.copy;
     gl.useProgram(pr.prog);
@@ -810,6 +820,7 @@ export class WebGLCompositor {
     gl.uniform1i(pr.u("uTex"), 0);
     gl.uniform2f(pr.u("uRes"), this.width, this.height);
     gl.uniform1f(pr.u("uAlpha"), alpha);
+    gl.uniform1f(pr.u("uChecker"), checker ? 1 : 0);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
 
@@ -889,12 +900,59 @@ export class WebGLCompositor {
     gl.uniform1i(pr.u("uTex"), 0);
     gl.uniform2f(pr.u("uRes"), sw, sh);
     gl.uniform1f(pr.u("uAlpha"), 1);
+    gl.uniform1f(pr.u("uChecker"), 0);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     gl.readPixels(0, 0, sw, sh, gl.RGBA, gl.UNSIGNED_BYTE, this.scopeBuf!);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, this.width, this.height);
     gl.bindVertexArray(null);
     return { data: new Uint8ClampedArray(this.scopeBuf!.buffer, this.scopeBuf!.byteOffset, this.scopeBuf!.byteLength), width: sw, height: sh };
+  }
+
+  /**
+   * Reads a top-down unpremultiplied `(2*radius+1) x (2*radius+1)` RGBA patch from the rendered
+   * accumulation framebuffer at normalized `(nx, ny)` in `0..1` (top-down canvas coordinates).
+   */
+  readPatch(nx: number, ny: number, radius = 5): { data: Uint8Array; size: number } | null {
+    const gl = this.gl;
+    if (this.lost || gl.isContextLost() || !this.accum.length || this.width < 1 || this.height < 1) return null;
+    const cx = Math.min(this.width - 1, Math.max(0, Math.round(nx * this.width)));
+    const cy = Math.min(this.height - 1, Math.max(0, Math.round(ny * this.height)));
+    const size = radius * 2 + 1;
+    const x0 = Math.max(0, cx - radius);
+    const x1 = Math.min(this.width - 1, cx + radius);
+    const y0 = Math.max(0, cy - radius);
+    const y1 = Math.min(this.height - 1, cy + radius);
+    const rw = x1 - x0 + 1;
+    const rh = y1 - y0 + 1;
+    const glY = this.height - 1 - y1;
+    const raw = new Uint8Array(rw * rh * 4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.accum[this.cur].fbo);
+    gl.readPixels(x0, glY, rw, rh, gl.RGBA, gl.UNSIGNED_BYTE, raw);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    const out = new Uint8Array(size * size * 4);
+    for (let ry = 0; ry < rh; ry++) {
+      const topY = y1 - ry;
+      const oy = topY - (cy - radius);
+      for (let rx = 0; rx < rw; rx++) {
+        const ox = x0 + rx - (cx - radius);
+        const si = (ry * rw + rx) * 4;
+        const di = (oy * size + ox) * 4;
+        const a = raw[si + 3];
+        if (a > 0 && a < 255) {
+          out[di] = Math.min(255, Math.round((raw[si] * 255) / a));
+          out[di + 1] = Math.min(255, Math.round((raw[si + 1] * 255) / a));
+          out[di + 2] = Math.min(255, Math.round((raw[si + 2] * 255) / a));
+          out[di + 3] = a;
+        } else {
+          out[di] = raw[si];
+          out[di + 1] = raw[si + 1];
+          out[di + 2] = raw[si + 2];
+          out[di + 3] = a;
+        }
+      }
+    }
+    return { data: out, size };
   }
 
   /** Frees textures nothing has drawn for a while (clips scrolled past, deleted clips). */

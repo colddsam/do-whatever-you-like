@@ -1,7 +1,10 @@
 "use client";
 
-import { useRef, useState, type ButtonHTMLAttributes, type ComponentProps, type ReactNode } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, Diamond } from "lucide-react";
+import { useEffect, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type ComponentProps, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { ChevronDown, ChevronLeft, ChevronRight, Diamond, Pipette } from "lucide-react";
+import { RichColorPicker } from "@/components/tools/design/rich-color-picker";
+import { normalizeHex } from "@/lib/color-sample";
 import { cn } from "@/lib/utils";
 
 /*
@@ -297,18 +300,88 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
   );
 }
 
-export function ColorField({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+export function ColorField({
+  value,
+  onChange,
+  label,
+  onEyedropper,
+  eyedropperActive,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  label: string;
+  onEyedropper?: () => void;
+  eyedropperActive?: boolean;
+}) {
   const [text, setText] = useState(value);
-  // Follow the value when it changes from outside (undo, the eyedropper): adjust state during
-  // render, React's pattern for this, rather than in an effect.
   const [shown, setShown] = useState(value);
+  const [open, setOpen] = useState(false);
+  const swatchRef = useRef<HTMLButtonElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
+
   if (shown !== value) {
     setShown(value);
     setText(value);
   }
+
+  useLayoutEffect(() => {
+    if (!open || !swatchRef.current || !popRef.current) return;
+    const place = () => {
+      const a = swatchRef.current?.getBoundingClientRect();
+      const el = popRef.current;
+      if (!a || !el) return;
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+      const W = window.innerWidth;
+      const H = window.innerHeight;
+      const x = Math.min(Math.max(8, a.right - w), Math.max(8, W - w - 8));
+      const y = a.bottom + 6 + h <= H - 8 ? a.bottom + 6 : Math.max(8, a.top - h - 6);
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+      el.style.visibility = "visible";
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as Element | null;
+      if (swatchRef.current?.contains(t) || popRef.current?.contains(t)) return;
+      setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("pointerdown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const safeHex = normalizeHex(value) ?? "#000000";
+
   return (
     <span className="flex min-w-0 flex-1 items-center gap-1.5">
-      <input type="color" aria-label={label} value={/^#[0-9a-f]{6}$/i.test(value) ? value : "#000000"} onChange={(e) => onChange(e.target.value)} className="h-7 w-8 shrink-0 cursor-pointer rounded-sm border border-line-dark bg-ink p-0.5" />
+      <button
+        ref={swatchRef}
+        type="button"
+        aria-label={label}
+        aria-expanded={open}
+        title="Open colour picker"
+        onClick={() => setOpen((o) => !o)}
+        className="h-7 w-8 shrink-0 cursor-pointer rounded-sm border border-line-dark bg-ink p-0.5 transition-colors hover:border-paper/60"
+      >
+        <span className="block size-full rounded-[2px]" style={{ background: safeHex }} />
+      </button>
       <input
         aria-label={`${label} hex`}
         value={text}
@@ -318,13 +391,47 @@ export function ColorField({ value, onChange, label }: { value: string; onChange
           if (e.key === "Enter") (e.target as HTMLInputElement).blur();
         }}
         onBlur={() => {
-          const t = text.trim().replace(/^#?/, "#");
-          if (/^#[0-9a-f]{6}$/i.test(t)) onChange(t.toLowerCase());
-          else if (/^#[0-9a-f]{3}$/i.test(t)) onChange(`#${t.slice(1).split("").map((c) => c + c).join("")}`.toLowerCase());
+          const norm = normalizeHex(text);
+          if (norm) onChange(norm);
           else setText(value);
         }}
         className="h-7 min-w-0 flex-1 rounded-sm border border-line-dark bg-ink px-1.5 font-mono text-[12px] uppercase text-paper outline-none focus-visible:border-accent"
       />
+      {onEyedropper && (
+        <IconButton label={`Pick ${label.toLowerCase()} from preview`} active={eyedropperActive} onClick={onEyedropper} className="size-7">
+          <Pipette aria-hidden className="size-3.5" />
+        </IconButton>
+      )}
+      {open &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={popRef}
+            role="dialog"
+            aria-label={label}
+            style={{ position: "fixed", left: 0, top: 0, visibility: "hidden" }}
+            className="z-[130] w-64 rounded-md border border-line-dark bg-ink-raised p-2.5 shadow-float"
+            data-lenis-prevent
+          >
+            <RichColorPicker
+              theme="dark"
+              compact
+              value={safeHex}
+              onChange={onChange}
+              onEyedropper={
+                onEyedropper
+                  ? () => {
+                      setOpen(false);
+                      onEyedropper();
+                    }
+                  : undefined
+              }
+              eyedropperActive={eyedropperActive}
+              eyedropperLabel="Pick from preview frame"
+            />
+          </div>,
+          document.body,
+        )}
     </span>
   );
 }

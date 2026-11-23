@@ -8,6 +8,7 @@ import type { Clip, MediaAsset } from "../types";
 import { SourceAudio } from "./audio";
 import { mediaRuntime, openInput } from "./media";
 import { analyzeMedia } from "./persistence";
+import { getEngine } from "./playback";
 
 /**
  * Clip tools that make new media on this device: freeze frames (an exact still of one frame) and
@@ -192,4 +193,40 @@ export async function reverseClip(clipId: string, onProgress?: ToolProgress) {
     return next;
   });
   onProgress?.(1);
+}
+
+/**
+ * Rasterize Clip: renders the clip at project resolution with all active effects, transforms,
+ * text/shapes, and chroma keying baked into a lossless transparent PNG image clip.
+ */
+export async function rasterizeClip(clipId: string) {
+  const st = useStudio.getState();
+  const c = st.project.clips[clipId];
+  if (!c || c.kind === "audio" || c.kind === "adjustment") {
+    throw new Error("Select a visual clip (text, shape, solid, video or image) to rasterize.");
+  }
+  const engine = getEngine();
+  if (!engine) throw new Error("Open the video preview to rasterize this clip.");
+  const png = await engine.snapshotClip(clipId);
+  const asset = await addGeneratedFile(new File([png], `${c.name || "Clip"} · raster.png`, { type: "image/png" }));
+  useStudio.getState().commit((p) =>
+    TL.updateClip(p, clipId, (x) => ({
+      ...x,
+      kind: "image",
+      mediaId: asset.id,
+      name: x.name.endsWith(" (raster)") ? x.name : `${x.name} (raster)`,
+      fit: "fill",
+      effects: [],
+      text: undefined,
+      shape: undefined,
+      color: undefined,
+      gradient: undefined,
+      flipH: undefined,
+      flipV: undefined,
+      backdrop: undefined,
+      matte: undefined,
+      transform: { ...TL.baseTransform(p), opacity: { v: 1 } },
+    })),
+  );
+  useStudio.getState().notify("Rasterized clip into a transparent PNG image.", "success");
 }

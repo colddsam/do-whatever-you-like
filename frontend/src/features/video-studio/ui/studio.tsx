@@ -2,7 +2,8 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { Film, Music4, SlidersHorizontal, Sparkles, Type, Wand2, type LucideIcon } from "lucide-react";
+import { Film, Music4, Pipette, SlidersHorizontal, Sparkles, Type, Wand2, X, type LucideIcon } from "lucide-react";
+import { RichColorPicker } from "@/components/tools/design/rich-color-picker";
 import { cn } from "@/lib/utils";
 import { Workbench } from "@/components/tools/workbench";
 import { clamp } from "../lib/time";
@@ -172,7 +173,7 @@ function Editor({ fullscreen, setFullscreen }: { fullscreen: boolean; setFullscr
         }
         return;
       case "Escape":
-        if (st.selection.length || st.picking || st.tool !== "select") st.set({ selection: [], picking: null, tool: "select" });
+        if (st.selection.length || st.picking || st.colorPickerOpen || st.tool !== "select") st.set({ selection: [], picking: null, colorPickerOpen: false, tool: "select" });
         else if (fullscreen) setFullscreen(false);
         return;
       case "+":
@@ -215,6 +216,7 @@ function Editor({ fullscreen, setFullscreen }: { fullscreen: boolean; setFullscr
           st.set({ snapping: !st.snapping });
           st.notify(`Snapping ${st.snapping ? "off" : "on"}.`, "info");
         },
+        i: () => st.set({ colorPickerOpen: !st.colorPickerOpen }),
         m: () => st.jumpMarker(1),
         f: () => {
           const c = st.selection.map((id) => st.project.clips[id]).find((x) => x?.kind === "video");
@@ -507,6 +509,7 @@ function Editor({ fullscreen, setFullscreen }: { fullscreen: boolean; setFullscr
           </>
         )}
         <Toasts />
+        <ColorPickerDrawer />
         {exportOpen && <ExportDialog onClose={() => setExportOpen(false)} onDone={() => setExported(true)} />}
         {help && <Shortcuts onClose={() => setHelp(false)} />}
         {!ready && (
@@ -565,5 +568,123 @@ export function VideoStudio() {
       <div ref={slotRef} />
       {createPortal(<Editor fullscreen={fullscreen} setFullscreen={setFullscreen} />, host)}
     </>
+  );
+}
+
+function ColorPickerDrawer() {
+  const open = useStudio((s) => s.colorPickerOpen);
+  const pickedColor = useStudio((s) => s.pickedColor);
+  const recentColors = useStudio((s) => s.recentColors);
+  const sampleSize = useStudio((s) => s.sampleSize);
+  const picking = useStudio((s) => s.picking?.kind === "picker");
+  const clip = usePrimaryClip();
+  const st = getStudio();
+
+  if (!open) return null;
+
+  const chromaFx = clip?.effects.find((e) => e.type === "chromaKey");
+  const canApply = clip && (chromaFx || clip.kind === "text" || clip.kind === "shape" || clip.kind === "solid");
+  const applyTargetLabel = chromaFx
+    ? "Apply to Chroma Key"
+    : clip?.kind === "text"
+      ? "Apply to Text"
+      : clip?.kind === "shape"
+        ? "Apply to Shape"
+        : clip?.kind === "solid"
+          ? "Apply to Solid"
+          : null;
+
+  const applyToClip = () => {
+    if (!clip) return;
+    st.addRecentColor(pickedColor);
+    if (chromaFx) {
+      st.updateEffect(clip.id, chromaFx.id, { options: { ...chromaFx.options, color: pickedColor } });
+      st.notify(`Chroma Key colour set to ${pickedColor.toUpperCase()}.`, "success");
+    } else if (clip.kind === "text") {
+      st.updateText(clip.id, { color: pickedColor });
+      st.notify(`Text colour set to ${pickedColor.toUpperCase()}.`, "success");
+    } else if (clip.kind === "shape" && clip.shape) {
+      st.updateClip(clip.id, (x) => ({ ...x, shape: x.shape ? { ...x.shape, fill: pickedColor } : undefined }));
+      st.notify(`Shape fill set to ${pickedColor.toUpperCase()}.`, "success");
+    } else if (clip.kind === "solid") {
+      st.updateClip(clip.id, { color: pickedColor });
+      st.notify(`Solid colour set to ${pickedColor.toUpperCase()}.`, "success");
+    }
+  };
+
+  return (
+    <div
+      role="dialog"
+      aria-label="Color Picker"
+      className="fixed bottom-16 right-4 z-[95] w-[280px] rounded-lg border border-line-dark bg-ink-raised p-3 text-paper shadow-float sm:bottom-auto sm:top-16"
+      data-lenis-prevent
+    >
+      <div className="mb-2 flex items-center justify-between gap-2 border-b border-line-dark pb-2">
+        <span className="flex items-center gap-1.5 text-[13px] font-medium text-paper">
+          <Pipette aria-hidden className="size-3.5 text-accent" />
+          Color Picker
+        </span>
+        <button
+          type="button"
+          aria-label="Close Color Picker"
+          onClick={() => st.set({ colorPickerOpen: false, ...(picking ? { picking: null } : {}) })}
+          className="inline-flex size-6 items-center justify-center rounded-sm text-paper-dim hover:bg-paper/10 hover:text-paper"
+        >
+          <X aria-hidden className="size-3.5" />
+        </button>
+      </div>
+      <RichColorPicker
+        theme="dark"
+        compact
+        value={pickedColor}
+        onChange={(hex) => st.set({ pickedColor: hex })}
+        onCommit={(hex) => st.addRecentColor(hex)}
+        onEyedropper={() => st.set({ picking: picking ? null : { kind: "picker" } })}
+        eyedropperActive={picking}
+        eyedropperLabel="Sample colour from preview (click preview frame)"
+      />
+      <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-line-dark pt-2">
+        <span className="font-mono text-[11px] uppercase text-paper-dim">Sample</span>
+        <div className="inline-flex overflow-hidden rounded-sm border border-line-dark">
+          {([1, 3, 5] as const).map((sz) => (
+            <button
+              key={sz}
+              type="button"
+              aria-pressed={sampleSize === sz}
+              onClick={() => st.set({ sampleSize: sz })}
+              className={cn("h-6 px-2 font-mono text-[11px]", sampleSize === sz ? "bg-paper text-ink" : "text-paper-dim hover:text-paper")}
+            >
+              {sz === 1 ? "1px" : `${sz}×${sz}`}
+            </button>
+          ))}
+        </div>
+      </div>
+      {recentColors.length > 0 && (
+        <div className="mt-2 space-y-1">
+          <span className="font-mono text-[11px] uppercase text-paper-dim">Recent</span>
+          <div className="flex flex-wrap gap-1">
+            {recentColors.map((c) => (
+              <button
+                key={c}
+                type="button"
+                title={c.toUpperCase()}
+                onClick={() => st.set({ pickedColor: c })}
+                className={cn("size-5 rounded-sm border", c === pickedColor ? "border-paper ring-1 ring-paper/50" : "border-line-dark")}
+                style={{ background: c }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+      {canApply && applyTargetLabel && (
+        <button
+          type="button"
+          onClick={applyToClip}
+          className="mt-2.5 inline-flex h-8 w-full items-center justify-center rounded-sm bg-paper px-3 text-[12px] font-medium text-ink hover:bg-paper/90"
+        >
+          {applyTargetLabel}
+        </button>
+      )}
+    </div>
   );
 }
