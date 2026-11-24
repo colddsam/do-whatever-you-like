@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Signing in…</title>
+    <style>
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f3f0e8; color: #15140f; font: 15px/1.6 system-ui, sans-serif; }
+      p { max-width: 320px; text-align: center; padding: 0 16px; }
+    </style>
+  </head>
+  <body>
+    <p id="msg">Finishing sign-in… this window will close by itself.</p>
+    <script>
+      // OAuth 2.0 callback for the API client: hand the redirect URL (code or token) back to the tab that opened us.
+      (function () {
+        var url = location.href;
+        try {
+          if (window.opener && window.opener.location.origin === location.origin) {
+            window.opener.postMessage({ type: "dwyl-oauth-callback", url: url }, location.origin);
+            setTimeout(function () { window.close(); }, 150);
+            return;
+          }
+        } catch (e) {}
+        document.getElementById("msg").textContent = "Sign-in finished. Copy this window's address and paste it into the API client's “Paste redirect URL” field.";
+      })();
+    </script>
+  </body>
+</html>

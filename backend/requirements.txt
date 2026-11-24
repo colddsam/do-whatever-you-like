@@ -39,3 +39,5 @@ docxcompose>=1.4.0
 opentype-sanitizer>=9.2.0
 # Developer tools: DNS lookups.
 dnspython>=2.7.0
+# API client: HTTP/2 for gRPC calls.
+h2>=4.1.0

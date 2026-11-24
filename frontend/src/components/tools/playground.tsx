@@ -81,6 +81,8 @@ const DocumentViewerTool = dynamic(() => import("./files/document-viewer").then(
 const ThreeViewerTool = dynamic(() => import("./design/three-viewer").then((m) => m.ThreeViewerTool), { loading });
 // The video editor (src/features/video-studio): client-only, its WebGL/WebCodecs/AI code in its own chunks.
 const VideoEditor = dynamic(() => import("@/features/video-studio").then((m) => m.VideoEditorEntry), { loading, ssr: false });
+// The API client (src/features/api-studio): client-only, its script sandbox runs in a worker.
+const ApiStudio = dynamic(() => import("@/features/api-studio").then((m) => m.ApiStudioEntry), { loading, ssr: false });
 // The music studio (src/features/music-studio): client-only DAW, audio engine and on-device AI in their own chunks.
 const MusicStudio = dynamic(() => import("@/features/music-studio").then((m) => m.MusicStudioEntry), { loading, ssr: false });
 
@@ -113,6 +115,8 @@ type Workspace = ComponentType<{ toolId: string }>;
  *   WebCodecs export, on-device AI); its page alone is cross-origin isolated (next.config.ts)
  * - music-studio (by id) → src/features/music-studio: the DAW (Web Audio engine, synths, DSP,
  *   AI songs via /api/tools/music, MusicGen on the device); also cross-origin isolated
+ * - api-client (by id) → src/features/api-studio: the Postman-style API client (collections, scripts in a
+ *   worker sandbox, runner, mocks, monitors, flows; requests via /api/tools/apiclient or the browser)
  * - the Developer, Text and Everyday utilities (lib/utilities/catalog.ts) → UtilityTool: one engine
  *   per job (format, hash, random, network…) with the page's preset as its starting state
  *
@@ -184,6 +188,8 @@ const byId: Record<string, Workspace> = {
   // Audio & video, made in the browser
   "video-editor": VideoEditor,
   "music-studio": MusicStudio,
+  // Developer: the API client
+  "api-client": ApiStudio,
   "video-to-frames": VideoFramesTool,
   "video-to-gif": VideoGifTool,
   // Audio & video, edited on our server (trim, volume) or in the browser (recorder, subtitles)

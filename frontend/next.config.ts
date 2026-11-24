@@ -53,6 +53,9 @@ const nextConfig: NextConfig = {
       // A short address for the video editor.
       { source: "/studio", destination: "/tools/video-editor", permanent: false },
       { source: "/video-editor", destination: "/tools/video-editor", permanent: false },
+      // Short addresses for the API client.
+      { source: "/api-client", destination: "/tools/api-client", permanent: false },
+      { source: "/api-tester", destination: "/tools/api-client", permanent: true },
       // Short addresses for the music studio.
       { source: "/music", destination: "/tools/music-studio", permanent: false },
       { source: "/music-studio", destination: "/tools/music-studio", permanent: false },

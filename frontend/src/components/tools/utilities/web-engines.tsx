@@ -2,7 +2,7 @@
 
 import { DeadPixelTest, MicSpeakerTest } from "./device-tests";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { Camera, CameraOff, Download, ExternalLink, Plus, RotateCw, X } from "lucide-react";
+import { Camera, CameraOff, Download, ExternalLink, RotateCw } from "lucide-react";
 import { motion } from "motion/react";
 import { saveBlob } from "@/lib/files";
 import { formatBytes } from "@/lib/media";
@@ -43,7 +43,6 @@ const SECURITY_HEADERS = [
 
 export function NetworkEngine({ preset }: EngineProps) {
   const kind = preset.kind ?? "dns";
-  if (kind === "api") return <ApiTester />;
   if (kind === "port") return <PortCheck />;
   if (kind === "headers" || kind === "status") return <HttpSwitch start={kind} />;
   return <DnsSwitch start={kind} />;
@@ -367,100 +366,6 @@ function HttpCheck({ kind }: { kind: string }) {
       </HostForm>
       {s.error && <Notice tone="danger">{s.error}</Notice>}
       {s.res && <HttpResult res={s.res} showBody={false} />}
-    </>
-  );
-}
-
-function ApiTester() {
-  const [method, setMethod] = useState("GET");
-  const [url, setUrl] = useState("https://httpbin.org/anything?hello=world");
-  const [headers, setHeaders] = useState<[string, string][]>([["Accept", "application/json"]]);
-  const [body, setBody] = useState('{\n  "name": "Ada"\n}');
-  const [s, run] = useRun<HttpRes>();
-  const hasBody = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
-  const go = () => {
-    const hs = headers.filter(([k]) => k.trim());
-    if (hasBody && body.trim() && !hs.some(([k]) => k.toLowerCase() === "content-type"))
-      hs.push(["Content-Type", /^\s*[[{]/.test(body) ? "application/json" : "text/plain"]);
-    return run(() => postJson<HttpRes>("http", { url, method, headers: hs, body: hasBody ? body : null, follow: true }));
-  };
-  const curl = `curl -X ${method} '${url}'${headers
-    .filter(([k]) => k.trim())
-    .map(([k, v]) => ` \\\n  -H '${k}: ${v}'`)
-    .join("")}${hasBody && body.trim() ? ` \\\n  --data '${body.replace(/'/g, "'\\''")}'` : ""}`;
-  return (
-    <>
-      <Panel>
-        <Row label="Request">
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <select
-              value={method}
-              onChange={(e) => setMethod(e.target.value)}
-              aria-label="Method"
-              className="h-11 rounded-md border border-line bg-surface px-3 font-mono text-sm font-semibold text-ink outline-none focus:border-ink"
-            >
-              {["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"].map((m) => (
-                <option key={m}>{m}</option>
-              ))}
-            </select>
-            <div className="min-w-0 flex-1">
-              <TextField label="URL" value={url} onChange={setUrl} mono />
-            </div>
-            <RunButton busy={s.busy} onClick={go} disabled={!url.trim()}>
-              Send
-            </RunButton>
-          </div>
-        </Row>
-        <Row label="Headers">
-          <ul className="space-y-2">
-            {headers.map(([k, v], i) => (
-              <li key={i} className="flex items-center gap-2">
-                <div className="w-2/5">
-                  <TextField
-                    label={`Header ${i + 1} name`}
-                    value={k}
-                    onChange={(nk) => setHeaders((h) => h.map((x, j) => (j === i ? [nk, x[1]] : x)))}
-                    placeholder="Authorization"
-                    mono
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <TextField
-                    label={`Header ${i + 1} value`}
-                    value={v}
-                    onChange={(nv) => setHeaders((h) => h.map((x, j) => (j === i ? [x[0], nv] : x)))}
-                    placeholder="Bearer …"
-                    mono
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setHeaders((h) => h.filter((_, j) => j !== i))}
-                  aria-label="Remove header"
-                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-[8px] text-ink-3 hover:bg-paper-2 hover:text-ink"
-                >
-                  <X aria-hidden className="size-4" />
-                </button>
-              </li>
-            ))}
-          </ul>
-          <button
-            type="button"
-            onClick={() => setHeaders((h) => [...h, ["", ""]])}
-            className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-[8px] border border-dashed border-ink-3/60 px-3 text-sm text-ink-2 hover:border-ink hover:text-ink"
-          >
-            <Plus aria-hidden className="size-4" /> Add a header
-          </button>
-        </Row>
-      </Panel>
-      {hasBody && <Editor value={body} onChange={setBody} name="body" rows={6} />}
-      {s.error && <Notice tone="danger">{s.error}</Notice>}
-      {s.res && <HttpResult res={s.res} showBody />}
-      <Output value={curl} name="curl" lang="The same request as a curl command" />
-      <Notice>
-        Requests are sent from our server to public addresses only, so there&apos;s no CORS problem. Don&apos;t paste production secrets into any online tool,
-        including this one.
-      </Notice>
     </>
   );
 }

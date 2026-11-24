@@ -585,6 +585,16 @@ const INTENT_RULES: IntentRule[] = [
     reason: "Multi-track video editor with keyframes, effects, auto-captions and MP4 export, in the browser",
   },
   {
+    phrases: [
+      "postman", "postman online", "postman alternative", "postman web", "insomnia", "hoppscotch", "bruno", "api client", "api tester", "test an api", "test my api",
+      "rest client", "http client", "send http request", "send a post request", "api request", "graphql client", "graphql playground", "websocket client",
+      "websocket tester", "socket.io client", "mqtt client", "grpc client", "mock api", "mock server", "api monitor", "collection runner", "api testing",
+      "openapi to postman", "swagger to postman", "curl to code", "oauth token", "load test api",
+    ],
+    boostIds: ["api-client"],
+    reason: "A Postman-style API client: collections, environments, auth, tests, runner, mocks, monitors and code",
+  },
+  {
     phrases: ["cut out background", "remove background", "erase background", "transparent background", "white background", "remove bg", "cut out subject", "cut out person"],
     boostIds: ["remove-background", "image"],
     reason: "Isolates subject with transparent or solid backdrop",

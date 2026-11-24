@@ -47,6 +47,8 @@ export const MERGED_TOOLS: Record<string, MergedTool> = {
   "markdown-to-html": { to: "data-format-converter", params: { pair: "html-md", dir: "b2a" } },
   ...many("dns-lookup", "kind", { "mx-lookup": "mx", "ns-lookup": "ns", "website-to-ip": "ip", "ip-to-hostname": "reverse" }),
   "http-status": { to: "http-headers", params: { kind: "status" } },
+  // The one-shot API tester grew into the full API client.
+  "api-tester": { to: "api-client" },
   "html-entities": { to: "json-escape", params: { kind: "html" } },
   "markdown-viewer": { to: "markdown-editor", params: { mode: "preview" } },
 

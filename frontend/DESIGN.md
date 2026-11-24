@@ -371,6 +371,23 @@ same `sm` chips as the hero's "Try" chips: selected = `ink`).
       collage. Menus, submenus and flyouts float in a portal on `<body>` (`Floating`, z-130) so no scrolling bar clips
       them, and fade in over 140 ms. While a job runs, history and edit shortcuts hold still. Image tools hand a result to
       the editor through IndexedDB (`lib/handoff.ts`, `?open=handoff`), shown as "Edit in Pro editor" on single-image results.
+    - **API client** (`src/features/api-studio/`, `wide`, Developer › Web & network): a Postman-style workspace on the
+      paper palette (not the dark band: it's a reading-and-typing tool). Layout: a `paper` top bar (workspace switcher, an `ink`
+      New button, Import, the environment select with an eye "quick look" popover, cookies, settings, shortcuts, full screen); an
+      icon rail (Collections, Environments, History, Mocks, Monitors, Flows, Specs; the open section an `ink` fill) beside a resizable
+      sidebar; a tab strip (an `accent` hairline along the top of the active tab, method tag, accent dot for unsaved, italic title for a
+      preview tab); the workspace; an optional console under it; a `paper` status bar; the code-snippet panel on the right (an overlay
+      below `lg`). Phones get a hamburger that opens the rail + panel as a drawer over an `ink`/25 scrim, and every request view a
+      Request ⇄ Response segmented switch (sending flips to Response).
+      Methods are coloured as content, not chrome: GET `success`, POST `warning`, PUT a muted blue, PATCH a muted violet, DELETE `danger`,
+      others `ink-2`, in mono, right-aligned in a fixed width so names line up. Status codes use the same tones (2xx success, 3xx warning,
+      4xx/5xx danger). Sub-tabs (Params, Authorization, Headers…) are text with an `accent` underline on the selected one and a mono count
+      or a `success` dot when the tab holds something. `{{variables}}` are tinted `success` when they resolve and `danger` when they don't,
+      in inputs and editors alike, with a hover card giving the value and its scope; secrets show as dots everywhere.
+      Every editor is CodeMirror in the site's tokens (`ui/code-editor.tsx`). Key/value tables are hairline grids with a ghost row that
+      grows the table as you type, and a Bulk Edit text view. Popovers and menus portal to `<body>` (z-140) so panels never clip them;
+      dialogs are bottom sheets on phones. The status, time, size and lock icon in the response bar open popovers: meaning of the status,
+      a timing waterfall (ink bars), size breakdown, and network/TLS details.
     - **Video editor** (`src/features/video-studio/`, `wide`, the Audio & video hub): Premiere's multi-track timeline,
       After Effects' keyframes and shaders, CapCut's one-click AI, all in the browser. It is the **dark band** (the
       palette inverted, as DESIGN B says): `ink` canvas, `ink-raised` panels, `line-dark` hairlines, `paper` text with

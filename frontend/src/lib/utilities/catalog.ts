@@ -243,7 +243,6 @@ const DEV: UtilityDef[] = [
   net("http-headers", "HTTP header & status checker", "A URL's status code, its whole redirect chain and every response header it sends back.", ["http header checker", "check headers", "response headers", "security headers"], { kind: "headers" }),
   net("http-status", "HTTP status checker", "A URL's status code and its whole redirect chain.", ["http status checker", "status code", "redirect checker", "301 302 checker"], { kind: "status" }),
   net("open-port-checker", "Open port checker", "Is a TCP port open on a public server?", ["open port checker", "port checker", "port scan", "is port open"], { kind: "port" }),
-  net("api-tester", "API tester", "Send GET, POST, PUT or DELETE requests with headers and a body.", ["api test", "rest client", "http client", "postman online", "curl online"], { kind: "api" }),
   web("html-link-generator", "HTML link generator", "Link code with target, rel and title, ready to paste.", ["html link code generator", "a href generator", "link html"], { kind: "link" }),
   web("html-table-generator", "HTML table generator", "Build a table in a grid, get clean HTML.", ["html table generator", "table html", "table code"], { kind: "table" }),
   web("redirect-generator", "Redirect generator", "Redirect code for .htaccess, Nginx, HTML, JavaScript and PHP.", ["redirect generator", "301 redirect", "htaccess redirect", "nginx redirect", "meta refresh"], { kind: "redirect" }),
