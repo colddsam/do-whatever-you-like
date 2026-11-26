@@ -68,8 +68,8 @@ ${scope} pre{font-family:Consolas,"Courier New",monospace;font-size:10pt;backgro
 ${scope} code{font-family:Consolas,"Courier New",monospace;background:#f1f1f1;padding:0 2px;border-radius:2px}
 ${scope} ul,${scope} ol{margin:0 0 8pt;padding-left:24pt}
 ${scope} ul{list-style:disc}${scope} ul ul{list-style:circle}${scope} ul ul ul{list-style:square}
-${scope} ol{list-style:decimal}${scope} ol ol{list-style:lower-alpha}${scope} ol ol ol{list-style:lower-roman}
-${scope} ol[type="a"]{list-style-type:lower-alpha}${scope} ol[type="A"]{list-style-type:upper-alpha}${scope} ol[type="i"]{list-style-type:lower-roman}${scope} ol[type="I"]{list-style-type:upper-roman}
+/* Typed lists (a, A, i, I) carry an inline list-style-type; see setListType in the editor. */
+${scope} ol:not([type]){list-style:decimal}${scope} ol ol:not([type]){list-style:lower-alpha}${scope} ol ol ol:not([type]){list-style:lower-roman}
 ${scope} li{margin:0 0 2pt}
 ${scope} ul.checklist{list-style:none;padding-left:4pt}
 ${scope} ul.checklist li{display:flex;gap:6px;align-items:baseline}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import {
   AlignCenter,
   AlignLeft,
@@ -10,7 +11,12 @@ import {
   AlignVerticalJustifyStart,
   ArrowDownAZ,
   ArrowDownZA,
-  BarChart3,
+  ChartArea,
+  ChartBar,
+  ChartColumn,
+  ChartLine,
+  ChartPie,
+  ChartScatter,
   Bold,
   BookOpen,
   ClipboardPaste,
@@ -88,7 +94,7 @@ import { draw, cellFont } from "./render";
 import { SHEET_TEMPLATES } from "./templates";
 import { exportDelimited, exportXlsx, importDelimited, importXlsx } from "./xlsx";
 import { lastOpen, loadDoc, newDocId, rememberOpen, saveDoc } from "../shared/store";
-import { ColorButton, EditorFrame, ensureFont, FONT_SIZES, FONTS, inputCls, Menu, Modal, primaryCls, RBtn, RGroup, Ribbon, RSelect, secondaryCls, TitleBar, useAutosave } from "../shared/ui";
+import { ColorButton, EditorFrame, ensureFont, FONT_SIZES, FONTS, inputCls, Menu, Modal, primaryCls, RBreak, RBtn, RGroup, Ribbon, RSelect, secondaryCls, TitleBar, useAutosave } from "../shared/ui";
 
 type Saved = { name: string; wb: Workbook };
 const noop = () => () => {};
@@ -112,6 +118,8 @@ export function SheetEditorEntry() {
 
 type Editing = { r: number; c: number; text: string; source: "cell" | "bar"; typed: boolean };
 type Clip = { sheet: number; range: Range; cells: (Cell | undefined)[][]; cut: boolean; text: string };
+const CHART_ICONS = { column: ChartColumn, bar: ChartBar, line: ChartLine, pie: ChartPie, area: ChartArea, scatter: ChartScatter } as const;
+
 type Ctx = { x: number; y: number; kind: "cell" | "col" | "row" | "tab"; tab?: number } | null;
 
 function SheetApp({ docId, initial, onSwitch }: { docId: string; initial: Saved; onSwitch: (id: string, data: Saved) => void }) {
@@ -298,10 +306,24 @@ function SheetApp({ docId, initial, onSwitch }: { docId: string; initial: Saved;
 
   const applyStyle = (patch: Partial<CellStyle>) => {
     const g = boundedSel();
-    setCellsIn(g, (cell) => {
-      const s = { ...(cell?.s ?? {}), ...patch };
-      for (const k of Object.keys(s) as (keyof CellStyle)[]) if (s[k] === undefined || s[k] === null || s[k] === false) delete s[k];
-      return { ...(cell ?? {}), s: Object.keys(s).length ? s : undefined };
+    updateSheet((sh) => {
+      const cells = { ...sh.cells };
+      forEachCell(g, (r, c) => {
+        const k = key(r, c);
+        const cell = cells[k];
+        const st = { ...(cell?.s ?? {}), ...patch };
+        for (const p of Object.keys(st) as (keyof CellStyle)[]) if (st[p] === undefined || st[p] === null || st[p] === false) delete st[p];
+        const next = { ...(cell ?? {}), s: Object.keys(st).length ? st : undefined };
+        if (next.v !== undefined || next.s || next.note || next.link) cells[k] = next;
+        else delete cells[k];
+      });
+      // Like Excel, a bigger font makes its rows taller so the text isn't clipped (rows only grow,
+      // so a height the user set by hand is never shrunk).
+      if (!patch.size || patch.size <= 11) return { ...sh, cells };
+      const rowH = { ...sh.rowH };
+      const need = Math.ceil((patch.size * 96) / 72 * 1.3 + 6);
+      for (let r = g.r1; r <= Math.min(g.r2, g.r1 + 2000); r++) if ((rowH[r] ?? DEFAULT_ROW_H) < need) rowH[r] = need;
+      return { ...sh, cells, rowH };
     });
     focusSink();
   };
@@ -681,6 +703,14 @@ function SheetApp({ docId, initial, onSwitch }: { docId: string; initial: Saved;
         if (filled(r, c2 + 1)) { c2++; changed = true; break; }
       }
     }
+    // A title line sitting on top of a table ("Quarterly sales" above the header row) isn't part of
+    // it: filters, sorting and charts must start at the real header row.
+    const count = (r: number) => {
+      let n = 0;
+      for (let c = c1; c <= c2; c++) if (filled(r, c)) n++;
+      return n;
+    };
+    while (r1 < active.r && r2 - r1 >= 2 && count(r1) <= 1 && count(r1 + 1) > 1) r1++;
     return { r1, c1, r2, c2 };
   };
 
@@ -1207,11 +1237,11 @@ function SheetApp({ docId, initial, onSwitch }: { docId: string; initial: Saved;
       )}
       {tab === "Home" && (
         <>
-          <RGroup label="Undo">
+          <RGroup label="Undo" maxW={36}>
             <RBtn icon={Undo2} label="Undo" shortcut="Ctrl+Z" onClick={doUndo} disabled={!undo.current.length} />
             <RBtn icon={Redo2} label="Redo" shortcut="Ctrl+Y" onClick={doRedo} disabled={!redo.current.length} />
           </RGroup>
-          <RGroup label="Clipboard">
+          <RGroup label="Clipboard" maxW={108}>
             <Menu
               icon={ClipboardPaste}
               label="Paste"
@@ -1220,15 +1250,17 @@ function SheetApp({ docId, initial, onSwitch }: { docId: string; initial: Saved;
                 { label: "Paste values only", onClick: () => pasteFromButton(true) },
               ]}
             />
+            <RBreak />
             <RBtn icon={Scissors} label="Cut" shortcut="Ctrl+X" onClick={() => copyOut(true)} />
             <RBtn icon={Copy} label="Copy" shortcut="Ctrl+C" onClick={() => copyOut(false)} />
             <RBtn icon={Paintbrush} label="Format painter" active={Boolean(painter)} onClick={() => setPainter(painter ? null : activeStyle)} />
           </RGroup>
-          <RGroup label="Font">
+          <RGroup label="Font" maxW={266}>
             <RSelect label="Font" value={activeStyle.font ?? "Calibri"} width={130} onChange={(v) => { ensureFont(v); applyStyle({ font: v === "Calibri" ? undefined : v }); }} options={FONTS.map((f) => ({ value: f, label: f, style: { fontFamily: f } }))} />
             <RSelect label="Font size" value={String(activeStyle.size ?? 11)} width={64} onChange={(v) => applyStyle({ size: Number(v) === 11 ? undefined : Number(v) })} options={FONT_SIZES.map((s) => ({ value: String(s), label: String(s) }))} />
             <RBtn icon={Bold} label="Bold" shortcut="Ctrl+B" active={Boolean(activeStyle.bold)} onClick={() => toggle("bold")} />
             <RBtn icon={Italic} label="Italic" shortcut="Ctrl+I" active={Boolean(activeStyle.italic)} onClick={() => toggle("italic")} />
+            <RBreak />
             <RBtn icon={Underline} label="Underline" shortcut="Ctrl+U" active={Boolean(activeStyle.underline)} onClick={() => toggle("underline")} />
             <RBtn icon={Strikethrough} label="Strikethrough" shortcut="Ctrl+5" active={Boolean(activeStyle.strike)} onClick={() => toggle("strike")} />
             <Menu
@@ -1252,16 +1284,11 @@ function SheetApp({ docId, initial, onSwitch }: { docId: string; initial: Saved;
             <ColorButton icon={PaintBucket} label="Fill colour" value={activeStyle.fill} onChange={(c) => applyStyle({ fill: c ?? undefined })} />
             <ColorButton icon={Type} label="Font colour" value={activeStyle.color} onChange={(c) => applyStyle({ color: c ?? undefined })} />
           </RGroup>
-          <RGroup label="Alignment">
+          <RGroup label="Alignment" maxW={186}>
             <RBtn icon={AlignVerticalJustifyStart} label="Top" active={activeStyle.valign === "top"} onClick={() => applyStyle({ valign: "top" })} />
             <RBtn icon={AlignVerticalJustifyCenter} label="Middle" active={activeStyle.valign === "middle"} onClick={() => applyStyle({ valign: "middle" })} />
             <RBtn icon={AlignVerticalJustifyEnd} label="Bottom" active={!activeStyle.valign || activeStyle.valign === "bottom"} onClick={() => applyStyle({ valign: undefined })} />
-            <RBtn icon={AlignLeft} label="Align left" active={activeStyle.align === "left"} onClick={() => applyStyle({ align: activeStyle.align === "left" ? undefined : "left" })} />
-            <RBtn icon={AlignCenter} label="Center" active={activeStyle.align === "center"} onClick={() => applyStyle({ align: activeStyle.align === "center" ? undefined : "center" })} />
-            <RBtn icon={AlignRight} label="Align right" active={activeStyle.align === "right"} onClick={() => applyStyle({ align: activeStyle.align === "right" ? undefined : "right" })} />
             <RBtn icon={WrapText} label="Wrap text" active={Boolean(activeStyle.wrap)} onClick={() => toggle("wrap")} />
-            <RBtn icon={IndentDecrease} label="Decrease indent" onClick={() => applyStyle({ indent: Math.max(0, (activeStyle.indent ?? 0) - 1) || undefined })} />
-            <RBtn icon={IndentIncrease} label="Increase indent" onClick={() => applyStyle({ indent: (activeStyle.indent ?? 0) + 1 })} />
             <Menu
               icon={Merge}
               label="Merge"
@@ -1273,16 +1300,23 @@ function SheetApp({ docId, initial, onSwitch }: { docId: string; initial: Saved;
                 { label: "Unmerge cells", onClick: () => mergeSel("unmerge") },
               ]}
             />
+            <RBreak />
+            <RBtn icon={AlignLeft} label="Align left" active={activeStyle.align === "left"} onClick={() => applyStyle({ align: activeStyle.align === "left" ? undefined : "left" })} />
+            <RBtn icon={AlignCenter} label="Center" active={activeStyle.align === "center"} onClick={() => applyStyle({ align: activeStyle.align === "center" ? undefined : "center" })} />
+            <RBtn icon={AlignRight} label="Align right" active={activeStyle.align === "right"} onClick={() => applyStyle({ align: activeStyle.align === "right" ? undefined : "right" })} />
+            <RBtn icon={IndentDecrease} label="Decrease indent" onClick={() => applyStyle({ indent: Math.max(0, (activeStyle.indent ?? 0) - 1) || undefined })} />
+            <RBtn icon={IndentIncrease} label="Increase indent" onClick={() => applyStyle({ indent: (activeStyle.indent ?? 0) + 1 })} />
           </RGroup>
-          <RGroup label="Number">
+          <RGroup label="Number" maxW={212}>
             <RSelect
               label="Number format"
               value={activeStyle.fmt ?? "General"}
-              width={120}
+              width={170}
               onChange={(v) => applyStyle({ fmt: v === "General" ? undefined : v })}
               options={NUMBER_FORMATS.map((f) => ({ value: f.fmt, label: f.label }))}
             />
             <span className="sr-only">{fmtLabel}</span>
+            <RBreak />
             <RBtn label="Currency" onClick={() => applyStyle({ fmt: '"$"#,##0.00' })}>
               <span className="text-sm font-semibold">$</span>
             </RBtn>
@@ -1297,8 +1331,9 @@ function SheetApp({ docId, initial, onSwitch }: { docId: string; initial: Saved;
               <span className="text-[11px] font-semibold">.00→.0</span>
             </RBtn>
           </RGroup>
-          <RGroup label="Styles">
-            <RBtn icon={Palette} label="Conditional formatting" showLabel onClick={() => setDialog("cond")} />
+          <RGroup label="Styles" maxW={170}>
+            <RBtn icon={Palette} label="Conditional format" showLabel onClick={() => setDialog("cond")} />
+            <RBreak />
             <Menu
               icon={SquareDashed}
               label="Cell styles"
@@ -1317,7 +1352,7 @@ function SheetApp({ docId, initial, onSwitch }: { docId: string; initial: Saved;
               ]}
             />
           </RGroup>
-          <RGroup label="Cells">
+          <RGroup label="Cells" maxW={176}>
             <Menu
               icon={Plus}
               label="Insert"
@@ -1338,6 +1373,7 @@ function SheetApp({ docId, initial, onSwitch }: { docId: string; initial: Saved;
                 { label: "Delete sheet", danger: true, onClick: () => deleteSheet(si), disabled: wb.sheets.length < 2 },
               ]}
             />
+            <RBreak />
             <Menu
               icon={Rows3}
               label="Format"
@@ -1350,7 +1386,7 @@ function SheetApp({ docId, initial, onSwitch }: { docId: string; initial: Saved;
               ]}
             />
           </RGroup>
-          <RGroup label="Editing">
+          <RGroup label="Editing" maxW={200}>
             <Menu
               icon={Sigma}
               label="AutoSum"
@@ -1365,6 +1401,7 @@ function SheetApp({ docId, initial, onSwitch }: { docId: string; initial: Saved;
                 { label: "Clear contents", shortcut: "Del", onClick: () => clearSel("contents") },
               ]}
             />
+            <RBreak />
             <Menu
               icon={ArrowDownAZ}
               label="Sort & filter"
@@ -1393,7 +1430,7 @@ function SheetApp({ docId, initial, onSwitch }: { docId: string; initial: Saved;
                 ["scatter", "Scatter"],
               ] as const
             ).map(([t, l]) => (
-              <RBtn key={t} big icon={BarChart3} label={l} showLabel onClick={() => openChart(t)} />
+              <RBtn key={t} big icon={CHART_ICONS[t]} label={l} showLabel onClick={() => openChart(t)} />
             ))}
           </RGroup>
           <RGroup label="Insert">
@@ -1467,7 +1504,7 @@ function SheetApp({ docId, initial, onSwitch }: { docId: string; initial: Saved;
             <RBtn label="Zoom out" icon={Minus} onClick={() => setZoom((sheet.zoom ?? 100) - 10)} />
             <span className="w-12 text-center text-sm">{sheet.zoom ?? 100}%</span>
             <RBtn label="Zoom in" icon={Plus} onClick={() => setZoom((sheet.zoom ?? 100) + 10)} />
-            <RBtn label="100%" showLabel onClick={() => setZoom(100)} />
+            <RBtn label="Actual size" showLabel onClick={() => setZoom(100)} />
           </RGroup>
         </>
       )}
@@ -1493,16 +1530,51 @@ function SheetApp({ docId, initial, onSwitch }: { docId: string; initial: Saved;
     setEditing({ r: active.r, c: active.c, text: `=${n}(`, source: "cell", typed: false });
     requestAnimationFrame(() => editorRef.current?.focus());
   }
+  /** The data a new chart should plot: the current region minus a title row above the table and columns with no data. */
+  function chartRegion(): Range {
+    let { r1, c1, r2, c2 } = currentRegion();
+    if (sel.r1 !== sel.r2 || sel.c1 !== sel.c2) return { r1, c1, r2, c2 };
+    const filled = (r: number, c: number) => {
+      const v = comp.values.get(key(r, c));
+      return v !== undefined && v !== null && v !== "";
+    };
+    const rowCount = (r: number) => {
+      let n = 0;
+      for (let c = c1; c <= c2; c++) if (filled(r, c)) n++;
+      return n;
+    };
+    while (r2 - r1 >= 2 && rowCount(r1) <= 1 && rowCount(r1 + 1) > 1) r1++;
+    const colHasData = (c: number) => {
+      for (let r = r1 + 1; r <= r2; r++) if (filled(r, c)) return true;
+      return false;
+    };
+    // Series columns must hold numbers; a trailing text column (notes, status) isn't plottable.
+    const colHasNumbers = (c: number) => {
+      for (let r = r1 + 1; r <= r2; r++) if (typeof comp.values.get(key(r, c)) === "number") return true;
+      return false;
+    };
+    while (c2 > c1 && !colHasData(c1)) c1++;
+    while (c2 > c1 + 1 && !colHasNumbers(c2)) c2--;
+    // A closing "Total" row would double-count (and dwarf every pie slice).
+    if (r2 - r1 >= 2 && /^\s*(grand\s+)?(total|sum)s?\s*:?\s*$/i.test(String(comp.values.get(key(r2, c1)) ?? ""))) r2--;
+    return { r1, c1, r2, c2 };
+  }
   function openChart(type: ChartSpec["type"]) {
-    const g = currentRegion();
+    const g = chartRegion();
     const sv = scrollRef.current;
     setChartDraft({
       id: newId("ch"),
       type,
       range: `${addr(g.r1, g.c1)}:${addr(g.r2, g.c2)}`,
       title: "\u0000",
-      x: (sv?.scrollLeft ?? 0) / zoom + 80,
-      y: (sv?.scrollTop ?? 0) / zoom + 40,
+      // Beside the data (one column gap, top-aligned with it) like Excel, never on top of it;
+      // fall back to the visible area if that spot is far off-screen.
+      ...(() => {
+        const bx = (geo.headerW + geo.colX[Math.min(geo.cols, g.c2 + 1)] * zoom + 24) / zoom;
+        const by = (geo.headerH + geo.rowY[g.r1] * zoom) / zoom;
+        const viewR = ((sv?.scrollLeft ?? 0) + (sv?.clientWidth ?? 1200)) / zoom;
+        return bx < viewR + 200 ? { x: bx, y: by } : { x: (sv?.scrollLeft ?? 0) / zoom + 80, y: (sv?.scrollTop ?? 0) / zoom + 40 };
+      })(),
       w: 480,
       h: 300,
       headers: typeof comp.values.get(key(g.r1, g.c2)) === "string",
@@ -2060,50 +2132,78 @@ function rowsOf(sh: Sheet, comp: ReturnType<typeof recalc>[number]) {
 }
 
 function ContextMenu({ x, y, items, onClose, fixedBottom }: { x: number; y: number; items: (readonly [string, () => void] | null)[]; onClose: () => void; fixedBottom?: boolean }) {
+  const originRef = useRef<HTMLSpanElement | null>(null);
+  const menuRef = useRef<HTMLUListElement | null>(null);
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     const d = () => onClose();
     window.addEventListener("keydown", k);
     const t = setTimeout(() => window.addEventListener("pointerdown", d), 0);
+    window.addEventListener("resize", d);
     return () => {
       clearTimeout(t);
       window.removeEventListener("keydown", k);
       window.removeEventListener("pointerdown", d);
+      window.removeEventListener("resize", d);
     };
   }, [onClose]);
+  // Rendered in <body> with fixed coordinates so the editor frame can't clip it; opens up/left
+  // when there's no room below/right of the click, and always stays on screen.
+  useLayoutEffect(() => {
+    const o = originRef.current?.getBoundingClientRect();
+    const m = menuRef.current;
+    if (!o || !m) return;
+    const w = m.offsetWidth;
+    const h = m.offsetHeight;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    let left = o.left;
+    if (left + w > vw - 8) left = Math.max(8, o.left - w);
+    let top = fixedBottom ? o.top - h : o.top;
+    if (top + h > vh - 8) top = o.top - h >= 8 ? o.top - h : vh - 8 - h;
+    m.style.left = `${Math.round(Math.max(8, left))}px`;
+    m.style.top = `${Math.round(Math.max(8, top))}px`;
+    m.style.visibility = "visible";
+  }, [x, y, fixedBottom]);
   return (
-    <ul
-      role="menu"
-      className={cn("z-50 max-h-[70vh] min-w-52 overflow-y-auto rounded-[6px] border border-line bg-white py-1 text-[13px] shadow-float", fixedBottom ? "fixed bottom-12" : "absolute")}
-      style={fixedBottom ? { left: Math.max(8, x) } : { left: Math.max(4, x), top: Math.max(4, y) }}
-      onPointerDown={(e) => e.stopPropagation()}
-    >
-      {items.map((it, i) =>
-        it === null ? (
-          <li key={i} className="my-1 border-t border-line" />
-        ) : (
-          <li key={i}>
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                onClose();
-                it[1]();
-              }}
-              className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-paper"
-            >
-              {it[0].startsWith("Tab colour") ? (
-                <>
-                  <span className="size-3 rounded-sm" style={{ background: it[0].split(" ").pop() }} /> Tab colour
-                </>
-              ) : (
-                it[0]
-              )}
-            </button>
-          </li>
-        ),
+    <>
+      <span ref={originRef} aria-hidden className="pointer-events-none absolute size-0" style={{ left: Math.max(4, x), top: fixedBottom ? "100%" : Math.max(4, y) }} />
+      {createPortal(
+        <ul
+          ref={menuRef}
+          role="menu"
+          className="invisible fixed z-[85] max-h-[min(70vh,calc(100dvh-16px))] min-w-52 overflow-y-auto rounded-[6px] border border-line bg-white py-1 text-[13px] shadow-float"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          {items.map((it, i) =>
+            it === null ? (
+              <li key={i} className="my-1 border-t border-line" />
+            ) : (
+              <li key={i}>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    onClose();
+                    it[1]();
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-paper"
+                >
+                  {it[0].startsWith("Tab colour") ? (
+                    <>
+                      <span className="size-3 rounded-sm" style={{ background: it[0].split(" ").pop() }} /> Tab colour
+                    </>
+                  ) : (
+                    it[0]
+                  )}
+                </button>
+              </li>
+            ),
+          )}
+        </ul>,
+        document.body,
       )}
-    </ul>
+    </>
   );
 }
 

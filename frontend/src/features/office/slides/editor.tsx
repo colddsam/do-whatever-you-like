@@ -90,9 +90,11 @@ function SlidesApp({ docId, initial, onSwitch }: { docId: string; initial: Saved
   const [cur, setCur] = useState(0);
   const [sel, setSel] = useState<string[]>([]);
   const [editing, setEditing] = useState<string | null>(null);
+  const editDirty = useRef(false);
   const [tab, setTab] = useState("Home");
   const [fullscreen, setFullscreen] = useState(false);
-  const [showNotes, setShowNotes] = useState(true);
+  // Phones need the height for the slide itself; notes stay one tap away under View.
+  const [showNotes, setShowNotes] = useState(() => window.innerWidth >= 640);
   const [panelOpen, setPanelOpen] = useState(true);
   const [snap, setSnap] = useState(true);
   const [guides, setGuides] = useState<{ v: number[]; h: number[] }>({ v: [], h: [] });
@@ -323,6 +325,7 @@ function SlidesApp({ docId, initial, onSwitch }: { docId: string; initial: Saved
   const startEdit = (id: string) => {
     const el = deck.slides[cur].elements.find((e) => e.id === id);
     if (!el || el.html === undefined) return;
+    editDirty.current = false;
     setSel([id]);
     setEditing(id);
     requestAnimationFrame(() => {
@@ -339,11 +342,29 @@ function SlidesApp({ docId, initial, onSwitch }: { docId: string; initial: Saved
       s?.addRange(r);
     });
   };
+  /**
+   * Copies the text being typed into the deck as it changes, so autosave, thumbnails and a closed
+   * tab never lose it. The first change of an edit is one undo step; the rest join it.
+   */
+  const syncEdit = () => {
+    if (!editing) return;
+    const node = editRef.current;
+    const clean = (node?.innerHTML ?? "").replace(/<p><br><\/p>$/, "");
+    // Text boxes grow to fit what's typed (PowerPoint's "resize shape to fit text").
+    const need = node ? Math.ceil(node.scrollHeight) : 0;
+    updateEls(
+      [editing],
+      (e) => {
+        const h = e.type === "text" && need > e.h ? need : e.h;
+        return e.html === clean && h === e.h ? e : { ...e, html: clean, h };
+      },
+      !editDirty.current,
+    );
+    editDirty.current = true;
+  };
   const stopEdit = () => {
     if (!editing) return;
-    const html = editRef.current?.innerHTML ?? "";
-    const clean = html.replace(/<p><br><\/p>$/, "") || "";
-    updateEls([editing], (e) => ({ ...e, html: clean }));
+    syncEdit();
     setEditing(null);
   };
   const fmtText = (cmd: string, value?: string) => {
@@ -926,6 +947,7 @@ function SlidesApp({ docId, initial, onSwitch }: { docId: string; initial: Saved
                           className="sl-text absolute inset-0 cursor-text select-text outline-none"
                           style={{ ...cssObj(textCss(el.text, theme, el.role)), padding: el.type === "shape" ? "8px 12px" : "4px 6px", overflow: "visible" }}
                           onBlur={stopEdit}
+                          onInput={syncEdit}
                           onPointerDown={(e) => e.stopPropagation()}
                           onKeyDown={(e) => {
                             if (e.key === "Escape") stopEdit();

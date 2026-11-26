@@ -69,7 +69,7 @@ import { htmlToMarkdown, htmlToText, printDoc, standaloneHtml } from "./export";
 import { DEFAULT_PAGE, docCss, MM_TO_PX, PARA_STYLES, pagePx, type PageSetup, type WordDoc } from "./model";
 import { WORD_TEMPLATES } from "./templates";
 import { lastOpen, loadDoc, newDocId, rememberOpen, saveDoc } from "../shared/store";
-import { ColorButton, EditorFrame, ensureFont, FONT_SIZES, FONTS, inputCls, Menu, Modal, primaryCls, RBtn, RGroup, Ribbon, RSelect, secondaryCls, TitleBar, useAutosave } from "../shared/ui";
+import { ColorButton, EditorFrame, ensureFont, FONT_SIZES, FONTS, inputCls, Menu, Modal, Popover, primaryCls, RBreak, RBtn, RGroup, Ribbon, RSelect, secondaryCls, TitleBar, useAutosave } from "../shared/ui";
 
 type Saved = { name: string; doc: WordDoc };
 const noop = () => () => {};
@@ -788,9 +788,13 @@ function WordApp({ docId, initial, onSwitch }: { docId: string; initial: Saved; 
     const div = typeof document !== "undefined" ? document.createElement("div") : null;
     if (!div) return { words: 0, chars: 0, charsNoSpace: 0, paras: 0 };
     div.innerHTML = html;
-    const text = div.innerText || div.textContent || "";
-    const words = (text.match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu) ?? []).length + (text.match(/[぀-ヿ一-鿿]/g) ?? []).length;
-    return { words, chars: text.replace(/\n/g, "").length, charsNoSpace: text.replace(/\s/g, "").length, paras: div.querySelectorAll("p,h1,h2,h3,h4,li,blockquote").length };
+    const text = div.textContent || "";
+    // A detached node has no layout, so textContent glues neighbouring blocks and table cells
+    // together ("Header 3" + "Hello" → "3Hello"). Count words on a copy with block boundaries spaced.
+    div.innerHTML = html.replace(/<\/(p|h[1-6]|li|td|th|div|blockquote|pre|tr|table|ul|ol)>|<br\s*\/?>/gi, "$& ");
+    const spaced = div.textContent || "";
+    const words = (spaced.match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu) ?? []).length + (spaced.match(/[぀-ヿ一-鿿]/g) ?? []).length;
+    return { words, chars: text.length, charsNoSpace: text.replace(/\s/g, "").length, paras: div.querySelectorAll("p,h1,h2,h3,h4,li,blockquote").length };
   }, [html]);
 
   // ---------- fit-to-width zoom on small screens
@@ -957,7 +961,7 @@ function WordApp({ docId, initial, onSwitch }: { docId: string; initial: Saved; 
               onClick={() => setPainter(painter ? null : { b: fmt.bold, i: fmt.italic, u: fmt.underline, color: "#000000", font: fmt.font, size: fmt.size })}
             />
           </RGroup>
-          <RGroup label="Font">
+          <RGroup label="Font" maxW={350}>
             <RSelect label="Font" value={fmt.font} width={136} onChange={(v) => { ensureFont(v); exec("fontName", v); }} options={FONTS.map((f) => ({ value: f, label: f, style: { fontFamily: f } }))} />
             <RSelect label="Font size" value={String(fmt.size)} width={62} onChange={(v) => setFontSize(Number(v))} options={FONT_SIZES.map((s) => ({ value: String(s), label: String(s) }))} />
             <RBtn label="Grow font" shortcut="Ctrl+]" onClick={() => growFont(1)}>
@@ -966,14 +970,6 @@ function WordApp({ docId, initial, onSwitch }: { docId: string; initial: Saved; 
             <RBtn label="Shrink font" shortcut="Ctrl+[" onClick={() => growFont(-1)}>
               <span className="text-xs font-semibold">A⁻</span>
             </RBtn>
-            <RBtn icon={Bold} label="Bold" shortcut="Ctrl+B" active={fmt.bold} onClick={() => exec("bold")} />
-            <RBtn icon={Italic} label="Italic" shortcut="Ctrl+I" active={fmt.italic} onClick={() => exec("italic")} />
-            <RBtn icon={Underline} label="Underline" shortcut="Ctrl+U" active={fmt.underline} onClick={() => exec("underline")} />
-            <RBtn icon={Strikethrough} label="Strikethrough" active={fmt.strike} onClick={() => exec("strikeThrough")} />
-            <RBtn icon={Subscript} label="Subscript" shortcut="Ctrl+=" active={fmt.sub} onClick={() => exec("subscript")} />
-            <RBtn icon={Superscript} label="Superscript" shortcut="Ctrl+Shift+=" active={fmt.sup} onClick={() => exec("superscript")} />
-            <ColorButton icon={Baseline} label="Font colour" onChange={(c) => exec("foreColor", c ?? "#000000")} />
-            <ColorButton icon={Highlighter} label="Highlight" onChange={(c) => exec("hiliteColor", c ?? "transparent")} />
             <Menu
               icon={CaseSensitive}
               label="Change case"
@@ -986,24 +982,34 @@ function WordApp({ docId, initial, onSwitch }: { docId: string; initial: Saved; 
               ]}
             />
             <RBtn icon={RemoveFormatting} label="Clear formatting" onClick={() => { exec("removeFormat"); applyBlockStyle("Normal"); }} />
+            <RBreak />
+            <RBtn icon={Bold} label="Bold" shortcut="Ctrl+B" active={fmt.bold} onClick={() => exec("bold")} />
+            <RBtn icon={Italic} label="Italic" shortcut="Ctrl+I" active={fmt.italic} onClick={() => exec("italic")} />
+            <RBtn icon={Underline} label="Underline" shortcut="Ctrl+U" active={fmt.underline} onClick={() => exec("underline")} />
+            <RBtn icon={Strikethrough} label="Strikethrough" active={fmt.strike} onClick={() => exec("strikeThrough")} />
+            <RBtn icon={Subscript} label="Subscript" shortcut="Ctrl+=" active={fmt.sub} onClick={() => exec("subscript")} />
+            <RBtn icon={Superscript} label="Superscript" shortcut="Ctrl+Shift+=" active={fmt.sup} onClick={() => exec("superscript")} />
+            <ColorButton icon={Baseline} label="Font colour" onChange={(c) => exec("foreColor", c ?? "#000000")} />
+            <ColorButton icon={Highlighter} label="Highlight" onChange={(c) => exec("hiliteColor", c ?? "transparent")} />
           </RGroup>
-          <RGroup label="Paragraph">
+          <RGroup label="Paragraph" maxW={240}>
             <RBtn icon={List} label="Bullets" active={fmt.ul} onClick={() => exec("insertUnorderedList")} />
             <Menu
               icon={ListOrdered}
               label="Numbering"
               showLabel={false}
               items={[
-                { label: "1. 2. 3.", onClick: () => { exec("insertOrderedList"); setListType("1"); } },
-                { label: "a. b. c.", onClick: () => { exec("insertOrderedList"); setListType("a"); } },
-                { label: "A. B. C.", onClick: () => { exec("insertOrderedList"); setListType("A"); } },
-                { label: "i. ii. iii.", onClick: () => { exec("insertOrderedList"); setListType("i"); } },
-                { label: "I. II. III.", onClick: () => { exec("insertOrderedList"); setListType("I"); } },
+                { label: "1. 2. 3.", onClick: () => numbering("1") },
+                { label: "a. b. c.", onClick: () => numbering("a") },
+                { label: "A. B. C.", onClick: () => numbering("A") },
+                { label: "i. ii. iii.", onClick: () => numbering("i") },
+                { label: "I. II. III.", onClick: () => numbering("I") },
               ]}
             />
             <RBtn icon={CheckSquare} label="Checklist" onClick={() => insertHtml('<ul class="checklist"><li data-checked="false">' + (window.getSelection()?.toString() || "<br>") + "</li></ul>")} />
             <RBtn icon={IndentDecrease} label="Decrease indent" onClick={() => exec("outdent")} />
             <RBtn icon={IndentIncrease} label="Increase indent" onClick={() => exec("indent")} />
+            <RBreak />
             <RBtn icon={AlignLeft} label="Align left" shortcut="Ctrl+L" active={fmt.align === "left"} onClick={() => exec("justifyLeft")} />
             <RBtn icon={AlignCenter} label="Center" shortcut="Ctrl+E" active={fmt.align === "center"} onClick={() => exec("justifyCenter")} />
             <RBtn icon={AlignRight} label="Align right" shortcut="Ctrl+R" active={fmt.align === "right"} onClick={() => exec("justifyRight")} />
@@ -1030,7 +1036,7 @@ function WordApp({ docId, initial, onSwitch }: { docId: string; initial: Saved; 
             <ColorButton icon={PaintBucket} label="Shading" onChange={(c) => { snapshot(); restoreSelection(); blocksInSelection().forEach((b) => (b.style.backgroundColor = c ?? "")); changed(true); }} />
           </RGroup>
           <RGroup label="Styles">
-            <div className="flex max-w-[420px] gap-1 overflow-x-auto py-0.5">
+            <div className="flex max-w-[310px] gap-1 overflow-x-auto py-0.5 [scrollbar-width:thin]">
               {PARA_STYLES.map((s) => (
                 <button
                   key={s.id}
@@ -1100,10 +1106,10 @@ function WordApp({ docId, initial, onSwitch }: { docId: string; initial: Saved; 
             <Menu
               label="Margins"
               items={[
-                { label: "Normal (2.54 cm)", onClick: () => setPage((p) => ({ ...p, margins: { top: 25.4, right: 25.4, bottom: 25.4, left: 25.4 } })) },
-                { label: "Narrow (1.27 cm)", onClick: () => setPage((p) => ({ ...p, margins: { top: 12.7, right: 12.7, bottom: 12.7, left: 12.7 } })) },
-                { label: "Moderate", onClick: () => setPage((p) => ({ ...p, margins: { top: 25.4, right: 19.1, bottom: 25.4, left: 19.1 } })) },
-                { label: "Wide (5.08 cm sides)", onClick: () => setPage((p) => ({ ...p, margins: { top: 25.4, right: 50.8, bottom: 25.4, left: 50.8 } })) },
+                { label: "Normal (2.54 cm)", checked: isMargins(25.4, 25.4), onClick: () => setPage((p) => ({ ...p, margins: { top: 25.4, right: 25.4, bottom: 25.4, left: 25.4 } })) },
+                { label: "Narrow (1.27 cm)", checked: isMargins(12.7, 12.7), onClick: () => setPage((p) => ({ ...p, margins: { top: 12.7, right: 12.7, bottom: 12.7, left: 12.7 } })) },
+                { label: "Moderate", checked: isMargins(25.4, 19.1), onClick: () => setPage((p) => ({ ...p, margins: { top: 25.4, right: 19.1, bottom: 25.4, left: 19.1 } })) },
+                { label: "Wide (5.08 cm sides)", checked: isMargins(25.4, 50.8), onClick: () => setPage((p) => ({ ...p, margins: { top: 25.4, right: 50.8, bottom: 25.4, left: 50.8 } })) },
                 { label: "Custom…", onClick: () => setDialog("margins") },
               ]}
             />
@@ -1173,7 +1179,7 @@ function WordApp({ docId, initial, onSwitch }: { docId: string; initial: Saved; 
             <RBtn icon={Minus} label="Zoom out" onClick={() => { setFit(false); setZoom((z) => Math.max(50, z - 10)); }} />
             <span className="w-12 text-center text-sm">{Math.round(effZoom * 100)}%</span>
             <RBtn icon={Plus} label="Zoom in" onClick={() => { setFit(false); setZoom((z) => Math.min(200, z + 10)); }} />
-            <RBtn label="100%" showLabel onClick={() => { setFit(false); setZoom(100); }} />
+            <RBtn label="Actual size" showLabel onClick={() => { setFit(false); setZoom(100); }} />
             <RBtn label="Page width" showLabel active={fit} onClick={() => { setFit(true); setZoom(100); }} />
           </RGroup>
         </>
@@ -1202,14 +1208,37 @@ function WordApp({ docId, initial, onSwitch }: { docId: string; initial: Saved; 
     </Ribbon>
   );
 
+  function isMargins(tb: number, lr: number) {
+    const m = page.margins;
+    return Math.abs(m.top - tb) < 0.2 && Math.abs(m.bottom - tb) < 0.2 && Math.abs(m.left - lr) < 0.2 && Math.abs(m.right - lr) < 0.2;
+  }
+
+  /** Applies a numbering style: restyles the current numbered list, or starts one (never toggles it off). */
+  function numbering(t: string) {
+    restoreSelection();
+    const n = window.getSelection()?.anchorNode;
+    const el = (n?.nodeType === 3 ? n.parentElement : (n as HTMLElement | null)) ?? null;
+    if (!el?.closest(".doc-body ol")) exec("insertOrderedList");
+    setListType(t);
+  }
+
   function setListType(t: string) {
     const sel = window.getSelection();
     const n = sel?.anchorNode;
     const el = (n?.nodeType === 3 ? n.parentElement : (n as HTMLElement)) ?? null;
     const ol = el?.closest("ol");
     if (ol) {
-      if (t === "1") ol.removeAttribute("type");
-      else ol.setAttribute("type", t);
+      // The `type` attribute drives .docx export; the inline style is what renders, because CSS
+      // attribute selectors on `type` are case-insensitive (a/A, i/I would collide) and the
+      // Tailwind reset overrides the browser's own mapping.
+      const css: Record<string, string> = { a: "lower-alpha", A: "upper-alpha", i: "lower-roman", I: "upper-roman" };
+      if (t === "1") {
+        ol.removeAttribute("type");
+        ol.style.removeProperty("list-style-type");
+      } else {
+        ol.setAttribute("type", t);
+        ol.style.listStyleType = css[t];
+      }
       changed(true);
     }
   }
@@ -1567,16 +1596,17 @@ async function downscale(file: File, max: number): Promise<string> {
 
 function TablePicker({ onPick }: { onPick: (r: number, c: number) => void }) {
   const [open, setOpen] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
   const [hover, setHover] = useState({ r: 0, c: 0 });
   return (
     <div className="relative">
       <span data-popover-trigger>
         <RBtn big icon={TableIcon} label="Table" showLabel onClick={() => setOpen((o) => !o)} active={open || undefined} />
       </span>
-      {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 rounded-md border border-line bg-white p-2 shadow-float" onMouseLeave={() => setHover({ r: 0, c: 0 })}>
-          <p className="mb-1 text-xs text-ink-2">{hover.r ? `${hover.r} × ${hover.c} table` : "Insert table"}</p>
-          <div className="grid grid-cols-8 gap-0.5">
+      <Popover open={open} onClose={close} className="w-auto">
+        <div className="p-1" onMouseLeave={() => setHover({ r: 0, c: 0 })}>
+          <p className="mb-1.5 text-xs text-ink-2">{hover.r ? `${hover.r} × ${hover.c} table` : "Insert table"}</p>
+          <div className="grid w-max grid-cols-8 gap-1 sm:gap-0.5">
             {Array.from({ length: 64 }, (_, i) => {
               const r = Math.floor(i / 8) + 1;
               const c = (i % 8) + 1;
@@ -1591,13 +1621,13 @@ function TablePicker({ onPick }: { onPick: (r: number, c: number) => void }) {
                     setOpen(false);
                     onPick(Math.max(2, r), c);
                   }}
-                  className={cn("size-5 border", r <= hover.r && c <= hover.c ? "border-[#2b579a] bg-[#dbe5f5]" : "border-line")}
+                  className={cn("size-8 rounded-[2px] border sm:size-5", r <= hover.r && c <= hover.c ? "border-[#2b579a] bg-[#dbe5f5]" : "border-line")}
                 />
               );
             })}
           </div>
         </div>
-      )}
+      </Popover>
     </div>
   );
 }

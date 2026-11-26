@@ -1,5 +1,5 @@
 /** Starter workbooks for the spreadsheet editor. */
-import { blankSheet, blankWorkbook, key, newId, type CellStyle, type Workbook } from "./model";
+import { blankSheet, blankWorkbook, DEFAULT_ROW_H, key, newId, type CellStyle, type Workbook } from "./model";
 
 type Row = (string | number | null | [string | number, CellStyle])[];
 
@@ -14,6 +14,13 @@ function sheetFrom(name: string, rows: Row[], opts: { widths?: number[]; freeze?
     }),
   );
   opts.widths?.forEach((w, i) => (sh.colW[i] = w));
+  // Rows holding a large font get a taller row, as Excel does, so titles aren't clipped.
+  for (const [k, cell] of Object.entries(sh.cells)) {
+    const size = cell.s?.size ?? 11;
+    if (size <= 11) continue;
+    const r = Number(k.split(",")[0]);
+    sh.rowH[r] = Math.max(sh.rowH[r] ?? DEFAULT_ROW_H, Math.ceil((size * 96) / 72 * 1.3 + 6));
+  }
   if (opts.freeze) sh.freeze = { r: opts.freeze, c: 0 };
   wb.sheets = [sh];
   return wb;

@@ -6,8 +6,9 @@
  * status, "My files", and a full-screen toggle. Designed to collapse gracefully on phones
  * (ribbon scrolls sideways, menus become bottom sheets).
  */
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { Check, ChevronDown, FilePlus2, FolderOpen, Maximize2, Minimize2, Trash2, X, type LucideIcon } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { Check, ChevronDown, FilePlus2, Files, FolderOpen, Maximize2, Minimize2, Trash2, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { deleteDoc, listDocs, timeAgo, type DocMeta, type OfficeApp } from "./store";
 
@@ -53,16 +54,19 @@ export function RBtn({
       )}
     >
       {Icon && <Icon aria-hidden className={big ? "size-5" : "size-4"} />}
-      {children}
       {showLabel && <span className={big ? "leading-tight" : "hidden whitespace-nowrap sm:inline"}>{label}</span>}
+      {children}
     </button>
   );
 }
 
-export function RGroup({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
+/** A labelled ribbon group. `maxW` lets a wide group wrap onto two rows (like Word's Font group). */
+export function RGroup({ label, children, className, maxW }: { label: string; children: ReactNode; className?: string; maxW?: number }) {
   return (
-    <div className={cn("flex shrink-0 flex-col border-r border-line px-2 last:border-r-0", className)} role="group" aria-label={label}>
-      <div className="flex min-h-[64px] flex-wrap content-center items-center gap-0.5">{children}</div>
+    <div className={cn("flex shrink-0 flex-col border-r border-line px-1.5 last:border-r-0", className)} role="group" aria-label={label}>
+      <div className="flex min-h-[64px] flex-wrap content-center items-center gap-0.5" style={maxW ? { maxWidth: maxW } : undefined}>
+        {children}
+      </div>
       <span className="hidden pb-0.5 text-center text-[10px] uppercase tracking-wide text-ink-3 lg:block">{label}</span>
     </div>
   );
@@ -101,8 +105,18 @@ export function RSelect({
   );
 }
 
+/** Forces the next ribbon controls in a wrapping RGroup onto a new row. */
+export function RBreak() {
+  return <span aria-hidden className="h-0 basis-full" />;
+}
+
 // ------------------------------------------------------------------ popovers & menus
 
+/**
+ * A dropdown anchored to its trigger. It is portalled to <body> and positioned with
+ * `position: fixed`, so the ribbon's sideways scrolling can never clip it; it flips above the
+ * trigger when there is no room below and stays inside the viewport. On phones it is a bottom sheet.
+ */
 export function Popover({
   open,
   onClose,
@@ -117,10 +131,47 @@ export function Popover({
   className?: string;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
+  const anchorRef = useRef<HTMLSpanElement | null>(null);
+  useLayoutEffect(() => {
+    if (!open) return;
+    const place = () => {
+      const el = ref.current;
+      const anchor = anchorRef.current?.parentElement;
+      if (!el || !anchor) return;
+      if (window.innerWidth < 640) {
+        el.style.top = el.style.left = "";
+        return;
+      }
+      const r = anchor.getBoundingClientRect();
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      let left = align === "end" ? r.right - w : r.left;
+      left = Math.max(8, Math.min(left, vw - w - 8));
+      let top = r.bottom + 4;
+      if (top + h > vh - 8 && r.top - h - 4 >= 8) top = r.top - h - 4;
+      top = Math.max(8, Math.min(top, vh - h - 8));
+      el.style.left = `${Math.round(left)}px`;
+      el.style.top = `${Math.round(top)}px`;
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open, align]);
   useEffect(() => {
     if (!open) return;
     const down = (e: PointerEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node) && !(e.target as HTMLElement).closest?.("[data-popover-trigger]")) onClose();
+      const t = e.target as HTMLElement;
+      if (ref.current?.contains(t)) return;
+      // A click on this popover's own trigger toggles it there; any other click closes it.
+      const trigger = t.closest?.("[data-popover-trigger]");
+      if (trigger && anchorRef.current?.parentElement?.contains(trigger)) return;
+      onClose();
     };
     const key = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     const t = setTimeout(() => document.addEventListener("pointerdown", down), 0);
@@ -134,19 +185,24 @@ export function Popover({
   if (!open) return null;
   return (
     <>
-      <div aria-hidden className="fixed inset-0 z-[80] bg-ink/25 sm:hidden" />
-      <div
-        ref={ref}
-        className={cn(
-          "z-[81] overflow-y-auto border border-line bg-surface shadow-float",
-          "fixed inset-x-0 bottom-0 max-h-[75dvh] rounded-t-lg p-2",
-          "sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-full sm:mt-1 sm:max-h-[420px] sm:rounded-md sm:p-1.5",
-          align === "end" ? "sm:right-0" : "sm:left-0",
-          className,
-        )}
-      >
-        {children}
-      </div>
+      <span ref={anchorRef} hidden />
+      {createPortal(
+        <>
+          <div aria-hidden className="fixed inset-0 z-[80] bg-ink/25 sm:hidden" onPointerDown={onClose} />
+          <div
+            ref={ref}
+            className={cn(
+              "fixed z-[81] overflow-y-auto border border-line bg-surface shadow-float",
+              "inset-x-0 bottom-0 max-h-[75dvh] rounded-t-lg p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]",
+              "sm:inset-auto sm:max-h-[min(440px,calc(100dvh-16px))] sm:rounded-md sm:p-1.5",
+              className,
+            )}
+          >
+            {children}
+          </div>
+        </>,
+        document.body,
+      )}
     </>
   );
 }
@@ -398,7 +454,7 @@ export function TitleBar({
         />
         <div className="relative">
           <span data-popover-trigger>
-            <RBtn label="My files" showLabel onClick={openFiles} active={filesOpen || undefined}>
+            <RBtn icon={Files} label="My files" showLabel onClick={openFiles} active={filesOpen || undefined}>
               <ChevronDown aria-hidden className="size-3 opacity-60" />
             </RBtn>
           </span>
