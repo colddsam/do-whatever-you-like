@@ -31,6 +31,10 @@
 <img src="https://img.shields.io/badge/Vercel-frontend-000000?style=flat-square&logo=vercel&logoColor=white" alt="Frontend on Vercel">
 <img src="https://img.shields.io/badge/Render-backend-46e3b7?style=flat-square&logo=render&logoColor=white" alt="Backend on Render">
 
+<br><br>
+
+<a href="https://www.saashub.com/do-whatever-you-like?utm_source=badge&utm_campaign=badge&utm_content=do-whatever-you-like&badge_variant=color&badge_kind=approved" target="_blank"><img src="https://cdn-b.saashub.com/img/badges/approved-color.png?v=1" alt="Do-Whatever-You-Like badge" width="150"></a>
+
 <br>
 
 **[Use it now](https://do-whatever-you-like.colddsam.com)** · **[See every tool](https://do-whatever-you-like.colddsam.com/tools)** · **[Blog](https://do-whatever-you-like.colddsam.com/blog)** · **[Run it yourself](#-run-it-on-your-computer)** · **[Report a problem](https://github.com/colddsam/do-whatever-you-like/issues)**

@@ -27,7 +27,10 @@ from app.exceptions.translate import (
 from app.services import transcribe as stt
 from app.services.translate.dubber import AUDIO_EXT_SET, run_media_job
 from app.services.translate.languages import BY_CODE, language_name, normalize_code, serialize_languages
+from app.services.translate.insights import detect_language_sync, lookup_insights_sync
 from app.services.translate.providers import (
+    STYLES,
+    llm_available,
     translate_batch_sync,
     translate_subtitles_text_sync,
     translate_text_sync,
@@ -70,11 +73,15 @@ class TranslateService:
             "max_audio_seconds": settings.AUDIO_MAX_SECONDS,
             "max_video_seconds": settings.VIDEO_MAX_SECONDS,
             "max_text_chars": settings.MAX_TEXT_CHARS,
+            "llm_available": llm_available(),
+            "styles": list(STYLES) if llm_available() else ["default"],
+            "insights_max_chars": settings.INSIGHTS_MAX_CHARS,
+            "speak_max_chars": settings.SPEAK_MAX_CHARS,
         }
 
     # ---------- Text & Batch ----------
 
-    def translate_text(self, text: str, source: str, target: str, mode: str = "text") -> Dict[str, Any]:
+    def translate_text(self, text: str, source: str, target: str, mode: str = "text", style: str = "default") -> Dict[str, Any]:
         cleaned = (text or "").strip("\r\n")
         if not cleaned.strip():
             raise InvalidTranslateInputError("Enter or paste some text to translate.")
@@ -84,7 +91,7 @@ class TranslateService:
         if mode == "subtitles":
             out, detected, provider = translate_subtitles_text_sync(cleaned, src, dst)
         else:
-            out, detected, provider = translate_text_sync(cleaned, src, dst)
+            out, detected, provider = translate_text_sync(cleaned, src, dst, style if style in STYLES else "default")
         return {
             "source_text": cleaned,
             "translated_text": out,
@@ -95,7 +102,25 @@ class TranslateService:
             "provider": provider,
             "chars": len(cleaned),
             "mode": mode,
+            "style": style if provider.startswith("groq_") else "default",
         }
+
+    def detect(self, text: str) -> Dict[str, Any]:
+        best, conf, pairs = detect_language_sync(text)
+        return {
+            "language": best,
+            "language_name": language_name(best),
+            "confidence": conf,
+            "candidates": [{"code": c, "name": language_name(c), "confidence": v} for c, v in pairs[:5]],
+        }
+
+    def insights(self, text: str, source: str, target: str) -> Dict[str, Any]:
+        return lookup_insights_sync(text, source, target)
+
+    def speak(self, text: str, language: str, gender: str, rate: int):
+        from app.services.translate.speech import speak_sync
+
+        return speak_sync(text, language, gender, rate)
 
     def translate_batch(self, texts: List[str], source: str, target: str) -> Dict[str, Any]:
         if not texts:

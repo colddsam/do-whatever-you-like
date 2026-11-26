@@ -18,6 +18,9 @@ import {
  *   GET  /api/tools/translate/result?token=...     -> stream translated audio/video (or signed direct target on ?direct=1)
  *   POST /api/tools/translate/text                 -> translate plain text or .srt/.vtt subtitles
  *   POST /api/tools/translate/batch                -> translate an ordered list of cue/segment strings
+ *   POST /api/tools/translate/detect               -> which language a snippet is in
+ *   POST /api/tools/translate/insights             -> romanisation, alternatives, dictionary, definitions, examples
+ *   POST /api/tools/translate/speak                -> read text aloud (audio bytes)
  *   POST /api/tools/translate/media                -> NDJSON streaming upload -> transcribe -> translate -> voiceover/dubbing
  */
 
@@ -91,6 +94,44 @@ export async function POST(req: NextRequest, ctx: RouteContext<"/api/tools/trans
       maxBytes: 350_000,
       timeoutMs: 120_000,
       failed: "We couldn't translate those lines.",
+    });
+  }
+
+  if (action === "detect") {
+    return postJson(req, "translate/detect", { maxBytes: 20_000, timeoutMs: 30_000, failed: "We couldn't detect that language." });
+  }
+
+  if (action === "insights") {
+    return postJson(req, "translate/insights", { maxBytes: 10_000, timeoutMs: 30_000, failed: "Word details aren't available right now." });
+  }
+
+  if (action === "speak") {
+    const backend = backendConfig();
+    if (!backend) return notConfigured();
+    const body = await req.text().catch(() => "");
+    if (!body) return apiError(400, "Send the text to read as JSON.");
+    if (body.length > 20_000) return apiError(413, "That's too much text to read aloud at once.");
+    let upstream: Response;
+    try {
+      upstream = await fetch(backend.endpoint("translate/speak"), {
+        method: "POST",
+        headers: { Authorization: `Bearer ${backend.token}`, "Content-Type": "application/json" },
+        body,
+        cache: "no-store",
+        signal: AbortSignal.any([req.signal, AbortSignal.timeout(60_000)]),
+      });
+    } catch (e) {
+      const timedOut = e instanceof DOMException && e.name === "TimeoutError";
+      return apiError(timedOut ? 504 : 502, timedOut ? "Reading aloud took too long." : "Couldn't reach the voice service.");
+    }
+    if (!upstream.ok) return upstreamError(upstream, "No voice is available for that language right now.");
+    return new Response(upstream.body, {
+      status: 200,
+      headers: {
+        "Content-Type": upstream.headers.get("content-type") ?? "audio/mpeg",
+        "Cache-Control": "no-store",
+        "X-TTS-Engine": upstream.headers.get("x-tts-engine") ?? "",
+      },
     });
   }
 

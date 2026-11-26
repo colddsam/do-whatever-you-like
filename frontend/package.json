@@ -74,6 +74,7 @@
     "react-dom": "19.3.0",
     "sql-formatter": "15.9.0",
     "terser": "5.51.2",
+    "tesseract.js": "7.0.0",
     "three": "^0.180.0",
     "url-template": "3.1.1",
     "zustand": "^5.1.0"

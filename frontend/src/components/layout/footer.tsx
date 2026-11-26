@@ -42,6 +42,20 @@ export function Footer() {
             <p className="mt-4 max-w-xs text-[15px] leading-relaxed text-ink-2">
               One place to do whatever you need. Paste, pick, done.
             </p>
+            <a
+              href="https://www.saashub.com/do-whatever-you-like?utm_source=badge&utm_campaign=badge&utm_content=do-whatever-you-like&badge_variant=color&badge_kind=approved"
+              target="_blank"
+              rel="noopener"
+              className="mt-6 inline-block transition-opacity hover:opacity-85"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="https://cdn-b.saashub.com/img/badges/approved-color.png?v=1"
+                alt="Do-Whatever-You-Like badge"
+                style={{ maxWidth: 150 }}
+                loading="lazy"
+              />
+            </a>
           </div>
           <nav aria-label="Footer" className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:col-span-7">
             {columns.map((col) => (

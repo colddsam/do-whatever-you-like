@@ -40,6 +40,11 @@ export type TranslateCapabilities = {
   max_audio_seconds: number;
   max_video_seconds: number;
   max_text_chars: number;
+  /** A Groq key is set, so tones (formal, casual…) are available. */
+  llm_available?: boolean;
+  styles?: string[];
+  insights_max_chars?: number;
+  speak_max_chars?: number;
 };
 
 export type TextTranslateResult = {
@@ -114,7 +119,7 @@ export const COMMON_TARGET_CODES = [
   "en", "hi", "es", "fr", "de", "ar", "bn", "pt", "ru", "ja", "ko", "zh-CN", "it", "ta", "te", "ur",
 ];
 
-/** Static seed shown before /capabilities resolves or when offline; overwritten by full 105-language backend list. */
+/** Static seed shown before /capabilities resolves or when offline; overwritten by full 130-language backend list. */
 export const FALLBACK_LANGUAGES: TranslateLanguage[] = [
   { code: "en", name: "English", native_name: "English", rtl: false, tts_supported: true, speech_input: true },
   { code: "hi", name: "Hindi", native_name: "हिन्दी", rtl: false, tts_supported: true, speech_input: true },

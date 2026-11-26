@@ -23,6 +23,10 @@ class TranslateCapabilities(BaseModel):
     max_audio_seconds: int
     max_video_seconds: int
     max_text_chars: int
+    llm_available: bool = False
+    styles: List[str] = ["default"]
+    insights_max_chars: int = 600
+    speak_max_chars: int = 2000
 
 
 class TextTranslateRequest(BaseModel):
@@ -32,6 +36,10 @@ class TextTranslateRequest(BaseModel):
     mode: Literal["text", "subtitles"] = Field(
         "text",
         description="Use 'subtitles' to preserve SRT/VTT timestamps when translating caption files.",
+    )
+    style: Literal["default", "formal", "casual", "simple", "natural"] = Field(
+        "default",
+        description="Tone of the translation. Anything but 'default' needs a Groq key on the server; without one it's ignored.",
     )
 
 
@@ -45,6 +53,84 @@ class TextTranslateResponse(BaseModel):
     provider: str
     chars: int
     mode: Literal["text", "subtitles"] = "text"
+    style: str = "default"
+
+
+class DetectRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=5000)
+
+
+class DetectCandidate(BaseModel):
+    code: str
+    name: str
+    confidence: float
+
+
+class DetectResponse(BaseModel):
+    language: str
+    language_name: str
+    confidence: float
+    candidates: List[DetectCandidate]
+
+
+class InsightsRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=2000)
+    source: str = Field("auto", max_length=16)
+    target: str = Field(..., min_length=2, max_length=16)
+
+
+class InsightsAlternative(BaseModel):
+    source: str
+    options: List[str]
+
+
+class InsightsDictEntry(BaseModel):
+    word: str
+    reverse: List[str]
+    score: float = 0.0
+
+
+class InsightsDictGroup(BaseModel):
+    pos: str
+    base: str = ""
+    entries: List[InsightsDictEntry]
+
+
+class InsightsDefinitionItem(BaseModel):
+    gloss: str
+    example: str = ""
+
+
+class InsightsDefinition(BaseModel):
+    pos: str
+    items: List[InsightsDefinitionItem]
+
+
+class InsightsSynonyms(BaseModel):
+    pos: str
+    words: List[str]
+
+
+class InsightsResponse(BaseModel):
+    text: str
+    translation: str
+    detected_language: str
+    confidence: float
+    source_romanization: str = ""
+    target_romanization: str = ""
+    alternatives: List[InsightsAlternative] = []
+    dictionary: List[InsightsDictGroup] = []
+    definitions: List[InsightsDefinition] = []
+    examples: List[str] = []
+    synonyms: List[InsightsSynonyms] = []
+    did_you_mean: str = ""
+
+
+class SpeakRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=5000)
+    language: str = Field(..., min_length=2, max_length=16)
+    gender: Literal["female", "male"] = "female"
+    rate: int = Field(0, ge=-50, le=100, description="Speaking rate change in percent.")
 
 
 class BatchTranslateRequest(BaseModel):

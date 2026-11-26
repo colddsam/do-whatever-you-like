@@ -3,6 +3,9 @@ Translator endpoints:
   GET  /translate/capabilities        — Supported languages, TTS support, and upload caps
   POST /translate/text                — Translate text or SRT/VTT subtitle text synchronously
   POST /translate/batch               — Translate an ordered list of cues/lines 1:1 (subtitles & transcripts)
+  POST /translate/detect              — Which language a snippet is in (with confidence and runner-ups)
+  POST /translate/insights            — Romanisation, alternatives, dictionary, definitions, examples
+  POST /translate/speak               — Read text aloud (Edge neural voice -> Google TTS -> espeak), audio bytes
   POST /translate/media               — Translate an audio or video file (streams NDJSON progress + transcripts)
   GET  /translate/result/{token}      — Download the translated audio or video file
 """
@@ -17,7 +20,7 @@ from pathlib import Path
 from typing import AsyncIterator
 
 from fastapi import APIRouter, File, Form, Request, UploadFile
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from starlette.concurrency import run_in_threadpool
 
 from app.config.jobs import settings as job_settings
@@ -28,6 +31,11 @@ from app.exceptions.translate import TranslatorUnavailableError
 from app.schemas.translate import (
     BatchTranslateRequest,
     BatchTranslateResponse,
+    DetectRequest,
+    DetectResponse,
+    InsightsRequest,
+    InsightsResponse,
+    SpeakRequest,
     TextTranslateRequest,
     TextTranslateResponse,
     TranslateCapabilities,
@@ -53,7 +61,23 @@ async def capabilities():
 
 @router.post("/text", response_model=TextTranslateResponse, summary="Translate plain text or subtitle text")
 async def translate_text(req: TextTranslateRequest):
-    return await run_in_threadpool(translate_service.translate_text, req.text, req.source, req.target, req.mode)
+    return await run_in_threadpool(translate_service.translate_text, req.text, req.source, req.target, req.mode, req.style)
+
+
+@router.post("/detect", response_model=DetectResponse, summary="Detect the language of a snippet")
+async def detect_language(req: DetectRequest):
+    return await run_in_threadpool(translate_service.detect, req.text)
+
+
+@router.post("/insights", response_model=InsightsResponse, summary="Dictionary, alternatives and romanisation for short text")
+async def insights(req: InsightsRequest):
+    return await run_in_threadpool(translate_service.insights, req.text, req.source, req.target)
+
+
+@router.post("/speak", summary="Read text aloud in a language (MP3, or WAV from the last fallback)")
+async def speak(req: SpeakRequest):
+    audio, mime, engine = await run_in_threadpool(translate_service.speak, req.text, req.language, req.gender, req.rate)
+    return Response(content=audio, media_type=mime, headers={"Cache-Control": "no-store", "X-TTS-Engine": engine})
 
 
 @router.post("/batch", response_model=BatchTranslateResponse, summary="Translate an ordered list of text lines or subtitle cues")

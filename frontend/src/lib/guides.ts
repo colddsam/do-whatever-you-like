@@ -724,15 +724,31 @@ const GUIDES: Record<string, Guide> = {
   },
   translator: {
     intro: [
-      "Translate plain text, SRT/VTT subtitle files, spoken audio recordings, microphone voice notes, and videos between 100+ languages with automatic language detection.",
-      "In Text mode you get a clean copyable source and translation view without extra media clutter. For Audio and Video, the speech is transcribed, translated, dubbed into a downloadable translated audio or video file (with optional quiet background audio and soft captions), and returned with both original and translated transcripts ready to copy.",
+      "One translator for everything in 130 languages: text that translates as you type, whole documents that keep their layout, photos and screenshots with the translation painted over the original, and audio or video dubbed with a natural voice.",
+      "Short text gets a word panel like a dictionary: romanisation, other ways to say it, meanings by part of speech, definitions, synonyms and examples. Check meaning translates the result back and scores how much survived, so you know when to rephrase. A glossary keeps brand names untouched or forces your own terms, and links, emails and {placeholders} are never translated.",
+      "Documents (Word, PowerPoint, Excel, OpenDocument, EPUB, HTML, Markdown, CSV, JSON i18n files, PO, XLIFF and subtitles) are rebuilt with the same styles, tables, images and formulas; PDFs are converted to Word first. Choose a bilingual output to keep the original next to each translated paragraph.",
     ],
     faqs: [
-      { q: "Is this completely free with no paid API keys required?", a: "Yes. Everything runs on free endpoints, Whisper speech recognition, and free neural voices with zero paid subscriptions required." },
-      { q: "What do I get when translating audio or video?", a: "You get the dubbed translated audio or video file to preview and download, plus both the original spoken transcript and the translated text with dedicated Copy buttons and TXT/SRT/VTT downloads." },
-      { q: "What happens to uploaded files?", a: "Uploads are processed in an isolated temporary workspace that is deleted right after dubbing; the downloadable result stays cached briefly so you can save it and expires automatically." },
+      { q: "Is it free, with no sign-up?", a: "Yes. Translation runs on free engines with automatic fallbacks, OCR runs in your browser, and voices come from free neural text-to-speech. There is no account, watermark or word quota." },
+      { q: "Does translating a Word, PowerPoint or Excel file keep the formatting?", a: "Yes. The file is edited in its own XML, so fonts, colours, tables, images, charts, slide layouts, cell formats and formulas stay as they were. Each paragraph takes the style of its first word, and right-to-left languages are marked RTL." },
+      { q: "Are my documents uploaded?", a: "Office, OpenDocument, EPUB, HTML and text files are read and rebuilt in your browser; only the text is sent for translation. PDF, DOC, PPT, XLS and RTF are converted on our server first and deleted straight away." },
+      { q: "How does picture translation work?", a: "The text is read on your device (Tesseract), each block is translated, then painted over the original in a matching colour. You can edit any line, compare side by side and download the PNG." },
+      { q: "What do I get when translating audio or video?", a: "A dubbed audio or video file to preview and download, plus the original transcript and the translation with Copy buttons and TXT/SRT/VTT downloads. Video can carry soft subtitles." },
+      { q: "Can I talk to someone in another language?", a: "Yes: open the Live interpreter for two-way spoken conversation, live translated captions and a travel phrasebook." },
     ],
-    see: ["audio-to-text", "subtitle-editor", "whatsapp-chat-analyzer"],
+    see: ["interpreter", "audio-to-text", "subtitle-editor", "word-editor"],
+  },
+  interpreter: {
+    intro: [
+      "A pocket interpreter for real conversations. Each person taps their microphone and speaks; the words are recognised, translated and read out loud in a natural voice for the other person, and both lines appear in a chat you can replay, copy or export.",
+      "Hands-free turns open the mic for the other person after every translation, and face-to-face mode turns Person B's half upside down for a phone lying on a table. Live captions listen continuously and show rolling translations in up to three languages, full screen for a classroom or meeting. The phrasebook has 90 everyday phrases in 8 situations, with pronunciation and a big show-card.",
+    ],
+    faqs: [
+      { q: "Which browsers can listen?", a: "Chrome, Edge, Safari and most Android browsers recognise speech themselves. In Firefox and some in-app browsers each phrase is sent to our free Whisper server instead, which takes a second or two. You can always type." },
+      { q: "Is the conversation stored?", a: "No. It stays on the page until you clear or close it; export it as TXT, SRT or JSON if you want to keep it." },
+      { q: "Can it translate a lecture or a video call live?", a: "Yes: Live captions keeps listening and translates each sentence as it is finished, into up to three languages at once, and can read the first one aloud." },
+    ],
+    see: ["translator", "audio-to-text", "subtitle-editor"],
   },
   "whatsapp-chat-analyzer": {
     intro: [

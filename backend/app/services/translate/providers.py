@@ -3,8 +3,14 @@ Resilient free-tier translation chain across multiple public/optional backends:
 1. Optional Groq free-tier LLM (only when TRANSLATE_GROQ_API_KEY is explicitly configured)
 2. Optional LibreTranslate endpoint (only when TRANSLATE_LIBRETRANSLATE_URL is configured)
 3. Google Translate web batchexecute RPC (keyless, fast, 100+ languages, auto-detect)
-4. Mozhi public aggregator (keyless fallback)
-5. MyMemory public REST API (free official fallback, automatically chunked under 450 bytes)
+4. Google Translate "gtx" JSON endpoint (keyless, same engine, different front door)
+5. Mozhi public aggregator (keyless fallback)
+6. MyMemory public REST API (free official fallback, automatically chunked under 450 bytes)
+7. Groq (last resort when a key is set)
+
+A Groq key is used first only when a *style* is asked for (formal, casual…), which the
+machine-translation engines can't do. The gtx endpoint also powers `lookup_insights`
+(romanisation, dictionary, alternatives, definitions, examples) for the translator's word panel.
 """
 
 from __future__ import annotations
@@ -28,6 +34,15 @@ _GOOGLE_WEB_URL = "https://translate.google.com/_/TranslateWebserverUi/data/batc
 _MOZHI_URL = "https://mozhi.aryak.me/api/translate"
 _MYMEMORY_URL = "https://api.mymemory.translated.net/get"
 _GROQ_CHAT_URL = "https://api.groq.com/openai/v1/chat/completions"
+_GTX_URL = "https://translate.googleapis.com/translate_a/single"
+
+STYLES = ("default", "formal", "casual", "simple", "natural")
+_STYLE_HINTS = {
+    "formal": "Use a formal, polite register (formal pronouns and honorifics where the language has them).",
+    "casual": "Use a casual, friendly everyday register, as a native speaker would text a friend.",
+    "simple": "Use short, simple words and sentences a learner could follow.",
+    "natural": "Prefer natural, idiomatic phrasing over a word-for-word rendering.",
+}
 
 _TIMESTAMP_LINE_RE = re.compile(r"^\s*\d{1,2}:\d{2}(?::\d{2})?(?:[.,]\d{1,3})?\s*-->\s*\d{1,2}:\d{2}(?::\d{2})?(?:[.,]\d{1,3})?.*$")
 
@@ -224,56 +239,105 @@ def _call_libretranslate(text: str, src: str, dst: str) -> Tuple[str, str]:
     return out, normalize_code(det or src)
 
 
-def _call_groq(text: str, src: str, dst: str) -> Tuple[str, str]:
-    key = settings.GROQ_API_KEY.strip()
-    if not key:
-        raise ValueError("Groq translation key unset")
-    src_label = "the detected source language" if src == "auto" else language_name(src)
-    dst_label = language_name(dst)
+def _call_gtx(text: str, src: str, dst: str) -> Tuple[str, str]:
     resp = requests.post(
-        _GROQ_CHAT_URL,
-        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-        json={
-            "model": settings.GROQ_MODEL,
-            "temperature": 0,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": (
-                        f"Translate from {src_label} into natural {dst_label}. "
-                        "Preserve line breaks and punctuation. Reply with ONLY the translation and no commentary."
-                    ),
-                },
-                {"role": "user", "content": text},
-            ],
-        },
+        _GTX_URL,
+        params={"client": "gtx", "sl": _google_code(src), "tl": _google_code(dst), "dt": "t", "dj": "1", "ie": "UTF-8", "oe": "UTF-8"},
+        data={"q": text},
+        headers={"User-Agent": _UA},
         timeout=settings.REQUEST_TIMEOUT,
     )
     resp.raise_for_status()
     data = resp.json()
-    out = str(data["choices"][0]["message"]["content"]).strip()
+    out = "".join(str(s.get("trans") or "") for s in data.get("sentences") or [] if "trans" in s)
     if not out and text.strip():
-        raise ValueError("Empty Groq output")
+        raise ValueError("Empty gtx output")
+    detected = normalize_code(str(data.get("src") or src))
+    return out, (src if src != "auto" else detected)
+
+
+def _groq_models() -> List[str]:
+    names = [settings.GROQ_MODEL, *settings.GROQ_FALLBACK_MODELS.split(",")]
+    return [n.strip() for n in dict.fromkeys(names) if n and n.strip()]
+
+
+def _groq_chat(system: str, user: str) -> str:
+    key = settings.GROQ_API_KEY.strip()
+    if not key:
+        raise ValueError("Groq key unset")
+    last: Optional[Exception] = None
+    for model in _groq_models():
+        body = {
+            "model": model,
+            "temperature": 0.2,
+            "max_tokens": 4096,
+            "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
+        }
+        if model.startswith("openai/gpt-oss"):
+            body["reasoning_effort"] = "low"
+        try:
+            resp = requests.post(
+                _GROQ_CHAT_URL,
+                headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                json=body,
+                timeout=max(settings.REQUEST_TIMEOUT, 45),
+            )
+            if resp.status_code in (400, 404):
+                last = ValueError(f"{model}: {resp.status_code}")
+                continue
+            resp.raise_for_status()
+            out = str(resp.json()["choices"][0]["message"]["content"] or "").strip()
+            # Some models wrap their reasoning in <think> tags; never show it.
+            out = re.sub(r"<think>.*?</think>", "", out, flags=re.S).strip()
+            if out:
+                return out
+            last = ValueError(f"{model}: empty")
+        except Exception as exc:  # network, quota, malformed
+            last = exc
+    raise ValueError(f"Groq unavailable: {last}")
+
+
+def _call_groq_styled(text: str, src: str, dst: str, style: str = "default") -> Tuple[str, str]:
+    src_label = "the detected source language" if src == "auto" else language_name(src)
+    dst_label = language_name(dst)
+    system = (
+        f"You are a professional translator. Translate the user's text from {src_label} into {dst_label}. "
+        f"{_STYLE_HINTS.get(style, '')} Preserve line breaks, numbers, URLs, emoji and any text inside ⟦⟧ brackets exactly. "
+        "Reply with ONLY the translation, no notes, no quotes."
+    )
+    out = _groq_chat(system, text)
     return out, (src if src != "auto" else (detect_script_hint(text) or "auto"))
 
 
-def _providers() -> List[Tuple[str, Callable[[str, str, str], Tuple[str, str]]]]:
+def _call_groq(text: str, src: str, dst: str) -> Tuple[str, str]:
+    return _call_groq_styled(text, src, dst, "default")
+
+
+def llm_available() -> bool:
+    return bool(settings.GROQ_API_KEY.strip())
+
+
+def _providers(style: str = "default") -> List[Tuple[str, Callable[[str, str, str], Tuple[str, str]]]]:
     chain: List[Tuple[str, Callable[[str, str, str], Tuple[str, str]]]] = []
-    if settings.GROQ_API_KEY.strip():
-        chain.append(("groq", _call_groq))
+    has_llm = llm_available()
+    if has_llm and style in _STYLE_HINTS:
+        chain.append((f"groq_{style}", lambda t, a, b: _call_groq_styled(t, a, b, style)))
     if settings.LIBRETRANSLATE_URL.strip():
         chain.append(("libretranslate", _call_libretranslate))
     chain.extend([
         ("google_web", _call_google_web),
+        ("google_gtx", _call_gtx),
         ("mozhi", _call_mozhi),
         ("mymemory", _call_mymemory),
     ])
+    if has_llm:
+        chain.append(("groq", _call_groq))
     return chain
 
 
-def _translate_chunk(text: str, src: str, dst: str) -> Tuple[str, str, str]:
+def _translate_chunk(text: str, src: str, dst: str, style: str = "default") -> Tuple[str, str, str]:
     last_err: Optional[Exception] = None
-    for name, fn in _providers():
+    for name, fn in _providers(style):
         try:
             out, detected = fn(text, src, dst)
             if out or not text.strip():
@@ -285,7 +349,7 @@ def _translate_chunk(text: str, src: str, dst: str) -> Tuple[str, str, str]:
     raise TranslationError("The translation service couldn't be reached right now. Try again in a moment.")
 
 
-def translate_text_sync(text: str, source: str = "auto", target: str = "hi") -> Tuple[str, str, str]:
+def translate_text_sync(text: str, source: str = "auto", target: str = "hi", style: str = "default") -> Tuple[str, str, str]:
     """Returns (translated_text, detected_source_code, provider_name)."""
     src, dst = validate_pair(source, target)
     if not text.strip():
@@ -300,7 +364,7 @@ def translate_text_sync(text: str, source: str = "auto", target: str = "hi") -> 
         if not chunk.strip():
             parts.append(chunk)
             continue
-        out, det, prov = _translate_chunk(chunk, src, dst)
+        out, det, prov = _translate_chunk(chunk, src, dst, style)
         parts.append(out)
         provider = prov
         if src == "auto" and det and det != "auto":
