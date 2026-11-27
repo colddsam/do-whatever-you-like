@@ -6,7 +6,7 @@ import { liveCount } from "@/lib/tools";
 
 export const metadata: Metadata = pageMeta({
   title: "About — Do-Whatever-You-Like",
-  description: "Who builds Do-Whatever-You-Like, how its free tools work, and how to get in touch about bugs, privacy or takedowns.",
+  description: "Who builds Do-Whatever-You-Like (one independent developer), how its free tools work, and how to get in touch about bugs, privacy or takedowns.",
   path: "/about",
 });
 

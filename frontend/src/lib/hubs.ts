@@ -13,7 +13,7 @@ export const HUBS: Record<ClusterId, { title: string; description: string; intro
   },
   pdf: {
     title: "Free PDF Tools Online: Merge, Compress, Edit, Sign",
-    description: "Merge, split, compress, edit, sign, protect, unlock and OCR PDFs online. Free, no sign-up, nothing to install.",
+    description: "Merge, split, compress, edit, sign, protect, unlock and OCR PDFs online, or convert PDF to Word, Excel and JPG and back. Free, no sign-up, nothing to install.",
     intro:
       "Everything you need to do to a PDF, in one place. Organise pages, shrink files for email, turn images and web pages into PDF, edit and sign, add or remove passwords, and make scans searchable with OCR. PDFs are kept for at most 30 minutes after you last use them, then deleted.",
   },
@@ -30,7 +30,7 @@ export const HUBS: Record<ClusterId, { title: string; description: string; intro
       "Everyday tools for developers. Format and minify HTML, CSS, JavaScript, SQL and more; validate code; generate hashes, UUIDs and test data; query XML and JSON; and look up DNS records, headers and open ports. Most run entirely in your browser, so they're safe for private code and keys.",
   },
   text: {
-    title: "Free Text & Translation Tools: Translator, WhatsApp Chat, Morse",
+    title: "Free Text Tools: Translator, WhatsApp Chat, Morse",
     description: "Translate text, documents, subtitles and videos, analyse WhatsApp chats, convert binary/hex/ASCII, find and replace, and summarise text. Free, no sign-up.",
     intro:
       "Tools for text and languages: translate text, documents, SRT/VTT subtitles and even dub videos across 100+ languages; analyse WhatsApp chat exports privately in your browser; translate to and from binary, hex and ASCII codes; find and replace with regex; split text; write numbers as words; convert Roman numerals; decode Morse audio; and summarise long text.",
@@ -45,17 +45,17 @@ export const HUBS: Record<ClusterId, { title: string; description: string; intro
     title: "Free Video Downloader: YouTube, Instagram, Facebook",
     description: "Save public YouTube videos and Shorts, Instagram Reels and carousels, and Facebook videos, or just their audio. Free, no sign-up.",
     intro:
-      "Paste a link to save a public video or post, or just its sound. Downloads are fetched, sent to you and deleted straight away; nothing is kept. Only download content you own or have permission to use.",
+      "Paste a link to save a public video or post, or just its sound. The YouTube downloader saves videos and Shorts up to 4 hours long, in the quality you pick up to 1080p with each file size shown, or just the audio as MP3 or M4A. The Instagram downloader takes Reels, single posts and carousels (a carousel arrives as one ZIP) from a link or just the shortcode, and can save a reel's sound on its own. The Facebook downloader saves public videos and reels as MP4 or audio, and resolves share links for you. Downloads are fetched, sent to you and deleted straight away; nothing is kept. Only download content you own or have permission to use.",
   },
   media: {
     title: "Free Video Editor & Audio Tools: Trim, Denoise, Subtitles",
-    description: "Find songs by humming or lyrics, edit video on a timeline, trim and denoise, boost volume, record your screen, edit subtitles, extract MP3s, transcribe speech and make GIFs. Free, no sign-up.",
+    description: "Find songs by humming, edit video on a timeline, trim and denoise, record your screen, edit subtitles, extract MP3s and transcribe speech. Free, no sign-up.",
     intro:
       "Tools for audio and video: find any song by humming, singing or typing a line of its lyrics, edit on a multi-track timeline with keyframes, effects and auto-captions, trim clips losslessly or frame-exact, clean up background hiss and hum, boost or normalise loudness, record your screen or voice, edit and sync SRT/VTT subtitles, extract MP3 audio, transcribe speech in 99 languages, or turn videos into still frames and animated GIFs.",
   },
   utilities: {
-    title: "Free Everyday Tools: Period Tracker, Converters, Passwords & QR",
-    description: "Private period tracker, unit and currency converters, strong password generator, encrypted notes, photo EXIF remover, QR tools and device tests. Free, no sign-up.",
+    title: "Free Everyday Tools: Period Tracker, Converters & QR",
+    description: "Private period tracker, unit and currency converters, password generator, encrypted notes, EXIF remover, QR tools and device tests. Free, no sign-up.",
     intro:
       "Handy everyday tools: track your period privately on your own device, convert units and 30 currencies, check world time zones, run a Pomodoro or stopwatch, calculate ages and dates, generate passphrases, encrypt private notes with AES-256, view or strip photo EXIF metadata, scan or create QR codes, crunch maths in a scientific calculator, and test your screen, webcam, mic and IP.",
   },

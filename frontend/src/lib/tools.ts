@@ -596,7 +596,7 @@ const fileTools: Tool[] = [
   // Edit: full office editors (Word, Excel, PowerPoint alternatives), in the browser
   fileTool({
     id: "excel-editor", name: "Excel editor (Sheets)", group: "Edit", icon: FileSpreadsheet, wide: true,
-    seoTitle: "Free Online Excel Editor — Spreadsheet with 225 Formulas, Charts & XLSX Export",
+    seoTitle: "Free Online Excel Editor: 225 Formulas, Charts & XLSX",
     description: "A free Excel alternative in your browser: 225 formulas, charts, conditional formatting, filters, sort, freeze panes and real .xlsx open & save. No sign-up.",
     takes: "A new workbook, a template, or XLSX, XLS, ODS, CSV and TSV files",
     gives: "XLSX, CSV, TSV, HTML, JSON or PDF",
@@ -620,7 +620,7 @@ const fileTools: Tool[] = [
   // Edit: full office editors (Word, Excel, PowerPoint alternatives), in the browser
   fileTool({
     id: "word-editor", name: "Word editor (Docs)", group: "Edit", icon: FileText, wide: true,
-    seoTitle: "Free Online Word Editor — Write, Format & Save DOCX in Your Browser",
+    seoTitle: "Free Online Word Editor: Write & Save DOCX in Browser",
     description: "A free Microsoft Word alternative: rich formatting, styles, tables, images, equations, headers & footers, page setup, comments, translation and real .docx open & save. No sign-up.",
     takes: "A new document, a template, or DOCX, ODT, RTF, HTML, Markdown and text files",
     gives: "DOCX, PDF, HTML, Markdown or text",
@@ -642,7 +642,7 @@ const fileTools: Tool[] = [
   // Edit: full office editors (Word, Excel, PowerPoint alternatives), in the browser
   fileTool({
     id: "powerpoint-editor", name: "PowerPoint editor (Slides)", group: "Edit", icon: Presentation, wide: true,
-    seoTitle: "Free Online PowerPoint Editor — Make Slides & Save PPTX in Your Browser",
+    seoTitle: "Free Online PowerPoint Editor: Make Slides, Save PPTX",
     description: "A free PowerPoint alternative: themes, layouts, text, shapes, images, tables, charts, transitions and animations, presenter mode and real .pptx export. No sign-up.",
     takes: "A new deck, a theme, or a PPTX file",
     gives: "PPTX, PDF, PNG images or HTML",
@@ -1138,7 +1138,7 @@ const rawTools: Tool[] = [
     id: "video-editor",
     name: "Video editor",
     category: "Edit",
-    seoTitle: "Free Online Video Editor — Premiere Pro, After Effects & CapCut Alternative",
+    seoTitle: "Free Online Video Editor: Premiere & CapCut Alternative",
     description: "All-in-one editing, colour grading & VFX suite: custom fonts, 37 kinetic title animations, 46 GPU effects, 3-way wheels/curves/scopes, pro green screen & Premiere/CapCut/AE project import.",
     status: "live",
     icon: Videotape,
@@ -1445,7 +1445,7 @@ const rawTools: Tool[] = [
     name: "Song finder",
     category: "Audio & video",
     description: "Hum, sing or type a few words and find the song, with its lyrics, a preview to play and the music video.",
-    seoTitle: "Song Finder: Find a Song by Humming, Singing or Lyrics — Free",
+    seoTitle: "Song Finder: Find a Song by Humming, Singing or Lyrics",
     status: "live",
     icon: MicVocal,
     kind: "file",
@@ -1640,7 +1640,7 @@ const rawTools: Tool[] = [
     category: "Developers",
     family: "developer",
     group: "Web & network",
-    seoTitle: "Free API Client Online — Postman Alternative for REST, GraphQL, WebSocket & gRPC",
+    seoTitle: "Free API Client: Postman Alternative for REST & GraphQL",
     description: "A free, open-source Postman alternative in your browser: collections, environments, auth, scripts and tests, runner, mocks, monitors, flows, docs and code snippets. No sign-up.",
     status: "live",
     icon: Webhook,
@@ -1773,7 +1773,7 @@ const rawTools: Tool[] = [
     category: "Text",
     family: "text",
     group: "Convert",
-    seoTitle: "Free Online Translator — Text, Documents, Images, Audio & Video in 130 Languages",
+    seoTitle: "Free Online Translator: Text, Docs, Images, Audio, Video",
     description: "Translate text as you type, whole Word/PowerPoint/Excel/PDF files with their layout, photos and screenshots, and audio or video (dubbed) into 130 languages. Dictionary, tones, glossary and a meaning check included.",
     status: "live",
     icon: Languages,
@@ -1814,7 +1814,7 @@ const rawTools: Tool[] = [
     category: "Text",
     family: "text",
     group: "Convert",
-    seoTitle: "Free Live Interpreter — Voice Conversation Translator & Live Translated Captions",
+    seoTitle: "Free Live Interpreter & Real-Time Translated Captions",
     description: "Talk with anyone in another language: speak, and it translates and says it out loud for the other person. Live translated captions for lectures and meetings, and a tap-to-speak travel phrasebook.",
     status: "live",
     icon: MessagesSquare,

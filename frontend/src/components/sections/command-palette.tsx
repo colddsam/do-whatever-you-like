@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 
 const noopSubscribe = () => () => {};
 const EASE = [0.22, 1, 0.36, 1] as const;
+/** Rows rendered before anyone touches the palette: five in view, the rest one scroll away. */
+const IDLE_ROWS = 12;
 
 /** Cycles through example tasks with a typewriter effect. */
 function useTypewriter(phrases: string[], enabled: boolean) {
@@ -95,21 +97,29 @@ export function CommandPalette({
 
   const analysis = useMemo(() => analyzeTaskQuery(query, { limit: 5 }), [query]);
 
+  // The idle list starts with the rows that fit in view (plus a scroll's worth) and fills in the
+  // rest once someone reaches for it. Rendering every tool up front put ~300 KB in the home page's HTML.
+  const [expanded, setExpanded] = useState(false);
+  const expand = () => setExpanded(true);
+
   // Results come grouped by collection: in collection order when browsing, best match first when searching.
   const groups = useMemo(() => {
     if (!query.trim()) {
-      return CLUSTERS.map((c) => ({
-        cluster: c,
-        list: toolsIn(c.id).map((tool) => ({ tool, matchReason: "" })),
-      }));
+      let budget = expanded ? Infinity : IDLE_ROWS;
+      return CLUSTERS.map((c) => {
+        const all = toolsIn(c.id);
+        const shown = all.slice(0, Math.max(0, budget));
+        budget -= shown.length;
+        return { cluster: c, total: all.length, list: shown.map((tool) => ({ tool, matchReason: "" })) };
+      }).filter((g) => g.list.length);
     }
     const byCluster = new Map<string, Array<{ tool: Tool; matchReason: string }>>();
     for (const match of analysis.results) {
       const id = match.cluster.id;
       byCluster.set(id, [...(byCluster.get(id) ?? []), { tool: match.tool, matchReason: match.matchReason }]);
     }
-    return [...byCluster].map(([id, list]) => ({ cluster: CLUSTERS.find((c) => c.id === id)!, list }));
-  }, [query, analysis.results]);
+    return [...byCluster].map(([id, list]) => ({ cluster: CLUSTERS.find((c) => c.id === id)!, total: list.length, list }));
+  }, [query, analysis.results, expanded]);
   const results = useMemo(() => groups.flatMap((g) => g.list), [groups]);
   const topSuggestion = query.trim() ? analysis.suggestions[0] : undefined;
   const placeholder = useTypewriter(exampleTasks, !focused && query === "");
@@ -212,7 +222,10 @@ export function CommandPalette({
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => setFocused(true)}
+            onFocus={() => {
+              setFocused(true);
+              expand();
+            }}
             onBlur={() => setFocused(false)}
             onKeyDown={onKeyDown}
             role="combobox"
@@ -346,7 +359,12 @@ export function CommandPalette({
         id="palette-results"
         role="listbox"
         aria-label="Tools"
-        onScroll={updateEdge}
+        onScroll={() => {
+          expand();
+          updateEdge();
+        }}
+        onPointerEnter={expand}
+        onTouchStart={expand}
         className={cn(
           // 4 rows on mobile, 5 on larger screens (52px rows + 8px padding), plus a peek of the next row.
           "h-[236px] overflow-y-auto px-2 pb-2 transition-[mask-size] sm:h-[288px]",
@@ -366,10 +384,10 @@ export function CommandPalette({
             </Link>
           </li>
         )}
-        {groups.map(({ cluster, list }) => [
+        {groups.map(({ cluster, total, list }) => [
           <li key={`h-${cluster.id}`} role="presentation" className="label-mono flex items-center justify-between px-2 pb-1 pt-3 text-ink-3 first:pt-1">
             <span>{cluster.name}</span>
-            <span>{list.length}</span>
+            <span>{total}</span>
           </li>,
           ...list.map(({ tool, matchReason }) => {
           const i = results.findIndex((r) => r.tool.id === tool.id);

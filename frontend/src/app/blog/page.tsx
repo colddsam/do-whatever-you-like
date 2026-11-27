@@ -13,7 +13,7 @@ import { liveCount } from "@/lib/tools";
 
 const baseMeta = pageMeta({
   title: "Blog — Do-Whatever-You-Like",
-  description: `Product launches, architecture notes, and how ${liveCount} free browser-first tools work without accounts or watermarks.`,
+  description: `Product launches, architecture notes, and how ${liveCount} free browser-first tools work without accounts or watermarks, from the developer who builds them.`,
   path: "/blog",
   image: "/blog/opengraph-image",
 });

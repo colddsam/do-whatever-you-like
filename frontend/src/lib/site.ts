@@ -9,7 +9,19 @@ export const OPERATOR = { name: "colddsam", url: "https://github.com/colddsam" }
 /** Questions, bug reports and takedown requests. */
 export const CONTACT_EMAIL = "colddsam@gmail.com";
 
-const DEFAULT_IMAGE = { url: "/opengraph-image", width: 1200, height: 630, alt: "Do-Whatever-You-Like: free online tools" };
+/** Search results cut titles off at about 60 characters. */
+export const TITLE_MAX = 60;
+const BRAND_SUFFIX = /\s+[—|-]\s+Do-Whatever-You-Like$/;
+
+/**
+ * Keeps " — Do-Whatever-You-Like" only while the whole title fits in a result. Past that the brand
+ * goes: search engines show the site name beside the result anyway (from the WebSite schema).
+ */
+export function fitTitle(title: string) {
+  return title.length > TITLE_MAX ? title.replace(BRAND_SUFFIX, "") : title;
+}
+
+const DEFAULT_IMAGE ={ url: "/opengraph-image", width: 1200, height: 630, alt: "Do-Whatever-You-Like: free online tools" };
 
 /**
  * A page's title, description, canonical and social cards in one place. Next replaces (not merges)
@@ -34,6 +46,7 @@ export function pageMeta({
   modifiedTime?: string;
   tags?: string[];
 }): Metadata {
+  title = fitTitle(title);
   const card = image ? { ...DEFAULT_IMAGE, url: image, alt: title } : DEFAULT_IMAGE;
   return {
     title,

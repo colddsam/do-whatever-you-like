@@ -22,8 +22,8 @@ export async function generateMetadata({ params }: PageProps<"/tools/category/[i
   if (!cluster) return {};
   const hub = HUBS[cluster.id];
   const full = `${hub.title} — Do-Whatever-You-Like`;
-  // Keep the brand only when the whole title fits in a search result (about 70 characters).
-  return pageMeta({ title: full.length <= 70 ? full : hub.title, description: hub.description, path: clusterHref(cluster.id) });
+  // pageMeta drops the brand when the whole title doesn't fit in a search result.
+  return pageMeta({ title: full, description: hub.description, path: clusterHref(cluster.id) });
 }
 
 /**

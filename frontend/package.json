@@ -5,7 +5,8 @@
   "scripts": {
     "predev": "node scripts/copy-vendor.mjs",
     "dev": "next dev",
-    "prebuild": "node scripts/copy-vendor.mjs",
+    "prebuild": "node scripts/copy-vendor.mjs && (node scripts/lastmod.mjs || echo lastmod skipped: keeping the committed dates)",
+    "lastmod": "node scripts/lastmod.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -94,6 +95,7 @@
     "@types/three": "^0.180.0",
     "eslint": "^9",
     "eslint-config-next": "16.4.5",
+    "jiti": "2.7.0",
     "shadcn": "^4.23.0",
     "tailwindcss": "^4",
     "typescript": "^5"

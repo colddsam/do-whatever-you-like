@@ -1117,8 +1117,145 @@ export function guideFor(tool: Tool): Guide | undefined {
   return { ...g, see };
 }
 
+/** The XML/JSON testers and device checks: short tools whose pages need to say what they're for. */
+const DEV_AND_DEVICE_GUIDES: Record<string, Guide> = {
+  "jsonpath-tester": {
+    intro: [
+      "JSONPath tester runs a JSONPath expression against the JSON you paste and lists every match, each with the exact path that leads to it. Results update as you type, so you can build a query step by step: start with $.store, add .book[*], then narrow it with a filter such as [?(@.price < 10)].",
+      "Use it to work out the path an API client, a test assertion, a Kubernetes or jq-style config, or a low-code tool expects before you put it in your code. It runs in your browser, so the JSON you paste isn't sent anywhere.",
+    ],
+    faqs: [
+      { q: "Which JSONPath features work?", a: "The full syntax: the root $, child and recursive descent (. and ..), wildcards (*), array indexes and slices ([0], [-1:], [0:5:2]), unions ([0,2]) and filter expressions with @ ([?(@.active == true)])." },
+      { q: "Why do I get no matches?", a: "Check the path starts at $, that keys match the JSON's exact case, and that you index into arrays ([*] or [0]) before reading their fields. If the JSON itself doesn't parse, the error is shown instead of results." },
+      { q: "Is JSONPath the same as jq?", a: "No. They answer similar questions with different syntax. JSONPath selects values; jq is a full language that can also reshape them. Many tools (Kubernetes, AWS Step Functions, test frameworks) take JSONPath." },
+    ],
+    see: ["json-formatter", "xpath-tester", "code-formatter"],
+  },
+  "xpath-tester": {
+    intro: [
+      "XPath tester evaluates an XPath expression on the XML you paste and shows every matching node with its path. It uses your browser's own XPath engine, the same one scripts on a web page use, so what matches here matches in document.evaluate.",
+      "It's handy for writing selectors for XML APIs and feeds, SOAP responses, sitemaps, Selenium or Playwright locators, and XSLT templates. Namespaced documents work too. Everything runs in your browser.",
+    ],
+    faqs: [
+      { q: "Which XPath version is supported?", a: "XPath 1.0, the version built into browsers. It covers paths, predicates ([@id='a'], [1], [last()]), axes (ancestor::, following-sibling::) and functions such as contains(), starts-with(), count() and normalize-space(). XPath 2.0+ functions like matches() aren't available." },
+      { q: "My query finds nothing on a document with a default namespace. Why?", a: "In XPath 1.0 an element in a default namespace has to be selected with a prefix bound to that namespace. Use the namespace prefix the tool shows, or match by local name: //*[local-name()='item']." },
+      { q: "Can I test XPath against a web page's HTML?", a: "Paste the page's markup as XML. It has to be well-formed (closed tags, quoted attributes), so XHTML or cleaned-up HTML works best." },
+    ],
+    see: ["xml-viewer", "xslt-transformer", "jsonpath-tester"],
+  },
+  "xml-viewer": {
+    intro: [
+      "XML viewer turns the XML you paste into a collapsible tree, so a long feed, config or API response becomes something you can browse. Elements fold and unfold, and each one shows its attributes and text.",
+      "Click any node to copy its XPath, which you can paste straight into code or into the XPath tester. Parse errors are reported with what went wrong, which makes it a quick way to find a broken tag too. It runs in your browser and nothing is uploaded.",
+    ],
+    faqs: [
+      { q: "What kinds of XML can it open?", a: "Any well-formed XML: RSS and Atom feeds, sitemaps, SVG, Android and Maven configs, SOAP messages, Office XML parts and so on. If the document isn't well-formed, you'll see the parser's error instead of a tree." },
+      { q: "How do I get the path to an element?", a: "Click it. Its XPath is copied to your clipboard, ready for the XPath tester, XSLT or your own code." },
+      { q: "Can it pretty-print XML too?", a: "The tree is for browsing. To re-indent the text itself, use the code formatter, which also handles HTML, JSON and more." },
+    ],
+    see: ["xpath-tester", "xslt-transformer", "code-formatter"],
+  },
+  "xslt-transformer": {
+    intro: [
+      "XSLT transformer applies an XSLT stylesheet to your XML and shows the result. When the output is HTML you also get a rendered preview, so you can see a report or page take shape as you edit the template.",
+      "It uses XSLT 1.0 through libxslt, the same engine everywhere, so results don't change from browser to browser. The processor is locked down: stylesheets can't read files or fetch other addresses, which keeps untrusted stylesheets harmless.",
+    ],
+    faqs: [
+      { q: "Which XSLT version does it run?", a: "XSLT 1.0 with XPath 1.0, plus the EXSLT functions libxslt provides. XSLT 2.0 and 3.0 features such as xsl:for-each-group or regex functions aren't available." },
+      { q: "Can my stylesheet use document() or xsl:include?", a: "Not to load other files or addresses. Put everything the transform needs into the XML and the one stylesheet you paste." },
+      { q: "What can I use it for?", a: "Turning XML exports into HTML tables or reports, converting one XML format into another, extracting a CSV-like text list from a feed, or testing a template before it goes into a build pipeline." },
+    ],
+    see: ["xpath-tester", "xml-viewer", "html-viewer"],
+  },
+  "uri-template": {
+    intro: [
+      "URI template expander fills an RFC 6570 URI template with your values and shows the finished URL as you type. Write a template such as /repos/{owner}/{repo}/issues{?state,labels}, give the values as a JSON object, and copy the result.",
+      "Templates like these are how many REST APIs (GitHub's among them), OpenAPI tooling and HAL or JSON:API links describe their URLs. Testing one here shows exactly how lists, maps, empty values and reserved characters get encoded. It runs in your browser.",
+    ],
+    faqs: [
+      { q: "Which levels of RFC 6570 are supported?", a: "All four: simple {var}, reserved {+var}, fragment {#var}, label {.var}, path {/var}, path-style {;var}, query {?var} and continuation {&var} expressions, with the :prefix and * explode modifiers." },
+      { q: "How do I pass a list or a map?", a: "Use JSON: a list is an array ([\"bug\",\"ui\"]) and a map is an object ({\"sort\":\"date\"}). Add * after the name ({?labels*}) to repeat the key for each item instead of joining with commas." },
+      { q: "What happens to a variable I leave out?", a: "It's undefined, and RFC 6570 drops it from the URL entirely, including its ? or & when it's a query variable. An empty string is different: it stays, as name= with no value." },
+    ],
+    see: ["json-escape", "jsonpath-tester", "code-formatter"],
+  },
+  "html-viewer": {
+    intro: [
+      "HTML viewer renders the HTML you type or paste, live, next to the code. It's a quick way to check an email template, a snippet from a CMS, a component's markup or an answer you found online without making a file and opening it.",
+      "The preview runs in a sandbox: scripts in your HTML can run, but they can't touch this site or your data on it. Switch between phone, tablet and desktop widths to see how it reflows, then copy the code or download it as an .html file.",
+    ],
+    faqs: [
+      { q: "Does CSS and JavaScript in my HTML work?", a: "Yes. Inline <style> and <script>, and links to stylesheets or scripts on public addresses, all load in the preview, inside the sandbox." },
+      { q: "Is it safe to paste HTML I don't trust?", a: "It's rendered in a sandboxed frame, so it can't read this site's pages or storage. Treat links in it as you would anywhere else." },
+      { q: "Is my code uploaded?", a: "No. The preview is built in your browser." },
+    ],
+    see: ["code-formatter", "xml-viewer", "screen-resolution-tester"],
+  },
+  "pixel-ruler": {
+    intro: [
+      "Pixel ruler measures anything on screen. Press and drag on the canvas and you get the width, height and straight-line distance in pixels, plus the start point, with tick marks every 10 px to line things up.",
+      "Pixels are converted to inches and centimetres using a pixels-per-inch value: 96, the CSS standard, by default. Set your monitor's real PPI (from its size and resolution) and the inches and centimetres become true physical sizes. Nothing is installed or stored.",
+    ],
+    faqs: [
+      { q: "Are these CSS pixels or physical pixels?", a: "CSS pixels, the unit web layouts use. On a high-density display one CSS pixel covers several physical ones; the screen resolution tool shows your pixel ratio." },
+      { q: "How do I find my monitor's PPI?", a: "Divide the diagonal resolution in pixels by the diagonal size in inches. A 27-inch 2560 × 1440 monitor is about 109 PPI; a 24-inch 1920 × 1080 one is about 92." },
+      { q: "Can I measure something in another app?", a: "The ruler measures within this page. To measure another window, take a screenshot, open it in the image editor, and measure there at 100% zoom." },
+    ],
+    see: ["screen-resolution", "screen-resolution-tester", "color-picker"],
+  },
+  "screen-resolution": {
+    intro: [
+      "This page reads your screen's resolution in CSS pixels, its physical pixels (CSS pixels × pixel ratio), the device pixel ratio, aspect ratio, the area left after the taskbar or dock, colour depth and orientation.",
+      "Below that, the browser window's size updates live as you resize it: the viewport (innerWidth × innerHeight), the layout size without scrollbars that media queries use, the whole window with toolbars, and which Tailwind breakpoint you're in. It's all read from your browser; nothing is sent or stored.",
+    ],
+    faqs: [
+      { q: "Why is my resolution lower than my monitor's spec?", a: "Browsers report CSS pixels. With display scaling at 150% or on a Retina screen, a 2880 × 1800 panel reports 1440 × 900 with a pixel ratio of 2. The Physical row shows the panel's real count." },
+      { q: "What's the difference between viewport and window size?", a: "The viewport is the area the page is drawn in. The window size adds the browser's tabs, address bar and borders. Responsive CSS responds to the viewport." },
+      { q: "Does zooming the page change the numbers?", a: "Yes. Browser zoom changes the pixel ratio and the viewport size in CSS pixels, which is exactly what a page's media queries see." },
+    ],
+    see: ["screen-resolution-tester", "pixel-ruler", "my-ip"],
+  },
+  "screen-resolution-tester": {
+    intro: [
+      "Responsive tester loads a website inside 30+ real device frames (phones, tablets, laptops and monitors) at each device's real width in CSS pixels, so its layout and breakpoints behave as they would on that device. Rotate to landscape, zoom the frame to fit, or enter any custom size from 200 to 3,840 pixels.",
+      "Use it to check a site you're building, or a page you're about to share, before it reaches real phones. Some sites (Google, banks, social networks) refuse to be shown inside another page and appear blank; that's their security setting, not your layout.",
+    ],
+    faqs: [
+      { q: "Is this the same as testing on a real phone?", a: "It matches the layout: width, height and breakpoints. It runs in your browser's engine, so it won't reproduce engine-specific bugs, touch behaviour or the exact fonts of the device." },
+      { q: "Can I test a site on localhost?", a: "Usually, if your dev server runs on the same computer: the preview loads in your own browser, and current Chrome, Edge and Firefox allow a localhost address inside this page. A local server that forbids framing will show blank." },
+      { q: "Why is a site blank in the frame?", a: "It sends a header that forbids being shown inside another page (X-Frame-Options or a frame-ancestors policy). Your own site will show unless it does the same." },
+    ],
+    see: ["screen-resolution", "html-viewer", "pixel-ruler"],
+  },
+  "webcam-test": {
+    intro: [
+      "Webcam test turns on your camera in the browser and shows the picture along with what the camera reports: its name, resolution and frame rate. Pick another camera from the list if you have more than one, flip the mirror view, and save a still as a PNG.",
+      "It's the quick check before a video call, an interview or a stream: is the camera found, is it the right one, and is it sending HD? The video stays on your device; nothing is recorded or uploaded.",
+    ],
+    faqs: [
+      { q: "The camera won't start. What should I check?", a: "Allow camera access when the browser asks (or in the site settings by the address bar), close other apps that might be using the camera, and on Windows or macOS check the system's camera privacy settings for your browser." },
+      { q: "Why is the resolution lower than my camera's spec?", a: "The browser asks for up to 1920 pixels wide, and the camera picks its closest mode. USB bandwidth, lighting (some cameras lower the frame rate in the dark) and other apps can also limit it." },
+      { q: "Is my video recorded?", a: "No. The stream is shown on this page only. A still is saved only when you press the button, and straight to your device." },
+    ],
+    see: ["mic-speaker-test", "screen-recorder", "my-ip"],
+  },
+  "my-ip": {
+    intro: [
+      "What is my IP shows your public IP address, the one websites see when you visit, and whether it's IPv4 or IPv6. Under it is what the address says about your connection: an approximate location from your internet provider's address block, the time zone, your browser's user agent and preferred language.",
+      "It's useful for setting up remote access or a firewall allow-list, checking that a VPN or proxy is working (the address and location should change), or giving support the details they ask for. The lookup isn't stored or logged.",
+    ],
+    faqs: [
+      { q: "Why is the location wrong?", a: "IP locations come from the block of addresses your provider registered, not from your device, so they often point to the provider's nearest hub or another city. With a VPN, you'll see the VPN server's location." },
+      { q: "Is this my device's IP address?", a: "It's your public address. Devices at home usually share it through the router and have their own private addresses (like 192.168.x.x) that only your network sees." },
+      { q: "Why does my IP change?", a: "Most home and mobile providers assign addresses dynamically, so they can change when your router restarts or your phone reconnects. A fixed address is usually a paid option." },
+    ],
+    see: ["screen-resolution", "webcam-test", "mic-speaker-test"],
+  },
+};
+
 function baseGuide(tool: Tool): Guide | undefined {
   if (GUIDES[tool.id]) return GUIDES[tool.id];
+  if (DEV_AND_DEVICE_GUIDES[tool.id]) return DEV_AND_DEVICE_GUIDES[tool.id];
   const u = getUtility(tool.id);
   if (!u?.preset) return undefined;
   if (u.engine === "hash" && !u.preset.hmac) return hashGuide(tool, u.preset.alg);

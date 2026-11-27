@@ -52,7 +52,8 @@ export function Footer() {
               <img
                 src="https://cdn-b.saashub.com/img/badges/approved-color.png?v=1"
                 alt="Do-Whatever-You-Like badge"
-                style={{ maxWidth: 150 }}
+                width={150}
+                height={50}
                 loading="lazy"
               />
             </a>

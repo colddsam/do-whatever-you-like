@@ -4,7 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, ArrowUpRight, Check, ChevronRight } from "lucide-react";
 import { clusterHref, clusterOf, getCluster, getTool, toolHref, tools, toolsIn, wherePrivacy, type Tool } from "@/lib/tools";
-import { pageMeta } from "@/lib/site";
+import { TITLE_MAX, pageMeta } from "@/lib/site";
 import { toolGraph } from "@/lib/schema";
 import { JsonLd } from "@/components/seo/json-ld";
 import { guideFor, howTo } from "@/lib/guides";
@@ -30,9 +30,9 @@ export async function generateMetadata({ params }: PageProps<"/tools/[id]">): Pr
 }
 
 const BRAND = " | Do-Whatever-You-Like";
-/** Search results show about 60–70 characters; past that the end is cut off. */
-const TITLE_MAX = 70;
 const DESCRIPTION_MAX = 160;
+/** Below this a result snippet leaves room unused. */
+const DESCRIPTION_MIN = 120;
 
 /**
  * "Merge PDF — Free Online, No Sign-up | Do-Whatever-You-Like": the name people search, then the
@@ -51,14 +51,34 @@ function toolDescription(tool: Tool) {
   // Skip a limit the description already says ("…, in your browser." + "Runs in your browser").
   const limit = tool.limit && !(/browser/i.test(tool.limit) && /browser/i.test(tool.description)) ? tool.limit : undefined;
   // Add the facts while the snippet still fits; cost always leads.
-  let out = tool.description.replace(/\.?$/, ".");
+  let out = fitSnippet(tool.description.replace(/\.?$/, "."));
   for (const fact of ["Free, no sign-up", limit, wherePrivacy(tool)]) {
     if (fact && out.length + fact.length + 2 <= DESCRIPTION_MAX) out += ` ${fact}.`;
+  }
+  // Still short? Fill the snippet with what the tool does, from its feature list.
+  for (const feature of tool.features) {
+    if (out.length >= DESCRIPTION_MIN) break;
+    if (out.toLowerCase().includes(feature.toLowerCase())) continue;
+    if (out.length + feature.length + 2 <= DESCRIPTION_MAX) out += ` ${feature.replace(/\.?$/, ".")}`;
   }
   return out;
 }
 
-/** "YouTube downloader" → "YouTube" + italic "downloader". */
+/**
+ * A long one-liner cut to the snippet length at a natural break: the last full sentence that fits,
+ * else the last clause (ended with a full stop), so results don't end mid-word.
+ */
+function fitSnippet(text: string) {
+  if (text.length <= DESCRIPTION_MAX) return text;
+  const head = text.slice(0, DESCRIPTION_MAX);
+  const sentence = head.lastIndexOf(". ");
+  if (sentence >= DESCRIPTION_MIN - 20) return head.slice(0, sentence + 1);
+  const clause = Math.max(head.lastIndexOf(", "), head.lastIndexOf("; "), head.lastIndexOf(" — "));
+  if (clause >= DESCRIPTION_MIN - 20) return `${head.slice(0, clause).replace(/\s+(and|or|&)$/, "")}.`;
+  return `${head.slice(0, head.lastIndexOf(" ", DESCRIPTION_MAX - 1))}…`;
+}
+
+/** "YouTube downloader" →"YouTube" + italic "downloader". */
 function ToolTitle({ name }: { name: string }) {
   const i = name.lastIndexOf(" ");
   if (i < 0) return <>{name}</>;
