@@ -42,6 +42,7 @@ import { Workbench } from "../workbench";
 import { Chips, Notice, Panel, Row, TextField, Toggle } from "../pdf/kit";
 import { Recorder } from "./recorder";
 import { TranscriptSheet } from "./transcript";
+import { triggerHaptic } from "@/lib/haptics";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 const swap = {
@@ -294,6 +295,7 @@ export function TranscribePlayground({ toolId }: { toolId: string }) {
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(toText(shownSegments, timestamps).trim());
+      triggerHaptic("success");
       setCopied(true);
       setDelivered(true);
       setTimeout(() => setCopied(false), 2000);
@@ -339,6 +341,7 @@ export function TranscribePlayground({ toolId }: { toolId: string }) {
     const list = side === "translated" && trSegments ? trSegments : segments;
     try {
       await navigator.clipboard.writeText(toText(list, timestamps).trim());
+      triggerHaptic("success");
       setTrCopiedSide(side);
       setDelivered(true);
       setTimeout(() => setTrCopiedSide(null), 1800);

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HapticsToggle } from "@/components/layout/haptics-toggle";
 import { Logo } from "@/components/ui/logo";
 import { Container } from "@/components/ui/primitives";
 import { CLUSTERS, clusterHref, tools } from "@/lib/tools";
@@ -79,6 +80,7 @@ export function Footer() {
         <div className="mt-16 flex flex-col gap-2 border-t border-line py-6 text-sm text-ink-3 sm:flex-row sm:items-center sm:justify-between">
           <p>© 2026 Do-Whatever-You-Like. All rights reserved.</p>
           <p>Only download content you have the right to use.</p>
+          <HapticsToggle />
         </div>
 
         <p

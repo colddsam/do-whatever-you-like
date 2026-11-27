@@ -13,6 +13,7 @@ import { Workbench } from "../workbench";
 import { Chips, Notice, Panel, Row, Slider } from "../pdf/kit";
 import { FileRow } from "../pdf/task";
 import { Measuring, messageOf, RetryLink, swap } from "../pdf/parts";
+import { triggerHaptic } from "@/lib/haptics";
 
 /** Pictures the browser opens itself (they never leave the device). Everything else goes to the server. */
 const LOCAL = /\.(png|jpe?g|webp|gif|bmp|avif|ico|svg)$/i;
@@ -516,7 +517,7 @@ function Detail({ rgb }: { rgb: RGB | null }) {
             <button
               type="button"
               aria-label={`Copy ${f.label}`}
-              onClick={() => void navigator.clipboard.writeText(f.value).then(() => (setCopied(f.label), setTimeout(() => setCopied(null), 1200)))}
+              onClick={() => void navigator.clipboard.writeText(f.value).then(() => (triggerHaptic("success"), setCopied(f.label), setTimeout(() => setCopied(null), 1200)))}
               className="inline-flex size-7 items-center justify-center rounded-[6px] text-ink-3 hover:bg-paper-2 hover:text-ink"
             >
               {copied === f.label ? <Check aria-hidden className="size-3.5 text-success" /> : <Copy aria-hidden className="size-3.5" />}
@@ -609,7 +610,7 @@ function Exporter({ sets }: { sets: Record<"picked" | "palette" | "file", { rgb:
               <Download aria-hidden className="size-4" /> Download .{ext}
             </button>
             {text && (
-              <button type="button" onClick={() => void navigator.clipboard.writeText(text).then(() => (setCopied(true), setTimeout(() => setCopied(false), 1200)))} className="inline-flex h-10 items-center gap-1.5 rounded-md border border-line bg-surface px-3.5 text-sm text-ink-2 hover:border-ink-3 hover:text-ink">
+              <button type="button" onClick={() => void navigator.clipboard.writeText(text).then(() => (triggerHaptic("success"), setCopied(true), setTimeout(() => setCopied(false), 1200)))} className="inline-flex h-10 items-center gap-1.5 rounded-md border border-line bg-surface px-3.5 text-sm text-ink-2 hover:border-ink-3 hover:text-ink">
                 {copied ? <Check aria-hidden className="size-4 text-success" /> : <Copy aria-hidden className="size-4" />} {copied ? "Copied" : "Copy"}
               </button>
             )}

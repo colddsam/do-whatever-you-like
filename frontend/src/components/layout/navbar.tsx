@@ -7,6 +7,7 @@ import { AnimatePresence, motion, useScroll, useSpring } from "motion/react";
 import { Menu, Search, X } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { ButtonLink } from "@/components/ui/primitives";
+import { triggerHaptic } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
 import { getLenis } from "@/lib/smooth-scroll";
 import { MobileCollections, ToolsMenu } from "./tools-menu";
@@ -227,7 +228,10 @@ export function Navbar() {
           aria-label={open ? "Close menu" : "Open menu"}
           aria-expanded={open}
           aria-controls="mobile-menu"
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => {
+            triggerHaptic("light");
+            setOpen((v) => !v);
+          }}
           className={cn(
             "relative inline-flex items-center justify-center rounded-full transition-colors md:hidden",
             pill ? "-mr-0.5 size-9 bg-ink text-paper after:absolute after:-inset-1.5 after:content-['']" : "-mr-2 size-11 text-ink hover:bg-paper-2",

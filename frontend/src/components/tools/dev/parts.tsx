@@ -6,6 +6,7 @@ import { Check, ChevronRight, Copy, Download } from "lucide-react";
 import { saveBlob } from "@/lib/files";
 import { formatBytes } from "@/lib/media";
 import { cn } from "@/lib/utils";
+import { triggerHaptic } from "@/lib/haptics";
 
 /*
  * Building blocks of the developer utilities: an input editor and an output panel that read like a
@@ -27,6 +28,7 @@ export function CopyButton({ text, label = "Copy", className, onCopied }: { text
       onClick={async () => {
         try {
           await navigator.clipboard.writeText(text);
+          triggerHaptic("success");
         } catch {
           return;
         }

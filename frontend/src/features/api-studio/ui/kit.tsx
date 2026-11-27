@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Check, ChevronDown, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { methodColor } from "../lib/util";
+import { triggerHaptic } from "@/lib/haptics";
 
 export { Toggle } from "@/components/tools/pdf/kit";
 
@@ -444,6 +445,7 @@ export function useTier(): Tier {
 export const copyText = async (text: string) => {
   try {
     await navigator.clipboard.writeText(text);
+    triggerHaptic("success");
     return true;
   } catch {
     const ta = document.createElement("textarea");
@@ -452,6 +454,7 @@ export const copyText = async (text: string) => {
     ta.select();
     const ok = document.execCommand("copy");
     ta.remove();
+    if (ok) triggerHaptic("success");
     return ok;
   }
 };

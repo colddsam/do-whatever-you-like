@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Check, Link2, Rss } from "lucide-react";
 import { absUrl } from "@/lib/site";
+import { triggerHaptic } from "@/lib/haptics";
 
 export function BlogShare({ path, title }: { path: string; title: string }) {
   const [copied, setCopied] = useState(false);
@@ -13,6 +14,7 @@ export function BlogShare({ path, title }: { path: string; title: string }) {
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(fullUrl);
+      triggerHaptic("success");
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {

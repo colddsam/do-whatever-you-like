@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { MotionConfig } from "motion/react";
 import Lenis from "lenis";
 import { getLenis, setLenis } from "@/lib/smooth-scroll";
+import { installHapticDelegation } from "@/lib/haptics";
 
 const NAVBAR_SCROLL_OFFSET = -72;
 
@@ -194,5 +195,6 @@ function useSmoothScroll() {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useSmoothScroll();
+  useEffect(() => installHapticDelegation(), []);
   return <MotionConfig reducedMotion="user">{children}</MotionConfig>;
 }

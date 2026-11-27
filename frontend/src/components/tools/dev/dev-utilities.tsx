@@ -60,6 +60,7 @@ import { Chips, Notice, Panel, Row, Slider, TextField, Toggle } from "../pdf/kit
 import { CopyButton, Editor, FilePick, JsonTree, Output, ValueList, ValueRow } from "./parts";
 import { HashEngine } from "../utilities/data-engines";
 import { CSS_COLOR_NAMES, namedColor, nearestName, rgbToCmyk, rgbToHsv } from "@/lib/utilities/colors";
+import { triggerHaptic } from "@/lib/haptics";
 
 type UtilId = "json" | "diff" | "base64" | "url" | "hash" | "jwt" | "regex" | "time" | "base" | "color" | "case" | "uuid" | "password";
 
@@ -212,6 +213,7 @@ function JsonUtil() {
               value={value}
               onPath={(p) => {
                 void navigator.clipboard.writeText(p).catch(() => undefined);
+                triggerHaptic("success");
                 setCopiedPath(p);
               }}
             />

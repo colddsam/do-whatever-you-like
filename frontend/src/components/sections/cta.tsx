@@ -6,6 +6,7 @@ import { ArrowRight, Check, Copy, Loader2, Mail, RotateCcw } from "lucide-react"
 import { Container, SignalDot } from "@/components/ui/primitives";
 import { Reveal } from "@/components/ui/reveal";
 import { CONTACT_EMAIL } from "@/lib/site";
+import { triggerHaptic } from "@/lib/haptics";
 
 const CATEGORIES = [
   "Any category",
@@ -82,6 +83,7 @@ export function Cta() {
       .join("\n");
     try {
       await navigator.clipboard.writeText(text);
+      triggerHaptic("success");
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -105,6 +107,7 @@ export function Cta() {
 
     const trimmed = idea.trim();
     if (trimmed.length < 3) {
+      triggerHaptic("error");
       setStatus("error");
       setStatusMessage("Please write at least 3 characters describing the tool you want.");
       setMailtoHref(null);
@@ -112,6 +115,7 @@ export function Cta() {
       return;
     }
 
+    triggerHaptic("medium");
     setStatus("sending");
     setStatusMessage("");
     setMailtoHref(null);
@@ -134,15 +138,18 @@ export function Cta() {
         | null;
 
       if (!res.ok) {
+        triggerHaptic("error");
         setStatus("error");
         setStatusMessage(data?.detail || `Could not send automatically right now. You can send directly to ${CONTACT_EMAIL}.`);
         setMailtoHref(data?.mailto || fallbackMailto());
         return;
       }
 
+      triggerHaptic("success");
       setStatus("sent");
       setStatusMessage(data?.message || `Sent! Your tool request is on its way to ${CONTACT_EMAIL}.`);
     } catch {
+      triggerHaptic("error");
       setStatus("error");
       setStatusMessage(`Network error while sending. You can email ${CONTACT_EMAIL} directly below.`);
       setMailtoHref(fallbackMailto());

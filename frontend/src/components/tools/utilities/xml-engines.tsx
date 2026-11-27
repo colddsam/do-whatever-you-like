@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Chips, Notice, Panel, Row, TextField, Toggle } from "../pdf/kit";
 import { CopyButton, Editor, JsonTree, Output } from "../dev/parts";
 import { SandboxFrame } from "./code-engines";
+import { triggerHaptic } from "@/lib/haptics";
 
 const BOOKS = `<?xml version="1.0" encoding="UTF-8"?>
 <library xmlns:dc="http://purl.org/dc/elements/1.1/">
@@ -350,6 +351,7 @@ export function XmlViewerEngine() {
   const count = doc ? doc.getElementsByTagName("*").length : 0;
   const onPath = (p: string) => {
     void navigator.clipboard.writeText(p).catch(() => {});
+    triggerHaptic("success");
     setCopied(p);
   };
   return (

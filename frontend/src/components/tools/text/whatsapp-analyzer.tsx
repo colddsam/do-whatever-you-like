@@ -44,6 +44,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Workbench } from "../workbench";
 import { Notice, Panel, Toggle } from "../pdf/kit";
+import { triggerHaptic } from "@/lib/haptics";
 
 type TabId = "overview" | "people" | "timing" | "language" | "messages";
 type TimelineGrain = "auto" | "daily" | "weekly" | "monthly";
@@ -234,6 +235,7 @@ function Analyzer({ onStep }: { onStep: (s: number) => void }) {
     if (!analysis) return;
     try {
       await navigator.clipboard.writeText(formatWhatsappTextSummary(analysis));
+      triggerHaptic("success");
       setCopiedSummary(true);
       onStep(2);
       setTimeout(() => setCopiedSummary(false), 1800);

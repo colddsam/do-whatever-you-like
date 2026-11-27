@@ -10,6 +10,7 @@ import { FileDrop } from "../file-drop";
 import { Workbench } from "../workbench";
 import { Chips, Notice, Panel, Row, Slider, TextField, Toggle } from "../pdf/kit";
 import { ColorField } from "../utilities/design-engines";
+import { triggerHaptic } from "@/lib/haptics";
 
 type WaveStyle = "bars" | "line" | "radial" | "spectrogram";
 type SpecPalette = "inferno" | "viridis" | "ocean" | "mono";
@@ -356,6 +357,7 @@ export function AudioWaveformTool({ toolId }: { toolId: string }) {
   const copySvg = async () => {
     if (!vectorSvg) return;
     await navigator.clipboard.writeText(vectorSvg);
+    triggerHaptic("success");
     setCopied(true);
     setTimeout(() => setCopied(false), 1400);
   };

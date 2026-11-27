@@ -11,6 +11,7 @@ import { FALLBACK_LANGUAGES, loadCapabilities, translateBatch, type TranslateLan
 import { cn } from "@/lib/utils";
 import { Workbench } from "../workbench";
 import { Chips, Notice, Panel, Row, TextField } from "../pdf/kit";
+import { triggerHaptic } from "@/lib/haptics";
 
 const SAMPLE = `1
 00:00:01,000 --> 00:00:03,500
@@ -138,6 +139,7 @@ export function SubtitleTool({ toolId }: { toolId: string }) {
     if (!plain) return;
     try {
       await navigator.clipboard.writeText(plain);
+      triggerHaptic("success");
       setCopiedSide(side);
       setTimeout(() => setCopiedSide(null), 1800);
     } catch {

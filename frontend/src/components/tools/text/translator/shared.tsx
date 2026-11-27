@@ -5,6 +5,7 @@ import { Check, ChevronDown, Copy, Loader2, Search, Square, Volume2, X } from "l
 import { COMMON_TARGET_CODES, type TranslateLanguage } from "@/lib/translate";
 import { filterLanguages, speak, stopSpeaking, type VoiceGender } from "@/lib/translate-extras";
 import { cn } from "@/lib/utils";
+import { triggerHaptic } from "@/lib/haptics";
 
 const BTN_BASE = "inline-flex items-center justify-center gap-1.5 rounded-sm border font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40";
 const BTN_TONE = {
@@ -25,6 +26,7 @@ export const primaryBtn =
 export async function copyText(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);
+    triggerHaptic("success");
     return true;
   } catch {
     const ta = document.createElement("textarea");
@@ -35,7 +37,9 @@ export async function copyText(text: string): Promise<boolean> {
     document.body.appendChild(ta);
     ta.select();
     try {
-      return document.execCommand("copy");
+      const ok = document.execCommand("copy");
+      if (ok) triggerHaptic("success");
+      return ok;
     } finally {
       ta.remove();
     }

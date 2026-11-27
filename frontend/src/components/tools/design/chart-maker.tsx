@@ -64,6 +64,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Workbench } from "../workbench";
 import { Chips, Notice, Panel, Row, Slider, TextField, Toggle } from "../pdf/kit";
+import { triggerHaptic } from "@/lib/haptics";
 
 const STORE = "dw-chart-maker-v1";
 const ICON: Record<ChartType, LucideIcon> = {
@@ -569,6 +570,7 @@ function Editor() {
                 <ExportButton
                   onClick={async () => {
                     await navigator.clipboard.writeText(svgString(true));
+                    triggerHaptic("success");
                     flash("SVG code copied: paste it into any web page.");
                   }}
                 >

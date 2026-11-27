@@ -10,6 +10,7 @@ import { Chips, Panel, Row, Slider, TextField, Toggle } from "../pdf/kit";
 import { CopyButton, Editor, Output, TextFilePick } from "../dev/parts";
 import { ColorField } from "./design-engines";
 import type { EngineProps } from "./text-engines";
+import { triggerHaptic } from "@/lib/haptics";
 
 /* ========================================================================
  * 1. SVG OPTIMIZER (SVGO-STYLE) & SVG -> REACT JSX / TSX CONVERTER
@@ -791,6 +792,7 @@ export function PaletteScaleEngine({ preset }: EngineProps) {
   const copyStop = async (hex: string) => {
     try {
       await navigator.clipboard.writeText(hex);
+      triggerHaptic("success");
       setCopiedHex(hex);
       setTimeout(() => setCopiedHex((c) => (c === hex ? null : c)), 1400);
     } catch {

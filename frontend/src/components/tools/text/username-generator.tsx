@@ -41,6 +41,7 @@ import { cn } from "@/lib/utils";
 import { Chips, Panel, Row, Slider } from "../pdf/kit";
 import { CopyButton } from "../dev/parts";
 import { Workbench } from "../workbench";
+import { triggerHaptic } from "@/lib/haptics";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -229,6 +230,7 @@ export function UsernameGeneratorTool({ toolId }: { toolId: string }) {
   const copyQuick = async (text: string, id: string) => {
     try {
       await navigator.clipboard.writeText(text);
+      triggerHaptic("success");
       setCopiedId(id);
       setTimeout(() => setCopiedId((cur) => (cur === id ? null : cur)), 1300);
     } catch {

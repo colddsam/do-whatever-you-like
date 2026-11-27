@@ -85,6 +85,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Workbench } from "../workbench";
 import { Chips, Notice, Slider, Toggle } from "../pdf/kit";
+import { triggerHaptic } from "@/lib/haptics";
 
 type RFNode = Node<FlowNodeData, "shape">;
 type RFEdge = Edge<FlowEdgeData, "flow">;
@@ -634,7 +635,7 @@ function Editor() {
                       <button type="button" onClick={() => loadText(text) && setPanel("none")} className="inline-flex h-9 items-center gap-1.5 rounded-md bg-ink px-3 text-sm font-medium text-paper hover:opacity-90">
                         <WandSparkles aria-hidden className="size-4" /> Draw it
                       </button>
-                      <button type="button" onClick={async () => (await navigator.clipboard.writeText(text), flash("Text copied."))} className="inline-flex h-9 items-center gap-1.5 rounded-md border border-line bg-surface px-3 text-sm text-ink hover:border-ink-3">
+                      <button type="button" onClick={async () => (await navigator.clipboard.writeText(text), triggerHaptic("success"), flash("Text copied."))} className="inline-flex h-9 items-center gap-1.5 rounded-md border border-line bg-surface px-3 text-sm text-ink hover:border-ink-3">
                         <Copy aria-hidden className="size-4" /> Copy as Mermaid
                       </button>
                     </div>

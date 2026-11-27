@@ -11,6 +11,7 @@ import { Workbench } from "../workbench";
 import { Chips, Notice, Panel, Row, Slider, Toggle } from "../pdf/kit";
 import { ColorField } from "../utilities/design-engines";
 import { CHECKER } from "./task";
+import { triggerHaptic } from "@/lib/haptics";
 
 /* ========================================================================
  * PURE-TS RASTER -> CLOSED SVG PATH TRACER
@@ -400,6 +401,7 @@ export function ImageToSvgTool({ toolId }: { toolId: string }) {
   const copySvg = async () => {
     if (!traced?.svg) return;
     await navigator.clipboard.writeText(traced.svg);
+    triggerHaptic("success");
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };

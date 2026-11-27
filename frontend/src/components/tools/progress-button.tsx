@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { motion } from "motion/react";
 import { ArrowRight, Loader2, RotateCcw } from "lucide-react";
+import { triggerHaptic } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
 
 export type Job =
@@ -47,12 +49,22 @@ export function ProgressButton({
   const measured = job.kind === "processing" && progress != null;
   const fill = job.kind === "uploading" ? job.progress : job.kind === "processing" ? (measured ? progress : 1) : 0;
 
+  // A job that was running and just failed: tap once, in step with the red message appearing.
+  const wasBusy = useRef(false);
+  useEffect(() => {
+    if (job.kind === "failed" && wasBusy.current) triggerHaptic("error");
+    wasBusy.current = busy;
+  }, [job.kind, busy]);
+
   return (
     <div>
       <div className="flex gap-2">
         <button
           type="button"
-          onClick={onStart}
+          onClick={() => {
+            triggerHaptic("medium");
+            onStart();
+          }}
           disabled={busy || disabled}
           className="group relative inline-flex h-12 flex-1 items-center justify-center overflow-hidden rounded-md bg-ink px-5 text-[15px] font-medium text-paper transition-[background-color,transform,opacity] duration-150 hover:bg-ink/85 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-ink disabled:active:translate-y-0 data-[busy=true]:cursor-progress data-[busy=true]:opacity-100"
           data-busy={busy}
@@ -93,7 +105,10 @@ export function ProgressButton({
         {busy && (
           <button
             type="button"
-            onClick={onCancel}
+            onClick={() => {
+              triggerHaptic("light");
+              onCancel();
+            }}
             className="inline-flex h-12 items-center rounded-md border border-line bg-surface px-4 text-sm font-medium text-ink transition-colors hover:border-ink-3"
           >
             Cancel

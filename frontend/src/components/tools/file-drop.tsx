@@ -1,8 +1,9 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { FileUp } from "lucide-react";
+import { triggerHaptic } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
 
 /**
@@ -44,11 +45,20 @@ export function FileDrop({
   const take = (list: FileList | null) => {
     const files = Array.from(list ?? []);
     if (!files.length) return;
+    // Files landed: a light tap. If the tool rejects them, the effect below answers with "error".
+    triggerHaptic("light");
     if (onFiles) onFiles(multiple ? files : files.slice(0, 1));
     else onFile?.(files[0]);
   };
   const [over, setOver] = useState(false);
   const depth = useRef(0); // dragenter/leave fire for children too; count them.
+
+  // A rejection message just appeared (wrong type, too big): tap once with it.
+  const lastError = useRef(error);
+  useEffect(() => {
+    if (error && error !== lastError.current) triggerHaptic("error");
+    lastError.current = error;
+  }, [error]);
 
   return (
     <div>
