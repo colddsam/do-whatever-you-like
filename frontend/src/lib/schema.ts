@@ -2,6 +2,13 @@ import { CONTACT_EMAIL, OPERATOR, SITE_NAME, SITE_URL, absUrl } from "@/lib/site
 import { CLUSTERS, clusterHref, clusterOf, getCluster, liveCount, toolHref, type Tool } from "@/lib/tools";
 import { guideFor, howTo, type Faq } from "@/lib/guides";
 import { blogHref, estimateWordCount, type BlogPost } from "@/lib/blog";
+import { lastModified } from "@/lib/lastmod";
+
+/** `dateModified` when the page has a real one (see lib/lastmod). */
+const modified = (path: string) => {
+  const date = lastModified(path);
+  return date ? { dateModified: date } : {};
+};
 
 const ORG_ID = `${SITE_URL}/#organization`;
 const SITE_ID = `${SITE_URL}/#website`;
@@ -37,7 +44,8 @@ export const siteGraph = {
       publishingPrinciples: absUrl("/privacy"),
       termsOfService: absUrl("/terms"),
       founder: { "@type": "Person", name: OPERATOR.name, url: OPERATOR.url },
-      sameAs: [OPERATOR.url],
+      // Profiles that exist today; add YouTube, Product Hunt, AlternativeTo… as they go live.
+      sameAs: [OPERATOR.url, "https://www.saashub.com/do-whatever-you-like"],
     },
     {
       "@type": "WebSite",
@@ -86,6 +94,7 @@ export function homeGraph(faqs: Faq[]) {
         isPartOf: { "@id": SITE_ID },
         about: { "@id": ORG_ID },
         inLanguage: "en",
+        ...modified("/"),
         speakable: {
           "@type": "SpeakableSpecification",
           cssSelector: ["#hero-title", "#faq-title", "#faq details summary", "#faq details p"],
@@ -135,6 +144,7 @@ export function toolGraph(tool: Tool) {
         softwareHelp: { "@type": "CreativeWork", url: `${url}#guide-title` },
         author: { "@id": ORG_ID },
         publisher: { "@id": ORG_ID },
+        ...modified(toolHref(tool.id)),
       },
       {
         "@type": "WebPage",
@@ -145,6 +155,7 @@ export function toolGraph(tool: Tool) {
         isPartOf: { "@id": SITE_ID },
         mainEntity: { "@id": `${url}#app` },
         inLanguage: "en",
+        ...modified(toolHref(tool.id)),
         speakable: {
           "@type": "SpeakableSpecification",
           cssSelector: ["h1", "#guide-title"],
@@ -187,6 +198,7 @@ export function legalGraph(path: string, label: string, description: string) {
         description,
         isPartOf: { "@id": SITE_ID },
         inLanguage: "en",
+        ...modified(path),
       },
       crumbs([
         ["Home", "/"],
@@ -207,6 +219,7 @@ export function directoryGraph(live: Tool[]) {
         name: `All tools — ${SITE_NAME}`,
         url: absUrl("/tools"),
         isPartOf: { "@id": SITE_ID },
+        ...modified("/tools"),
         mainEntity: {
           "@type": "ItemList",
           numberOfItems: live.length,

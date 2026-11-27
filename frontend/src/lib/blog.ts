@@ -1,4 +1,5 @@
 import { OPERATOR } from "@/lib/site";
+import { liveCount } from "@/lib/tools";
 
 export type BlogCategory = "Product" | "Engineering" | "Privacy" | "Guides";
 
@@ -122,7 +123,8 @@ export const BLOG_POSTS: BlogPost[] = [
     category: "Product",
     tags: ["Launch", "Browser-first", "Privacy", "Architecture"],
     publishedAt: "2026-11-22",
-    updatedAt: "2026-11-22",
+    // Bump only when the post itself changes (the update note at the top).
+    updatedAt: "2026-11-27",
     author: {
       name: OPERATOR.name,
       role: "Creator & maintainer",
@@ -136,6 +138,12 @@ export const BLOG_POSTS: BlogPost[] = [
     },
     video: LAUNCH_VIDEO,
     blocks: [
+      {
+        type: "callout",
+        label: "Update · 27 Nov 2026",
+        title: `Now ${liveCount} tools`,
+        body: `This post describes the site on launch day, when it had 162 tools. Tools have been added since: ${liveCount} work today, across the same nine collections. Every number below is as of 22 November 2026; the Tools page always has the current list.`,
+      },
       {
         type: "section",
         id: "why-we-built-it",

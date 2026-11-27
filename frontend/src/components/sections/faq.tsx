@@ -6,7 +6,7 @@ import { liveCount, toolsIn } from "@/lib/tools";
 export const faqs = [
   {
     q: "What is Do-Whatever-You-Like?",
-    a: "A single home for small digital jobs that usually send you hunting across a dozen sketchy websites: downloading media, converting files, tidying documents and more. New tools are added over time.",
+    a: `Do-Whatever-You-Like is a free website with ${liveCount} online tools for small digital jobs that usually send you hunting across a dozen sketchy sites: converting files between 112 formats, merging, compressing and signing PDFs, editing images, downloading public videos, transcribing audio and formatting code. There is no sign-up and no watermark, and many tools run entirely in your browser, so your files never leave your device. New tools are added over time.`,
   },
   {
     q: "Is it free?",
@@ -23,7 +23,7 @@ export const faqs = [
   },
   {
     q: "What happens to my files and links?",
-    a: "They're used only to complete your request and are discarded afterwards. We don't build profiles or sell data.",
+    a: "Many tools (the developer and text tools, the photo editor, the meme generator, the font creator and more) run entirely in your browser, so your file never leaves your device. When a tool needs the server, your file or link is used only for that job and deleted as soon as the result is sent; PDF tools keep your PDF for 30 minutes so you can try other settings without uploading again. We don't build profiles or sell data.",
   },
   {
     q: "Can I suggest a tool?",

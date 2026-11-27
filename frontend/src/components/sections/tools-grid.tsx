@@ -104,10 +104,10 @@ export function ToolsGrid() {
             label="Tools"
             title={
               <span id="tools-title">
-                Nine collections, <span className="serif-em">one flow.</span>
+                What can you <span className="serif-em">do here?</span>
               </span>
             }
-            description={`${liveCount} tools that work today, sorted the way you think about the job: any file, PDFs, images, developer and text tools, fonts and colour, downloads, audio and video, and everyday utilities. Pick a collection, or search for the task.`}
+            description={`Nine collections, one flow: ${liveCount} tools that work today, sorted the way you think about the job: any file, PDFs, images, developer and text tools, fonts and colour, downloads, audio and video, and everyday utilities. Pick a collection, or search for the task.`}
           />
         </Reveal>
 

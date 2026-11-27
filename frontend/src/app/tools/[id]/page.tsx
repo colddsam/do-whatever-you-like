@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, ArrowUpRight, Check, ChevronRight } from "lucide
 import { clusterHref, clusterOf, getCluster, getTool, toolHref, tools, toolsIn, wherePrivacy, type Tool } from "@/lib/tools";
 import { TITLE_MAX, pageMeta } from "@/lib/site";
 import { toolGraph } from "@/lib/schema";
+import { formatDate, lastModified } from "@/lib/lastmod";
 import { JsonLd } from "@/components/seo/json-ld";
 import { guideFor, howTo } from "@/lib/guides";
 import { Badge } from "@/components/ui/primitives";
@@ -167,6 +168,7 @@ function ToolDetails({ tool }: { tool: Tool }) {
 
   const Icon = tool.icon;
   const live = tool.status === "live";
+  const updated = live ? lastModified(toolHref(tool.id)) : undefined;
   // Neighbours first: the same group, then the same collection, then whatever works today.
   const cluster = getCluster(clusterOf(tool));
   const rank = (t: Tool) => (tool.group && t.group === tool.group ? 3 : 0) + (clusterOf(t) === cluster.id ? 2 : 0) + (t.status === "live" ? 1 : 0);
@@ -243,6 +245,11 @@ function ToolDetails({ tool }: { tool: Tool }) {
                   </div>
                 ))}
               </dl>
+              {updated && (
+                <p className="label-mono mt-3 text-ink-3">
+                  Updated <time dateTime={updated}>{formatDate(updated)}</time>
+                </p>
+              )}
             </section>
 
             <section aria-labelledby="does-title">

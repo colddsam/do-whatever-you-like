@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { ButtonLink, Container } from "@/components/ui/primitives";
+import { liveCount } from "@/lib/tools";
 import { cn } from "@/lib/utils";
 import { Announcement } from "./announcement";
 import { CommandPalette } from "./command-palette";
@@ -19,10 +20,11 @@ const rise = (delay: number, y = 16) => ({
 
 const suggestions = ["reels", "merge pdf", "heic", "mp3"];
 
+/** [figure, label, the same fact as a sentence for screen readers and text extraction] */
 const stats = [
-  ["0", "sign-ups"],
-  ["3", "steps max"],
-  ["1", "search box"],
+  ["0", "sign-ups", "No sign-up."],
+  ["3", "steps max", "Three steps at most."],
+  ["1", "search box", "One search box."],
 ] as const;
 
 /** True once the viewport is at least `px` wide (false during SSR and on smaller screens). */
@@ -84,7 +86,8 @@ export function Hero() {
         */}
         <div className="relative grid grid-cols-1 md:grid-cols-12 md:gap-8 lg:gap-10">
           <motion.div style={{ y: headY, opacity: headOpacity }} className="relative z-10 min-w-0 md:col-span-8">
-            <motion.div {...rise(0, 10)} className="-mt-1.5">
+            {/* data-nosnippet: a release banner isn't what the page is about, so keep it out of snippets. */}
+            <motion.div {...rise(0, 10)} data-nosnippet className="-mt-1.5">
               <Announcement />
             </motion.div>
 
@@ -115,6 +118,7 @@ export function Hero() {
                 className="absolute inset-x-0 top-0 bottom-7 md:-bottom-14 md:-right-8 md:top-8"
               />
               <motion.figcaption
+                data-nosnippet
                 style={{ opacity: captionOpacity }}
                 className="label-mono pointer-events-none absolute bottom-0 left-0 flex items-center gap-2 whitespace-nowrap text-ink-3 md:bottom-auto md:left-auto md:right-0 md:top-0 md:h-9 md:-translate-y-1.5"
               >
@@ -135,8 +139,10 @@ export function Hero() {
               Not faded in: on phones this paragraph is the largest thing on screen (the LCP element).
             */}
             <p className="max-w-md text-lg leading-relaxed text-ink-2 text-pretty lg:-mt-[0.4em]">
-              Do-Whatever-You-Like is a growing toolbox for everyday digital chores. Download media, convert
-              files, tidy documents and more, without installing a thing.
+              {/* The site's one-line definition, first in the page's text: what search and AI answers quote. */}
+              Do-Whatever-You-Like is a free website with {liveCount} online tools for everyday digital chores: merge
+              and compress PDFs, convert files, edit images, download public videos, transcribe audio and format code.
+              No sign-up, no watermarks, nothing to install.
             </p>
 
             <motion.div {...rise(0.38)} className="mt-8 flex flex-wrap gap-3">
@@ -171,7 +177,7 @@ export function Hero() {
               })}
             </motion.div>
 
-            <dl className="relative mt-auto hidden grid-cols-3 gap-4 pt-6 lg:grid">
+            <dl data-nosnippet className="relative mt-auto hidden grid-cols-3 gap-4 pt-6 lg:grid">
               {/* Hairline draws in from the left — the worksheet rule. */}
               <motion.span
                 aria-hidden
@@ -180,11 +186,11 @@ export function Hero() {
                 transition={{ duration: 1.1, ease: EASE, delay: 0.55 }}
                 className="absolute inset-x-0 top-0 h-px origin-left bg-line"
               />
-              {stats.map(([n, l], i) => (
+              {stats.map(([n, l, sentence], i) => (
                 <motion.div key={l} {...rise(0.65 + i * 0.06, 10)}>
-                  <dt className="sr-only">{l}</dt>
-                  <dd className="text-3xl font-semibold tracking-[-0.03em]">{n}</dd>
-                  <dd className="label-mono mt-1 text-ink-3">{l}</dd>
+                  <dt className="sr-only">{sentence}</dt>
+                  <dd aria-hidden className="text-3xl font-semibold tracking-[-0.03em]">{n}</dd>
+                  <dd aria-hidden className="label-mono mt-1 text-ink-3">{l}</dd>
                 </motion.div>
               ))}
             </dl>

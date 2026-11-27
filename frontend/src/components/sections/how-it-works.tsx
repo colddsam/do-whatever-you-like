@@ -79,10 +79,10 @@ export function HowItWorks() {
           <SectionHeader
             dark
             index="02"
-            label="How it works"
+            label="Paste. Pick. Done."
             title={
               <span id="how-title">
-                Paste. Pick. <span className="serif-em text-accent">Done.</span>
+                How does it <span className="serif-em text-accent">work?</span>
               </span>
             }
             description="Every tool on Do-Whatever-You-Like follows the same three steps. Learn it once and every task feels familiar."

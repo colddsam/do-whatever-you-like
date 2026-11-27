@@ -14,7 +14,8 @@ export function GET() {
     "",
     `> ${liveCount} free online tools for everyday digital chores: PDF, images, file conversion, media downloads, audio transcription, developer and text utilities. No sign-up, nothing to install.`,
     "",
-    "## Key Facts",
+    // General notes go before the first H2 (llmstxt.org); H2 sections hold link lists.
+    "Key facts:",
     "",
     `- **Total live tools:** ${liveCount} across ${CLUSTERS.length} collections`,
     "- **Cost & accounts:** 100% free, no sign-up, no watermarks",

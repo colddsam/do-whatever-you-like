@@ -35,7 +35,7 @@ export function Principles() {
             label="Why us"
             title={
               <span id="why-title">
-                Built to get out of your <span className="serif-em">way.</span>
+                Why use it over other <span className="serif-em">free tools?</span>
               </span>
             }
             description="Most free tools come with pop-ups, sign-ups and mystery watermarks. We'd rather earn your trust by being boring in the best way."

@@ -6,6 +6,7 @@ import { CLUSTERS, clusterHref, toolHref, toolsIn, type ClusterId, type Tool } f
 import { HUBS } from "@/lib/hubs";
 import { SITE_URL, absUrl, pageMeta } from "@/lib/site";
 import { JsonLd } from "@/components/seo/json-ld";
+import { lastModified } from "@/lib/lastmod";
 import { Page } from "@/components/ui/paper";
 import { Badge } from "@/components/ui/primitives";
 import { ToolHopperSearch } from "@/components/tools/tool-hopper-search";
@@ -59,6 +60,7 @@ export default async function CategoryPage({ params }: PageProps<"/tools/categor
               description: copy.description,
               url,
               isPartOf: { "@id": `${SITE_URL}/#website` },
+              ...(lastModified(clusterHref(cluster.id)) && { dateModified: lastModified(clusterHref(cluster.id)) }),
               mainEntity: {
                 "@type": "ItemList",
                 numberOfItems: live.length,
