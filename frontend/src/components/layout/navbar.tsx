@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useScroll, useSpring } from "motion/react";
-import { Menu, X } from "lucide-react";
+import { Menu, Search, X } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { ButtonLink } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 import { getLenis } from "@/lib/smooth-scroll";
 import { MobileCollections, ToolsMenu } from "./tools-menu";
+import { openToolSearch, ToolHopperSearch } from "@/components/tools/tool-hopper-search";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 const BUBBLE = { type: "spring", bounce: 0.22, duration: 0.5 } as const;
@@ -56,6 +57,8 @@ export function Navbar() {
   const active = pathname === "/blog" || pathname.startsWith("/blog/") ? "blog" : sectionActive;
   const bubble = hovered ?? active;
   const pill = scrolled || open;
+  // Home and the tool pages have their own search; everywhere else the navbar brings one.
+  const pageHasSearch = pathname === "/" || pathname === "/tools" || pathname.startsWith("/tools/");
 
   if (prevPathname !== pathname) {
     setPrevPathname(pathname);
@@ -187,6 +190,15 @@ export function Navbar() {
         </nav>
 
         <div className="hidden shrink-0 items-center gap-1 md:flex">
+          <button
+            type="button"
+            onClick={openToolSearch}
+            aria-label="Search all tools"
+            title="Search all tools (Ctrl K or /)"
+            className="inline-flex size-10 items-center justify-center rounded-full text-ink-2 transition-colors hover:bg-paper-2 hover:text-ink"
+          >
+            <Search aria-hidden className="size-[18px]" />
+          </button>
           <ButtonLink href="/#request" variant="ghost" pill className="max-lg:hidden">
             Request a tool
           </ButtonLink>
@@ -195,6 +207,21 @@ export function Navbar() {
           </ButtonLink>
         </div>
 
+        <div className="flex items-center gap-1 md:hidden">
+        <button
+          type="button"
+          onClick={() => {
+            setOpen(false);
+            openToolSearch();
+          }}
+          aria-label="Search all tools"
+          className={cn(
+            "relative inline-flex items-center justify-center rounded-full text-ink transition-colors hover:bg-paper-2",
+            pill ? "size-9" : "size-11",
+          )}
+        >
+          <Search aria-hidden className="size-[18px]" />
+        </button>
         <button
           type="button"
           aria-label={open ? "Close menu" : "Open menu"}
@@ -219,6 +246,7 @@ export function Navbar() {
             </motion.span>
           </AnimatePresence>
         </button>
+        </div>
 
         {/* Reading progress along the pill's straight bottom edge. */}
         <motion.span
@@ -277,6 +305,7 @@ export function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
+      {!pageHasSearch && <ToolHopperSearch mode="compact" headless />}
     </header>
   );
 }

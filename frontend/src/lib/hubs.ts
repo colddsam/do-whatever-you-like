@@ -49,9 +49,9 @@ export const HUBS: Record<ClusterId, { title: string; description: string; intro
   },
   media: {
     title: "Free Video Editor & Audio Tools: Trim, Denoise, Subtitles",
-    description: "Edit video on a timeline, trim and denoise, boost volume, record your screen, edit subtitles, extract MP3s, transcribe speech and make GIFs. Free, no sign-up.",
+    description: "Find songs by humming or lyrics, edit video on a timeline, trim and denoise, boost volume, record your screen, edit subtitles, extract MP3s, transcribe speech and make GIFs. Free, no sign-up.",
     intro:
-      "Tools for audio and video: edit on a multi-track timeline with keyframes, effects and auto-captions, trim clips losslessly or frame-exact, clean up background hiss and hum, boost or normalise loudness, record your screen or voice, edit and sync SRT/VTT subtitles, extract MP3 audio, transcribe speech in 99 languages, or turn videos into still frames and animated GIFs.",
+      "Tools for audio and video: find any song by humming, singing or typing a line of its lyrics, edit on a multi-track timeline with keyframes, effects and auto-captions, trim clips losslessly or frame-exact, clean up background hiss and hum, boost or normalise loudness, record your screen or voice, edit and sync SRT/VTT subtitles, extract MP3 audio, transcribe speech in 99 languages, or turn videos into still frames and animated GIFs.",
   },
   utilities: {
     title: "Free Everyday Tools: Period Tracker, Converters, Passwords & QR",

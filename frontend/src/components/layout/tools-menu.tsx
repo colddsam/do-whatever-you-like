@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowRight, ChevronDown, Search } from "lucide-react";
-import { CLUSTERS, clusterHref, getTool, liveCount, toolHref, toolsIn, tools, type Cluster, type ClusterId, type Tool } from "@/lib/tools";
+import { betaCount, CLUSTERS, clusterHref, getTool, liveCount, toolHref, toolsIn, tools, type Cluster, type ClusterId, type Tool } from "@/lib/tools";
 import { cn } from "@/lib/utils";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -168,7 +168,15 @@ export function ToolsMenu({
                 Search and browse all {tools.length} tools
                 <ArrowRight aria-hidden className="size-3.5 transition-transform duration-150 group-hover:translate-x-0.5" />
               </Link>
-              <p className="label-mono text-ink-3">{liveCount} live · free · no sign-up</p>
+              <p className="label-mono text-ink-3">
+                {liveCount} live
+                {betaCount > 0 && (
+                  <span title="Beta tools run heavy work on our free server: they may be slower or briefly busy" className="text-warning">
+                    {" "}· {betaCount} beta
+                  </span>
+                )}{" "}
+                · free · no sign-up
+              </p>
             </div>
           </motion.div>
         )}

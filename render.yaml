@@ -103,6 +103,14 @@ services:
       # without a key the studio's built-in composer is used. Vocals use the studio's free Edge voices.
       - key: MUSIC_GROQ_API_KEY
         sync: false
+      # Song finder (/tools/song-finder). Free APIs do the work: Groq's Whisper hears the words, a
+      # free LLM names candidate songs, iTunes Search and LRCLIB (no keys) prove them, and yt-dlp finds
+      # the video. No models, no stored files: a short clip is deleted as soon as it's answered.
+      # Any Groq/Gemini key set above is reused automatically; these only override them.
+      - key: SONGID_GROQ_API_KEY
+        sync: false
+      - key: SONGID_GEMINI_API_KEY
+        sync: false
       # Optional: if YouTube starts answering "Sign in to confirm you're not a bot" (it does that to
       # some cloud IP ranges), add a cookies.txt from a signed-in browser as cookies_youtube.txt.
       - key: YOUTUBE_COOKIE_FILE_PATH

@@ -134,7 +134,7 @@ function ToolCategory({ tool }: { tool: Tool }) {
       <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-2.5">
         <ToolHopperSearch mode="compact" currentToolId={tool.id} contextClusterId={cluster.id} hideFloatingPill={Boolean(tool.wide)} />
         {tool.status === "live" ? (
-          <Badge variant="live">Live</Badge>
+          tool.beta ? <Badge variant="beta">Beta</Badge> : <Badge variant="live">Live</Badge>
         ) : (
           <Badge>Coming soon</Badge>
         )}

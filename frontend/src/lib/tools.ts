@@ -1,4 +1,5 @@
 import {
+  MicVocal,
   Webhook,
   Music4,
   Archive,
@@ -1017,6 +1018,7 @@ export function wherePrivacy(tool: Tool): string | undefined {
   if (ON_DEVICE.has(tool.id)) return "Stays on your device";
   if (tool.kind === "link") return "Fetched on our server, deleted once sent";
   if (tool.id === "audio-to-text") return "On our server or Groq's Whisper, then deleted";
+  if (tool.id === "song-finder") return "Clips go to our server and Groq's Whisper, then deleted at once";
   if (tool.id === "pdf" || tool.family === "pdf") return "On our server, deleted within 30 min";
   if (tool.id === "color-picker") return "Pictures stay on your device; documents are deleted after";
   return "On our server, deleted once done";
@@ -1036,6 +1038,8 @@ export const SERVER_HEAVY_TOOL_IDS = new Set<string>([
   "audio",
   "audio-to-text",
   "translator",
+  "interpreter",
+  "song-finder",
   "trim-media",
   "noise-remover",
   "audio-volume",
@@ -1435,6 +1439,35 @@ const rawTools: Tool[] = [
       "Your video is deleted once the MP3 is sent",
     ],
     preset: { from: ["mp4", "mov", "mkv", "webm", "avi", "m4v", "flv", "wmv", "3gp", "mpeg", "mts", "ogv"], to: "mp3" },
+  },
+  {
+    id: "song-finder",
+    name: "Song finder",
+    category: "Audio & video",
+    description: "Hum, sing or type a few words and find the song, with its lyrics, a preview to play and the music video.",
+    seoTitle: "Song Finder: Find a Song by Humming, Singing or Lyrics — Free",
+    status: "live",
+    icon: MicVocal,
+    kind: "file",
+    takes: "Your voice (sing or hum), music playing nearby, a clip, or lyrics you remember",
+    gives: "The song, its lyrics, a 30-second preview and the music video",
+    limit: "Clips up to 15 s recorded or 4 MB uploaded",
+    steps: ["Sing, hum or type", "We find the song", "Listen, watch, read"],
+    accept: { label: "Audio or video clip", types: "audio/*,video/*,.mp3,.m4a,.wav,.ogg,.oga,.opus,.webm,.weba,.aac,.flac,.mp4,.mov,.3gp,.amr" },
+    keywords: [
+      "song finder", "find song", "what song is this", "what's this song", "name that song", "identify song", "song identifier", "song recognition",
+      "music recognition", "recognize song", "shazam", "shazam alternative", "hum to search", "hum a song", "humming", "sing to search", "whistle",
+      "find song by lyrics", "lyrics search", "search lyrics", "lyrics finder", "song lyrics", "song from lyrics", "song name", "music finder",
+      "find music video", "song video", "song preview", "soundhound", "midomi", "tune", "melody", "bollywood song", "song stuck in my head",
+    ],
+    features: [
+      "Sing a line, hum the tune, or hold your phone to music playing nearby",
+      "Or type lyrics you half-remember: misheard and misspelt words are fine",
+      "Every answer is checked against the song's real lyrics, and the matching line is highlighted",
+      "Play a 30-second preview, watch the music video and read the full lyrics on one page",
+      "Works with songs in many languages, from pop and rock to Bollywood and K-pop",
+      "Humming works best for well-known melodies; words always work better",
+    ],
   },
   {
     id: "audio-to-text",
@@ -2013,6 +2046,7 @@ export const exampleTasks = [
   "save a youtube video",
   "turn a video into mp3",
   "transcribe a voice recording",
+  "what song is this",
   "merge two pdfs",
   "convert a pdf to word",
   "compress a video",
@@ -2132,10 +2166,10 @@ export const CLUSTERS: Cluster[] = [
     name: "Audio & video",
     title: "Audio and video",
     noun: "audio and video",
-    blurb: "Edit video on a timeline and make music with AI in a full studio; trim, clean up, boost and record; subtitles, speech into text, frames and GIFs.",
+    blurb: "Edit video on a timeline, make music with AI, find any song by humming or lyrics; trim, clean up, boost and record; subtitles, speech into text, frames and GIFs.",
     icon: AudioLines,
     hub: "video-editor",
-    featured: ["video-editor", "music-studio", "trim-media", "noise-remover", "screen-recorder", "audio", "audio-to-text", "subtitle-editor"],
+    featured: ["video-editor", "music-studio", "song-finder", "trim-media", "noise-remover", "screen-recorder", "audio", "audio-to-text", "subtitle-editor"],
   },
   {
     id: "utilities",
@@ -2148,6 +2182,18 @@ export const CLUSTERS: Cluster[] = [
     featured: ["period-tracker", "unit-converter", "qr", "password-generator", "world-clock", "age-calculator", "stopwatch", "emi-sip-calculator"],
   },
 ];
+
+/*
+ * A collection only ever points at tools that exist: if a tool is removed from the registry, its id
+ * drops out of every `featured` list and `hub` here, so no menu, card or search shortcut can link to it.
+ */
+{
+  const known = new Set(tools.map((t) => t.id));
+  for (const c of CLUSTERS) {
+    c.featured = c.featured.filter((id) => known.has(id));
+    if (c.hub && !known.has(c.hub)) c.hub = undefined;
+  }
+}
 
 /** Tools outside the two families, placed by hand. Anything unlisted lands in utilities. */
 const CLUSTER_OF: Record<string, ClusterId> = {
@@ -2167,6 +2213,7 @@ const CLUSTER_OF: Record<string, ClusterId> = {
   "audio-to-text": "media",
   "video-editor": "media",
   "music-studio": "media",
+  "song-finder": "media",
   "video-to-frames": "media",
   "video-to-gif": "media",
   "trim-media": "media",
@@ -2203,6 +2250,8 @@ export function toolsIn(id: ClusterId): Tool[] {
 }
 
 export const liveCount = tools.filter((t) => t.status === "live").length;
+/** Live tools in Beta (server-heavy work on the free backend). */
+export const betaCount = tools.filter((t) => t.status === "live" && t.beta).length;
 
 /**
  * Ranks tools for a query using natural-language task intent, synonyms and format routes.

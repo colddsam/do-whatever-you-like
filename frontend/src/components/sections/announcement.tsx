@@ -5,28 +5,39 @@ import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { ArrowRight } from "lucide-react";
 import { SignalDot } from "@/components/ui/primitives";
-import { toolHref } from "@/lib/tools";
+import { getTool, toolHref } from "@/lib/tools";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 const ROTATE_MS = 4200;
 
-/** Short, true headlines. Each one links to the tool it's about. */
-const news = [
+/**
+ * Short, true headlines. Each one links to the tool it's about. Entries whose tool is no longer in
+ * the registry are dropped (see `news` below), so a removed tool never shows up here.
+ */
+const headlines = [
+  { tag: "New", text: "Hum or sing it: find any song, its lyrics & video", tool: "song-finder" },
+  { tag: "New", text: "Word, Excel & PowerPoint editors in your browser", tool: "word-editor" },
+  { tag: "New", text: "Make songs with AI in the music studio", tool: "music-studio" },
+  { tag: "New", text: "A full video editor, right in your browser", tool: "video-editor" },
+  { tag: "New", text: "A free API client: collections, scripts, runner", tool: "api-client" },
+  { tag: "New", text: "Pro photo editor with layers and PSD", tool: "pro-photo-editor" },
   { tag: "New", text: "Translate text, audio & video free", tool: "translator" },
+  { tag: "New", text: "Live voice interpreter for conversations", tool: "interpreter" },
   { tag: "New", text: "WhatsApp chat analyzer, in any language", tool: "whatsapp-chat-analyzer" },
   { tag: "New", text: "Private period tracker, 100% on your device", tool: "period-tracker" },
   { tag: "New", text: "Compress any file: PDF, Office, video…", tool: "compress-files" },
-  { tag: "New", text: "Merge and split Word, Excel and PowerPoint", tool: "merge-files" },
-  { tag: "New", text: "Favicons and app icons for every platform", tool: "icon-maker" },
   { tag: "New", text: "Convert any file to any format", tool: "convert-anything" },
-  { tag: "New", text: "Speech to text in 99 languages", tool: "audio-to-text" },
-  { tag: "New", text: "PDF to Word, Excel and PowerPoint", tool: "pdf-to-word" },
-  { tag: "New", text: "QR codes with your logo on them", tool: "qr" },
+  { tag: "Live", text: "Speech to text in 99 languages", tool: "audio-to-text" },
+  { tag: "Live", text: "PDF to Word, Excel and PowerPoint", tool: "pdf-to-word" },
+  { tag: "Live", text: "QR codes with your logo on them", tool: "qr" },
   { tag: "Live", text: "Turn any video into an MP3", tool: "audio" },
-  { tag: "Live", text: "Instagram carousels in one ZIP", tool: "instagram" },
   { tag: "Live", text: "YouTube Shorts, best quality", tool: "youtube" },
-  { tag: "Live", text: "Facebook reels from a link", tool: "facebook" },
 ] as const;
+
+const news = headlines.flatMap((h) => {
+  const tool = getTool(h.tool);
+  return tool && tool.status === "live" ? [{ ...h, beta: Boolean(tool.beta) }] : [];
+});
 
 /**
  * The hero's announcement chip: a rounded bubble with an ink "tag" bubble inside it.
@@ -34,6 +45,11 @@ const news = [
  * Hovering or focusing it pauses the rotation; reduced motion shows the first message only.
  */
 export function Announcement() {
+  if (news.length === 0) return null;
+  return <AnnouncementChip />;
+}
+
+function AnnouncementChip() {
   const reduce = useReducedMotion();
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -64,6 +80,7 @@ export function Announcement() {
   return (
     <Link
       href={toolHref(item.tool)}
+      aria-label={`${item.tag}: ${item.text}${item.beta ? " (Beta)" : ""}`}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
@@ -109,6 +126,14 @@ export function Announcement() {
         </AnimatePresence>
       </motion.span>
 
+      {item.beta && (
+        <span
+          title="Runs on our free server: may be slower or briefly busy"
+          className="label-mono hidden shrink-0 rounded-sm border border-warning/35 bg-warning/10 px-1.5 py-px text-[10px] text-warning sm:inline"
+        >
+          Beta
+        </span>
+      )}
       <ArrowRight
         aria-hidden
         className="size-3.5 shrink-0 text-ink-3 transition-[transform,color] duration-200 ease-out-soft group-hover:translate-x-0.5 group-hover:text-ink"

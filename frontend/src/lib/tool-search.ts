@@ -533,6 +533,16 @@ type IntentRule = {
 
 const INTENT_RULES: IntentRule[] = [
   {
+    phrases: [
+      "what song is this", "whats this song", "what is this song", "name of this song", "name of the song", "find a song", "find song",
+      "identify song", "identify a song", "song identifier", "recognize song", "recognise song", "shazam", "hum a song", "hum to search",
+      "humming", "sing to search", "song by lyrics", "song from lyrics", "find lyrics", "lyrics finder", "search lyrics", "song stuck in my head",
+      "which song", "song name",
+    ],
+    boostIds: ["song-finder"],
+    reason: "Finds a song from humming, singing or lyrics",
+  },
+  {
     phrases: ["shrink pdf", "smaller pdf", "reduce pdf size", "pdf for email", "compress pdf"],
     boostIds: ["compress-pdf", "compress-files"],
     reason: "Shrinks PDF file size",
@@ -1011,7 +1021,9 @@ function getSearchIndex(): SearchIndex {
 
   for (const item of CURATED_TASK_SUGGESTIONS) {
     const entry = byId.get(item.toolId);
-    pushSuggestion(item.phrase, item.kind, entry?.tool);
+    // A suggestion for a tool that was removed would lead nowhere: leave it out.
+    if (!entry) continue;
+    pushSuggestion(item.phrase, item.kind, entry.tool);
   }
 
   for (const ex of exampleTasks) {
@@ -1058,7 +1070,8 @@ export function detectFormatPair(query: string): FormatRouteMatch | null {
   if (!fromId || !toId || fromId === toId) return null;
 
   const pairKey = `${fromId}->${toId}`;
-  const dedicatedToolIds = PAIR_DEDICATED_TOOLS[pairKey] ?? [];
+  // Only tools still in the registry: a removed tool never shows up as a conversion shortcut.
+  const dedicatedToolIds = (PAIR_DEDICATED_TOOLS[pairKey] ?? []).filter((id) => tools.some((t) => t.id === id));
   const converterSupported = Boolean(STATIC_CATALOGUE.routes[fromId]?.some((r) => r.target === toId));
   if (!converterSupported && dedicatedToolIds.length === 0) return null;
 

@@ -5,10 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowUpRight, CornerDownLeft, Search, Sparkles, X } from "lucide-react";
-import { CLUSTERS, exampleTasks, toolHref, tools, toolsIn, type Tool } from "@/lib/tools";
+import { betaCount, CLUSTERS, exampleTasks, toolHref, tools, toolsIn, type Tool } from "@/lib/tools";
 import { analyzeTaskQuery } from "@/lib/tool-search";
 import { Kbd, SignalDot } from "@/components/ui/primitives";
 import { VoiceSearchButton } from "@/components/ui/voice-search-button";
+import { OPEN_SEARCH_EVENT } from "@/components/tools/tool-hopper-search";
+import { getLenis } from "@/lib/smooth-scroll";
 import { cn } from "@/lib/utils";
 
 const noopSubscribe = () => () => {};
@@ -122,6 +124,21 @@ export function CommandPalette({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // The navbar's search button: bring the palette into view and put the cursor in it.
+  useEffect(() => {
+    const onOpen = () => {
+      const input = inputRef.current;
+      if (!input) return;
+      const top = input.getBoundingClientRect().top + window.scrollY - 120;
+      const lenis = getLenis();
+      if (lenis) lenis.scrollTo(Math.max(0, top), { force: true });
+      else window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+      input.focus({ preventScroll: true });
+    };
+    window.addEventListener(OPEN_SEARCH_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_SEARCH_EVENT, onOpen);
   }, []);
 
   useEffect(() => {
@@ -433,7 +450,9 @@ export function CommandPalette({
           </span>
         </div>
         <p className="label-mono flex items-center gap-1.5 text-ink-2">
-          <SignalDot pulse /> {liveCount} live · {tools.length - liveCount} in the works
+          <SignalDot pulse /> {liveCount} live
+          {tools.length > liveCount ? ` · ${tools.length - liveCount} in the works` : ""}
+          {betaCount > 0 && <span className="text-warning"> · {betaCount} beta</span>}
         </p>
       </div>
     </div>

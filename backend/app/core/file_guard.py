@@ -366,6 +366,7 @@ def _policies() -> Dict[str, FrozenSet[str]]:
     from app.services.image import ALL_INPUTS, TOOL_INPUTS
     from app.services.pdf_tools import IMAGE_EXTENSIONS
     from app.services.qrcode import QRCodeService
+    from app.services.songid import ALLOWED_EXTENSIONS as SONG_CLIPS
     from app.services.transcribe import ALLOWED_EXTENSIONS as MEDIA
     from app.services.universal import formats as universal_formats
 
@@ -399,6 +400,7 @@ def _policies() -> Dict[str, FrozenSet[str]]:
         "/media/cut-parts": frozenset(MEDIA),
         "/media/sound": frozenset(MEDIA),
         "/media/denoise": frozenset(MEDIA),
+        "/songid/audio": frozenset(SONG_CLIPS),
     }
     for tool in ("compress", "resize", "crop", "convert", "gif", "rotate", "blur", "upscale"):
         p[f"/image/{tool}"] = frozenset(TOOL_INPUTS[tool])

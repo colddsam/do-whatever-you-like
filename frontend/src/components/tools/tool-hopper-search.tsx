@@ -34,7 +34,13 @@ export type ToolHopperSearchProps = {
   contextClusterId?: ClusterId;
   matchCount?: number;
   hideFloatingPill?: boolean;
+  /** No inline trigger or floating pill: only the Spotlight, opened by ⌘K, "/" or the navbar's search button. */
+  headless?: boolean;
 };
+
+/** Fired by the navbar's search button; whichever search the page has opens. */
+export const OPEN_SEARCH_EVENT = "dwyl:open-search";
+export const openToolSearch = () => window.dispatchEvent(new CustomEvent(OPEN_SEARCH_EVENT));
 
 /**
  * Animated, Google-style task search & quick tool-hopper for `/tools`, `/tools/[id]` and category pages.
@@ -49,6 +55,7 @@ export function ToolHopperSearch({
   contextClusterId,
   matchCount,
   hideFloatingPill = false,
+  headless = false,
 }: ToolHopperSearchProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -210,6 +217,13 @@ export function ToolHopperSearch({
     return () => window.removeEventListener("keydown", onKey);
   }, [mode, scrolledPast, modalOpen, openModal]);
 
+  // The navbar's search button.
+  useEffect(() => {
+    const onOpen = () => openModal(false);
+    window.addEventListener(OPEN_SEARCH_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_SEARCH_EVENT, onOpen);
+  }, [openModal]);
+
   // Dismiss inline dropdown on outside click.
   useEffect(() => {
     if (!inlineFocused) return;
@@ -293,6 +307,7 @@ export function ToolHopperSearch({
   return (
     <LayoutGroup>
       {/* Inline top anchor */}
+      {!headless && (
       <div
         ref={anchorRef}
         className={mode === "directory" ? "grid w-full min-w-0 grid-cols-1 md:grid-cols-12 md:gap-8" : "relative"}
@@ -450,6 +465,7 @@ export function ToolHopperSearch({
           </div>
         )}
       </div>
+      )}
 
       {/* Floating scroll pill OR expanded Spotlight overlay */}
       <AnimatePresence>
@@ -545,7 +561,7 @@ export function ToolHopperSearch({
                         onClick: closeModal,
                       }
                     : {
-                        label: "Browse all 9 collections",
+                        label: `Browse all ${tools.length} tools`,
                         href: "/tools",
                         onClick: closeModal,
                       }
@@ -553,7 +569,7 @@ export function ToolHopperSearch({
               />
             </motion.div>
           </motion.div>
-        ) : scrolledPast && !hideFloatingPill ? (
+        ) : scrolledPast && !hideFloatingPill && !headless ? (
           <motion.div
             key="hopper-floating-pill"
             layoutId={reduceMotion ? undefined : "tool-hopper-floating"}

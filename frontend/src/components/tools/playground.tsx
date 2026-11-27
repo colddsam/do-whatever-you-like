@@ -79,6 +79,7 @@ const WritingHelperTool = dynamic(() => import("./text/writing-helper").then((m)
 const UsernameGeneratorTool = dynamic(() => import("./text/username-generator").then((m) => m.UsernameGeneratorTool), { loading });
 const ImageToSvgTool = dynamic(() => import("./image/vectorize-tool").then((m) => m.ImageToSvgTool), { loading });
 const MockupSafeZoneTool = dynamic(() => import("./image/mockup-tool").then((m) => m.MockupSafeZoneTool), { loading });
+const SongFinder = dynamic(() => import("./media/song-finder").then((m) => m.SongFinder), { loading });
 const AudioWaveformTool = dynamic(() => import("./media/waveform-tool").then((m) => m.AudioWaveformTool), { loading });
 const ArchiveTool = dynamic(() => import("./files/archive-tool").then((m) => m.ArchiveTool), { loading });
 const DocumentViewerTool = dynamic(() => import("./files/document-viewer").then((m) => m.DocumentViewerTool), { loading });
@@ -206,6 +207,8 @@ const byId: Record<string, Workspace> = {
   "noise-remover": DenoiseTool,
   "screen-recorder": RecorderTool,
   "subtitle-editor": SubtitleTool,
+  // Song finder: hum, sing or type → the song (notes found on the device, words via the server)
+  "song-finder": SongFinder,
   writing: WritingHelperTool,
   notepad: NotepadTool,
   "username-generator": UsernameGeneratorTool,

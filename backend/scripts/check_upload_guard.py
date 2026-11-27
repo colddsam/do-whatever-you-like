@@ -158,6 +158,8 @@ expect_refused("SVG without a drawing", "/image/compress", "logo.svg", b"just wo
 expect_refused("binary junk named .py", "/universal/convert", "script.py", b"\x00\x01\x02\x03" * 100, [("target", "pdf")])
 expect_refused("program renamed .csv (compress)", "/compress", "data.csv", EXE)
 expect_refused("program renamed .mp4 (merge)", "/merge-split/inspect", "clip.mp4", EXE)
+expect_refused("program renamed .webm (song finder)", "/songid/audio", "hum.webm", EXE)
+expect_refused("PDF sent to the song finder", "/songid/audio", "lyrics.pdf", PDF)
 expect_refused("program renamed .png (palette)", "/palette/extract", "colours.png", EXE)
 expect_refused("program renamed .png (icon)", "/icon", "logo.png", EXE)
 expect_refused("program renamed .png (QR logo)", "/qrcode/generate-with-logo", "logo.png", EXE, [("data", "hi")])
@@ -187,6 +189,7 @@ expect_passes("MP3 to speech-to-text", "/transcribe", [("file", ("a.mp3", MP3))]
 expect_passes("MP3 to translator media", "/translate/media", [("file", ("a.mp3", MP3))], [("target_language", "hi")])
 expect_passes("MP4 to translator media", "/translate/media", [("file", ("a.mp4", MP4))], [("target_language", "hi")])
 expect_passes("MP4 to compress", "/compress", [("files", ("a.mp4", MP4))])
+expect_passes("MP3 to song finder", "/songid/audio", [("file", ("hum.mp3", MP3))])
 expect_passes("several images to one PDF", "/pdf/from-images", [("images", ("1.png", PNG)), ("images", ("2.jpg", JPG))])
 
 # ---- 4. one bad file in a batch sinks the batch ----
