@@ -89,7 +89,7 @@ def run_all() -> None:
     # 2. Capabilities check
     c3, raw3 = asyncio.run(asgi_request("GET", "/api/v1/tool-request/capabilities", token=token))
     cap = json.loads(raw3.decode())
-    check("capabilities returns 200 with colddsam@gmail.com target", c3 == 200 and cap.get("to_email") == "colddsam@gmail.com", str(cap))
+    check("capabilities returns 200 with contact@colddsam.com target", c3 == 200 and cap.get("to_email") == "contact@colddsam.com", str(cap))
 
     # Snapshot settings before local test overrides
     orig = {
@@ -233,11 +233,11 @@ def run_all() -> None:
         )
         sent_mail = captured_http[-1] if captured_http else {}
         check(
-            "Apps Script HTTP delivery sends escaped HTML & colddsam@gmail.com",
+            "Apps Script HTTP delivery sends escaped HTML & contact@colddsam.com",
             c_ok == 200
             and d_ok.get("delivered") is True
             and d_ok.get("provider") == "apps_script"
-            and sent_mail.get("to") == "colddsam@gmail.com"
+            and sent_mail.get("to") == "contact@colddsam.com"
             and sent_mail.get("replyTo") == "maker@example.com"
             and "&lt;script&gt;alert(1)&lt;/script&gt;" in sent_mail.get("html", "")
             and "<script>" not in sent_mail.get("html", ""),
@@ -260,10 +260,10 @@ def run_all() -> None:
         )
         raw_smtp = captured_smtp[-1] if captured_smtp else ""
         check(
-            "SMTP provider sends MIME message to colddsam@gmail.com",
+            "SMTP provider sends MIME message to contact@colddsam.com",
             c_smtp == 200
             and d_smtp.get("provider") == "smtp"
-            and "To: colddsam@gmail.com" in raw_smtp
+            and "To: contact@colddsam.com" in raw_smtp
             and "Reply-To: reader@example.com" in raw_smtp
             and "PDF table splitter" in raw_smtp,
             str(d_smtp),

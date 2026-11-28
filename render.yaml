@@ -76,7 +76,7 @@ services:
       # Tool request inbox & free HTTPS email providers (Render Free blocks SMTP 465/587, so HTTPS APIs
       # like Resend, Brevo, Web3Forms, or Google Apps Script work here cleanly on port 443).
       - key: TOOL_REQUEST_TO_EMAIL
-        value: "colddsam@gmail.com"
+        value: "contact@colddsam.com"
       - key: TOOL_REQUEST_RESEND_API_KEY
         sync: false
       - key: TOOL_REQUEST_BREVO_API_KEY

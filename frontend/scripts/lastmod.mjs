@@ -43,7 +43,7 @@ const pages = new Map([
     [hash(c, HUBS[c.id], toolsIn(c.id).filter((t) => t.status === "live").map(card)), { files: ["src/lib/hubs.ts"] }],
   ]),
   ...live.map((t) => [toolHref(t.id), [hash(t, guideFor(t), howTo(t)), { term: `"${t.id}"` }]]),
-  ...["about", "privacy", "terms", "fair-use"].map((p) => [`/${p}`, [hash(file(`app/${p}/page.tsx`)), { files: [`src/app/${p}/page.tsx`] }]]),
+  ...["support", "about", "terms", "privacy", "cookies", "fair-use", "copyright", "disclaimer", "accessibility"].map((p) => [`/${p}`, [hash(file(`app/${p}/page.tsx`)), { files: [`src/app/${p}/page.tsx`] }]]),
 ]);
 
 const shallow = (() => {

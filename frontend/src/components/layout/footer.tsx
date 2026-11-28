@@ -2,6 +2,8 @@ import Link from "next/link";
 import { HapticsToggle } from "@/components/layout/haptics-toggle";
 import { Logo } from "@/components/ui/logo";
 import { Container } from "@/components/ui/primitives";
+import { LEGAL_PAGES } from "@/lib/legal";
+import { CONTACT_EMAIL } from "@/lib/site";
 import { CLUSTERS, clusterHref, tools } from "@/lib/tools";
 
 const columns = [
@@ -19,17 +21,16 @@ const columns = [
       { label: "Why us", href: "/#why" },
       { label: "FAQ", href: "/#faq" },
       { label: "Blog", href: "/blog" },
-      { label: "About", href: "/about" },
       { label: "Request a tool", href: "/#request" },
     ],
   },
   {
+    title: "Help",
+    links: LEGAL_PAGES.filter((p) => p.group === "help").map((p) => ({ label: p.label, href: p.href })),
+  },
+  {
     title: "Legal",
-    links: [
-      { label: "Privacy", href: "/privacy" },
-      { label: "Terms", href: "/terms" },
-      { label: "Fair use", href: "/fair-use" },
-    ],
+    links: LEGAL_PAGES.filter((p) => p.group === "legal").map((p) => ({ label: p.label === "Terms" ? "Terms & conditions" : p.label, href: p.href })),
   },
 ];
 
@@ -43,6 +44,9 @@ export function Footer() {
             <p className="mt-4 max-w-xs text-[15px] leading-relaxed text-ink-2">
               One place to do whatever you need. Paste, pick, done.
             </p>
+            <a href={`mailto:${CONTACT_EMAIL}`} className="mt-3 inline-block py-1 text-[15px] text-ink-2 underline decoration-line underline-offset-4 transition-colors hover:text-ink hover:decoration-ink">
+              {CONTACT_EMAIL}
+            </a>
             <a
               href="https://www.saashub.com/do-whatever-you-like?utm_source=badge&utm_campaign=badge&utm_content=do-whatever-you-like&badge_variant=color&badge_kind=approved"
               target="_blank"
@@ -59,7 +63,7 @@ export function Footer() {
               />
             </a>
           </div>
-          <nav aria-label="Footer" className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:col-span-7">
+          <nav aria-label="Footer" className="grid grid-cols-2 gap-8 sm:grid-cols-4 md:col-span-7">
             {columns.map((col) => (
               <div key={col.title}>
                 <p className="label-mono text-ink-3">{col.title}</p>

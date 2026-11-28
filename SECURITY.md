@@ -24,7 +24,7 @@ Only the active production branch (`main`) and the live deployment at [do-whatev
 1. **GitHub Private Vulnerability Reporting (Recommended):**
    Submit a private advisory directly at [github.com/colddsam/do-whatever-you-like/security/advisories/new](https://github.com/colddsam/do-whatever-you-like/security/advisories/new).
 2. **Email:**
-   Send details to **colddsam@gmail.com** with the subject prefix `[SECURITY]`.
+   Send details to **contact@colddsam.com** with the subject prefix `[SECURITY]`.
 
 ### What to Include
 

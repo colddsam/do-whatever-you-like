@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { CONTACT_EMAIL, pageMeta } from "@/lib/site";
 import { LegalPage } from "@/components/layout/legal-page";
 
@@ -12,7 +13,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       current="/privacy"
-      updated="14 Nov 2026"
+      updated="28 Nov 2026"
       title={
         <>
           Privacy, in <span className="serif-em">plain words.</span>
@@ -88,8 +89,31 @@ export default function PrivacyPage() {
             <p>
               We use Vercel Web Analytics and Google Analytics (GA4) to understand overall site traffic and which tools
               are most helpful. Google Analytics may set cookies in your browser to count visits; neither analytics
-              service ever receives the files, links, notes or period entries you work with in our tools.
+              service ever receives the files, links, notes or period entries you work with in our tools. The{" "}
+              <Link href="/cookies" className="underline decoration-line underline-offset-4 hover:decoration-ink">
+                cookie policy
+              </Link>{" "}
+              lists everything stored in your browser.
             </p>
+          ),
+        },
+        {
+          title: "Your rights",
+          body: (
+            <>
+              <p>
+                We process personal data in line with India&apos;s Digital Personal Data Protection Act, 2023 and the
+                Information Technology Act, 2000. You can ask what personal data we hold about you, ask us to correct
+                or delete it, withdraw consent, and raise a complaint with our grievance officer (details in the{" "}
+                <Link href="/terms" className="underline decoration-line underline-offset-4 hover:decoration-ink">
+                  terms
+                </Link>
+                ). Because we don&apos;t keep accounts or files, there is usually very little to find.
+              </p>
+              <p>
+                If you&apos;re not satisfied with our answer, you can complain to the Data Protection Board of India.
+              </p>
+            </>
           ),
         },
         {

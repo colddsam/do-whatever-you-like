@@ -7,7 +7,7 @@ export const SITE_NAME = "Do-Whatever-You-Like";
 /** Who runs the site, shown on /about and in the Organization schema. */
 export const OPERATOR = { name: "colddsam", url: "https://github.com/colddsam" } as const;
 /** Questions, bug reports and takedown requests. */
-export const CONTACT_EMAIL = "colddsam@gmail.com";
+export const CONTACT_EMAIL = "contact@colddsam.com";
 
 /** Search results cut titles off at about 60 characters. */
 export const TITLE_MAX = 60;

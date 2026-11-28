@@ -774,7 +774,7 @@ Everything new is checked end to end with real files before it ships.
 | No false refusals | `python scripts/check_guard_corpus.py` | Real samples of every format are accepted |
 | Audio and video edits | `python scripts/check_media.py` | Trim, volume, mute and noise removal measured with FFmpeg |
 | Translator (text, audio, video) | `python scripts/check_translate.py` | Multilingual text, SRT cues, MP3/MP4 dubbing, upload guard and FFprobe validation |
-| Request a tool email pipeline | `python scripts/check_tool_request.py` | Validation, header/HTML escaping, honeypot, rate limit, HTTP & SMTP delivery to `colddsam@gmail.com` |
+| Request a tool email pipeline | `python scripts/check_tool_request.py` | Validation, header/HTML escaping, honeypot, rate limit, HTTP & SMTP delivery to `contact@colddsam.com` |
 | Developer network tools | `python scripts/check_devtools.py` | DNS, HTTP, ports, XSD and XSLT, public addresses only |
 | Design tools | `python scripts/check_design_tools.py` | Font and colour inspection |
 | Video editor server helpers | in-process ASGI tests | Font/stock proxy allowlist (lookalike domains, loopback, credentials in URLs and HTML pages refused), streaming, AI Director with and without a key, LLM-output sanitising and the new operations, text to speech (validation and a real voice with word timings) |
@@ -814,7 +814,7 @@ Run the backend scripts from `backend/` with the virtual environment's Python. B
 | Method | Endpoint | What it does |
 | :--- | :--- | :--- |
 | `GET` | `/api/v1/tool-request/capabilities` | Active free email delivery channels (`resend`, `brevo`, `web3forms`, `apps_script`, `smtp`, `webhook`, `formsubmit`) |
-| `POST` | `/api/v1/tool-request` | Validate, rate-limit and deliver tool request messages to `colddsam@gmail.com` |
+| `POST` | `/api/v1/tool-request` | Validate, rate-limit and deliver tool request messages to `contact@colddsam.com` |
 
 </details>
 

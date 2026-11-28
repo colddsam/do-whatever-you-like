@@ -719,20 +719,40 @@
   "hash": "bbafe7a8ffb36077",
   "date": "2026-11-18"
  },
+ "/support": {
+  "hash": "34f228fd4b7b7d19",
+  "date": "2026-11-28"
+ },
  "/about": {
   "hash": "a10fcf991db9a6c7",
   "date": "2026-11-27"
  },
- "/privacy": {
-  "hash": "59639b392b061a2e",
-  "date": "2026-11-21"
- },
  "/terms": {
-  "hash": "35510f14833e0b3a",
-  "date": "2026-11-21"
+  "hash": "29a9f6016d4b5260",
+  "date": "2026-11-28"
+ },
+ "/privacy": {
+  "hash": "01e2953337308fed",
+  "date": "2026-11-28"
+ },
+ "/cookies": {
+  "hash": "463dc2579e0672bc",
+  "date": "2026-11-28"
  },
  "/fair-use": {
   "hash": "ffd5f65365b0b918",
   "date": "2026-11-21"
+ },
+ "/copyright": {
+  "hash": "5b2d92907a74bd25",
+  "date": "2026-11-28"
+ },
+ "/disclaimer": {
+  "hash": "4991c74adc92e99e",
+  "date": "2026-11-28"
+ },
+ "/accessibility": {
+  "hash": "183a36f10edbe496",
+  "date": "2026-11-28"
  }
 }

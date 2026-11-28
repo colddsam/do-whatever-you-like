@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class ToolRequestSettings(BaseSettings):
-    TO_EMAIL: str = "colddsam@gmail.com"
+    TO_EMAIL: str = "contact@colddsam.com"
     FROM_NAME: str = "Do-Whatever-You-Like"
     SITE_URL: str = "https://do-whatever-you-like.colddsam.com"
 

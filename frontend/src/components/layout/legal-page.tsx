@@ -4,14 +4,10 @@ import { Page } from "@/components/ui/paper";
 import { Reveal } from "@/components/ui/reveal";
 import { JsonLd } from "@/components/seo/json-ld";
 import { legalGraph } from "@/lib/schema";
+import { LEGAL_PAGES } from "@/lib/legal";
 import { cn } from "@/lib/utils";
 
-const legalLinks = [
-  { href: "/about", label: "About" },
-  { href: "/privacy", label: "Privacy" },
-  { href: "/terms", label: "Terms" },
-  { href: "/fair-use", label: "Fair use" },
-];
+const legalLinks = LEGAL_PAGES;
 
 export type LegalSection = { title: string; body: React.ReactNode };
 
@@ -21,12 +17,15 @@ export function LegalPage({
   intro,
   updated,
   sections,
+  children,
 }: {
   current: string;
   title: React.ReactNode;
   intro: string;
   updated: string;
   sections: LegalSection[];
+  /** Extra content between the intro and the numbered sections (e.g. quick-help cards). */
+  children?: React.ReactNode;
 }) {
   const label = legalLinks.find((l) => l.href === current)?.label ?? "Info";
   return (
@@ -42,9 +41,9 @@ export function LegalPage({
 
       <div className="mt-10 grid gap-10 md:mt-14 md:grid-cols-12 md:gap-8">
         <aside className="md:col-span-3">
-          <nav aria-label="About and legal" className="md:sticky md:top-24">
-            <p className="label-mono text-ink-3">About &amp; legal</p>
-            <ul className="mt-4 flex gap-1 md:flex-col">
+          <nav aria-label="Help and legal" className="md:sticky md:top-24">
+            <p className="label-mono text-ink-3">Help &amp; legal</p>
+            <ul className="mt-4 flex flex-wrap gap-x-3 gap-y-0 md:flex-col md:gap-1">
               {legalLinks.map((l) => (
                 <li key={l.href}>
                   <Link
@@ -70,6 +69,8 @@ export function LegalPage({
             <h1 className="text-h2 mt-4 text-balance">{title}</h1>
             <p className="mt-5 max-w-2xl text-lg leading-relaxed text-ink-2 text-pretty">{intro}</p>
           </Reveal>
+
+          {children}
 
           <ol className="mt-12 divide-y divide-line border-y border-line">
             {sections.map((s, i) => (
